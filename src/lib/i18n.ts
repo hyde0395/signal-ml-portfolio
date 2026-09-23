@@ -19,7 +19,7 @@ export function formatValue(value: unknown, format: string | undefined, locale: 
     if (typeof value === 'string') return value;
   }
   if (format === 'signed' && typeof value === 'number') {
-    return new Intl.NumberFormat(intl, { maximumFractionDigits: 3, signDisplay: 'exceptZero' }).format(value);
+    return new Intl.NumberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'exceptZero' }).format(value);
   }
   if (format === 'plain' && typeof value === 'number') return String(value);
   if (format === 'date' && typeof value === 'string') {

@@ -17,7 +17,7 @@ describe('formatValue', () => {
   });
   it('signed는 부호를 붙인다', () => {
     expect(formatValue(11.1, 'signed', 'ko')).toBe('+11.1');
-    expect(formatValue(-5, 'signed', 'ko')).toMatch(/^[-−]5$/);
+    expect(formatValue(-5, 'signed', 'ko')).toMatch(/^[-−]5\.0$/);
   });
   it('plain은 구분 기호 없이', () => {
     expect(formatValue(2028, 'plain', 'ko')).toBe('2028');
