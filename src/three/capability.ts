@@ -16,8 +16,17 @@ export function detectEnv(win: Window): Env {
     const c = win.document.createElement('canvas');
     webgl = !!(c.getContext('webgl2') || c.getContext('webgl'));
   } catch { /* WebGL 생성이 막힌 환경 */ }
+
+  let reducedMotion = false;
+  try {
+    reducedMotion = win.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    // matchMedia가 없거나 실패하면 안전 쪽(3D 미실행)으로 기울인다
+    reducedMotion = true;
+  }
+
   return {
-    reducedMotion: win.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    reducedMotion,
     webgl,
     // deviceMemory는 크롬 계열에만 있다. 없으면 undefined로 두고 3D를 허용한다.
     deviceMemory: (win.navigator as Navigator & { deviceMemory?: number }).deviceMemory,
