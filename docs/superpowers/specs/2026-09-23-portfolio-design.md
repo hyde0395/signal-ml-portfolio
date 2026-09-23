@@ -88,9 +88,9 @@
   - 포인트 호박색 `#FFB547`: 공휴일 봉우리, 플립 글자판, 강조 수치
 - **글꼴**
   - 제목: Space Grotesk Bold, 대문자, 자간 −0.03em
-  - 본문: Pretendard. 일본어 페이지만 Noto Sans JP
+  - 본문: Pretendard. 일본어 페이지만 Noto Sans JP. Pretendard는 dynamic-subset CSS로 조각 로딩(next/font 예외)
   - 수치와 글자판: IBM Plex Mono
-  - 모두 `next/font`로 사이트에 포함합니다.
+  - Pretendard를 제외하고 모두 `next/font`로 사이트에 포함합니다.
 - **모션 규칙**
   - 플립 글자판은 글자당 약 40ms, 전체 0.8초 이내로 끝냅니다.
   - 텍스트 리빌은 단어 단위로 아래에서 떠오릅니다. 0.9초 동안, 단어마다 60ms씩 늦게 시작합니다.
