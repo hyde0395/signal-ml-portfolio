@@ -47,7 +47,7 @@
     "bubble": {
       "heading": "Deflating the R² bubble",
       "body1": "The first R² of {model.bubble.firstR2} I got turned out to be from the Haneda route alone.",
-      "body2": "I then found and removed {data.removedImplausible} rows labeled nonstop but actually connecting flights, based on flight duration. MAE barely changed, from ₩{model.bubble.maeBefore} to ₩{model.bubble.maeAfter}, while R² alone dropped from {model.bubble.r2Before} to {model.bubble.r2After}. Those rows made up {model.bubble.denomShare}% of the R² denominator.",
+      "body2": "I then found and removed {data.removedImplausible} rows labeled nonstop but actually connecting flights. MAE barely changed, from ₩{model.bubble.maeBefore} to ₩{model.bubble.maeAfter}, while R² alone dropped from {model.bubble.r2Before} to {model.bubble.r2After}. Those rows made up {model.bubble.denomShare}% of the R² denominator.",
       "body3": "So I don't look at R² alone — I check it together with MAE and data integrity. Because the filter conditions differ, I don't compare this R² directly with earlier ones."
     },
     "validation": {
