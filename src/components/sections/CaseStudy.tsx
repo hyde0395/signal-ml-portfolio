@@ -19,8 +19,10 @@ export function CaseStudy({ locale }: { locale: Locale }) {
   const t = getT(locale);
   return (
     <section id="case" data-section="case" className="wrap" aria-labelledby="case-h">
-      <p className="eyebrow">CASE STUDY</p>
-      <h2 id="case-h" className="display">{t('case.heading')}</h2>
+      <div className="case-head text-scrim">
+        <p className="eyebrow">CASE STUDY</p>
+        <h2 id="case-h" className="display">{t('case.heading')}</h2>
+      </div>
       {/* data-chapter: 계획 3의 3D 카메라가 스크롤에 맞춰 챕터별 지점으로 이동할 때 쓸 자리(hook) */}
       {CHAPTERS.map((c) => (
         <article key={c.id} data-chapter={c.id} className="chapter" aria-labelledby={`ch-${c.id}`}>

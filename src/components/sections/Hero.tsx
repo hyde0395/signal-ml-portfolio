@@ -9,10 +9,13 @@ export function Hero({ locale }: { locale: Locale }) {
   const sub = t('hero.nameSub');
   return (
     <section id="hero" data-section="hero" className="hero wrap">
-      <h1 className="display hero-name">CHOI HALIM</h1>
-      {sub && <p className="hero-sub" lang={locale}>{sub}</p>}
-      <p className="mono hero-role">{t('hero.role')}</p>
-      <p className="hero-keywords">{t('hero.keywords')}</p>
+      {/* text-scrim: 3D가 켜졌을 때 글 뒤에 어두운 판을 깔아 밝은 점 위에서도 대비를 지킨다(globals.css) */}
+      <div className="hero-copy text-scrim">
+        <h1 className="display hero-name">CHOI HALIM</h1>
+        {sub && <p className="hero-sub" lang={locale}>{sub}</p>}
+        <p className="mono hero-role">{t('hero.role')}</p>
+        <p className="hero-keywords">{t('hero.keywords')}</p>
+      </div>
       <ChapterFigure locale={locale} sceneKey="hero" />
     </section>
   );

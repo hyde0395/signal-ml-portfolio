@@ -99,6 +99,15 @@ html[data-3d="on"] :is(.chapter, #about, #stack, #contact) > :is(p, h2, h3, ul, 
 html[data-3d="on"] :is(.chapter, #about, #stack, #contact) {
   background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
 }
+/* 첫 화면 글과 사례 연구 제목: 챕터처럼 긴 카드를 두면 첫 화면 지형이 가려지므로, 글 덩어리 크기만 한
+   어두운 판을 깐다. box-shadow로 가장자리를 흐려 판 모양이 도드라지지 않게 하고, 음수 margin으로
+   padding만큼 되돌려 글 위치는 3D가 꺼졌을 때와 같게 둔다(16px: 가장 좁은 화면의 좌우 여백과 같아 가로 스크롤이 안 생긴다). */
+html[data-3d="on"] .text-scrim {
+  width: fit-content; max-width: calc(100% + 32px); margin-inline: -16px; padding: 16px;
+  background: rgba(7, 11, 22, 0.86); border-radius: 16px; box-shadow: 0 0 48px 24px rgba(7, 11, 22, 0.86);
+}
+html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
+
 @media (max-width: 767px) {
   /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
   html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
