@@ -30,7 +30,7 @@ export const factsSchema = z.object({
     baselineMae: z.number(), lookupVariants: z.number().int(), optunaTrials: z.number().int(), testFiles: z.number().int(),
     interval: z.object({ level: z.number(), coverage: z.number(), driftLow: z.number() }),
     bubble: z.object({
-      firstR2: z.number(), r2Before: z.number(), r2After: z.number(),
+      firstR2: z.number(), firstR2After: z.number(), r2Before: z.number(), r2After: z.number(),
       maeBefore: z.number(), maeAfter: z.number(), denomShare: z.number(),
     }),
     reco: z.object({ buyNow: z.number(), dropExpected: z.number(), wait: z.number(), simulations: z.number().int() }),

@@ -45,14 +45,14 @@
     },
     "bubble": {
       "heading": "R²の水増しを取り除く",
-      "body1": "最初に得たR² {model.bubble.firstR2}は、羽田路線単体の値でした。",
-      "body2": "その後、直行と表示されていても実際には経由便だった行を{data.removedImplausible}件見つけて除外しました。MAEは{model.bubble.maeBefore}ウォンから{model.bubble.maeAfter}ウォンとほとんど変わらず、R²だけが{model.bubble.r2Before}から{model.bubble.r2After}に下がりました。これらの行がR²の分母の{model.bubble.denomShare}%を占めていました。",
+      "body1": "最初に得たR² {model.bubble.firstR2}は、羽田路線で誤ってマッチングされた高額な行によって水増しされた値でした。この行を除外するとR²は{model.bubble.firstR2After}まで下がり、MAEはほとんど変わりませんでした。",
+      "body2": "同じことがもう一度ありました。直行と表示されていても実際には経由便だった行を{data.removedImplausible}件見つけて除外しました。MAEは{model.bubble.maeBefore}ウォンから{model.bubble.maeAfter}ウォンとほとんど変わらず、R²だけが{model.bubble.r2Before}から{model.bubble.r2After}に下がりました。これらの行がR²の分母の{model.bubble.denomShare}%を占めていました。",
       "body3": "そのためR²だけでなく、MAEとデータの整合性をあわせて確認します。フィルタ条件が異なるため、今のR²と以前のR²を直接比較していません。"
     },
     "validation": {
       "heading": "検証設計",
       "body1": "同じモデルを三つの方法で評価しました。運用と同じ条件のTimeSeriesSplitを代表値として使います。",
-      "body2": "GroupKFoldで未知の出発日を評価すると、新しい出発日ではlookup統計量がデフォルト値になってしまう学習・提供間の不一致が見つかりました。lookupを含めた本番相当の構成では、R² {model.gkfWithLookup.r2}、MAE {model.gkfWithLookup.mae}ウォンでした。lookup構成{model.lookupVariants}通りをそれぞれ再チューニングして比較しました。",
+      "body2": "GroupKFoldで未知の出発日を評価すると、新しい出発日ではlookup統計量がデフォルト値になってしまう学習・提供間の不一致が見つかりました。未知の出発日では、lookupを含めたサービス構成がR² {model.gkfWithLookup.r2}、MAE {model.gkfWithLookup.mae}ウォンで、lookupなしのときより悪化しました。lookup構成{model.lookupVariants}通りをそれぞれ再チューニングして比較しました。",
       "table": {
         "caption": "評価方法別の性能",
         "method": "評価方法",

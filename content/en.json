@@ -45,14 +45,14 @@
     },
     "bubble": {
       "heading": "Deflating the R² bubble",
-      "body1": "The first R² of {model.bubble.firstR2} I got turned out to be from the Haneda route alone.",
-      "body2": "I then found and removed {data.removedImplausible} rows labeled nonstop but actually connecting flights. MAE barely changed, from ₩{model.bubble.maeBefore} to ₩{model.bubble.maeAfter}, while R² alone dropped from {model.bubble.r2Before} to {model.bubble.r2After}. Those rows made up {model.bubble.denomShare}% of the R² denominator.",
+      "body1": "The first R² of {model.bubble.firstR2} I got was inflated by high-priced rows mismatched on the Haneda route. Filtering those rows out brought R² down to {model.bubble.firstR2After}, while MAE barely changed.",
+      "body2": "The same thing happened again: I found and removed {data.removedImplausible} rows labeled nonstop but actually connecting flights. MAE barely changed, from ₩{model.bubble.maeBefore} to ₩{model.bubble.maeAfter}, while R² alone dropped from {model.bubble.r2Before} to {model.bubble.r2After}. Those rows made up {model.bubble.denomShare}% of the R² denominator.",
       "body3": "So I don't look at R² alone — I check it together with MAE and data integrity. Because the filter conditions differ, I don't compare this R² directly with earlier ones."
     },
     "validation": {
       "heading": "Validation design",
       "body1": "I evaluated the same model three ways. TimeSeriesSplit, which matches production conditions, is the headline figure.",
-      "body2": "Evaluating on unseen departure dates with GroupKFold revealed a train/serve mismatch — on a new departure date, lookup statistics fall back to a default value. With lookup included, matching the production setup, R² was {model.gkfWithLookup.r2} and MAE was ₩{model.gkfWithLookup.mae}. I retuned and compared {model.lookupVariants} lookup configurations.",
+      "body2": "Evaluating on unseen departure dates with GroupKFold revealed a train/serve mismatch — on a new departure date, lookup statistics fall back to a default value. On those unseen departure dates, the lookup-enabled service configuration scored R² {model.gkfWithLookup.r2} and MAE ₩{model.gkfWithLookup.mae} — worse than without lookup. I retuned and compared {model.lookupVariants} lookup configurations.",
       "table": {
         "caption": "Performance by evaluation method",
         "method": "Evaluation method",

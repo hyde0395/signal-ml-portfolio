@@ -63,6 +63,7 @@
     },
     "bubble": {
       "firstR2": 0.93,
+      "firstR2After": 0.71,
       "r2Before": 0.84,
       "r2After": 0.64,
       "maeBefore": 48442,

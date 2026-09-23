@@ -45,14 +45,14 @@
     },
     "bubble": {
       "heading": "R² 거품 빼기",
-      "body1": "처음 얻은 R² {model.bubble.firstR2}은 하네다 노선 하나만의 값이었습니다.",
-      "body2": "이후 직항으로 표시됐지만 실제로는 경유 여정인 행 {data.removedImplausible}개를 찾아 걸러냈습니다. MAE는 {model.bubble.maeBefore}원에서 {model.bubble.maeAfter}원으로 거의 그대로였고, R²만 {model.bubble.r2Before}에서 {model.bubble.r2After}로 내려갔습니다. 이 행들이 R² 분모의 {model.bubble.denomShare}%를 차지하고 있었습니다.",
+      "body1": "처음 얻은 R² {model.bubble.firstR2}은 하네다 노선에 잘못 매칭된 고가 행이 부풀린 값이었습니다. 이 행을 걸러내자 R²는 {model.bubble.firstR2After}로 내려갔고, MAE는 거의 그대로였습니다.",
+      "body2": "같은 일이 한 번 더 있었습니다. 직항으로 표시됐지만 실제로는 경유 여정인 행 {data.removedImplausible}개를 찾아 걸러냈습니다. MAE는 {model.bubble.maeBefore}원에서 {model.bubble.maeAfter}원으로 거의 그대로였고, R²만 {model.bubble.r2Before}에서 {model.bubble.r2After}로 내려갔습니다. 이 행들이 R² 분모의 {model.bubble.denomShare}%를 차지하고 있었습니다.",
       "body3": "그래서 R²만 보지 않고 MAE와 데이터 무결성을 함께 봅니다. 필터 조건이 달라 지금 R²와 예전 R²를 직접 비교하지는 않습니다."
     },
     "validation": {
       "heading": "검증 설계",
       "body1": "같은 모델을 세 가지 방식으로 평가했습니다. 운영과 같은 조건인 TimeSeriesSplit을 대표값으로 씁니다.",
-      "body2": "GroupKFold로 처음 보는 출발일을 평가하자, 새 출발일에서는 lookup 통계가 기본값으로 떨어지는 학습·서비스 불일치가 드러났습니다. lookup을 넣은 서비스 구성은 R² {model.gkfWithLookup.r2}, MAE {model.gkfWithLookup.mae}원이었습니다. lookup 구성 {model.lookupVariants}가지를 각각 다시 튜닝해 비교했습니다.",
+      "body2": "GroupKFold로 처음 보는 출발일을 평가하자, 새 출발일에서는 lookup 통계가 기본값으로 떨어지는 학습·서비스 불일치가 드러났습니다. 처음 보는 출발일에서는 lookup을 넣은 서비스 구성이 R² {model.gkfWithLookup.r2}, MAE {model.gkfWithLookup.mae}원으로 lookup이 없을 때보다 나빴습니다. lookup 구성 {model.lookupVariants}가지를 각각 다시 튜닝해 비교했습니다.",
       "table": {
         "caption": "평가 방식별 성능",
         "method": "평가 방식",

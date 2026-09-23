@@ -13,7 +13,7 @@
   "optunaTrials": 100,
   "testFiles": 7,
   "interval": { "level": 80, "coverage": 80.2, "driftLow": 69 },
-  "bubble": { "firstR2": 0.93, "r2Before": 0.84, "r2After": 0.64, "maeBefore": 48442, "maeAfter": 48235, "denomShare": 51 },
+  "bubble": { "firstR2": 0.93, "firstR2After": 0.71, "r2Before": 0.84, "r2After": 0.64, "maeBefore": 48442, "maeAfter": 48235, "denomShare": 51 },
   "reco": { "buyNow": 92.1, "dropExpected": 5.9, "wait": 2.0, "simulations": 2847 },
   "realizedFlights": 16469,
   "curveWidth": 16,
