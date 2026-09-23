@@ -1,3 +1,4 @@
+/* 전역 스타일: 색·글꼴 변수(global-constraints 기준)와 섹션 레이아웃, 헤더, 탑승권 카드 등. */
 :root {
   --bg: #070B16; --bg2: #13203A; --dot: #8FB8FF; --tx: #EEF3FF; --amb: #FFB547;
   --mute: rgba(238, 243, 255, 0.72); /* #070B16 위에서 대비 ≥ 4.5:1 */
@@ -46,6 +47,8 @@ section p + p { margin-top: 12px; }
   padding: 6px 14px; text-decoration: none; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
 .pill:hover { border-color: var(--dot); }
 .pill.is-pending { color: var(--mute); border-style: dashed; cursor: not-allowed; }
+/* 400px 이하의 좁은 화면(작은 휴대폰)에서는 상단 바 요소가 KO/EN/JA + 이력서 버튼까지 겹쳐
+   한 줄(72px 미만)을 넘기거나 화면 밖으로 밀려날 수 있어 여백과 글자 크기를 줄인다. */
 @media (max-width: 400px) {
   .site-header { padding: 12px 10px; gap: 6px; }
   .header-actions { gap: 4px; }

@@ -1,3 +1,4 @@
+// 사이트 주소(siteUrl)와 페이지 메타데이터(canonical, hreflang, robots)를 만든다.
 import type { Metadata } from 'next';
 import { getT } from './content';
 import { LOCALE_PATH, type Locale } from './i18n';

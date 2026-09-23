@@ -1,3 +1,4 @@
+// 로케일별 layout이 공유하는 <html>/<body> 뼈대. 건너뛰기 링크와 언어 안내(LangHint)를 여기서 공통으로 넣는다.
 import '@/styles/globals.css';
 import { LangHint } from './LangHint';
 import { dictionaries, getT } from '@/lib/content';

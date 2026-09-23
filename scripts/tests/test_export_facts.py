@@ -1,3 +1,4 @@
+# export_facts.py의 필터·기준일 자르기·행 수 스냅샷 검사(check_snapshot)를 검증한다.
 import sys
 from pathlib import Path
 

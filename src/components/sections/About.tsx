@@ -1,6 +1,8 @@
+// "소개" 섹션: 자기소개와 핵심 역량 목록. 문구는 content 딕셔너리(about.*)에서 가져온다.
 import { getT } from '@/lib/content';
 import type { Locale } from '@/lib/i18n';
 
+// content/*.json의 about.skills.* 키와 순서를 맞춘 목록.
 const SKILLS = ['collection', 'modeling', 'validation', 'interval'] as const;
 
 export function About({ locale }: { locale: Locale }) {

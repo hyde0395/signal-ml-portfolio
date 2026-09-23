@@ -1,3 +1,4 @@
+// 한 페이지 스크롤 홈 화면. 헤더와 섹션들을 로케일 하나로 조립한다.
 import { Header } from './Header';
 import { About } from './sections/About';
 import { CaseStudy } from './sections/CaseStudy';

@@ -1,4 +1,7 @@
 'use client';
+// 브라우저 언어(또는 이전 선택)가 현재 페이지와 다르면 다른 언어 페이지로 가는 링크를 안내한다.
+// 자동으로 이동시키지 않는 이유: 사용자가 받은 링크(예: 이력서에 적힌 특정 언어 주소)를 그대로
+// 보여주기 위해서다 — 강제 리다이렉트는 global-constraints의 "자동 언어 리다이렉트 금지"에 어긋난다.
 import { useEffect, useState } from 'react';
 import { LOCALE_PATH, LOCALES, type Locale } from '@/lib/i18n';
 

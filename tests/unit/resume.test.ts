@@ -1,3 +1,4 @@
+// resumeHref가 실제 파일 존재 여부에 따라 경로 또는 null을 반환하는지, 임시 디렉터리로 확인한다.
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

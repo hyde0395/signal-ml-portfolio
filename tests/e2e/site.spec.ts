@@ -1,3 +1,5 @@
+// 빌드된 정적 사이트(out/)를 실제로 띄워 놓고 돌리는 e2e 테스트: 언어별 화면, 접근성(axe),
+// 이메일 감추기, 이력서 유무, 반응형, 공개 전 noindex 등을 확인한다.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import AxeBuilder from '@axe-core/playwright';

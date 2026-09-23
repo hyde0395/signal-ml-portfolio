@@ -1,3 +1,4 @@
+// revealEmail이 뒤집힌 문자열을 올바른 이메일 형태로 되돌리는지 확인한다.
 import { describe, expect, it } from 'vitest';
 import { facts } from '@/lib/facts';
 import { revealEmail } from '@/lib/email';

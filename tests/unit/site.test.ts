@@ -1,3 +1,4 @@
+// siteUrl과 buildMetadata(canonical/hreflang/robots)를 검증한다.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildMetadata, siteUrl } from '@/lib/site';
 

@@ -1,3 +1,5 @@
+// data/facts.json(사이트에 나오는 모든 수치)을 zod로 검사해 사이트 전체에 타입 있는 형태로 넘겨준다.
+// 형식이 스키마와 다르면(재학습 후 export_facts.py가 잘못 갱신했다거나) 빌드 시점에 바로 실패한다.
 import { z } from 'zod';
 import raw from '../../data/facts.json';
 
@@ -42,6 +44,8 @@ export type Facts = z.infer<typeof factsSchema>;
 
 export const facts: Facts = factsSchema.parse(raw);
 
+// 케이스 스터디 챕터별 근거 코드 링크를 만든다. baseUrl이 비공개 저장소를 가리켜 지금은 404가
+// 뜨는 게 정상이며 의도한 상태다. 나중에 저장소를 공개하면 facts.json의 baseUrl만 바꾸면 된다.
 export function codeUrl(chapter: CodeChapter): string {
   return `${facts.codeLinks.baseUrl}/${facts.codeLinks.paths[chapter]}`;
 }

@@ -39,6 +39,8 @@ def apply_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
 
 
 def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
+    # as_of 자정 다음날 자정 이전까지만(= as_of 당일 끝까지 포함) 남긴다. 수집이 계속 진행 중인
+    # 원본 CSV에서 이후에 더 쌓인 행이 섞이면 model_metrics.json이 학습했던 시점과 어긋난다.
     cutoff = pd.Timestamp(as_of) + pd.Timedelta(days=1)
     raw = raw[pd.to_datetime(raw["fetch_timestamp"]) < cutoff]
     df, removed = apply_filters(raw)
@@ -60,6 +62,8 @@ def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
 
 
 def check_snapshot(data: dict, metrics_meta: dict) -> None:
+    # 필터 후 행 수가 모델이 실제로 학습한 행 수와 다르면 여기서 멈춘다. 그 상태로 계속 진행하면
+    # data 수치와 model 수치가 서로 다른 스냅샷을 가리키는 채로 facts.json에 같이 저장되어 버린다.
     expected = metrics_meta["trainedRows"]
     if data["filteredRows"] != expected:
         raise SystemExit(

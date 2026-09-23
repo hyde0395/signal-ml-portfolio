@@ -1,3 +1,4 @@
+// data/facts.json이 스키마를 지키는지, 대표 수치가 들어 있는지, 코드 링크 조립이 맞는지 확인한다.
 import { describe, expect, it } from 'vitest';
 import raw from '../../data/facts.json';
 import { codeUrl, facts, factsSchema } from '@/lib/facts';

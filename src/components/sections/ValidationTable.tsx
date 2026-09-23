@@ -1,7 +1,10 @@
+// 3-4 검증 설계 챕터에 들어가는 평가 방식 3종 비교표(TimeSeriesSplit / GroupKFold / K-Fold).
 import { getT } from '@/lib/content';
 import { facts } from '@/lib/facts';
 import { formatValue, type Locale } from '@/lib/i18n';
 
+// gkf는 lookup 없이 측정한 값(gkfNoLookup)을 쓴다. lookup 포함 값은 별도 수치이며 여기서 다루지 않는다.
+// tss(TimeSeriesSplit, 운영 기준)를 main으로 강조한다.
 const ROWS = [
   { key: 'tss', score: facts.model.tss, main: true },
   { key: 'gkf', score: facts.model.gkfNoLookup, main: false },

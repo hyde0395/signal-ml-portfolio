@@ -1,3 +1,4 @@
+// lookup/formatValue/interpolate/createT — 자리표시 치환 로직의 각 단계를 개별로 검증한다.
 import { describe, expect, it } from 'vitest';
 import { createT, formatValue, interpolate, lookup } from '@/lib/i18n';
 

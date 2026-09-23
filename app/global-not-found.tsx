@@ -1,3 +1,5 @@
+// 3개 언어 전체의 공용 404 화면(Next의 global-not-found). 정적 export에는 로케일별 not-found를
+// 둘 수 없어 한 화면에서 ko/en/ja 안내를 모두 보여준다.
 import '@/styles/globals.css';
 import { dictionaries } from '@/lib/content';
 import { LOCALE_PATH, LOCALES } from '@/lib/i18n';

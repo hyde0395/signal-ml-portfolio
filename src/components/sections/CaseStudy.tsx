@@ -1,8 +1,10 @@
+// 케이스 스터디 섹션: 챕터 6개(GATE 01~06)를 나열하고, 챕터마다 근거 코드 링크를 붙인다.
 import { ValidationTable } from './ValidationTable';
 import { getT } from '@/lib/content';
 import { codeUrl, type CodeChapter } from '@/lib/facts';
 import type { Locale } from '@/lib/i18n';
 
+// gate 라벨과 문단 수(paras)는 플립 글자판 제목과 content/*.json의 case.<id>.body1..N 개수에 맞춘다.
 const CHAPTERS: { id: CodeChapter; gate: string; paras: number }[] = [
   { id: 'problem', gate: 'GATE 01 — PROBLEM', paras: 3 },
   { id: 'insight', gate: 'GATE 02 — INSIGHT', paras: 2 },
@@ -18,6 +20,7 @@ export function CaseStudy({ locale }: { locale: Locale }) {
     <section id="case" data-section="case" className="wrap" aria-labelledby="case-h">
       <p className="eyebrow">CASE STUDY</p>
       <h2 id="case-h" className="display">{t('case.heading')}</h2>
+      {/* data-chapter: 계획 3의 3D 카메라가 스크롤에 맞춰 챕터별 지점으로 이동할 때 쓸 자리(hook) */}
       {CHAPTERS.map((c) => (
         <article key={c.id} data-chapter={c.id} className="chapter" aria-labelledby={`ch-${c.id}`}>
           <p className="eyebrow">{c.gate}</p>

@@ -1,3 +1,5 @@
+// 연락처 섹션: "탑승권" 카드로 이메일·GitHub·LinkedIn·이력서를 보여준다.
+// ResumeLink는 헤더와 동일한 컴포넌트를 그대로 재사용한다(별도 구현 없음).
 import { EmailLink } from '../EmailLink';
 import { ResumeLink } from '../Header';
 import { getT } from '@/lib/content';
@@ -18,6 +20,7 @@ export function Contact({ locale }: { locale: Locale }) {
           <div><dt className="mono">{t('contact.passenger')}</dt><dd className="display">CHOI HALIM</dd></div>
           <div><dt className="mono">{t('contact.email')}</dt><dd><EmailLink reversed={emailReversed} fallback={t('contact.emailFallback')} /></dd></div>
           <div><dt className="mono">{t('contact.github')}</dt><dd><a href={github} target="_blank" rel="noopener noreferrer">{github.replace('https://', '')}</a></dd></div>
+          {/* LinkedIn 값이 비어 있으면(global-constraints) 행 자체를 숨긴다 */}
           {linkedin && (
             <div data-testid="linkedin"><dt className="mono">{t('contact.linkedin')}</dt><dd><a href={linkedin} target="_blank" rel="noopener noreferrer">{linkedin.replace('https://', '')}</a></dd></div>
           )}

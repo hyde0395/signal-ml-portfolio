@@ -1,3 +1,6 @@
+// content/*.json 문구 파일 자체를 검증한다: 세 언어의 키가 일치하는지, 모든 자리표시가 facts에서
+// 채워지는지, 그리고 문장에 숫자를 직접 쓰지 않았는지(재학습으로 수치가 바뀌면 facts.json만
+// 고치면 되도록 강제한다).
 import { describe, expect, it } from 'vitest';
 import { facts } from '@/lib/facts';
 import { interpolate, LOCALES, PLACEHOLDER } from '@/lib/i18n';
