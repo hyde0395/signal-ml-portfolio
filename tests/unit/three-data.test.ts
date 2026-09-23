@@ -52,6 +52,29 @@ describe('buildPointCloud', () => {
     const b = buildPointCloud(terrain, map, { noiseStride: 1, seed: 7 });
     expect(Array.from(a.scatter)).toEqual(Array.from(b.scatter));
   });
+  it('신호 점의 해안선 인덱스가 앞쪽 1/3과 뒤쪽 1/3에 고루 퍼진다 (프리픽스에 몰리지 않는다)', () => {
+    // 결함 A 재현: coast[i % coast.length]였다면 신호(항상 앞쪽 인덱스)는 coast 앞부분에만 몰린다.
+    // 해안선 각 인덱스에 서로 다른 경도(정수)를 줘서, 배정된 인덱스를 역산해 분포를 확인한다.
+    const N = 30, M = 10;
+    const coastPts: number[] = [];
+    for (let idx = 0; idx < N; idx++) coastPts.push(idx * 100, 0); // pairs()가 100으로 나누므로 *100 (lon=idx, lat=0)
+    const bigMap: MapData = { ...map, coast: coastPts, routes: [] }; // 노선 없음 → 전부 해안선 목표
+    const bigTerrain: Terrain = {
+      ...terrain,
+      signal: { dtd: Array(M).fill(50), date: Array(M).fill(1), pct: Array(M).fill(0) },
+      noise: { dtd: [], date: [], pct: [] },
+      removed: { dtd: [], date: [], pct: [] },
+    };
+    const pc = buildPointCloud(bigTerrain, bigMap, { noiseStride: 1 });
+    const MAP_SCALE = 0.75, MAP_COS = Math.cos((37.8 * Math.PI) / 180);
+    const idxs: number[] = [];
+    for (let i = 0; i < pc.count; i++) {
+      const lon = pc.map[i * 3] / (MAP_SCALE * MAP_COS) + 135.25;
+      idxs.push(Math.round(lon));
+    }
+    expect(idxs.some((v) => v < N / 3)).toBe(true);
+    expect(idxs.some((v) => v >= (N * 2) / 3)).toBe(true);
+  });
 });
 
 describe('loadSceneData', () => {

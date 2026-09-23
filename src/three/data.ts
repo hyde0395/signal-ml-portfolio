@@ -31,6 +31,9 @@ const MAP_SCALE = 0.75;
 const MAP_COS = Math.cos((MAP_CENTER.lat * Math.PI) / 180);
 const ROUTE_ARC_HEIGHT = 1.5;   // 지도 장면에서 노선 궤적이 떠오르는 높이
 const ROUTE_SHARE = 5;          // 다섯 점 중 하나를 노선 궤적에 배정한다
+// 해안선 인덱스를 고를 때 쓰는 황금비(약 0.618). i가 0부터 늘어날 때 (i*GOLDEN)%1이 [0,1)을
+// 거의 균등하게(저불일치) 훑으므로, i의 "어느 연속 구간"을 뽑아도 해안선 전체에 고르게 퍼진다.
+const GOLDEN_RATIO = 0.6180339887498949;
 
 export function terrainPosition(dtd: number, dateIdx: number, pct10: number, maxDtd: number, nDates: number): [number, number, number] {
   // 왼쪽 = 먼 예약 시점, 오른쪽 = 출발 당일. 시간이 흐르는 방향을 왼쪽→오른쪽으로 읽게 한다.
@@ -85,7 +88,11 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     out.kind[i] = r.kind;
     out.holiday[i] = holidays.has(r.date) ? 1 : 0;
 
-    // 지도 목표: 점 수가 해안선 샘플보다 많으므로 순환 배정하고, 같은 자리에 겹치지 않게 살짝 흔든다.
+    // 지도 목표: 점 수가 해안선 샘플보다 많으므로 배정하고, 같은 자리에 겹치지 않게 살짝 흔든다.
+    // i(전체 인덱스)를 그대로 coast.length로 나눈 나머지를 쓰면 신호(밝은 점, 2,070개)가 항상
+    // coast[0..2069]에만 몰려 해안선 뒤쪽 절반(한반도가 있는 구간)은 잡음(흐린 점)만 받는다
+    // (라운드 3에서 발견한 결함: 한반도가 거의 안 보임). 황금비 저불일치 수열로 인덱스를 고르면
+    // i가 0부터 몇 개만 지나도 [0, coast.length) 전체에 고르게 퍼져, 어느 레이어든 해안선 전체를 덮는다.
     const jitter = () => (rand() - 0.5) * 0.06;
     if (routes.length > 0 && i % ROUTE_SHARE === 0) {
       const line = routes[(i / ROUTE_SHARE) % routes.length | 0];
@@ -95,7 +102,8 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
       out.map.set([x + jitter(), arc, zz + jitter()], i * 3);
       out.route[i] = 1;
     } else {
-      const [lon, lat] = coast[i % coast.length];
+      const coastIdx = Math.floor(((i * GOLDEN_RATIO) % 1) * coast.length);
+      const [lon, lat] = coast[coastIdx];
       const [x, zz] = mapPosition(lon, lat);
       out.map.set([x + jitter(), 0, zz + jitter()], i * 3);
     }
