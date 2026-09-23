@@ -10,7 +10,7 @@ export function LangSwitch({ current, label }: { current: Locale; label: string 
     <nav aria-label={label} className="lang-switch mono">
       {LOCALES.map((l) => (
         <a key={l} href={LOCALE_PATH[l]} hrefLang={l} lang={l}
-           aria-current={l === current ? 'true' : undefined} onClick={() => remember(l)}>
+           aria-current={l === current ? 'page' : undefined} onClick={() => remember(l)}>
           {l.toUpperCase()}
         </a>
       ))}

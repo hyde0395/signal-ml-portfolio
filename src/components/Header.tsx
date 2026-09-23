@@ -5,9 +5,10 @@ import type { Locale } from '@/lib/i18n';
 import { resumeHref } from '@/lib/resume';
 
 // href가 null이면(해당 언어 이력서 PDF가 아직 없으면) 링크 대신 "준비 중" 표시만 흐리게 보여준다.
-export function ResumeLink({ href, label, pendingLabel, className = 'pill' }: { href: string | null; label: string; pendingLabel: string; className?: string }) {
+// download 파일명에 locale을 넣어, 어느 언어 페이지에서 받았는지 파일 이름만 보고 구분할 수 있게 한다.
+export function ResumeLink({ href, label, pendingLabel, locale, className = 'pill' }: { href: string | null; label: string; pendingLabel: string; locale: Locale; className?: string }) {
   return href
-    ? <a className={className} href={href} download>{label}</a>
+    ? <a className={className} href={href} download={`CHOI_HALIM_resume_${locale}.pdf`}>{label}</a>
     : <span className={`${className} is-pending`} aria-disabled="true">{pendingLabel}</span>;
 }
 
@@ -18,7 +19,7 @@ export function Header({ locale }: { locale: Locale }) {
     <header className="site-header">
       <span className="brand display">SIGNAL</span>
       <div className="header-actions">
-        <ResumeLink href={resume} label={t('nav.resume')} pendingLabel={t('nav.resumePending')} />
+        <ResumeLink href={resume} label={t('nav.resume')} pendingLabel={t('nav.resumePending')} locale={locale} />
         <LangSwitch current={locale} label={t('nav.language')} />
       </div>
     </header>

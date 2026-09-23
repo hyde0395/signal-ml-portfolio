@@ -1,6 +1,7 @@
 'use client';
-// 이메일 주소를 화면에 보여준다. 뒤집힌 문자열(facts.contact.emailReversed)을 서버 렌더링/정적
-// HTML에는 넣지 않고 useEffect로 클라이언트에서만 복원해, HTML 소스를 긁는 주소 수집 봇을 피한다.
+// 이메일 주소를 화면에 보여준다. 뒤집힌 문자열(facts.contact.emailReversed)은 RSC props로
+// HTML에 실제로 포함되지만, 복원된 원본 주소는 useEffect로 클라이언트에서만 만들어 HTML 소스에는
+// 연속 문자열로 나타나지 않는다(주소 수집 봇이 소스를 긁어도 원본 주소는 얻지 못한다).
 import { useEffect, useState } from 'react';
 import { revealEmail } from '@/lib/email';
 
