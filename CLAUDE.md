@@ -19,16 +19,15 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 설계 3/4: 3D 지형·데이터 파이프라인 | ✅ 승인 |
 | 작업 폴더 이동 | ✅ `~/dev/signal-ml-portfolio` (iCloud 밖) |
 | 설계 4/4: 데모·배포·성능·접근성·다국어·콘텐츠 | ✅ 승인 |
-| 스펙 문서 작성 (`docs/superpowers/specs/2026-09-23-portfolio-design.md`) → 사용자 검토 | ✍️ 작성·커밋 완료, ⏳ **사용자 검토 대기** |
-| `superpowers:writing-plans`로 구현 계획 작성 → 실행 방식 선택 | ⏳ 예정 |
+| 스펙 문서 작성 (`docs/superpowers/specs/2026-09-23-portfolio-design.md`) → 사용자 검토 | ✅ 승인 |
+| 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감) | 계획 1 작성 완료 (`docs/superpowers/plans/2026-09-23-plan-1-foundation.md`), ⏳ **사용자 검토 + 실행 방식 선택 대기** |
 
-**다음 세션 시작 방법:** brainstorming 스킬을 다시 불러오고, 위 표에서 첫 번째 미완료 단계부터 이어간다. 스펙 승인 전에는 스캐폴딩이나 구현을 하지 않는다. 이미 정해진 결정은 다시 묻지 않는다.
+**다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
 
 ### 다음 세션 할 일 (순서대로)
 
-1. **스펙 사용자 검토·승인** (스펙은 작성·커밋 완료, git 저장소도 만듦)
-2. **`superpowers:writing-plans`로 구현 계획 작성** → 사용자가 실행 방식 선택
-3. 그 뒤 구현 (Next.js 스캐폴딩은 이 단계에서 처음 한다)
+1. 계획 1 사용자 검토 → 실행 방식(Subagent-driven / Native) 선택 → 실행
+2. 계획 1 완료 후 계획 2(데모) 작성 → 3 → 4 순서
 
 ## 확정된 결정
 
