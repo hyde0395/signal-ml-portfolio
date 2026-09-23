@@ -60,3 +60,26 @@ section p + p { margin-top: 12px; }
 .summary h2 { font-size: 2rem; margin-top: 4px; }
 .summary ul { margin: 8px 0 0 20px; }
 .summary-actions { display: flex; gap: 8px; margin-top: 20px; }
+
+.hero { min-height: 88vh; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 12vh; }
+.hero-name { font-size: clamp(3rem, 12vw, 8.5rem); }
+.hero-sub { margin-top: 8px; color: var(--mute); }
+.hero-role { margin-top: 24px; color: var(--amb); letter-spacing: 0.18em; }
+.hero-keywords { color: var(--mute); }
+.skills { list-style: none; display: grid; gap: 8px; }
+.skills li { border-left: 2px solid var(--dot); padding-left: 12px; }
+.chapter { padding-block: 48px; border-top: 1px solid var(--line); }
+.code-link { display: inline-block; margin-top: 16px; font-size: 0.85rem; }
+.vtable { width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 0.9rem; }
+.vtable caption { text-align: left; color: var(--mute); margin-bottom: 8px; }
+.vtable th, .vtable td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+.vtable td { font-variant-numeric: tabular-nums; }
+.vtable .is-main { color: var(--amb); }
+.pipeline { list-style: none; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); counter-reset: step; }
+.pipeline li { border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 6px; }
+.pass { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; max-width: 640px; background: rgba(19, 32, 58, 0.5); }
+.pass-head { background: var(--amb); color: #1a1200; padding: 8px 16px; font-weight: 600; letter-spacing: 0.14em; font-size: 0.8rem; }
+.pass dl { display: grid; gap: 14px; padding: 20px 16px; }
+.pass dt { font-size: 0.7rem; letter-spacing: 0.14em; color: var(--mute); }
+.pass dd { word-break: break-all; }
+@media (max-width: 640px) { .vtable { font-size: 0.8rem; } .vtable th, .vtable td { padding: 8px 4px; } }
