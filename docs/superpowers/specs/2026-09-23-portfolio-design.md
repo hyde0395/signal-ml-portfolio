@@ -109,7 +109,7 @@
 |---|---|---|
 | `export_terrain.py` | 원본 CSV + 항공권 저장소의 필터 함수(`src/processing/features.py`를 import해 재사용) | `terrain.<기준일>.json` |
 | `export_demo.py` | `v2_predictor.pkl` + `recommend_action()` | `demo.<기준일>.json` |
-| `export_facts.py` | 항공권 저장소 CLAUDE.md 기준 수치 | `facts.json` |
+| `export_facts.py` | 항공권 저장소 CLAUDE.md 기준 수치 | `data/facts.json` (빌드 시 import, 공개 URL 없음) |
 
 - 항공권 저장소는 iCloud 안에 있습니다. 그래서 실행 전에 그쪽 CLAUDE.md의 **iCloud 워밍 절차**를 따릅니다. 모델을 돌릴 때는 NeuralProphet 로그를 억제합니다(`redirect_stdout`).
 - 각 스크립트는 저장하기 전에 **출력 구조와 용량을 스스로 검사**합니다. 목표 용량을 넘으면 실패로 끝납니다.
@@ -305,6 +305,8 @@ interface ForecastSource {
 ## 11. 콘텐츠와 수치 관리
 
 ### 11.1 `facts.json` (수치와 링크의 유일한 원본)
+
+위치: `data/facts.json`. 사이트가 빌드할 때 import하며 공개 URL로 제공하지 않는다.
 
 - 모델 성능(평가 방식 3종의 R²·MAE·MAPE), 데이터 규모, 커버리지, 추천 분포, 예약 곡선 구간 값 등 **사이트에 나오는 모든 수치**를 담습니다.
 - `dataVersion`(기준일)과 `demoDefault`(데모 초기 조합)도 담습니다.
