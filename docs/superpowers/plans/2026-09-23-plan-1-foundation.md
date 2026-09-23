@@ -45,7 +45,7 @@
 2. **자리표시가 facts에 없는 경로를 가리킬 때**: 화면에 `{model.x}`가 그대로 찍히지 말고 빌드·테스트가 실패해야 한다 → Task 4의 `interpolate` throw 테스트, Task 5의 전 키 해석 테스트
 3. **이력서 PDF가 없는 언어**: 깨진 링크 대신 비활성 "준비 중" 표시 → Task 7 단위 테스트 + Task 9 E2E
 4. **이메일 수집 봇**: 원본 HTML에 주소가 없어야 하고, 사람에게는 보여야 한다 → Task 9 E2E
-6. **휴대폰 폭의 상단 바**: 버튼이 넘치거나 겹치지 않고, 메뉴 안의 30초 요약·언어 전환도 키보드와 터치로 쓸 수 있어야 한다 → Task 9 모바일 E2E
+6. **휴대폰 폭의 상단 바**: `SIGNAL · 이력서 · KO EN JA`가 세 언어 모두 한 줄에 들어가고 넘치지 않아야 한다 → Task 9 모바일 E2E (30초 요약·메뉴는 2026-09-23 사용자 요청으로 제거)
 5. **없는 주소로 들어온 방문자**(`/nope/`, `/en/xyz/`): 404 페이지가 3개 언어 안내와 첫 화면 링크를 보여야 한다 → Task 9 E2E
 
 ---
@@ -1893,14 +1893,8 @@ export default defineConfig({
 
 ```ts
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import facts from '../../data/facts.json';
-
-// 휴대폰 폭에서는 30초 요약과 언어 전환이 메뉴 안에 있다.
-async function openMenuIfCollapsed(page: Page) {
-  const toggle = page.getByRole('button', { name: /^(메뉴|Menu|メニュー)$/ });
-  if (await toggle.isVisible()) await toggle.click();
-}
 
 const PAGES = [
   { path: '/', lang: 'ko' },
@@ -1963,22 +1957,8 @@ test('건너뛰기 링크가 첫 Tab에 나타나고 본문으로 이동한다',
   await expect(page).toHaveURL(/#main$/);
 });
 
-test('30초 요약: 열기, Esc로 닫기, 포커스 복귀', async ({ page }) => {
-  await page.goto('/');
-  await openMenuIfCollapsed(page);
-  const opener = page.getByRole('button', { name: '30초 요약' });
-  await opener.click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText('TimeSeriesSplit');
-  await page.keyboard.press('Escape');
-  await expect(dialog).toBeHidden();
-  await expect(opener).toBeFocused();
-});
-
 test('언어 전환 링크와 선택 기억', async ({ page }) => {
   await page.goto('/');
-  await openMenuIfCollapsed(page);
   await page.getByRole('link', { name: 'JA' }).click();
   await expect(page).toHaveURL(/\/ja\/$/);
   expect(await page.evaluate(() => localStorage.getItem('signal.lang'))).toBe('ja');
@@ -2002,26 +1982,15 @@ for (const bad of ['/nope/', '/en/xyz/']) {
   });
 }
 
-test('휴대폰 폭: 상단 바는 한 줄이고, 메뉴를 열어야 언어 전환이 보인다', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 800 });
-  await page.goto('/');
-  const header = page.locator('.site-header');
-  expect((await header.boundingBox())!.height).toBeLessThan(72);
-  const toggle = page.getByRole('button', { name: '메뉴' });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.getByRole('link', { name: 'EN' })).toBeHidden();
-  await toggle.focus();
-  await page.keyboard.press('Enter');
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.getByRole('link', { name: 'EN' })).toBeVisible();
-});
-
-test('데스크톱 폭에서는 메뉴 버튼 없이 모두 보인다', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
-  await expect(page.getByRole('button', { name: '메뉴' })).toBeHidden();
-  await expect(page.getByRole('button', { name: '30초 요약' })).toBeVisible();
-});
+for (const path of ['/', '/en/', '/ja/']) {
+  test(`${path} 휴대폰 폭: 상단 바가 한 줄이고 언어 전환이 바로 보인다`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto(path);
+    expect((await page.locator('.site-header').boundingBox())!.height).toBeLessThan(72);
+    await expect(page.getByRole('link', { name: 'EN' })).toBeVisible();
+    await expect(page.getByRole('button')).toHaveCount(await page.locator('.lang-hint button').count());
+  });
+}
 
 test('공개 전: noindex와 robots.txt', async ({ page, request }) => {
   await page.goto('/');
