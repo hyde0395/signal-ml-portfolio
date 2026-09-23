@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "title": "최하림 — ML 엔지니어 포트폴리오",
+    "description": "한·일 항공권 가격을 직접 수집해 예측 모델을 만들고 검증한 과정을 정리했습니다."
+  },
+  "nav": {
+    "skip": "본문으로 건너뛰기",
+    "resume": "이력서",
+    "resumePending": "이력서 준비 중",
+    "summary": "30초 요약",
+    "language": "언어"
+  },
+  "langHint": { "offer": "한국어로 보기 →", "dismiss": "닫기" },
+  "hero": {
+    "nameSub": "최하림",
+    "role": "ML ENGINEER",
+    "keywords": "시계열 예측 · 모델 검증 · 데이터 파이프라인"
+  },
+  "about": {
+    "heading": "소개",
+    "education": "수원대학교 컴퓨터소프트웨어학과 · {profile.graduation|month} 졸업 예정",
+    "body1": "한·일 항공권 가격을 매일 자동으로 모으고, 그 데이터로 가격 예측 모델을 만들었습니다.",
+    "body2": "점수보다 평가 방식이 맞는지를 먼저 확인했고, 그 과정에서 부풀려진 R²를 두 번 바로잡았습니다.",
+    "body3": "예측값과 함께 어느 범위까지 믿을 수 있는지도 보여 주도록 만들었습니다.",
+    "skillsHeading": "핵심 역량",
+    "skills": {
+      "collection": "수집 자동화 — GitHub Actions가 매일 가격을 수집하고 CSV를 자동 커밋",
+      "modeling": "시계열 모델링 — 노선별 NeuralProphet 추세 + XGBoost 잔차 학습, Optuna {model.optunaTrials}회 튜닝",
+      "validation": "검증 설계 — TimeSeriesSplit · GroupKFold · K-Fold 비교로 누수 확인",
+      "interval": "예측 구간 보정 — {model.interval.level}% 구간의 실제 포함률 {model.interval.coverage}%"
+    }
+  },
+  "case": {
+    "heading": "한·일 항공권, 언제 사야 할까?",
+    "codeLink": "코드 보기",
+    "problem": {
+      "heading": "문제와 데이터",
+      "body1": "인천과 도쿄(나리타·하네다), 오사카(간사이)를 오가는 {data.routes}개 노선의 항공권 가격을 {data.collectStart|date}부터 {data.collectEnd|date}까지 모았습니다.",
+      "body2": "SerpApi로 Google Flights 검색 결과를 가져오고, GitHub Actions가 매일 실행합니다. 원본 {data.rawRows}행 중 오류를 걸러 {data.filteredRows}행을 썼습니다.",
+      "body3": "가까운 출발일은 매일, 먼 출발일은 매주 한 번 수집해서 먼 구간은 데이터가 성깁니다. 지형에서 점이 듬성한 곳이 그 구간입니다."
+    },
+    "insight": {
+      "heading": "핵심 인사이트",
+      "body1": "출발이 지난 {model.realizedFlights}편의 가격을 날마다 추적했습니다. 출발 직전({model.bookingCurve.0.label})에는 같은 편 평균보다 {model.bookingCurve.0.pct|signed}% 비쌌고, {model.bookingCurve.5.label} 구간이 {model.bookingCurve.5.pct|signed}%로 가장 쌌습니다. 폭 약 {model.curveWidth}%p의 U자 곡선입니다.",
+      "body2": "하지만 가격을 더 크게 흔드는 것은 언제 사느냐보다 언제 떠나느냐였습니다. 공휴일과 주말 출발편이 지형의 봉우리로 솟아 있습니다."
+    },
+    "bubble": {
+      "heading": "R² 거품 빼기",
+      "body1": "처음 얻은 R² {model.bubble.firstR2}은 하네다 노선 하나만의 값이었습니다.",
+      "body2": "이후 직항으로 표시됐지만 실제로는 경유 여정인 행 {data.removedImplausible}개를 찾아 걸러냈습니다. MAE는 {model.bubble.maeBefore}원에서 {model.bubble.maeAfter}원으로 거의 그대로였고, R²만 {model.bubble.r2Before}에서 {model.bubble.r2After}로 내려갔습니다. 이 행들이 R² 분모의 {model.bubble.denomShare}%를 차지하고 있었습니다.",
+      "body3": "그래서 R²만 보지 않고 MAE와 데이터 무결성을 함께 봅니다. 필터 조건이 달라 지금 R²와 예전 R²를 직접 비교하지는 않습니다."
+    },
+    "validation": {
+      "heading": "검증 설계",
+      "body1": "같은 모델을 세 가지 방식으로 평가했습니다. 운영과 같은 조건인 TimeSeriesSplit을 대표값으로 씁니다.",
+      "body2": "GroupKFold로 처음 보는 출발일을 평가하자, 새 출발일에서는 lookup 통계가 기본값으로 떨어지는 학습·서비스 불일치가 드러났습니다. lookup을 넣은 서비스 구성은 R² {model.gkfWithLookup.r2}, MAE {model.gkfWithLookup.mae}원이었습니다. lookup 구성 {model.lookupVariants}가지를 각각 다시 튜닝해 비교했습니다.",
+      "table": {
+        "caption": "평가 방식별 성능",
+        "method": "평가 방식",
+        "tss": "TimeSeriesSplit (운영 기준)",
+        "gkf": "GroupKFold (처음 보는 출발일, lookup 없이)",
+        "kfold": "K-Fold (참고 상한)",
+        "maeUnit": "원"
+      }
+    },
+    "interval": {
+      "heading": "예측 구간 보정",
+      "body1": "가격 하나만 내놓지 않고 {model.interval.level}% 예측 구간을 함께 냅니다.",
+      "body2": "고정된 구간은 최근 데이터일수록 실제 포함률이 {model.interval.driftLow}%까지 떨어졌습니다. 분포가 이동하는 추세를 반영해 구간 폭을 고르도록 바꿨고, 가장 최근 구간에서 {model.interval.coverage}%를 포함했습니다."
+    },
+    "limits": {
+      "heading": "한계와 다음 단계",
+      "body1": "같은 편의 직전 관측가를 그대로 쓰는 단순 기준선의 MAE는 {model.baselineMae}원으로, 모델({model.tss.mae}원)과 거의 차이가 없습니다.",
+      "body2": "추천은 {model.reco.buyNow}%가 '지금 구매'입니다. 실제 가격을 추적해 보니 출발 두 달 안쪽에서는 기다리면 평균적으로 손해였고, 모델도 같은 방향이었습니다.",
+      "body3": "다음 단계는 같은 편의 최근 관측가를 피처로 넣어 기준선을 넘는 것입니다."
+    }
+  },
+  "stack": {
+    "heading": "기술 스택",
+    "collect": { "title": "수집", "body": "Python · SerpApi · requests · tenacity · GitHub Actions" },
+    "external": { "title": "외부 데이터", "body": "yfinance(원/엔 환율) · workalendar(한·일 공휴일) · 유가" },
+    "model": { "title": "모델", "body": "NeuralProphet · XGBoost · Optuna · 분위수 회귀 · SHAP" },
+    "serve": { "title": "서비스·품질", "body": "Streamlit · Plotly · pytest(테스트 파일 {model.testFiles}개)" }
+  },
+  "contact": {
+    "heading": "연락처",
+    "passenger": "탑승객",
+    "email": "이메일",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "resume": "이력서 PDF",
+    "resumePending": "준비 중",
+    "emailFallback": "이메일은 JavaScript를 켜면 보입니다"
+  },
+  "summary": {
+    "title": "30초 요약",
+    "close": "닫기",
+    "resultsHeading": "대표 프로젝트: 한·일 항공권 가격 예측",
+    "r1": "한·일 항공권 {data.filteredRows}행을 직접 수집·정제",
+    "r2": "운영 기준(TimeSeriesSplit) R² {model.tss.r2}, MAE {model.tss.mae}원",
+    "r3": "{model.interval.level}% 예측 구간의 실제 포함률 {model.interval.coverage}%"
+  },
+  "notFound": { "title": "페이지를 찾을 수 없습니다", "home": "첫 화면으로" }
+}

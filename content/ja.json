@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "title": "崔夏林（チェ・ハリム）— MLエンジニア ポートフォリオ",
+    "description": "日韓の航空券価格を自ら収集し、予測モデルを構築・検証した過程をまとめました。"
+  },
+  "nav": {
+    "skip": "本文へスキップ",
+    "resume": "履歴書",
+    "resumePending": "履歴書準備中",
+    "summary": "30秒で分かる要約",
+    "language": "言語"
+  },
+  "langHint": { "offer": "日本語で見る →", "dismiss": "閉じる" },
+  "hero": {
+    "nameSub": "崔夏林（チェ・ハリム）",
+    "role": "ML ENGINEER",
+    "keywords": "時系列予測 · モデル検証 · データパイプライン"
+  },
+  "about": {
+    "heading": "自己紹介",
+    "education": "水原大学 コンピュータソフトウェア学科 · {profile.graduation|month}卒業見込み",
+    "body1": "日韓の航空券価格を毎日自動収集し、そのデータで価格予測モデルを構築しました。",
+    "body2": "スコアより先に評価方法が正しいかを確認し、その過程で膨らんだR²を二度修正しました。",
+    "body3": "予測値とあわせて、どこまで信頼できる範囲かも示すようにしました。",
+    "skillsHeading": "主なスキル",
+    "skills": {
+      "collection": "収集の自動化 — GitHub Actionsが毎日価格を収集し、CSVを自動コミット",
+      "modeling": "時系列モデリング — 路線別NeuralProphetトレンド + XGBoost残差学習、Optunaで{model.optunaTrials}回チューニング",
+      "validation": "検証設計 — TimeSeriesSplit・GroupKFold・K-Foldの比較でリーク（漏れ）を確認",
+      "interval": "予測区間の補正 — {model.interval.level}%区間の実際のカバー率{model.interval.coverage}%"
+    }
+  },
+  "case": {
+    "heading": "日韓航空券、いつ買うべきか？",
+    "codeLink": "コードを見る",
+    "problem": {
+      "heading": "課題とデータ",
+      "body1": "仁川と東京（成田・羽田）、大阪（関西）を結ぶ{data.routes}路線の航空券価格を、{data.collectStart|date}から{data.collectEnd|date}まで収集しました。",
+      "body2": "SerpApi経由でGoogle Flightsの検索結果を取得し、GitHub Actionsが毎日実行します。元データ{data.rawRows}行のうち、エラーを除いて{data.filteredRows}行を使用しました。",
+      "body3": "近い出発日は毎日、遠い出発日は週に一回収集したため、遠い区間はデータがまばらです。地形上で点が少ない場所がその区間です。"
+    },
+    "insight": {
+      "heading": "主なインサイト",
+      "body1": "出発済みの{model.realizedFlights}便の価格を日次で追跡しました。出発直前（{model.bookingCurve.0.label}）は同じ便の平均より{model.bookingCurve.0.pct|signed}%高く、{model.bookingCurve.5.label}の区間が{model.bookingCurve.5.pct|signed}%で最も安くなりました。幅は約{model.curveWidth}ポイントのU字カーブです。",
+      "body2": "ただし価格をより大きく動かすのは、いつ買うかよりいつ出発するかでした。祝日や週末出発の便は地形上で山として現れます。"
+    },
+    "bubble": {
+      "heading": "R²の水増しを取り除く",
+      "body1": "最初に得たR² {model.bubble.firstR2}は、羽田路線単体の値でした。",
+      "body2": "その後、直行と表示されていても実際には経由便だった行を{data.removedImplausible}件見つけて除外しました。MAEは{model.bubble.maeBefore}ウォンから{model.bubble.maeAfter}ウォンとほとんど変わらず、R²だけが{model.bubble.r2Before}から{model.bubble.r2After}に下がりました。これらの行がR²の分母の{model.bubble.denomShare}%を占めていました。",
+      "body3": "そのためR²だけでなく、MAEとデータの整合性をあわせて確認します。フィルタ条件が異なるため、今のR²と以前のR²を直接比較していません。"
+    },
+    "validation": {
+      "heading": "検証設計",
+      "body1": "同じモデルを三つの方法で評価しました。運用と同じ条件のTimeSeriesSplitを代表値として使います。",
+      "body2": "GroupKFoldで未知の出発日を評価すると、新しい出発日ではlookup統計量がデフォルト値になってしまう学習・提供間の不一致が見つかりました。lookupを含めた本番相当の構成では、R² {model.gkfWithLookup.r2}、MAE {model.gkfWithLookup.mae}ウォンでした。lookup構成{model.lookupVariants}通りをそれぞれ再チューニングして比較しました。",
+      "table": {
+        "caption": "評価方法別の性能",
+        "method": "評価方法",
+        "tss": "TimeSeriesSplit（運用基準）",
+        "gkf": "GroupKFold（未知の出発日、lookupなし）",
+        "kfold": "K-Fold（参考上限）",
+        "maeUnit": "ウォン"
+      }
+    },
+    "interval": {
+      "heading": "予測区間の補正",
+      "body1": "価格を一つだけ出すのではなく、{model.interval.level}%の予測区間もあわせて出力します。",
+      "body2": "固定した区間は、最近のデータほど実際のカバー率が{model.interval.driftLow}%まで低下していました。分布のシフト傾向を反映して区間幅を調整し、直近の区間で{model.interval.coverage}%をカバーしました。"
+    },
+    "limits": {
+      "heading": "限界と次のステップ",
+      "body1": "同じ便の直近観測価格をそのまま使う単純な基準線のMAEは{model.baselineMae}ウォンで、モデル（{model.tss.mae}ウォン）とほとんど差がありません。",
+      "body2": "推薦の{model.reco.buyNow}%が「今すぐ購入」です。実際の価格を追跡すると、出発から二か月以内では待つと平均的に損をしており、モデルも同じ方向を示していました。",
+      "body3": "次のステップは、同じ便の直近観測価格を特徴量として追加し、基準線を上回ることです。"
+    }
+  },
+  "stack": {
+    "heading": "技術スタック",
+    "collect": { "title": "収集", "body": "Python · SerpApi · requests · tenacity · GitHub Actions" },
+    "external": { "title": "外部データ", "body": "yfinance（円/ウォン為替）· workalendar（日韓の祝日）· 原油価格" },
+    "model": { "title": "モデル", "body": "NeuralProphet · XGBoost · Optuna · 分位点回帰 · SHAP" },
+    "serve": { "title": "提供・品質", "body": "Streamlit · Plotly · pytest（テストファイル{model.testFiles}件）" }
+  },
+  "contact": {
+    "heading": "連絡先",
+    "passenger": "搭乗者",
+    "email": "メール",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "resume": "履歴書PDF",
+    "resumePending": "準備中",
+    "emailFallback": "メールアドレスの表示にはJavaScriptが必要です"
+  },
+  "summary": {
+    "title": "30秒で分かる要約",
+    "close": "閉じる",
+    "resultsHeading": "代表プロジェクト：日韓航空券価格予測",
+    "r1": "日韓航空券{data.filteredRows}行を自ら収集・整備",
+    "r2": "運用基準（TimeSeriesSplit）R² {model.tss.r2}、MAE {model.tss.mae}ウォン",
+    "r3": "{model.interval.level}%予測区間の実際のカバー率{model.interval.coverage}%"
+  },
+  "notFound": { "title": "ページが見つかりません", "home": "トップへ戻る" }
+}
