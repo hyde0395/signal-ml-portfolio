@@ -1,5 +1,14 @@
 // 3D 가능 여부: 스펙 §9.1 대체 화면 조건(움직임 줄이기, WebGL 없음, 메모리 2GB 이하).
 // 프레임 저하에 따른 전환은 TerrainScene이 실행 중에 따로 판단한다.
+import { FIGURE_KEYS, type FigureKey } from '@/components/sections/ChapterFigure';
+
+// ?capture=<장면>은 대체 이미지 캡처 스크립트 전용이다. 대체 이미지가 있는 다섯 장면 이름만 받는다.
+// 왜: 틀린 값(?capture=bogus)이 그대로 장면 표를 찾으면 undefined로 3D가 죽어 페이지가 비었고,
+// 아무 값이나 움직임 줄이기 설정을 건너뛰게 해서도 안 된다.
+export function parseCapture(search: string): FigureKey | null {
+  const v = new URLSearchParams(search).get('capture');
+  return v !== null && (FIGURE_KEYS as readonly string[]).includes(v) ? (v as FigureKey) : null;
+}
 export type Env = { reducedMotion: boolean; webgl: boolean; deviceMemory: number | undefined; forced: boolean };
 
 export function canRender3D(env: Env): boolean {
@@ -30,6 +39,6 @@ export function detectEnv(win: Window): Env {
     webgl,
     // deviceMemory는 크롬 계열에만 있다. 없으면 undefined로 두고 3D를 허용한다.
     deviceMemory: (win.navigator as Navigator & { deviceMemory?: number }).deviceMemory,
-    forced: new URLSearchParams(win.location.search).has('capture'),
+    forced: parseCapture(win.location.search) !== null, // 올바른 캡처 장면일 때만 강제로 3D
   };
 }
