@@ -10,6 +10,12 @@ describe('site metadata', () => {
     expect(siteUrl().href).toBe('https://signal.vercel.app/');
   });
 
+  it('Vercel 빌드인데 운영 주소가 없으면 조용히 localhost로 넘어가지 않고 던진다', () => {
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('VERCEL_PROJECT_PRODUCTION_URL', '');
+    expect(() => siteUrl()).toThrow(/VERCEL_PROJECT_PRODUCTION_URL/);
+  });
+
   it('언어별 canonical과 hreflang', () => {
     const m = buildMetadata('en');
     expect(m.alternates?.canonical).toBe('/en/');

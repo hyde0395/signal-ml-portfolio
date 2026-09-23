@@ -8,7 +8,18 @@ export const LAUNCHED = false;
 
 export function siteUrl(): URL {
   const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  return new URL(host ? `https://${host}` : 'http://localhost:3000');
+  if (!host) {
+    // Vercel 빌드인데 운영 주소가 없으면 localhost로 조용히 넘어가지 않고 바로 실패시킨다.
+    // (로컬 빌드에서는 VERCEL이 안 잡혀 있으니 그대로 localhost로 진행한다.)
+    if (process.env.VERCEL) {
+      throw new Error(
+        'VERCEL_PROJECT_PRODUCTION_URL이 없습니다. Vercel 빌드에서 canonical/hreflang 주소를 만들 수 없습니다. ' +
+          '(VERCEL_PROJECT_PRODUCTION_URL is missing on a Vercel build; cannot build canonical/hreflang URLs.)',
+      );
+    }
+    return new URL('http://localhost:3000');
+  }
+  return new URL(`https://${host}`);
 }
 
 export function buildMetadata(locale: Locale, launched = LAUNCHED): Metadata {
