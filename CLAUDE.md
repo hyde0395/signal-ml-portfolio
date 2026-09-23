@@ -6,7 +6,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 현재 진행 상태 (2026-09-24 기준)
 
-설계 완료. 계획 1 완료·배포. 계획 3은 구현·최종 검토까지 끝났고 **최종 검토 수정 대기**(아래).
+설계 완료. 계획 1 완료·배포. 계획 3 완료(main 병합 대기). 다음은 계획 2(데모).
 
 | 단계 | 상태 |
 |---|---|
@@ -22,7 +22,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 스펙 문서 작성 (`docs/superpowers/specs/2026-09-23-portfolio-design.md`) → 사용자 검토 | ✅ 승인 |
 | 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감), 순서는 1 → 3 → 2 → 4 | — |
 | 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
-| 계획 3: 3D 지형 | 🔧 작업 10개 완료 · 최종 검토 "수정 후 병합" 판정 · **수정 대기** · branch `plan-3-terrain`(GitHub에 push됨, main 미병합) |
+| 계획 3: 3D 지형 | ✅ 구현·최종 검토·수정 완료 2026-09-24 · branch `plan-3-terrain`(push됨) · **PR로 CI 확인 후 main 병합 대기** |
 | 계획 2(데모) 계획서 작성 | ⏳ **다음** — `superpowers:writing-plans` → 사용자 검토 → 실행 |
 | 계획 4: 연출·마감 | ⏳ 예정 |
 
@@ -31,13 +31,13 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 ### 다음 세션 할 일 (순서대로)
 
 1. ✅ **결정됨(2026-09-24): 예약 곡선은 A — 날마다 표본 수만큼 점을 진하게/크게.** 먼 출발일(dtd 61~90)은 표본이 41~13,392건으로 들쭉날쭉해 값이 튀므로, 데이터를 빼지 않고 표본이 적은 날을 흐리고 작게 그려 불확실성을 보여 준다. 스펙 §5.2에 기록
-2. **계획 3 최종 검토 수정 (한 번에)** — branch `plan-3-terrain`에서. ⏳ 2026-09-24 맥미니에서 진행 중 → 끝나면 이 줄을 ✅로 바꾸고 push. **push 전에는 다른 기기에서 이 브랜치를 고치지 않는다**
+2. ✅ **계획 3 최종 검토 수정 완료 (2026-09-24, 맥미니)** — 재검토 통과, `plan-3-terrain`에 push됨. **남은 일: PR로 CI 확인 → main 병합 → Vercel 배포 확인** (아래 목록은 기록용)
    - ① `?capture=` 값을 `FIGURE_KEYS`에 있는 것만 받기 + `<TerrainScene>`을 에러 경계로 감싸 오류 시 `onFail('error')`(지금은 `/?capture=zzz`로 페이지 전체가 사라짐). e2e: `/?capture=bogus`에서도 h1·본문이 보인다
    - ② 3D 켜진 상태 글자 대비: 첫 화면(`.hero-sub`, `.hero-keywords`)과 `#case` 제목·도입에도 반투명 배경(또는 text-shadow). axe `color-contrast`가 그라데이션 위 글자를 "incomplete"로 넘겨 실제로 검사 못 하므로 테스트를 정직하게 고치기
    - ③ 휴대폰 3-2(insight) 카메라를 훨씬 가까이(지금 z≈64로 곡선이 거의 안 보임). Pixel 7 폭으로 확인
    - ④ 프레임 저하 감지를 이동 평균(EMA/2초 창)으로 — 빠른 프레임 하나에 초기화되는 문제
    - ⑤ 1번 결정 반영(셰이더/데이터가 바뀌면 `npm run build && npm run fallbacks`로 대체 이미지 다시 생성)
-   - 싸게 같이: 청크 테스트를 `index.html`·`en/`·`ja/` 모두로, 캡처 스크립트 `browser.close`를 finally로, 문서 경로 오타(README·스펙 §5.3의 `src/sections/ChapterFigure.tsx` → `src/components/sections/`), 스펙 §5.2에 curve 레이어·§5.3 대체 이미지 5장·§3의 3-5 띠는 계획 2로 이동 기록, `scenes.ts:27` 오래된 주석, 3D 청크 실제 크기(gzip 334KB) 스펙에 기록
+   - 싸게 같이: 청크 테스트를 `index.html`·`en/`·`ja/` 모두로, 캡처 스크립트 `browser.close`를 finally로, 문서 경로 오타(README·스펙 §5.3의 `src/sections/ChapterFigure.tsx` → `src/components/sections/`), 스펙 §5.2에 curve 레이어·§5.3 대체 이미지 5장·§3의 3-5 띠는 계획 2로 이동 기록, `scenes.ts:27` 오래된 주석, 3D 청크 실제 크기 스펙에 기록(측정 결과 gzip 약 245KB로 목표 안)
    - 수정 후: 한 번 재검토 → **CI 확인은 PR로**(CI는 main push/PR에서만 돈다. 헤드리스 swiftshader가 느리면 3D가 꺼질 수 있음) → main 병합 → Vercel 자동 배포 확인
 3. **계획 2(데모) 계획서 작성 → 실행** (`superpowers:writing-plans`, 실행은 subagent-driven). 스펙 §6 + "데모·배포·성능·접근성" 절 기준. 담을 것:
    - `scripts/export_demo.py`: `v2_predictor.pkl` + `recommend_action()`로 기준일 2026-09-22, 6개 노선 × LCC/FSC × 출발일 D+3~90의 예측가·q10·q90·추천(BUY_NOW/DROP_EXPECTED/WAIT)·**이유 코드와 값**(문장 아님, 예: `{"action":"DROP_EXPECTED","bestDay":30,"bestPrice":171000,"savingPct":-8.7,"confidence":"medium"}`). 대표 편 = 최근 3주 관측 50건 이상. 대표 편 없는 조합은 `null`. 출력 `public/data/demo.<기준일>.json`, gzip ≤500KB(넘으면 출발일을 주 단위로). 모델 실행 전 항공권 저장소 iCloud 워밍, NeuralProphet 로그는 `redirect_stdout`로 억제
@@ -50,7 +50,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 로딩 화면 `LOADING 242,874 ROWS` 플립 카운터(최대 1.2초, 같은 세션 재방문 시 생략), 플립 글자판(글자당 약 40ms, 0.8초 이내), 텍스트 리빌(단어 단위, 0.9초, 단어당 60ms), 이징 `cubic-bezier(.16,1,.3,1)` 하나, bounce 금지
    - GSAP ScrollTrigger + Lenis(지금 카메라는 가벼운 스크롤 감지+감쇠). 움직임 줄이기에서는 모두 끔
    - 언어별 링크 미리보기(OG) 이미지, Vercel Web Analytics(다운로드 버튼에 이벤트 자리만)
-   - 용량 검사 스크립트(초기 JS gzip ≤150KB — 지금 약 176KB라 줄여야 함, 3D 청크 목표 ≈250KB — 지금 334KB), Lighthouse 모바일 ≥90, LCP ≤2.5s, CLS <0.1
+   - 용량 검사 스크립트(초기 JS gzip ≤150KB — 지금 약 176KB라 줄여야 함, 3D 청크 목표 ≈250KB — 지금 약 245KB(통과)), Lighthouse 모바일 ≥90, LCP ≤2.5s, CLS <0.1
    - 공개 전환: `src/lib/site.ts`의 `LAUNCHED = true`(noindex·robots 해제)
    - 남겨 둔 작은 지적들(계획 1·3 최종 검토 분류표의 "나중에" 항목) 중 방문자에게 보이는 것 정리
 5. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`, 파일명 `CHOI_HALIM_resume_<언어>.pdf`로 내려받아짐), LinkedIn 주소(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체, 커밋 이메일 noreply 확인)
