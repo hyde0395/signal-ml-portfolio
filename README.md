@@ -1,6 +1,6 @@
 # SIGNAL — ML Engineer Portfolio
 
-CHOI HALIM(최하림)의 ML 엔지니어 포트폴리오 사이트입니다. 대표 프로젝트인 한·일 항공권 가격 예측(`airfare-forecasting-ml`)을 실제 수집 데이터로 만든 3D 가격 지형 위에서 설명합니다.
+CHOI HALIM(최하림)의 ML 엔지니어 포트폴리오 사이트입니다. 대표 프로젝트인 한·일 항공권 가격 예측(`airfare-forecasting-ml`)을 실제 수집 데이터로 만든 3D 가격 지형(계획 3에서 추가 예정) 위에서 설명합니다.
 
 - 사이트: (배포 후 기록)
 - 언어: 한국어 `/` · English `/en/` · 日本語 `/ja/`
@@ -24,6 +24,8 @@ CHOI HALIM(최하림)의 ML 엔지니어 포트폴리오 사이트입니다. 대
 - `export_facts.py`는 다시 센 행 수가 모델 학습 행 수와 다르면 멈춥니다.
 
 ## 실행
+
+Node 24 (`.nvmrc`)
 
 ```bash
 npm ci
