@@ -10,9 +10,24 @@ const KEYS = ['hero', 'problem', 'insight', 'bubble', 'interval'];
 const PORT = 4174; // e2e(4173)와 겹치지 않게
 const server = spawn('npx', ['serve', 'out', '-l', String(PORT), '--no-clipboard'], { stdio: 'ignore' });
 
+// 고정 대기(예전 1.5초) 대신 서버가 실제로 200을 돌려줄 때까지 기다린다. 느린 기기에서는 1.5초 안에
+// 서버가 안 떠서 첫 캡처가 실패했고, 빠른 기기에서는 괜히 기다렸다.
+async function waitForServer(url, timeoutMs = 15_000) {
+  const until = Date.now() + timeoutMs;
+  while (Date.now() < until) {
+    try {
+      const res = await fetch(url);
+      if (res.status === 200) return;
+    } catch { /* 아직 안 떴음 */ }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  throw new Error(`${url}이(가) ${timeoutMs / 1000}초 안에 응답하지 않았다`);
+}
+
+let browser;
 try {
-  await new Promise((r) => setTimeout(r, 1500));
-  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  await waitForServer(`http://localhost:${PORT}/`);
+  browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
   await mkdir('public/fallback', { recursive: true });
   for (const key of KEYS) {
@@ -34,7 +49,8 @@ try {
       .toFile(`public/fallback/${key}.webp`);
     console.log(`fallback/${key}.webp`);
   }
-  await browser.close();
 } finally {
+  // 캡처 도중 실패해도 브라우저와 서버 프로세스가 남지 않게 한다
+  await browser?.close();
   server.kill();
 }
