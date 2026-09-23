@@ -20,14 +20,18 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 작업 폴더 이동 | ✅ `~/dev/signal-ml-portfolio` (iCloud 밖) |
 | 설계 4/4: 데모·배포·성능·접근성·다국어·콘텐츠 | ✅ 승인 |
 | 스펙 문서 작성 (`docs/superpowers/specs/2026-09-23-portfolio-design.md`) → 사용자 검토 | ✅ 승인 |
-| 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감) | 계획 1 작성 완료 (`docs/superpowers/plans/2026-09-23-plan-1-foundation.md`), ⏳ **사용자 검토 + 실행 방식 선택 대기** |
+| 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감), 순서는 1 → 3 → 2 → 4 | — |
+| 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
+| 계획 3: 3D 지형 | ⏳ **다음 세션은 여기서 시작** — `superpowers:writing-plans`로 계획서 작성 → 사용자 검토 → 실행(계획 1은 subagent-driven으로 실행했다) |
+| 계획 2: 데모 → 계획 4: 연출·마감 | ⏳ 예정 |
 
 **다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
 
 ### 다음 세션 할 일 (순서대로)
 
-1. 계획 1 사용자 검토 → 실행 방식(Subagent-driven / Native) 선택 → 실행
-2. 계획 1 완료 후 **계획 3(3D 지형)을 먼저** 작성·실행 → 계획 2(데모) → 계획 4 (2026-09-23 사용자 결정: 지형을 먼저 보고 싶음. 두 계획은 서로 의존하지 않는다)
+1. **계획 3(3D 지형) 계획서 작성** (`docs/superpowers/plans/`): 스펙 §5, §8.3, §9.1 — `export_terrain.py`, R3F 캔버스·셰이더, 챕터별 카메라(섹션의 `data-section`/`data-chapter` 사용), 9,387점 떨어져 나가기, q10~q90 띠, 모바일 카메라, 대체 WebP 캡처 스크립트. 사용자 결정(2026-09-23): 지형을 먼저 보고 싶어서 계획 2보다 먼저 한다.
+2. 그다음 계획 2(데모), 계획 4(연출·마감, 공개 시 `LAUNCHED = true`)
+3. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개, LinkedIn, 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체)
 
 ## 확정된 결정
 
