@@ -9,7 +9,8 @@
 :root:lang(ja) { --font-text: var(--font-jp), 'Pretendard Variable', system-ui, sans-serif; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { background: var(--bg); color-scheme: dark; }
+/* 고정(sticky) 헤더 높이만큼 스크롤 여백을 둬서, #id로 앵커 이동할 때 헤더가 제목을 가리지 않게 한다. */
+html { background: var(--bg); color-scheme: dark; scroll-padding-top: 72px; }
 body {
   min-height: 100vh; color: var(--tx); font-family: var(--font-text); line-height: 1.7;
   background: radial-gradient(120% 80% at 70% 0%, var(--bg2), var(--bg) 60%) fixed;
