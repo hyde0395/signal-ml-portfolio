@@ -63,7 +63,7 @@
 | 3-2 | 핵심 인사이트 | U자 곡선(골짜기), 공휴일 봉우리 |
 | 3-3 | R² 거품 빼기 | 잘못 매칭된 9,387개 점이 떨어져 나가는 연출 |
 | 3-4 | 검증 설계 | 평가 방식 3종 비교 |
-| 3-5 | 예측 구간 보정 | q10~q90 띠 연출 |
+| 3-5 | 예측 구간 보정 | q10~q90 띠 연출 (띠는 모델 예측 구간이 필요해 계획 2(데모 데이터)로 옮김. 계획 3에서는 지형을 비스듬히 보는 장면만) |
 | 3-6 | 한계와 다음 단계 | 단순 기준선과 MAE 차이가 작다는 점을 **먼저** 밝힙니다 |
 | 4 | 인터랙티브 데모 | §6 |
 | 5 | 기술 스택 | 파이프라인 도식 |
@@ -142,7 +142,7 @@
 
 **구현 결과**
 
-`src/three/` 모듈 (data.ts, scenes.ts, activeScene.ts, capability.ts, shaders.ts, TerrainPoints.tsx, CameraRig.tsx, TerrainScene.tsx)과 `src/components/Backdrop.tsx`, `src/sections/ChapterFigure.tsx`로 구성. 3D는 첫 화면 텍스트가 뜬 뒤 지연 로딩되며, `<html data-3d="on|off">` 속성으로 접근성 대체 처리(reduced-motion / WebGL 미지원 / 저사양 / 프레임 저하)를 이루어낸다. 네 개 장면: 신호가 잡음에서 떠오르는 첫 화면 / 한·일 해안선 + 노선 궤적(3-1) / 측면 U자 곡선 + 실측 예약 곡선 시각화(3-2) / 제거된 점 계층이 떨어져 내려오는 연출(3-3). 재학습 후: `npm run facts` → `npm run terrain` → `npm run build` → `npm run fallbacks` 순서로 데이터 갱신 및 대체 WebP 이미지 캡처 후 커밋.
+`src/three/` 모듈 (data.ts, scenes.ts, activeScene.ts, capability.ts, shaders.ts, TerrainPoints.tsx, CameraRig.tsx, TerrainScene.tsx)과 `src/components/Backdrop.tsx`, `src/components/sections/ChapterFigure.tsx`(3D를 못 쓸 때의 정적 대체 이미지)로 구성. 3D는 첫 화면 텍스트가 뜬 뒤 지연 로딩되며, `<html data-3d="on|off">` 속성으로 접근성 대체 처리(reduced-motion / WebGL 미지원 / 저사양 / 프레임 저하)를 이루어낸다. 대체 이미지는 다섯 장(`public/fallback/*.webp`): 신호가 잡음에서 떠오르는 첫 화면(hero) / 한·일 해안선 + 노선 궤적(3-1 problem) / 측면 U자 곡선 + 실측 예약 곡선(3-2 insight) / 제거된 점 계층이 떨어지기 전(3-3 bubble) / 예측 구간 보정 챕터의 지형(3-5 interval). 재학습 후: `npm run facts` → `npm run terrain` → `npm run build` → `npm run fallbacks` 순서로 데이터 갱신 및 대체 WebP 이미지 캡처 후 커밋.
 
 ---
 
@@ -247,7 +247,7 @@ interface ForecastSource {
 |---|---|
 | LCP | 중급 휴대폰 4G에서 2.5초 이하 |
 | 초기 JS (3D 제외) | gzip 150KB 이하 |
-| 3D 코드 묶음 | gzip 약 250KB |
+| 3D 코드 묶음 | gzip 약 250KB (실측 2026-09-24: 지연 청크 1개, gzip 약 245KB = 244,928B, three·R3F·zod·장면 코드 포함) |
 | `terrain.json` / `demo.json` | gzip 300KB / 500KB 이하 |
 | CLS | 0.1 미만 |
 | 프레임 | 데스크톱 60fps, 모바일 30fps 이상 |

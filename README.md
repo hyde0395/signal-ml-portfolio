@@ -17,7 +17,7 @@ CHOI HALIM(최하림)의 ML 엔지니어 포트폴리오 사이트입니다. 대
 | `scripts/capture-fallbacks.mjs` | 실제 3D 장면을 캔버스에서 WebP로 캡처 (무장애·저사양 대체) → `public/fallback/` |
 | `src/three/` | 3D 장면, 셰이더, 카메라 제어, 데이터 로딩 |
 | `src/components/Backdrop.tsx` | 고정 3D 캔버스 |
-| `src/sections/ChapterFigure.tsx` | 장면별 3D 렌더 지점 |
+| `src/components/sections/ChapterFigure.tsx` | 3D를 쓸 수 없을 때 챕터에 보이는 정적 대체 이미지(장면 5개, 3개 언어 대체 텍스트) |
 | `src/lib/i18n.ts` | 자리표시 해석과 언어별 숫자·날짜 표기 |
 | `app/(ko|en|ja)` | 언어별 root layout, 정적 export |
 
