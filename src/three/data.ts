@@ -17,8 +17,8 @@ export const terrainSchema = z.object({
 });
 export const mapSchema = z.object({
   bbox: z.array(z.number()).length(4),
-  coast: ints,
-  routes: z.array(z.object({ from: z.string(), to: z.string(), pts: ints })),
+  coast: ints.min(4), // buildPointCloud에서 k / (length - 1)로 나누고 순환 배정하므로 최소 2 점(4개 원소) 필요
+  routes: z.array(z.object({ from: z.string(), to: z.string(), pts: ints.min(4) })),
   airports: z.array(z.object({ code: z.string(), lon: z.number(), lat: z.number() })),
 });
 export type Terrain = z.infer<typeof terrainSchema>;

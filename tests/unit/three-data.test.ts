@@ -70,4 +70,9 @@ describe('loadSceneData', () => {
     const fetcher = vi.fn(() => ok({ nope: true }));
     await expect(loadSceneData('2026-09-22', fetcher as unknown as typeof fetch)).rejects.toThrow();
   });
+  it('coast가 비어 있으면 reject (buildPointCloud에서 NaN 방지)', async () => {
+    const badMap = { ...map, coast: [] };
+    const fetcher = vi.fn((url: string) => ok(url.includes('terrain') ? terrain : badMap));
+    await expect(loadSceneData('2026-09-22', fetcher as unknown as typeof fetch)).rejects.toThrow();
+  });
 });
