@@ -22,8 +22,16 @@ describe('sceneFor', () => {
   });
   it('다른 장면은 drop 0', () => expect(sceneFor('insight', 0.9, false).drop).toBe(0));
   it('세로 화면은 카메라가 목표점에서 1.6배 멀다', () => {
-    const land = sceneFor('insight', 0, false), port = sceneFor('insight', 0, true);
+    // problem·insight는 세로 화면 전용 카메라(PORTRAIT_OVERRIDE)를 따로 써서 이 배율 규칙을 안 따르므로,
+    // 오버라이드가 없는 키(hero)로 일반 규칙을 검사한다.
+    const land = sceneFor('hero', 0, false), port = sceneFor('hero', 0, true);
     const dist = (s: typeof land) => Math.hypot(...s.camera.map((v, i) => v - s.target[i]));
     expect(dist(port) / dist(land)).toBeCloseTo(1.6, 5);
+  });
+  it('problem·insight는 세로 화면에서 목표점(target)도 가운데로 되돌아간다', () => {
+    // 데스크톱은 왼쪽 글 카드를 피해 x를 -4.5로 밀지만, 세로 화면은 카드가 아래에 있어 밀 필요가 없다
+    expect(sceneFor('problem', 0, true).target).toEqual([0, 0, 0]);
+    expect(sceneFor('insight', 0, true).target).toEqual([0, 0.3, 0]);
+    expect(sceneFor('problem', 0, false).target).toEqual([-4.5, 0, 0]);
   });
 });
