@@ -10,9 +10,10 @@ export type SceneState = {
   noise: number;    // 흐린 잡음 점의 불투명도 배율
   removed: number;  // 제거 레이어(9,387행) 보이기
   drop: number;     // 제거 레이어가 떨어진 정도
+  curve: number;    // 예약 곡선 레이어(kind 3) 보이기 — 3-2(insight)에서만 1
 };
 
-const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0 };
+const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, curve: 0 };
 
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 비스듬히 내려다본 전경. 처음엔 assemble이 0에서 시작해 신호가 떠오른다(TerrainPoints 초기값).
@@ -24,8 +25,14 @@ export const SCENES: Record<SceneKey, SceneState> = {
   // 3-2: 출발일 축(z)을 따라 옆에서 본 시점 → 예약 시점(x)별 가격 %가 거의 그대로 높이로 읽힌다.
   // camera.x와 target.x를 같게 두면 회전 없이 옆으로만 밀 수 있어 U자 모양이 비뚤어지지 않는다.
   // 26에서는 점이 뭉쳐 밀도만 보이고 높이 차는 안 읽혀서 15로 붙이고 target.y를 실측 평균(-11%~+1%대)에 맞춤.
-  // 잡음(칸×노선×등급 평균, 2만4천여 개)이 신호(칸 평균, 2천여 개) 위에 겹쳐 골짜기를 가려 noise를 0.22로 낮춤
-  insight: { ...base, camera: [-4.5, 1.2, 15], target: [-4.5, 0.1, 0], noise: 0.22 },
+  // 잡음(칸×노선×등급 평균, 2만4천여 개)이 신호(칸 평균, 2천여 개) 위에 겹쳐 골짜기를 가려 noise를 0.22로 낮춤.
+  // curve: 1 — 예약 곡선(kind 3, z=+10.5)은 지형(z 최대 10)보다 카메라 쪽에 있어 이 장면에서만
+  // 밝게 켜면 지형 바로 앞을 가로지르는 U자 선으로 보인다(라운드 3 결함 B).
+  // 카메라: 곡선은 dtd 0~90만 있어 x가 [-1.8, 8](데이터 x=((147-dtd)/147-0.5)*16)에 몰려 있다.
+  // 기존 거리(15)로는 곡선 쪽으로 화면이 꽉 차 대부분 프레임 밖으로 나갔다(라운드 3 1차 시도에서
+  // 실측 확인). 거리를 22로 늘리고 target.x를 곡선 쪽으로(3) 옮겨 카드를 피하면서 곡선 전체가
+  // 들어오게 했다.
+  insight: { ...base, camera: [3, 2.2, 22], target: [3, 0.4, 0], noise: 0.22, curve: 1 },
   // 3-3: 제거 레이어가 높이 떠 있다가 떨어진다(drop은 sceneFor가 진행도로 채움)
   bubble: { ...base, camera: [7, 9, 17], target: [0, 2.5, 0], removed: 1 },
   validation: { ...base, camera: [0, 22, 0.1], target: [0, 0, 0], noise: 0.5 },

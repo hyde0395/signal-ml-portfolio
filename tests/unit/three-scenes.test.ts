@@ -12,6 +12,9 @@ describe('SCENES', () => {
   it('제거 레이어는 3-3(bubble)에서만 보인다', () => {
     for (const k of KEYS) expect(SCENES[k].removed).toBe(k === 'bubble' ? 1 : 0);
   });
+  it('예약 곡선은 3-2(insight)에서만 보인다', () => {
+    for (const k of KEYS) expect(SCENES[k].curve).toBe(k === 'insight' ? 1 : 0);
+  });
 });
 
 describe('sceneFor', () => {
