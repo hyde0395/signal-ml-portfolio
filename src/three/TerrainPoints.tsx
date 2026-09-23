@@ -38,7 +38,7 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     uRemoved: { value: 0 },
     uDrop: { value: 0 },
     uTime: { value: 0 },
-    uSize: { value: 3 },
+    uSize: { value: 8 }, // 점이 너무 작아 지형이 안 보이던 문제 수정(3 → 8, shaders.ts 거리 감쇠 상수와 함께 조정)
     uDot: { value: new THREE.Color('#8FB8FF') },
     uAmber: { value: new THREE.Color('#FFB547') },
     uText: { value: new THREE.Color('#EEF3FF') },
@@ -59,7 +59,7 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     step('uDrop', t.drop);
     // 캡처 모드에서는 uTime을 0으로 고정한다. 매번 같은 시각에 찍어야 대체 이미지가 항상 똑같이 나온다
     u.uTime.value = instant ? 0 : state.clock.elapsedTime;
-    u.uSize.value = 3 * state.viewport.dpr;
+    u.uSize.value = 8 * state.viewport.dpr;
   });
 
   return (

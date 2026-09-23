@@ -31,7 +31,8 @@ export const vertexShader = /* glsl */ `
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
     float size = aKind < 0.5 ? 1.0 : (aKind < 1.5 ? 0.7 : 1.1);
-    gl_PointSize = uSize * size * (12.0 / -mv.z);
+    // 원래 12.0이었으나 첫 점검에서 점이 1~2px로 너무 작아 "지형"으로 안 읽혔다 → 20.0으로 키움
+    gl_PointSize = uSize * size * (20.0 / -mv.z);
 
     if (aKind < 0.5) vAlpha = 0.95;
     else if (aKind < 1.5) vAlpha = 0.18 * uNoise;

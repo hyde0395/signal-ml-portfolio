@@ -93,14 +93,16 @@ html[data-3d="on"] .scene-figure { display: none; }
 
 /* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 움직일 시간을 주고, 글은 반투명 카드에 담아 대비를 지킨다 */
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
-html[data-3d="on"] :is(.chapter, #about, #stack, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl) { max-width: 560px; }
-html[data-3d="on"] :is(.chapter, #about) {
+/* .pass(탑승권 카드)는 자기 배경이 있는 640px 카드라 560px 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제) */
+html[data-3d="on"] :is(.chapter, #about, #stack, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass) { max-width: 560px; }
+/* #stack·#contact도 다른 섹션과 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제) */
+html[data-3d="on"] :is(.chapter, #about, #stack, #contact) {
   background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
 }
 @media (max-width: 767px) {
   /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
   html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
-  html[data-3d="on"] :is(.chapter, #about) {
+  html[data-3d="on"] :is(.chapter, #about, #stack, #contact) {
     background: linear-gradient(0deg, rgba(7, 11, 22, 0.92) 55%, rgba(7, 11, 22, 0) 100%);
   }
 }
