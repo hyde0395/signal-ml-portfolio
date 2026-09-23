@@ -1,7 +1,8 @@
 import '@/styles/globals.css';
 import { dictionaries } from '@/lib/content';
 import { LOCALE_PATH, LOCALES } from '@/lib/i18n';
-import { baseFontVars, jp } from '@/styles/fonts';
+import { baseFontVars } from '@/styles/fonts';
+import { jp } from '@/styles/font-jp';
 
 export const metadata = { title: '404 — SIGNAL' };
 
