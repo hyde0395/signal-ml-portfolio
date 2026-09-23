@@ -103,11 +103,31 @@ def test_build_curve_centres_log_price_by_flight_like_realized_wait_analysis():
     by_dtd = dict(zip(curve["days_to_departure"], curve["pct"]))
     assert by_dtd[5] == pytest.approx(-8.7129, abs=1e-3)
     assert by_dtd[10] == pytest.approx(9.5445, abs=1e-3)
+    # n = dtd별 행 수(편 A·B가 dtd 5와 10에 하나씩) — 사이트가 표본 수로 점 밝기·크기를 정한다
+    assert dict(zip(curve["days_to_departure"], curve["n"])) == {5: 2, 10: 2}
+
+
+def test_build_curve_n_matches_row_counts_per_dtd():
+    # 같은 dtd에 편이 셋, 다른 dtd에는 하나 → n이 행 수 그대로 나와야 한다(점을 빼지 않고 가중만 한다)
+    kept = frame([
+        row(100_000, day="2026-09-20", ts="2026-09-15 09:00:00", o="ICN", d="NRT", airline="JL"),
+        row(110_000, day="2026-09-20", ts="2026-09-10 09:00:00", o="ICN", d="NRT", airline="JL"),
+        row(200_000, day="2026-09-21", ts="2026-09-16 09:00:00", o="ICN", d="KIX", cls="FSC", airline="OZ", dep="09:00"),
+        row(210_000, day="2026-09-21", ts="2026-09-06 09:00:00", o="ICN", d="KIX", cls="FSC", airline="OZ", dep="09:00"),
+        row(150_000, day="2026-09-22", ts="2026-09-17 09:00:00", o="ICN", d="HND", airline="KE"),
+        row(160_000, day="2026-09-22", ts="2026-09-12 09:00:00", o="ICN", d="HND", airline="KE"),
+    ])
+    daily = et.load_completed_daily(kept, "2026-09-22")
+    curve = et.build_curve(daily)
+    expected = daily[daily["dtd"].between(1, et.CURVE_MAX_DTD)].groupby("dtd").size().to_dict()
+    assert dict(zip(curve["days_to_departure"], curve["n"])) == expected
+    assert expected[5] == 3
+    assert sum(expected.values()) == 6
 
 
 def test_encode_curve_quantizes_and_clips():
-    curve = pd.DataFrame({"days_to_departure": [5, 10], "pct": [12.34, 999.0]})
-    assert et.encode_curve(curve) == {"dtd": [5, 10], "pct": [123, 2000]}
+    curve = pd.DataFrame({"days_to_departure": [5, 10], "pct": [12.34, 999.0], "n": [40, 3]})
+    assert et.encode_curve(curve) == {"dtd": [5, 10], "pct": [123, 2000], "n": [40, 3]}
 
 
 def test_booking_curve_buckets_matches_model_metrics_on_real_data():

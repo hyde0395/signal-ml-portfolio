@@ -4,7 +4,9 @@ import { z } from 'zod';
 
 const ints = z.array(z.number().int());
 const layer = z.object({ dtd: ints, date: ints, pct: ints });
-const curveLayer = z.object({ dtd: ints, pct: ints }); // 칸이 아니라 예약 시점 하나짜리 값이라 date가 없다
+// 칸이 아니라 예약 시점 하나짜리 값이라 date가 없다. n = 그 dtd의 행 수(표본 크기, 점 가중치에 쓴다)
+const curveLayer = z.object({ dtd: ints, pct: ints, n: z.array(z.number().int().positive()) })
+  .refine((c) => c.n.length === c.dtd.length && c.pct.length === c.dtd.length, 'curve 배열 길이가 서로 다르다');
 
 export const terrainSchema = z.object({
   asOf: z.string(),
@@ -67,21 +69,33 @@ export type PointCloud = {
   kind: Float32Array;
   holiday: Float32Array;
   route: Float32Array;
+  weight: Float32Array; // 0..1. 예약 곡선만 표본 수로 정하고, 나머지 레이어는 1
 };
+
+// 예약 곡선 점의 가중치: 표본 수 n을 로그 척도로 바꿔 가장 많은 dtd를 1로 맞춘다.
+// 왜 로그: 가까운 dtd는 매일 수집이라 행이 수천~만 개, 먼 dtd는 주 1회라 수십 개뿐이다. 선형이면
+// 몇 개의 큰 dtd만 보이고 나머지는 거의 0이 되므로, 자릿수 차이로 "믿을 만한 정도"를 나타낸다.
+// 점을 빼지 않고(사용자 결정 A) 셰이더가 이 값으로 알파와 크기를 줄여 표본이 적은 끝부분을 흐리게 한다.
+export function curveWeight(n: number, nMax: number): number {
+  if (!(nMax > 0) || !(n > 0)) return 0;
+  return Math.min(1, Math.log1p(n) / Math.log1p(nMax));
+}
 
 export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: number; seed?: number }): PointCloud {
   // 신호 → 잡음 → 제거 → 예약 곡선 순서로 한 배열에 담는다(Points 하나로 그리기 위해).
-  const rows: { dtd: number; date: number; pct: number; kind: number }[] = [];
+  const rows: { dtd: number; date: number; pct: number; kind: number; weight: number }[] = [];
   const push = (l: Terrain['signal'], kind: number, stride = 1) => {
-    for (let i = 0; i < l.pct.length; i += stride) rows.push({ dtd: l.dtd[i], date: l.date[i], pct: l.pct[i], kind });
+    for (let i = 0; i < l.pct.length; i += stride) rows.push({ dtd: l.dtd[i], date: l.date[i], pct: l.pct[i], kind, weight: 1 });
   };
   push(t.signal, 0);
   push(t.noise, 1, Math.max(1, Math.floor(opts.noiseStride)));
   push(t.removed, 2);
   // 예약 곡선(kind 3): 칸이 아니라 dtd 하나짜리 값이라 date가 없다(-1은 "해당 없음").
   // 점 하나로는 선처럼 안 보여 dtd마다 여러 점을 찍는다(x는 forEach에서 흔든다).
+  const nMax = Math.max(0, ...t.curve.n);
   for (let i = 0; i < t.curve.pct.length; i++) {
-    for (let j = 0; j < CURVE_POINTS_PER_DTD; j++) rows.push({ dtd: t.curve.dtd[i], date: -1, pct: t.curve.pct[i], kind: 3 });
+    const weight = curveWeight(t.curve.n[i], nMax);
+    for (let j = 0; j < CURVE_POINTS_PER_DTD; j++) rows.push({ dtd: t.curve.dtd[i], date: -1, pct: t.curve.pct[i], kind: 3, weight });
   }
 
   const count = rows.length;
@@ -94,6 +108,7 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     kind: new Float32Array(count),
     holiday: new Float32Array(count),
     route: new Float32Array(count),
+    weight: new Float32Array(count),
   };
 
   const coast = pairs(m.coast);
@@ -102,6 +117,7 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
 
   rows.forEach((r, i) => {
     out.kind[i] = r.kind;
+    out.weight[i] = r.weight;
     out.holiday[i] = holidays.has(r.date) ? 1 : 0;
 
     if (r.kind === 3) {

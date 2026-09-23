@@ -24,6 +24,7 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     g.setAttribute('aKind', new THREE.BufferAttribute(cloud.kind, 1));
     g.setAttribute('aHoliday', new THREE.BufferAttribute(cloud.holiday, 1));
     g.setAttribute('aRoute', new THREE.BufferAttribute(cloud.route, 1));
+    g.setAttribute('aWeight', new THREE.BufferAttribute(cloud.weight, 1));
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 30); // 흩어짐 반경까지 포함 → 잘림 방지
     return g;
   }, [cloud]);

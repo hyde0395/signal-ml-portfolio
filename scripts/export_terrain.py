@@ -104,11 +104,13 @@ def build_curve(daily: pd.DataFrame) -> pd.DataFrame:
     dtd 하나 단위로 푼 것 — 편 평균 로그가격 대비로 중심화한 값을 dtd별로 평균하고 expm1로 %로
     되돌린다. 8구간 집계(booking_curve_buckets)는 model_metrics.json의 bookingCurve와 값이 같아야
     하고, 이 함수는 3D 시각화를 위해 그 평균을 dtd 91개로 더 잘게 쪼갠 것뿐이라 같은 정의를 쓴다.
-    임의의 표본 수 임계값으로 점을 빼지 않는다(라운드 4: ad-hoc 이상치 제외 금지)."""
+    임의의 표본 수 임계값으로 점을 빼지 않는다(라운드 4: ad-hoc 이상치 제외 금지).
+    n(dtd별 행 수)도 함께 돌려준다: 먼 dtd는 표본이 적어 값이 출렁이므로, 사이트가 점을 빼는 대신
+    표본 수에 비례해 흐리고 작게 그린다(최종 리뷰 #4, 사용자 결정 A)."""
     x = _centre_log_price(daily)
-    curve = x.groupby("dtd", as_index=False)["lp_c"].mean()
+    curve = x.groupby("dtd", as_index=False)["lp_c"].agg(lp_c="mean", n="count")
     curve["pct"] = np.expm1(curve["lp_c"]) * 100
-    return curve.rename(columns={"dtd": "days_to_departure"})[["days_to_departure", "pct"]]
+    return curve.rename(columns={"dtd": "days_to_departure"})[["days_to_departure", "pct", "n"]]
 
 
 def booking_curve_buckets(daily: pd.DataFrame) -> pd.DataFrame:
@@ -123,9 +125,13 @@ def booking_curve_buckets(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 def encode_curve(curve: pd.DataFrame) -> dict[str, list[int]]:
-    """curve는 칸이 아니라 예약 시점(dtd) 하나짜리 값이라 date 열이 없다."""
+    """curve는 칸이 아니라 예약 시점(dtd) 하나짜리 값이라 date 열이 없다. n은 그 dtd의 행 수(표본 크기)."""
     pct = (curve["pct"].clip(CLIP_MIN, CLIP_MAX) * 10).round().astype(int)
-    return {"dtd": curve["days_to_departure"].astype(int).tolist(), "pct": pct.tolist()}
+    return {
+        "dtd": curve["days_to_departure"].astype(int).tolist(),
+        "pct": pct.tolist(),
+        "n": curve["n"].astype(int).tolist(),
+    }
 
 
 def build_layers(kept: pd.DataFrame, removed: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -196,6 +202,8 @@ def main() -> None:
     curve_dtd = terrain["curve"]["dtd"]
     lo_i, hi_i = curve_pct.index(min(curve_pct)), curve_pct.index(max(curve_pct))
     print(f"curve pct: min {curve_pct[lo_i]:+.1f}% at dtd={curve_dtd[lo_i]}, max {curve_pct[hi_i]:+.1f}% at dtd={curve_dtd[hi_i]}")
+    curve_n = terrain["curve"]["n"]
+    print(f"curve n: min {min(curve_n)} at dtd={curve_dtd[curve_n.index(min(curve_n))]}, max {max(curve_n)} at dtd={curve_dtd[curve_n.index(max(curve_n))]}")
 
 
 if __name__ == "__main__":

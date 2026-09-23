@@ -1,6 +1,6 @@
 // JSON → 점 좌표 변환 검사: 좌표계, 레이어 순서, 잡음 솎아내기, 공휴일·노선 표시, 로딩 실패.
 import { describe, expect, it, vi } from 'vitest';
-import { buildPointCloud, loadSceneData, mapPosition, terrainPosition, type MapData, type Terrain } from '@/three/data';
+import { buildPointCloud, curveWeight, loadSceneData, mapPosition, terrainPosition, type MapData, type Terrain } from '@/three/data';
 
 const terrain: Terrain = {
   asOf: '2026-09-22', maxDtd: 100, clip: { min: -60, max: 200 },
@@ -8,7 +8,7 @@ const terrain: Terrain = {
   signal: { dtd: [100, 0], date: [0, 2], pct: [0, 500] },
   noise: { dtd: [50, 50, 50, 50], date: [1, 1, 1, 1], pct: [10, 20, 30, 40] },
   removed: { dtd: [10], date: [1], pct: [2000] },
-  curve: { dtd: [50], pct: [-80] },
+  curve: { dtd: [50], pct: [-80], n: [40] },
 };
 const map: MapData = {
   bbox: [124.5, 30, 146, 45.6],
@@ -78,7 +78,7 @@ describe('buildPointCloud', () => {
       signal: { dtd: Array(M).fill(50), date: Array(M).fill(1), pct: Array(M).fill(0) },
       noise: { dtd: [], date: [], pct: [] },
       removed: { dtd: [], date: [], pct: [] },
-      curve: { dtd: [], pct: [] },
+      curve: { dtd: [], pct: [], n: [] },
     };
     const pc = buildPointCloud(bigTerrain, bigMap, { noiseStride: 1 });
     const MAP_SCALE = 0.75, MAP_COS = Math.cos((37.8 * Math.PI) / 180);
@@ -89,6 +89,36 @@ describe('buildPointCloud', () => {
     }
     expect(idxs.some((v) => v < N / 3)).toBe(true);
     expect(idxs.some((v) => v >= (N * 2) / 3)).toBe(true);
+  });
+});
+
+describe('curveWeight (예약 곡선 표본 수 가중치)', () => {
+  it('가장 많은 dtd는 1, 적을수록 로그 척도로 작아진다', () => {
+    expect(curveWeight(13392, 13392)).toBe(1);
+    const w41 = curveWeight(41, 13392);
+    expect(w41).toBeGreaterThan(0.35);
+    expect(w41).toBeLessThan(0.45);
+    expect(curveWeight(500, 13392)).toBeGreaterThan(w41);
+    expect(curveWeight(500, 13392)).toBeLessThan(1);
+  });
+  it('n이 0이거나 이상하면 0', () => {
+    expect(curveWeight(0, 100)).toBe(0);
+    expect(curveWeight(10, 0)).toBe(0);
+  });
+});
+
+describe('buildPointCloud 가중치', () => {
+  it('곡선 점은 표본 수로 가중치를 받고 점을 빼지 않는다, 다른 레이어는 1', () => {
+    const t2: Terrain = { ...terrain, curve: { dtd: [5, 80], pct: [100, 200], n: [10000, 40] } };
+    const pc = buildPointCloud(t2, map, { noiseStride: 1 });
+    const start = 2 + 4 + 1;
+    expect(pc.count).toBe(start + 8); // dtd 두 개 × 4점 — 표본이 적은 dtd도 그대로 남는다
+    for (let i = 0; i < start; i++) expect(pc.weight[i]).toBe(1);
+    for (let j = 0; j < 4; j++) {
+      expect(pc.weight[start + j]).toBeCloseTo(1, 6);
+      expect(pc.weight[start + 4 + j]).toBeCloseTo(curveWeight(40, 10000), 6);
+    }
+    expect(pc.weight[start + 4]).toBeLessThan(pc.weight[start]);
   });
 });
 
@@ -107,6 +137,12 @@ describe('loadSceneData', () => {
   it('형식이 틀리면 reject', async () => {
     const fetcher = vi.fn(() => ok({ nope: true }));
     await expect(loadSceneData('2026-09-22', fetcher as unknown as typeof fetch)).rejects.toThrow();
+  });
+  it('curve.n이 없거나 길이가 다르면 reject', async () => {
+    for (const curve of [{ dtd: [50], pct: [-80] }, { dtd: [50], pct: [-80], n: [] }]) {
+      const fetcher = vi.fn((url: string) => ok(url.includes('terrain') ? { ...terrain, curve } : map));
+      await expect(loadSceneData('2026-09-22', fetcher as unknown as typeof fetch)).rejects.toThrow();
+    }
   });
   it('coast가 비어 있으면 reject (buildPointCloud에서 NaN 방지)', async () => {
     const badMap = { ...map, coast: [] };
