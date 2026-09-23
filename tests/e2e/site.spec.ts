@@ -1,6 +1,6 @@
 // 빌드된 정적 사이트(out/)를 실제로 띄워 놓고 돌리는 e2e 테스트: 언어별 화면, 접근성(axe),
 // 이메일 감추기, 이력서 유무, 반응형, 공개 전 noindex 등을 확인한다.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
@@ -15,7 +15,20 @@ const PAGES = [
   { path: '/', lang: 'ko' },
   { path: '/en/', lang: 'en' },
   { path: '/ja/', lang: 'ja' },
-];
+] as const;
+
+// no-JS/이메일 테스트에서 언어별 문구(제목, 이메일 대체 문구)를 하드코딩하지 않고 content/*.json에서
+// 읽어와, 문구가 바뀌어도 이 테스트가 아니라 content.test.ts만 고치면 되게 한다.
+const content = Object.fromEntries(
+  PAGES.map(({ lang }) => [
+    lang,
+    JSON.parse(readFileSync(fileURLToPath(new URL(`../../content/${lang}.json`, import.meta.url)), 'utf-8')),
+  ]),
+) as Record<(typeof PAGES)[number]['lang'], { case: { heading: string }; contact: { emailFallback: string } }>;
+
+// public/resume/ja.pdf가 실제로 나중에 채워지면 "준비 중" 가정이 깨지므로, 파일 존재 여부를
+// 미리 확인해 그 경우 해당 테스트를 건너뛴다.
+const jaResumeExists = existsSync(fileURLToPath(new URL('../../public/resume/ja.pdf', import.meta.url)));
 
 for (const { path, lang } of PAGES) {
   test(`${path}: lang 속성과 핵심 섹션`, async ({ page }) => {
@@ -35,21 +48,25 @@ for (const { path, lang } of PAGES) {
 
 test.describe('JS 없이', () => {
   test.use({ javaScriptEnabled: false });
-  test('모든 섹션 본문이 읽힌다', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('heading', { name: '한·일 항공권, 언제 사야 할까?' })).toBeVisible();
-    await expect(page.locator('#case table')).toBeVisible();
-    await expect(page.getByText('이메일은 JavaScript를 켜면 보입니다')).toBeVisible();
-  });
+  for (const { path, lang } of PAGES) {
+    test(`${path}: 모든 섹션 본문이 읽힌다`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { name: content[lang].case.heading })).toBeVisible();
+      await expect(page.locator('#case table')).toBeVisible();
+      await expect(page.getByText(content[lang].contact.emailFallback)).toBeVisible();
+    });
+  }
 });
 
-test('이메일: 원본 HTML에는 없고 화면에는 보인다', async ({ page, request }) => {
-  const html = await (await request.get('/')).text();
-  const email = [...facts.contact.emailReversed].reverse().join('');   // 저장소에 평문 주소를 두지 않는다
-  expect(html).not.toContain(email);
-  await page.goto('/');
-  await expect(page.getByTestId('email')).toHaveText(email);
-});
+for (const { path } of PAGES) {
+  test(`${path} 이메일: 원본 HTML에는 없고 화면에는 보인다`, async ({ page, request }) => {
+    const html = await (await request.get(path)).text();
+    const email = [...facts.contact.emailReversed].reverse().join('');   // 저장소에 평문 주소를 두지 않는다
+    expect(html).not.toContain(email);
+    await page.goto(path);
+    await expect(page.getByTestId('email')).toHaveText(email);
+  });
+}
 
 test('LinkedIn 값이 비어 있으면 행이 없다', async ({ page }) => {
   await page.goto('/');
@@ -57,6 +74,7 @@ test('LinkedIn 값이 비어 있으면 행이 없다', async ({ page }) => {
 });
 
 test('이력서 PDF가 없으면 준비 중 표시, 링크 아님', async ({ page }) => {
+  test.skip(jaResumeExists, 'public/resume/ja.pdf가 이미 있어 "준비 중" 상태를 확인할 수 없다');
   await page.goto('/ja/');
   const header = page.locator('.site-header');
   await expect(header.locator('a[download]')).toHaveCount(0);
