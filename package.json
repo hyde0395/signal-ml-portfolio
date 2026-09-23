@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
+    "fallbacks": "node scripts/capture-fallbacks.mjs",
     "facts": "${AIRFARE_ROOT:-$HOME/Documents/airfare-forecasting-ml}/.venv/bin/python scripts/export_facts.py",
     "terrain": "${AIRFARE_ROOT:-$HOME/Documents/airfare-forecasting-ml}/.venv/bin/python scripts/export_terrain.py",
     "map": "${AIRFARE_ROOT:-$HOME/Documents/airfare-forecasting-ml}/.venv/bin/python scripts/export_map.py"
