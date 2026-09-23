@@ -32,10 +32,16 @@ describe('sceneFor', () => {
     const dist = (s: typeof land) => Math.hypot(...s.camera.map((v, i) => v - s.target[i]));
     expect(dist(port) / dist(land)).toBeCloseTo(1.6, 5);
   });
-  it('problem·insight는 세로 화면에서 목표점(target)도 가운데로 되돌아간다', () => {
+  it('세로 화면 insight 카메라는 곡선(z=10.5)에서 30~42 거리(예전 약 54는 곡선이 안 보였다)', () => {
+    const s = sceneFor('insight', 0, true);
+    const d = Math.hypot(...s.camera.map((v, i) => v - [3.1, 0, 10.5][i]));
+    expect(d).toBeGreaterThan(30);
+    expect(d).toBeLessThan(42);
+  });
+  it('problem은 세로 화면에서 목표점(target)이 가운데로 되돌아가고, insight는 곡선 쪽으로 옮긴다', () => {
     // 데스크톱은 왼쪽 글 카드를 피해 x를 -4.5로 밀지만, 세로 화면은 카드가 아래에 있어 밀 필요가 없다
     expect(sceneFor('problem', 0, true).target).toEqual([0, 0, 0]);
-    expect(sceneFor('insight', 0, true).target).toEqual([0, 0.3, 0]);
+    expect(sceneFor('insight', 0, true).target).toEqual([3.1, -3.5, 10.5]); // 곡선 한가운데, 곡선이 화면 위쪽에 오도록 낮춤
     expect(sceneFor('problem', 0, false).target).toEqual([-4.5, 0, 0]);
   });
 });
