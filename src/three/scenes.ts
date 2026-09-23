@@ -44,9 +44,10 @@ export const SCENES: Record<SceneKey, SceneState> = {
 
 const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구도를 담으려면 더 물러나야 한다
 
-// 세로 화면 전용 카메라·목표점. problem/insight는 데스크톱에서 왼쪽 글 카드를 피하려고 x를 크게
-// 밀었는데(-4.5), 세로 화면은 수평 시야각이 훨씬 좁아 같은 x로 밀면 지도·지형의 절반이 잘려 나간다.
-// 세로 화면은 글 카드가 아래쪽에 있어 옆으로 밀 필요가 없으므로 가운데로 되돌린 값을 따로 둔다.
+// 세로 화면 전용 카메라·목표점. problem은 데스크톱에서 왼쪽 글 카드를 피하려고 x를 -4.5로 밀었고,
+// insight는 곡선 전체를 담으려고 x를 3으로, 거리를 22로 옮겼다(위 SCENES 주석 참고). 세로 화면은
+// 수평 시야각이 훨씬 좁아 같은 값으로 밀면 지도·지형·곡선의 절반이 잘려 나가고, 글 카드도 아래쪽에
+// 있어 옆으로 밀 필요가 없으므로 두 장면 모두 가운데로 되돌린 값을 따로 둔다.
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
   insight: { camera: [0, 2, 40], target: [0, 0.3, 0] }, // 옆모습을 더 멀리서 봐야 예약 시점(x) 전체가 들어온다

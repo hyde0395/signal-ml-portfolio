@@ -25,8 +25,9 @@ describe('sceneFor', () => {
   });
   it('다른 장면은 drop 0', () => expect(sceneFor('insight', 0.9, false).drop).toBe(0));
   it('세로 화면은 카메라가 목표점에서 1.6배 멀다', () => {
-    // problem·insight는 세로 화면 전용 카메라(PORTRAIT_OVERRIDE)를 따로 써서 이 배율 규칙을 안 따르므로,
-    // 오버라이드가 없는 키(hero)로 일반 규칙을 검사한다.
+    // problem·insight도 ×1.6 규칙은 그대로 적용된다(세로 화면 카메라는 PORTRAIT_OVERRIDE의 camera·target을
+    // 기준으로 스케일된다). 다만 오버라이드는 target도 가로 화면과 달라져 거리 비교가 복잡해지므로,
+    // 오버라이드가 없어 camera·target이 동일한 키(hero)로 일반 규칙만 검사한다.
     const land = sceneFor('hero', 0, false), port = sceneFor('hero', 0, true);
     const dist = (s: typeof land) => Math.hypot(...s.camera.map((v, i) => v - s.target[i]));
     expect(dist(port) / dist(land)).toBeCloseTo(1.6, 5);

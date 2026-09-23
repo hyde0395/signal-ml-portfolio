@@ -27,7 +27,7 @@ export const vertexShader = /* glsl */ `
     vec3 p = mix(aScatter, target, gather);
     // 덜 모인 점일수록 천천히 떠다닌다
     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
-    if (aKind > 1.5) p.y -= uDrop * uDrop * 14.0; // 제거 레이어는 가속하며 떨어진다
+    if (aKind > 1.5 && aKind < 2.5) p.y -= uDrop * uDrop * 14.0; // 제거 레이어(kind 2)만 가속하며 떨어진다
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
@@ -59,9 +59,9 @@ export const fragmentShader = /* glsl */ `
     float d = length(gl_PointCoord - 0.5);
     if (d > 0.5) discard;
     float soft = smoothstep(0.5, 0.15, d); // 가장자리가 부드러운 원
-    // 예약 곡선(kind 3)은 파란 지형 점과 구별돼야 해서 호박색·흰색을 섞은 톤 하나로 고정한다
+    // 예약 곡선(kind 3)은 파란 지형 점과 구별돼야 해서 텍스트 색(uText)으로 고정한다
     // (팔레트 밖 색을 새로 만들지 않는다는 규칙을 지키면서도 지형 위에 도드라지게)
-    vec3 col = vKind > 2.5 ? mix(uAmber, uText, 0.5) : (vKind > 1.5 ? uText : mix(uDot, uAmber, max(vHoliday, vRoute)));
+    vec3 col = vKind > 2.5 ? uText : (vKind > 1.5 ? uText : mix(uDot, uAmber, max(vHoliday, vRoute)));
     gl_FragColor = vec4(col, vAlpha * soft);
   }
 `;
