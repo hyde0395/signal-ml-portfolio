@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { pickActive, readCandidates } from './activeScene';
 import { CameraRig } from './CameraRig';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
+import { initialFrameRate, stepFrameRate } from './frameRate';
 import { sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints } from './TerrainPoints';
 
@@ -96,15 +97,17 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   );
 }
 
-// 프레임 감시: 첫 프레임 알림 + 30fps 미만이 2초 이어지면 onSlow(한 번 부른 뒤 다시 2초를 잰다).
+// 프레임 감시: 첫 프레임 알림 + 평균 fps(프레임 시간 EMA)가 30 미만인 채로 2초 이어지면 onSlow
+// (한 번 부른 뒤 다시 2초를 잰다). 판정 로직은 frameRate.ts(단위 테스트됨).
 function FrameWatch({ enabled, onFirstFrame, onSlow }: { enabled: boolean; onFirstFrame: () => void; onSlow: () => void }) {
   const first = useRef(true);
-  const slow = useRef(0);
+  const rate = useRef(initialFrameRate());
   useFrame((_, delta) => {
     if (first.current) { first.current = false; onFirstFrame(); return; }
-    if (!enabled || delta > 1) return; // 탭 복귀 직후의 큰 delta는 무시
-    slow.current = 1 / delta < SLOW_FPS ? slow.current + delta : 0;
-    if (slow.current > SLOW_SECONDS) { slow.current = 0; onSlow(); }
+    if (!enabled) return;
+    const r = stepFrameRate(rate.current, delta, { minFps: SLOW_FPS, seconds: SLOW_SECONDS });
+    rate.current = r.state;
+    if (r.slow) onSlow();
   });
   return null;
 }
