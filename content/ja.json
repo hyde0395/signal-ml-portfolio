@@ -8,7 +8,8 @@
     "resume": "履歴書",
     "resumePending": "履歴書準備中",
     "summary": "30秒で分かる要約",
-    "language": "言語"
+    "language": "言語",
+    "menu": "メニュー"
   },
   "langHint": { "offer": "日本語で見る →", "dismiss": "閉じる" },
   "hero": {

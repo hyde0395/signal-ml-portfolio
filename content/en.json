@@ -8,7 +8,8 @@
     "resume": "Resume",
     "resumePending": "Resume coming soon",
     "summary": "30-second summary",
-    "language": "Language"
+    "language": "Language",
+    "menu": "Menu"
   },
   "langHint": { "offer": "View in English →", "dismiss": "Dismiss" },
   "hero": {

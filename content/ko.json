@@ -8,7 +8,8 @@
     "resume": "이력서",
     "resumePending": "이력서 준비 중",
     "summary": "30초 요약",
-    "language": "언어"
+    "language": "언어",
+    "menu": "메뉴"
   },
   "langHint": { "offer": "한국어로 보기 →", "dismiss": "닫기" },
   "hero": {
