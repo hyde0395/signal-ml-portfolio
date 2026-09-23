@@ -16,6 +16,7 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -33,17 +34,17 @@ CLIP_MIN, CLIP_MAX = -60, 200          # 화면에 그릴 % 범위. 넘는 값�
 MAX_GZIP_BYTES = 300 * 1024            # 스펙 §5.2 용량 목표
 CELL = ["days_to_departure", "departure_date"]
 ROUTE_CLASS = ["origin", "destination", "airline_class"]
-# 예약 곡선(curve) 레이어 전용: "같은 편"을 식별하는 키. 노선·등급 평균이 아니라 편(항공권) 평균을
-# 기준으로 삼아야 출발일 간 가격차(−37~+63%p)가 예약 곡선(±8%p 안팎)을 덮어 가리지 않는다.
+# 예약 곡선(curve) 레이어 전용: "같은 편"을 식별하는 키. 항공권 저장소
+# realized_wait_analysis.py의 FLIGHT_KEY와 같다(그쪽은 파싱된 날짜 열 이름이 "dep").
+# 노선·등급 평균이 아니라 편(항공권) 평균을 기준으로 삼아야 출발일 간 가격차(−37~+63%p)가
+# 예약 곡선(±8%p 안팎)을 덮어 가리지 않는다.
 FLIGHT_KEY = ["origin", "destination", "airline", "airline_class", "stops", "departure_time_raw", "departure_date"]
-# 항공권 저장소 모델(V2Predictor.MAX_DTD = 90)과 CLAUDE.md 실측 예약 곡선 표가 D-61~90에서 끝나는 것과
-# 같은 범위. 그보다 먼 dtd는 주 1회 수집이라 편당 관측이 한두 번뿐이라 편 평균 대비 %가 표본이 너무
-# 적어 요동친다(dtd=101에서 +25%까지 튐) — U자를 가리는 잡음이라 curve 계산에서 제외한다.
+# 항공권 저장소 모델(V2Predictor.MAX_DTD = 90)과 CLAUDE.md 실측 예약 곡선 표(model_metrics.json의
+# bookingCurve)가 D-61~90에서 끝나는 것과 같은 범위.
 CURVE_MAX_DTD = 90
-# dtd=84는 표본이 42건뿐이라(다른 dtd는 대부분 250건 이상) 편 평균이 요동쳐 −8.7%p로 튀며 U자
-# 한가운데 가짜 봉우리를 만든다(1차 계산 후 실측 확인). 표본이 이 미만인 dtd는 점을 아예 빼서
-# "적은 관측을 믿을 만한 값처럼 보이지 않게" 한다(보간이 아니라 제외).
-CURVE_MIN_ROWS = 50
+# model_metrics.json bookingCurve와 같은 8구간 경계(realized_wait_analysis.booking_curve의
+# pd.cut([0, 3, 7, 14, 21, 30, 45, 60, MAX_DTD])와 동일)
+CURVE_BINS = [0, 3, 7, 14, 21, 30, 45, 60, CURVE_MAX_DTD]
 
 
 def split_rows(raw: pd.DataFrame, as_of: str) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -70,24 +71,55 @@ def add_route_class_pct(kept: pd.DataFrame, removed: pd.DataFrame) -> tuple[pd.D
     return out[0], out[1]
 
 
-def build_curve(kept: pd.DataFrame, min_rows: int = CURVE_MIN_ROWS) -> pd.DataFrame:
-    """예약 곡선(3-2 인사이트 장면 전용): 행마다 같은 편(FLIGHT_KEY) 평균 대비 %를 구한 뒤
-    예약 시점(dtd)별로 평균한다. 칸(dtd×출발일) 평균이 아니라 이 값을 쓰는 이유는, 출발일마다
-    가격대가 크게 달라(−37~+63%) 칸 평균 그래프로는 U자 예약 곡선(±8%p 안팎)이 안 보이기
-    때문이다(Task 7 라운드 3 결함 B). 보간이 아니라 실측 평균이고, 표본이 min_rows 미만인 dtd는
-    빼서 요동치는 값이 U자를 가리지 않게 한다."""
-    kept = kept[kept["days_to_departure"] <= CURVE_MAX_DTD]
-    if len(kept) == 0:
-        return pd.DataFrame(columns=["days_to_departure", "pct"])
-    flight_mean = kept.groupby(FLIGHT_KEY)["price"].transform("mean")
-    flight_pct = (kept["price"] / flight_mean - 1) * 100
-    curve = (
-        kept.assign(flight_pct=flight_pct)
-        .groupby("days_to_departure")["flight_pct"]
-        .agg(pct="mean", n="size")
-        .reset_index()
+def load_completed_daily(kept: pd.DataFrame, as_of: str) -> pd.DataFrame:
+    """예약 곡선 전용 원본 행: 항공권 저장소 realized_wait_analysis.load_daily()와 같은 방식으로
+    (항공편, 수집일) 당 최저가 1행을 만들고, 출발일이 기준일(as_of) 이전인(경로가 완결된) 편만
+    남긴다. kept(= split_rows의 필터·기준일 컷오프를 이미 거친 행)에서 시작하므로 사이트와
+    항공권 저장소가 같은 필터를 쓴다. load_daily()는 raw 전체의 마지막 수집일을 컷오프로 쓰지만,
+    여기서는 kept가 이미 as_of까지만 있으므로 as_of 자체를 컷오프로 쓴다(라운드 4 컨트롤러 지시)."""
+    df = kept.copy()
+    df["fetch_date"] = pd.to_datetime(df["fetch_timestamp"]).dt.normalize()
+    df["dep"] = pd.to_datetime(df["departure_date"])
+    df["dtd"] = (df["dep"] - df["fetch_date"]).dt.days
+    daily = (
+        df.groupby(FLIGHT_KEY + ["fetch_date"], as_index=False)
+        .agg(price=("price", "min"), dtd=("dtd", "first"), dep=("dep", "first"))
     )
-    return curve[curve["n"] >= min_rows][["days_to_departure", "pct"]]
+    cutoff = pd.Timestamp(as_of)
+    return daily[daily["dep"] <= cutoff].reset_index(drop=True)
+
+
+def _centre_log_price(daily: pd.DataFrame) -> pd.DataFrame:
+    """dtd 1~CURVE_MAX_DTD로 자른 뒤, 편(FLIGHT_KEY) 평균 로그가격 대비로 중심화한 로그가격(lp_c)을
+    붙인다. realized_wait_analysis.booking_curve()와 같은 순서(자르고 나서 그 부분집합으로 편 평균을
+    구함)라야 같은 값이 나온다."""
+    x = daily[daily["dtd"].between(1, CURVE_MAX_DTD)].copy()
+    lp = np.log(x["price"])
+    x["lp_c"] = lp - lp.groupby([x[k] for k in FLIGHT_KEY]).transform("mean")
+    return x
+
+
+def build_curve(daily: pd.DataFrame) -> pd.DataFrame:
+    """예약 곡선(3-2 인사이트 장면 전용): realized_wait_analysis.booking_curve()와 같은 정의를
+    dtd 하나 단위로 푼 것 — 편 평균 로그가격 대비로 중심화한 값을 dtd별로 평균하고 expm1로 %로
+    되돌린다. 8구간 집계(booking_curve_buckets)는 model_metrics.json의 bookingCurve와 값이 같아야
+    하고, 이 함수는 3D 시각화를 위해 그 평균을 dtd 91개로 더 잘게 쪼갠 것뿐이라 같은 정의를 쓴다.
+    임의의 표본 수 임계값으로 점을 빼지 않는다(라운드 4: ad-hoc 이상치 제외 금지)."""
+    x = _centre_log_price(daily)
+    curve = x.groupby("dtd", as_index=False)["lp_c"].mean()
+    curve["pct"] = np.expm1(curve["lp_c"]) * 100
+    return curve.rename(columns={"dtd": "days_to_departure"})[["days_to_departure", "pct"]]
+
+
+def booking_curve_buckets(daily: pd.DataFrame) -> pd.DataFrame:
+    """model_metrics.json의 bookingCurve와 같은 8구간 집계(검증용). realized_wait_analysis.
+    booking_curve()를 그대로 옮긴 것: 구간 평균은 dtd별 평균이 아니라 구간 안 모든 행의 중심화
+    로그가격을 직접 평균한다(가중치가 dtd별로 균등하지 않고 행 수를 따른다)."""
+    x = _centre_log_price(daily)
+    x["bin"] = pd.cut(x["dtd"], CURVE_BINS)
+    cur = x.groupby("bin", observed=True)["lp_c"].agg(mean="mean", n="count")
+    cur["pct"] = np.expm1(cur["mean"]) * 100
+    return cur
 
 
 def encode_curve(curve: pd.DataFrame) -> dict[str, list[int]]:
@@ -130,7 +162,7 @@ def holiday_indices(dates: list[str]) -> list[int]:
 
 def build_terrain(raw: pd.DataFrame, as_of: str) -> dict:
     kept, removed = split_rows(raw, as_of)
-    curve = build_curve(kept)  # 노선·등급 pct를 붙이기 전(원가 기준)에 계산한다
+    curve = build_curve(load_completed_daily(kept, as_of))  # 노선·등급 pct를 붙이기 전(원가 기준)에 계산한다
     kept, removed = add_route_class_pct(kept, removed)
     layers = build_layers(kept, removed)
     dates = sorted(kept["departure_date"].unique().tolist())

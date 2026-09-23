@@ -1,4 +1,6 @@
-# export_terrain의 순수 함수 검사: 노선·등급 평균 대비 %, 두 겹 집계, 제거 레이어, 공휴일, 정수 인코딩.
+# export_terrain의 순수 함수 검사: 노선·등급 평균 대비 %, 두 겹 집계, 제거 레이어, 공휴일, 정수 인코딩,
+# 실측 예약 곡선(항공권 저장소 realized_wait_analysis.py와 같은 정의).
+import json
 import sys
 from pathlib import Path
 
@@ -71,35 +73,65 @@ def test_holiday_indices_marks_near_holidays():
     assert et.holiday_indices(dates) == [0]
 
 
-def test_build_curve_averages_same_flight_pct_by_dtd():
-    # 편 A(ICN-NRT, JL)와 편 B(ICN-KIX, OZ)는 서로 다른 가격대지만 같은 비율로 오른다.
-    # dtd=5에서 두 편 다 자기 평균보다 -9.09%, dtd=10에서 둘 다 +9.09% → curve는 편별 가격대와 무관해야 한다.
+def test_load_completed_daily_keeps_only_completed_flights_and_takes_daily_min():
     kept = frame([
-        row(100_000, dtd=5, o="ICN", d="NRT", airline="JL"),
-        row(120_000, dtd=10, o="ICN", d="NRT", airline="JL"),          # 편 A 평균 110,000
-        row(200_000, dtd=5, o="ICN", d="KIX", cls="FSC", airline="OZ", dep="09:00", day="2026-10-11"),
-        row(240_000, dtd=10, o="ICN", d="KIX", cls="FSC", airline="OZ", dep="09:00", day="2026-10-11"),  # 편 B 평균 220,000
+        row(100_000, day="2026-09-20", ts="2026-09-15 09:00:00", o="ICN", d="NRT", airline="JL"),
+        row(90_000, day="2026-09-20", ts="2026-09-15 21:00:00", o="ICN", d="NRT", airline="JL"),   # 같은 날 재수집, 더 쌈
+        row(120_000, day="2026-09-20", ts="2026-09-10 09:00:00", o="ICN", d="NRT", airline="JL"),
+        row(500_000, day="2026-09-25", ts="2026-09-15 09:00:00", o="ICN", d="HND", airline="JL"),  # 출발일이 기준일 이후 → 미완결
     ])
-    curve = et.build_curve(kept, min_rows=1)  # 픽스처가 dtd당 2행뿐이라 임계값을 낮춘다
+    daily = et.load_completed_daily(kept, "2026-09-22")
+    assert len(daily) == 2  # 미완결 편 제외, 같은 (편, 수집일)은 최저가 1행으로 합쳐짐
+    by_dtd = {int(r["dtd"]): r["price"] for _, r in daily.iterrows()}
+    assert by_dtd[5] == 90_000   # 09-15에 두 번 수집 중 최저가
+    assert by_dtd[10] == 120_000
+
+
+def test_build_curve_centres_log_price_by_flight_like_realized_wait_analysis():
+    # 편 A(ICN-NRT, JL)와 편 B(ICN-KIX, OZ)는 가격대가 다르지만(11만/22만) 같은 비율로 움직인다.
+    # realized_wait_analysis.booking_curve()와 같은 정의(편 평균 로그가격 대비로 중심화 → dtd별 평균
+    # → expm1로 %)라면 dtd=5는 -8.71%, dtd=10은 +9.54%가 나와야 한다(원가 비율의 단순 평균인
+    # -9.09%/+9.09%가 아니라 로그 평균이라 비대칭).
+    kept = frame([
+        row(100_000, day="2026-09-20", ts="2026-09-15 09:00:00", o="ICN", d="NRT", airline="JL"),
+        row(120_000, day="2026-09-20", ts="2026-09-10 09:00:00", o="ICN", d="NRT", airline="JL"),
+        row(200_000, day="2026-09-21", ts="2026-09-16 09:00:00", o="ICN", d="KIX", cls="FSC", airline="OZ", dep="09:00"),
+        row(240_000, day="2026-09-21", ts="2026-09-11 09:00:00", o="ICN", d="KIX", cls="FSC", airline="OZ", dep="09:00"),
+    ])
+    daily = et.load_completed_daily(kept, "2026-09-22")
+    curve = et.build_curve(daily)
     by_dtd = dict(zip(curve["days_to_departure"], curve["pct"]))
-    assert by_dtd[5] == pytest.approx(-9.0909, abs=1e-3)
-    assert by_dtd[10] == pytest.approx(9.0909, abs=1e-3)
-
-
-def test_build_curve_excludes_dtd_beyond_max():
-    # dtd=147은 CURVE_MAX_DTD(90)보다 멀어 표본이 희박한 구간이라 curve에서 빠져야 한다
-    kept = frame([row(100_000, dtd=147), row(120_000, dtd=147, ts="2026-09-02 10:00:00")])
-    curve = et.build_curve(kept, min_rows=1)
-    assert curve.empty
-
-
-def test_build_curve_excludes_dtd_with_too_few_rows():
-    # dtd=5는 표본 1건뿐이라(min_rows=2 미만) 빼고, dtd=10은 2건이라 남아야 한다
-    kept = frame([row(100_000, dtd=5), row(100_000, dtd=10), row(120_000, dtd=10, ts="2026-09-02 10:00:00")])
-    curve = et.build_curve(kept, min_rows=2)
-    assert curve["days_to_departure"].tolist() == [10]
+    assert by_dtd[5] == pytest.approx(-8.7129, abs=1e-3)
+    assert by_dtd[10] == pytest.approx(9.5445, abs=1e-3)
 
 
 def test_encode_curve_quantizes_and_clips():
     curve = pd.DataFrame({"days_to_departure": [5, 10], "pct": [12.34, 999.0]})
     assert et.encode_curve(curve) == {"dtd": [5, 10], "pct": [123, 2000]}
+
+
+def test_booking_curve_buckets_matches_model_metrics_on_real_data():
+    # 항공권 저장소 원본 CSV가 있을 때만 실행(없으면 스킵) — 사이트가 계산한 8구간 실측 예약 곡선이
+    # model_metrics.json(= 항공권 저장소 realized_wait_analysis.booking_curve()의 결과, CLAUDE.md에
+    # 옮겨 적은 값)과 ±0.5%p 안에서 같아야 한다. "같은 방법으로 계산했다"는 라운드 4 요구의 실측 증거.
+    csv_path = et.AIRFARE_ROOT / "data" / "raw" / "flight_prices.csv"
+    if not csv_path.exists():
+        pytest.skip(f"{csv_path} 없음 — 항공권 저장소 원본 CSV가 있어야 실행되는 테스트")
+    metrics = json.loads(et.METRICS_PATH.read_text(encoding="utf-8"))
+    as_of = metrics["_meta"]["asOf"]
+    expected = {b["label"]: b["pct"] for b in metrics["bookingCurve"]}
+
+    raw = pd.read_csv(csv_path)
+    kept, _ = et.split_rows(raw, as_of)
+    daily = et.load_completed_daily(kept, as_of)
+    buckets = et.booking_curve_buckets(daily)
+
+    seen = set()
+    for interval, r in buckets.iterrows():
+        label = f"D-{int(interval.left) + 1}~{int(interval.right)}"
+        assert label in expected, f"model_metrics.json에 없는 구간: {label}"
+        assert r["pct"] == pytest.approx(expected[label], abs=0.5), (
+            f"{label}: 계산값 {r['pct']:+.2f}% vs model_metrics.json {expected[label]:+.1f}%"
+        )
+        seen.add(label)
+    assert seen == set(expected)  # 8구간 전부 나와야 한다
