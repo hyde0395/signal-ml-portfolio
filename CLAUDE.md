@@ -4,9 +4,9 @@ ML 엔지니어 포트폴리오 사이트. 사이트 브랜드는 **SIGNAL**.
 
 Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용 개발자 포트폴리오**. 목표 포지션은 **ML 엔지니어**.
 
-## 현재 진행 상태 (2026-09-23 기준)
+## 현재 진행 상태 (2026-09-24 기준)
 
-`superpowers:brainstorming` 스킬의 **Architectural 경로**로 설계 중이다. 아직 코드는 없다.
+설계 완료, 계획 1·3 구현 완료. 계획 2(데모) 계획 단계.
 
 | 단계 | 상태 |
 |---|---|
@@ -22,16 +22,18 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 스펙 문서 작성 (`docs/superpowers/specs/2026-09-23-portfolio-design.md`) → 사용자 검토 | ✅ 승인 |
 | 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감), 순서는 1 → 3 → 2 → 4 | — |
 | 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
-| 계획 3: 3D 지형 | ⏳ **다음 세션은 여기서 시작** — `superpowers:writing-plans`로 계획서 작성 → 사용자 검토 → 실행(계획 1은 subagent-driven으로 실행했다) |
-| 계획 2: 데모 → 계획 4: 연출·마감 | ⏳ 예정 |
+| 계획 3: 3D 지형 | ✅ 완료 2026-09-24 · branch plan-3-terrain · merge 대기 |
+| 계획 2(데모) 계획서 작성 | ⏳ **다음** — `superpowers:writing-plans` → 사용자 검토 → 실행 |
+| 계획 4: 연출·마감 | ⏳ 예정 |
 
 **다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
 
 ### 다음 세션 할 일 (순서대로)
 
-1. **계획 3(3D 지형) 계획서 작성** (`docs/superpowers/plans/`): 스펙 §5, §8.3, §9.1 — `export_terrain.py`, R3F 캔버스·셰이더, 챕터별 카메라(섹션의 `data-section`/`data-chapter` 사용), 9,387점 떨어져 나가기, q10~q90 띠, 모바일 카메라, 대체 WebP 캡처 스크립트. 사용자 결정(2026-09-23): 지형을 먼저 보고 싶어서 계획 2보다 먼저 한다.
-2. 그다음 계획 2(데모), 계획 4(연출·마감, 공개 시 `LAUNCHED = true`)
-3. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개, LinkedIn, 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체)
+1. **계획 3 브랜치 merge** (검토 후)
+2. **계획 2(데모) 계획서 작성** (`docs/superpowers/plans/`): 스펙 §6 기반. 3-5 챕터의 **q10~q90 띠는 모델 예측 구간이 필요해 `export_demo.py`와 함께 계획 2에서 지형 위에 얹는다.** 이 계획에서는 3-5가 비스듬한 전경만 보여준다.
+3. 그다음 계획 2 실행 → 계획 4(연출·마감, 공개 시 `LAUNCHED = true`)
+4. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개, LinkedIn, 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체)
 
 ## 확정된 결정
 

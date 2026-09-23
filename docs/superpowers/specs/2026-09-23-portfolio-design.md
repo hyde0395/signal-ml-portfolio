@@ -133,9 +133,15 @@
 
 ### 5.3 사이트 3D 구조
 
+**설계 (계획 3 실행 완료 2026-09-24)**
+
 - 화면 뒤에 고정된 캔버스 하나를 둡니다. 스크롤 위치에 따라 카메라가 챕터별 지점으로 이동합니다.
 - 점은 `Points` 하나로 그립니다. 흩어지기, 모이기, 떨어져 나가기는 셰이더에서 계산합니다.
 - 카메라 지점은 **가로 화면용과 세로(모바일) 화면용을 따로** 정의합니다. 세로 화면에서 텍스트는 지형 위에 겹치지 않고 하단 카드로 올라옵니다.
+
+**구현 결과**
+
+`src/three/` 모듈 (data.ts, scenes.ts, activeScene.ts, capability.ts, shaders.ts, TerrainPoints.tsx, CameraRig.tsx, TerrainScene.tsx)과 `src/components/Backdrop.tsx`, `src/sections/ChapterFigure.tsx`로 구성. 3D는 첫 화면 텍스트가 뜬 뒤 지연 로딩되며, `<html data-3d="on|off">` 속성으로 접근성 대체 처리(reduced-motion / WebGL 미지원 / 저사양 / 프레임 저하)를 이루어낸다. 네 개 장면: 신호가 잡음에서 떠오르는 첫 화면 / 한·일 해안선 + 노선 궤적(3-1) / 측면 U자 곡선 + 실측 예약 곡선 시각화(3-2) / 제거된 점 계층이 떨어져 내려오는 연출(3-3). 재학습 후: `npm run facts` → `npm run terrain` → `npm run build` → `npm run fallbacks` 순서로 데이터 갱신 및 대체 WebP 이미지 캡처 후 커밋.
 
 ---
 
