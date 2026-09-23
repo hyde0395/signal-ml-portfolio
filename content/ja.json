@@ -7,9 +7,7 @@
     "skip": "本文へスキップ",
     "resume": "履歴書",
     "resumePending": "履歴書準備中",
-    "summary": "30秒で分かる要約",
-    "language": "言語",
-    "menu": "メニュー"
+    "language": "言語"
   },
   "langHint": { "offer": "日本語で見る →", "dismiss": "閉じる" },
   "hero": {
@@ -92,14 +90,6 @@
     "resume": "履歴書PDF",
     "resumePending": "準備中",
     "emailFallback": "メールアドレスの表示にはJavaScriptが必要です"
-  },
-  "summary": {
-    "title": "30秒で分かる要約",
-    "close": "閉じる",
-    "resultsHeading": "代表プロジェクト：日韓航空券価格予測",
-    "r1": "日韓航空券{data.filteredRows}行を自ら収集・整備",
-    "r2": "運用基準（TimeSeriesSplit）R² {model.tss.r2}、MAE {model.tss.mae}ウォン",
-    "r3": "{model.interval.level}%予測区間の実際のカバー率{model.interval.coverage}%"
   },
   "notFound": { "title": "ページが見つかりません", "home": "トップへ戻る" }
 }

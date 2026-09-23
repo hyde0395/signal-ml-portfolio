@@ -7,9 +7,7 @@
     "skip": "본문으로 건너뛰기",
     "resume": "이력서",
     "resumePending": "이력서 준비 중",
-    "summary": "30초 요약",
-    "language": "언어",
-    "menu": "메뉴"
+    "language": "언어"
   },
   "langHint": { "offer": "한국어로 보기 →", "dismiss": "닫기" },
   "hero": {
@@ -92,14 +90,6 @@
     "resume": "이력서 PDF",
     "resumePending": "준비 중",
     "emailFallback": "이메일은 JavaScript를 켜면 보입니다"
-  },
-  "summary": {
-    "title": "30초 요약",
-    "close": "닫기",
-    "resultsHeading": "대표 프로젝트: 한·일 항공권 가격 예측",
-    "r1": "한·일 항공권 {data.filteredRows}행을 직접 수집·정제",
-    "r2": "운영 기준(TimeSeriesSplit) R² {model.tss.r2}, MAE {model.tss.mae}원",
-    "r3": "{model.interval.level}% 예측 구간의 실제 포함률 {model.interval.coverage}%"
   },
   "notFound": { "title": "페이지를 찾을 수 없습니다", "home": "첫 화면으로" }
 }

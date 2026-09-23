@@ -7,9 +7,7 @@
     "skip": "Skip to content",
     "resume": "Resume",
     "resumePending": "Resume coming soon",
-    "summary": "30-second summary",
-    "language": "Language",
-    "menu": "Menu"
+    "language": "Language"
   },
   "langHint": { "offer": "View in English →", "dismiss": "Dismiss" },
   "hero": {
@@ -92,14 +90,6 @@
     "resume": "Resume PDF",
     "resumePending": "Coming soon",
     "emailFallback": "Enable JavaScript to see the email address"
-  },
-  "summary": {
-    "title": "30-second summary",
-    "close": "Close",
-    "resultsHeading": "Featured project: Korea–Japan airfare price forecasting",
-    "r1": "Collected and cleaned {data.filteredRows} rows of Korea–Japan airfare data myself",
-    "r2": "Production baseline (TimeSeriesSplit): R² {model.tss.r2}, MAE ₩{model.tss.mae}",
-    "r3": "The {model.interval.level}% prediction interval's actual coverage is {model.interval.coverage}%"
   },
   "notFound": { "title": "Page not found", "home": "Back to home" }
 }

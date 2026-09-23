@@ -3,7 +3,6 @@ import { facts } from '@/lib/facts';
 import { interpolate, LOCALES, PLACEHOLDER } from '@/lib/i18n';
 import { dictionaries, flatten } from '@/lib/content';
 
-const ALLOWED_DIGITS = [/30초/g, /30-second/g, /30秒/g];
 const MAY_BE_EMPTY = new Set(['hero.nameSub']);
 
 const flat = Object.fromEntries(LOCALES.map((l) => [l, flatten(dictionaries[l])]));
@@ -24,8 +23,7 @@ describe('문구 파일', () => {
 
     it(`${locale}: 자리표시 밖에 숫자를 직접 쓰지 않는다`, () => {
       for (const [key, text] of Object.entries(flat[locale])) {
-        let rest = text.replace(PLACEHOLDER, '');
-        for (const re of ALLOWED_DIGITS) rest = rest.replace(re, '');
+        const rest = text.replace(PLACEHOLDER, '');
         expect(rest, `${locale}:${key} → "${text}"`).not.toMatch(/[0-9０-９]/);
       }
     });
