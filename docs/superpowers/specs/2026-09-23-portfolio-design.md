@@ -314,7 +314,7 @@ interface ForecastSource {
   - ⚠️ 지금은 `github.com/hyde0395/airfare-forecasting-ml`이 **비공개**라서 링크가 **404로 열리는 것이 의도된 상태**입니다.
   - 사용자가 나중에 공개용 저장소를 새로 만들면 `baseUrl`만 바꿉니다.
 - **연락처**
-  - 이메일: `<email>`. 화면에는 표시하지만 HTML 소스에는 바로 드러나지 않게 합니다(클라이언트에서 조립).
+  - 이메일: `data/facts.json`의 `contact.emailReversed`에 뒤집어 저장합니다(저장소에도 평문으로 두지 않음). 화면에는 표시하지만 HTML 소스에는 바로 드러나지 않게 합니다(클라이언트에서 조립).
   - GitHub: `github.com/hyde0395`
   - LinkedIn: **빈 값**입니다. 비어 있으면 버튼을 숨깁니다.
 - **이력서**: 언어별 경로 `public/resume/{ko,en,ja}.pdf`. 파일이 없는 언어는 버튼을 "준비 중"으로 흐리게 표시합니다. 일본어는 履歴書/職務経歴書 형식입니다.

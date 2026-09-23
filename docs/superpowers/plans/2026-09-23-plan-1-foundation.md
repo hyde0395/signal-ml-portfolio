@@ -1836,7 +1836,7 @@ export function HomePage({ locale }: { locale: Locale }) {
 
 - [ ] **Step 14: 확인**
 
-Run: `npm run typecheck && npm test && npm run build && grep -c "<email>" out/index.html; grep -c "GATE 06" out/ja/index.html`
+Run: `npm run typecheck && npm test && npm run build && grep -c "$(node -e "const f=require('./data/facts.json');console.log([...f.contact.emailReversed].reverse().join(''))")" out/index.html; grep -c "GATE 06" out/ja/index.html`
 Expected: 첫 grep은 `0`(주소가 HTML에 없음), 두 번째는 1 이상. `npx serve out -l 4173`을 띄워 세 언어 페이지를 눈으로 훑고, 폭 375px에서 가로 스크롤이 없는지 확인한다.
 
 - [ ] **Step 15: ⏸ 화면 확인 체크포인트 (사용자)**
@@ -1894,6 +1894,7 @@ export default defineConfig({
 ```ts
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import facts from '../../data/facts.json';
 
 // 휴대폰 폭에서는 30초 요약과 언어 전환이 메뉴 안에 있다.
 async function openMenuIfCollapsed(page: Page) {
@@ -1935,9 +1936,10 @@ test.describe('JS 없이', () => {
 
 test('이메일: 원본 HTML에는 없고 화면에는 보인다', async ({ page, request }) => {
   const html = await (await request.get('/')).text();
-  expect(html).not.toContain('<email>');
+  const email = [...facts.contact.emailReversed].reverse().join('');   // 저장소에 평문 주소를 두지 않는다
+  expect(html).not.toContain(email);
   await page.goto('/');
-  await expect(page.getByTestId('email')).toHaveText('<email>');
+  await expect(page.getByTestId('email')).toHaveText(email);
 });
 
 test('LinkedIn 값이 비어 있으면 행이 없다', async ({ page }) => {
