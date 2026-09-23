@@ -1,4 +1,5 @@
 // 케이스 스터디 섹션: 챕터 6개(GATE 01~06)를 나열하고, 챕터마다 근거 코드 링크를 붙인다.
+import { ChapterFigure, FIGURE_KEYS, type FigureKey } from './ChapterFigure';
 import { ValidationTable } from './ValidationTable';
 import { getT } from '@/lib/content';
 import { codeUrl, type CodeChapter } from '@/lib/facts';
@@ -25,6 +26,9 @@ export function CaseStudy({ locale }: { locale: Locale }) {
         <article key={c.id} data-chapter={c.id} className="chapter" aria-labelledby={`ch-${c.id}`}>
           <p className="eyebrow">{c.gate}</p>
           <h3 id={`ch-${c.id}`}>{t(`case.${c.id}.heading`)}</h3>
+          {(FIGURE_KEYS as readonly string[]).includes(c.id) && (
+            <ChapterFigure locale={locale} sceneKey={c.id as FigureKey} />
+          )}
           {Array.from({ length: c.paras }, (_, i) => <p key={i}>{t(`case.${c.id}.body${i + 1}`)}</p>)}
           {c.id === 'validation' && <ValidationTable locale={locale} />}
           <a className="code-link mono" href={codeUrl(c.id)} target="_blank" rel="noopener noreferrer">

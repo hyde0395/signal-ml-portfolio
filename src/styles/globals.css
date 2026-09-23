@@ -80,3 +80,27 @@ section p + p { margin-top: 12px; }
 .pass dt { font-size: 0.7rem; letter-spacing: 0.14em; color: var(--mute); }
 .pass dd { word-break: break-all; }
 @media (max-width: 640px) { .vtable { font-size: 0.8rem; } .vtable th, .vtable td { padding: 8px 4px; } }
+
+/* 3D 배경 — 캔버스는 본문 뒤에 고정. body 배경 그라데이션 위, main 아래에 오도록 z-index를 나눈다. */
+.backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.backdrop canvas { display: block; }
+main { position: relative; z-index: 1; }
+
+/* 대체 이미지: 기본은 보이고, 3D가 켜지면 숨긴다(JS가 없거나 3D가 불가능해도 장면을 볼 수 있게) */
+.scene-figure { margin: 24px 0; }
+.scene-figure img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+html[data-3d="on"] .scene-figure { display: none; }
+
+/* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 움직일 시간을 주고, 글은 반투명 카드에 담아 대비를 지킨다 */
+html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
+html[data-3d="on"] :is(.chapter, #about, #stack, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl) { max-width: 560px; }
+html[data-3d="on"] :is(.chapter, #about) {
+  background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
+}
+@media (max-width: 767px) {
+  /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
+  html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
+  html[data-3d="on"] :is(.chapter, #about) {
+    background: linear-gradient(0deg, rgba(7, 11, 22, 0.92) 55%, rgba(7, 11, 22, 0) 100%);
+  }
+}

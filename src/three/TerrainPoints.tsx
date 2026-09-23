@@ -1,7 +1,7 @@
 'use client';
 // 점 구름 하나(Points)와 셰이더 재질. 목표 장면 상태(target)로 uniform을 매 프레임 부드럽게 옮긴다.
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { PointCloud } from './data';
 import type { SceneState } from './scenes';
@@ -27,6 +27,9 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 30); // 흩어짐 반경까지 포함 → 잘림 방지
     return g;
   }, [cloud]);
+
+  // geometry가 바뀌거나(cloud 교체) 컴포넌트가 사라질 때 GPU 버퍼를 반환한다(메모리 누수 방지)
+  useEffect(() => () => geometry.dispose(), [geometry]);
 
   const uniforms = useMemo(() => ({
     uAssemble: { value: instant ? 1 : 0 }, // 첫 화면에서 0 → 1로 모이며 등장
@@ -54,7 +57,8 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     step('uNoise', showNoise ? t.noise : 0);
     step('uRemoved', t.removed);
     step('uDrop', t.drop);
-    u.uTime.value = state.clock.elapsedTime;
+    // 캡처 모드에서는 uTime을 0으로 고정한다. 매번 같은 시각에 찍어야 대체 이미지가 항상 똑같이 나온다
+    u.uTime.value = instant ? 0 : state.clock.elapsedTime;
     u.uSize.value = 3 * state.viewport.dpr;
   });
 

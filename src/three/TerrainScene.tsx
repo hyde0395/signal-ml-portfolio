@@ -73,6 +73,10 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         frameloop={running || capture ? 'always' : 'never'}
         camera={{ fov: 40, near: 0.1, far: 200, position: target.current.camera }}
         gl={{ antialias: false, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: !!capture }}
+        onCreated={(state) => {
+          // 모바일에서는 GL 컨텍스트가 갑자기 끊길 수 있다 — 화면이 멈추는 대신 대체 이미지로 넘어간다
+          state.gl.domElement.addEventListener('webglcontextlost', () => onFail('context'));
+        }}
       >
         <TerrainPoints cloud={cloud} target={target} instant={!!capture} showNoise={level === 0} />
         <CameraRig target={target} instant={!!capture} parallax={parallax} />

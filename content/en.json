@@ -91,5 +91,12 @@
     "resumePending": "Coming soon",
     "emailFallback": "Enable JavaScript to see the email address"
   },
-  "notFound": { "title": "Page not found", "home": "Back to home" }
+  "notFound": { "title": "Page not found", "home": "Back to home" },
+  "figure": {
+    "hero": "Bright points gathering out of scattered, dim points to form a price landscape",
+    "problem": "Points outlining the Korean and Japanese coastlines, with route paths arcing from Incheon to Narita, Haneda, and Kansai",
+    "insight": "A price landscape showing a U-shaped valley that climbs again as departure nears, with amber peaks at holiday departure dates",
+    "bubble": "Mismatched points that were floating high above the landscape falling away",
+    "interval": "The price landscape viewed from an angled overhead perspective"
+  }
 }
