@@ -95,15 +95,29 @@ for (const bad of ['/nope/', '/en/xyz/']) {
   });
 }
 
+// 375px 폭에서 헤더가 한 줄(72px 미만)에 들어가는지, 그리고 언어 전환 링크(KO/EN/JA)와
+// 이력서 요소(.header-actions 안의 .pill — 링크든 "준비 중" span이든)가 실제로 보이고
+// 화면 밖(375px)으로 밀려나지 않는지 확인한다. 버튼 개수를 세는 방식은 lang-hint의 닫기
+// 버튼과 우연히 같아져 항상 통과하는 동어반복이라 자리·가시성 기준으로 바꿨다.
 for (const path of ['/', '/en/', '/ja/']) {
   test(`${path} 휴대폰 폭: 상단 바가 한 줄이고 언어 전환이 바로 보인다`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(path);
     expect((await page.locator('.site-header').boundingBox())!.height).toBeLessThan(72);
     // exact: true — 기본 부분 문자열 매칭은 "View in English →"(LangHint)와 "Skip to content"에도
-    // 우연히 "en"이 들어 있어 걸린다. 언어 전환 링크("EN") 자체를 가리키도록 한정한다.
-    await expect(page.getByRole('link', { name: 'EN', exact: true })).toBeVisible();
-    await expect(page.getByRole('button')).toHaveCount(await page.locator('.lang-hint button').count());
+    // 우연히 "en"이 들어 있어 걸린다. 언어 전환 링크 자체를 가리키도록 한정한다.
+    const targets = [
+      page.getByRole('link', { name: 'KO', exact: true }),
+      page.getByRole('link', { name: 'EN', exact: true }),
+      page.getByRole('link', { name: 'JA', exact: true }),
+      page.locator('.header-actions .pill'),
+    ];
+    for (const locator of targets) {
+      await expect(locator).toBeVisible();
+      const box = await locator.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x + box!.width).toBeLessThanOrEqual(375);
+    }
   });
 }
 
