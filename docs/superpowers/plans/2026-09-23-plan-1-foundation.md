@@ -34,6 +34,9 @@
 - LinkedIn 값이 비어 있으면 버튼을 숨긴다. 언어별 이력서 PDF가 없으면 "준비 중"으로 흐리게 표시
 - 코드 링크(`github.com/hyde0395/airfare-forecasting-ml`)는 저장소가 비공개라 **404가 정상**이다. 고치지 않는다
 - 원본 CSV는 이 저장소에 복사하지 않는다
+- 커밋 작성자 이메일은 GitHub noreply(`55799748+hyde0395@users.noreply.github.com`)만 쓴다. 개인 이메일이 git 기록에 남으면 안 된다
+- 계획 4에서 공개하기 전까지 사이트는 검색 노출을 막는다(`noindex`, robots.txt `Disallow: /`). 스위치는 `src/lib/site.ts`의 `LAUNCHED` 하나
+- 글꼴 예외: Pretendard만 `next/font`가 아니라 패키지의 dynamic-subset CSS(유니코드 범위별 조각 로딩)를 쓴다
 - 사용자와의 대화는 한국어로 한다
 
 ## Review Focus
@@ -42,6 +45,7 @@
 2. **자리표시가 facts에 없는 경로를 가리킬 때**: 화면에 `{model.x}`가 그대로 찍히지 말고 빌드·테스트가 실패해야 한다 → Task 4의 `interpolate` throw 테스트, Task 5의 전 키 해석 테스트
 3. **이력서 PDF가 없는 언어**: 깨진 링크 대신 비활성 "준비 중" 표시 → Task 7 단위 테스트 + Task 9 E2E
 4. **이메일 수집 봇**: 원본 HTML에 주소가 없어야 하고, 사람에게는 보여야 한다 → Task 9 E2E
+6. **휴대폰 폭의 상단 바**: 버튼이 넘치거나 겹치지 않고, 메뉴 안의 30초 요약·언어 전환도 키보드와 터치로 쓸 수 있어야 한다 → Task 9 모바일 E2E
 5. **없는 주소로 들어온 방문자**(`/nope/`, `/en/xyz/`): 404 페이지가 3개 언어 안내와 첫 화면 링크를 보여야 한다 → Task 9 E2E
 
 ---
@@ -56,7 +60,7 @@ app/
   (en)/layout.tsx, (en)/en/page.tsx           → "/en/"
   (ja)/layout.tsx, (ja)/ja/page.tsx           → "/ja/"
   global-not-found.tsx                         → 404.html
-  sitemap.ts, icon.svg
+  sitemap.ts, robots.ts, icon.svg
 src/
   lib/facts.ts          facts.json 스키마(zod)와 검증된 객체
   lib/i18n.ts           Locale, 경로, 값 포맷, 자리표시 해석, createT
@@ -64,16 +68,17 @@ src/
   lib/resume.ts         언어별 이력서 존재 여부(빌드 시 fs 확인)
   lib/site.ts           metadataBase, 언어별 metadata 생성
   lib/email.ts          주소 뒤집기/복원
-  styles/fonts.ts       next/font 정의
+  styles/fonts.ts       next/font 정의 (Pretendard 제외)
   styles/globals.css    토큰과 기본 스타일
   components/RootDocument.tsx   <html>/<body> 공통 틀
   components/HomePage.tsx       섹션 조립
-  components/Header.tsx, LangSwitch.tsx(client), LangHint.tsx(client), SummaryDialog.tsx(client), EmailLink.tsx(client)
+  components/Header.tsx, HeaderMore.tsx(client), LangSwitch.tsx(client), LangHint.tsx(client), Summary.tsx(client), EmailLink.tsx(client)
   components/sections/Hero.tsx, About.tsx, CaseStudy.tsx, ValidationTable.tsx, Stack.tsx, Contact.tsx
 content/ko.json, en.json, ja.json
 data/facts.json
 public/resume/.gitkeep
 scripts/export_facts.py, scripts/model_metrics.json, scripts/tests/test_export_facts.py
+README.md
 tests/unit/*.test.ts, tests/e2e/*.spec.ts
 ```
 
@@ -85,10 +90,22 @@ tests/unit/*.test.ts, tests/e2e/*.spec.ts
 
 **Files:**
 - Create: `package.json`, `tsconfig.json`, `next.config.ts`, `vitest.config.ts`, `src/styles/fonts.ts`, `src/styles/globals.css`, `app/(ko)/layout.tsx`, `app/(ko)/page.tsx`, `tests/unit/smoke.test.ts`
-- Modify: `.gitignore`
+- Modify: `.gitignore`, `docs/superpowers/specs/2026-09-23-portfolio-design.md` (§4 글꼴 줄에 "Pretendard는 dynamic-subset CSS로 조각 로딩(next/font 예외)" 추가)
 
 **Interfaces:**
-- Produces: `@/*` → `src/*` 경로 별칭, 폰트 CSS 변수 `--font-display`, `--font-mono`, `--font-body`, `--font-jp`, 색 토큰 `--bg`, `--bg2`, `--dot`, `--tx`, `--amb`, `--mute`, `--line`, 이징 `--ease`. npm 스크립트 `dev`, `build`, `typecheck`, `test`, `e2e`.
+- Produces: `@/*` → `src/*` 경로 별칭, 폰트 CSS 변수 `--font-display`, `--font-mono`, `--font-jp`, 본문 글꼴 이름 `'Pretendard Variable'`(dynamic-subset CSS), 색 토큰 `--bg`, `--bg2`, `--dot`, `--tx`, `--amb`, `--mute`, `--line`, 이징 `--ease`. npm 스크립트 `dev`, `build`, `typecheck`, `test`, `e2e`.
+
+- [ ] **Step 0: 커밋 작성자 이메일을 GitHub noreply로 바꾸고 기존 기록도 고친다**
+
+저장소를 공개하면 모든 커밋의 작성자 이메일이 드러난다. 사이트에서 이메일을 숨기는 의미가 없어지므로, 이 저장소에서만 noreply 주소를 쓴다. 아직 원격에 올리기 전이라 기록을 다시 써도 안전하다.
+
+```bash
+cd ~/dev/signal-ml-portfolio
+git config user.email "55799748+hyde0395@users.noreply.github.com"
+git rebase -r --root --exec "git commit --amend --no-edit --reset-author"
+git log --format='%ae %ce' | sort -u
+```
+Expected: 출력이 `55799748+hyde0395@users.noreply.github.com 55799748+hyde0395@users.noreply.github.com` 한 줄뿐.
 
 - [ ] **Step 1: 패키지 설치**
 
@@ -174,23 +191,17 @@ export default defineConfig({
 - [ ] **Step 6: 글꼴 `src/styles/fonts.ts`**
 
 ```ts
+// Pretendard는 여기서 정의하지 않는다. 한글 서브셋 파일이 굵기당 약 270KB라,
+// 패키지의 dynamic-subset CSS(유니코드 범위별 92조각)를 import해 페이지에 실제로 나온 글자 조각만 받는다.
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import { IBM_Plex_Mono, Noto_Sans_JP, Space_Grotesk } from 'next/font/google';
-import localFont from 'next/font/local';
 
 export const display = Space_Grotesk({ subsets: ['latin'], weight: ['500', '700'], variable: '--font-display', display: 'swap' });
 export const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '600'], variable: '--font-mono', display: 'swap' });
-export const body = localFont({
-  src: [
-    { path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-Regular.subset.woff2', weight: '400' },
-    { path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-SemiBold.subset.woff2', weight: '600' },
-  ],
-  variable: '--font-body',
-  display: 'swap',
-});
 // 일본어 페이지 layout에서만 import한다. 가나·한자 서브셋이 크므로 preload하지 않는다.
 export const jp = Noto_Sans_JP({ weight: ['400', '600'], variable: '--font-jp', display: 'swap', preload: false });
 
-export const baseFontVars = `${display.variable} ${mono.variable} ${body.variable}`;
+export const baseFontVars = `${display.variable} ${mono.variable}`;
 ```
 
 - [ ] **Step 7: `src/styles/globals.css`**
@@ -201,9 +212,9 @@ export const baseFontVars = `${display.variable} ${mono.variable} ${body.variabl
   --mute: rgba(238, 243, 255, 0.72); /* #070B16 위에서 대비 ≥ 4.5:1 */
   --line: rgba(143, 184, 255, 0.18);
   --ease: cubic-bezier(.16, 1, .3, 1);
-  --font-text: var(--font-body), system-ui, sans-serif;
+  --font-text: 'Pretendard Variable', system-ui, sans-serif;
 }
-:root:lang(ja) { --font-text: var(--font-jp), var(--font-body), system-ui, sans-serif; }
+:root:lang(ja) { --font-text: var(--font-jp), 'Pretendard Variable', system-ui, sans-serif; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: var(--bg); color-scheme: dark; }
@@ -278,13 +289,17 @@ __pycache__/
 - [ ] **Step 11: 검증**
 
 Run: `npm run typecheck && npm test && npm run build && ls out/index.html`
-Expected: 타입 오류 0, 테스트 1개 PASS, `out/index.html` 존재. 빌드가 `experimental.globalNotFound`를 모른다고 실패하면 Next 16.3.6 문서(`node_modules/next/dist/docs` 또는 `node_modules/next/dist/server/config-shared.js`)에서 키 이름을 확인해 맞춘다.
+Expected: 타입 오류 0, 테스트 1개 PASS, `out/index.html` 존재. 그리고 `ls out/_next/static/media | grep -c woff2`가 여러 개(Pretendard 조각이 빌드에 복사됨)인지, `du -ch out/_next/static/media/*.woff2 | tail -1`로 전체 크기를 확인한다(조각은 필요한 것만 내려받으므로 전체 크기는 커도 된다). CSS import가 빌드에서 거부되면 같은 import를 `src/styles/globals.css` 맨 위 `@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';`로 옮긴다. 빌드가 `experimental.globalNotFound`를 모른다고 실패하면 Next 16.3.6 문서(`node_modules/next/dist/docs` 또는 `node_modules/next/dist/server/config-shared.js`)에서 키 이름을 확인해 맞춘다.
 
 - [ ] **Step 12: Commit**
 
 ```bash
 git add -A
 git commit -m "chore: scaffold Next.js static export with tokens, fonts, vitest"
+```
+(스펙 §4 수정도 이 커밋에 포함한다.)
+```bash
+git log -1 --format=%ae   # noreply 주소인지 확인
 ```
 
 ---
@@ -1012,14 +1027,16 @@ git commit -m "feat: add ko/en/ja content with number-free copy rules"
 ### Task 6: 언어별 라우팅, 공통 문서 틀, 언어 전환·안내, 메타데이터, 404, sitemap
 
 **Files:**
-- Create: `src/lib/site.ts`, `src/components/RootDocument.tsx`, `src/components/HomePage.tsx`, `src/components/LangSwitch.tsx`, `src/components/LangHint.tsx`, `app/(en)/layout.tsx`, `app/(en)/en/page.tsx`, `app/(ja)/layout.tsx`, `app/(ja)/ja/page.tsx`, `app/global-not-found.tsx`, `app/sitemap.ts`, `app/icon.svg`, `tests/unit/site.test.ts`
+- Create: `src/lib/site.ts`, `src/components/RootDocument.tsx`, `src/components/HomePage.tsx`, `src/components/LangSwitch.tsx`, `src/components/LangHint.tsx`, `app/(en)/layout.tsx`, `app/(en)/en/page.tsx`, `app/(ja)/layout.tsx`, `app/(ja)/ja/page.tsx`, `app/global-not-found.tsx`, `app/sitemap.ts`, `app/robots.ts`, `app/icon.svg`, `tests/unit/site.test.ts`
+- Modify: `docs/superpowers/specs/2026-09-23-portfolio-design.md` (§12에 "계획 4에서 공개하기 전까지 noindex + robots.txt Disallow" 한 줄)
 - Modify: `app/(ko)/layout.tsx`, `app/(ko)/page.tsx` (Task 1 임시본 교체)
 
 **Interfaces:**
 - Consumes: `LOCALES`, `LOCALE_PATH`, `Locale` (Task 4), `getT`, `dictionaries` (Task 5), 글꼴 (Task 1)
 - Produces:
   - `siteUrl(): URL` — `VERCEL_PROJECT_PRODUCTION_URL`이 있으면 `https://<그 값>`, 없으면 `http://localhost:3000`
-  - `buildMetadata(locale: Locale): Metadata` — title, description, `alternates.canonical`, `alternates.languages`(ko/en/ja + `x-default` → `/`)
+  - `LAUNCHED: boolean` (지금은 `false`, 계획 4에서 `true`)
+  - `buildMetadata(locale: Locale, launched?: boolean): Metadata` — title, description, `alternates.canonical`, `alternates.languages`(ko/en/ja + `x-default` → `/`), `launched`가 false면 `robots: { index: false, follow: false }`
   - `<RootDocument locale extraClass?>{children}</RootDocument>` — `<html lang>`, 글꼴 클래스, 건너뛰기 링크, `<LangHint>`
   - `<HomePage locale />` — 이 Task에서는 `<Header>` 없이 `<main id="main">`만(Task 7·8이 채운다)
   - `<LangSwitch current: Locale label: string />` — 클릭 시 `localStorage['signal.lang']` 저장
@@ -1045,6 +1062,11 @@ describe('site metadata', () => {
     expect(m.alternates?.languages).toEqual({ ko: '/', en: '/en/', ja: '/ja/', 'x-default': '/' });
     expect(typeof m.title).toBe('string');
   });
+
+  it('공개 전에는 검색 노출을 막고, 공개 후에는 연다', () => {
+    expect(buildMetadata('ko', false).robots).toEqual({ index: false, follow: false });
+    expect(buildMetadata('ko', true).robots).toBeUndefined();
+  });
 });
 ```
 
@@ -1057,14 +1079,18 @@ import type { Metadata } from 'next';
 import { getT } from './content';
 import { LOCALE_PATH, type Locale } from './i18n';
 
+// 계획 4에서 공개할 때 true로 바꾼다. false인 동안 noindex + robots.txt Disallow.
+export const LAUNCHED = false;
+
 export function siteUrl(): URL {
   const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   return new URL(host ? `https://${host}` : 'http://localhost:3000');
 }
 
-export function buildMetadata(locale: Locale): Metadata {
+export function buildMetadata(locale: Locale, launched = LAUNCHED): Metadata {
   const t = getT(locale);
   return {
+    ...(launched ? {} : { robots: { index: false, follow: false } }),
     metadataBase: siteUrl(),
     title: t('meta.title'),
     description: t('meta.description'),
@@ -1076,7 +1102,7 @@ export function buildMetadata(locale: Locale): Metadata {
 }
 ```
 
-- [ ] **Step 4: 통과 확인** — Run: `npx vitest run tests/unit/site.test.ts` / Expected: 2 passed
+- [ ] **Step 4: 통과 확인** — Run: `npx vitest run tests/unit/site.test.ts` / Expected: 3 passed
 
 - [ ] **Step 5: `src/components/LangSwitch.tsx`**
 
@@ -1240,7 +1266,7 @@ export default function GlobalNotFound() {
 }
 ```
 
-- [ ] **Step 11: `app/sitemap.ts`, `app/icon.svg`**
+- [ ] **Step 11: `app/sitemap.ts`, `app/robots.ts`, `app/icon.svg`**
 
 ```ts
 import type { MetadataRoute } from 'next';
@@ -1253,6 +1279,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const base = siteUrl();
   const languages = Object.fromEntries(LOCALES.map((l) => [l, new URL(LOCALE_PATH[l], base).href]));
   return LOCALES.map((l) => ({ url: new URL(LOCALE_PATH[l], base).href, alternates: { languages } }));
+}
+```
+`app/robots.ts`:
+```ts
+import type { MetadataRoute } from 'next';
+import { LAUNCHED, siteUrl } from '@/lib/site';
+
+export const dynamic = 'force-static';
+
+export default function robots(): MetadataRoute.Robots {
+  return LAUNCHED
+    ? { rules: { userAgent: '*', allow: '/' }, sitemap: new URL('/sitemap.xml', siteUrl()).href }
+    : { rules: { userAgent: '*', disallow: '/' } };
 }
 ```
 `app/icon.svg`:
@@ -1275,7 +1314,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 - [ ] **Step 13: 빌드 확인**
 
 Run: `npm run typecheck && npm test && npm run build && ls out/index.html out/en/index.html out/ja/index.html out/404.html out/sitemap.xml && grep -o '<html lang="[a-z]*"' out/ja/index.html`
-Expected: 파일 5개 존재, 마지막 출력 `<html lang="ja"`. `out/404.html`에 "GATE 404"가 들어 있는지 `grep -c "GATE 404" out/404.html`로 확인(1 이상). 404.html이 Next 기본 페이지면 `experimental.globalNotFound` 설정을 다시 확인한다.
+Expected: 파일 5개 존재, 마지막 출력 `<html lang="ja"`. `grep -c 'noindex' out/index.html`이 1 이상, `cat out/robots.txt`에 `Disallow: /`. `out/404.html`에 "GATE 404"가 들어 있는지 `grep -c "GATE 404" out/404.html`로 확인(1 이상). 404.html이 Next 기본 페이지면 `experimental.globalNotFound` 설정을 다시 확인한다.
 
 - [ ] **Step 14: Commit**
 
@@ -1286,18 +1325,22 @@ git commit -m "feat: per-locale root layouts, language switch/hint, metadata, 40
 
 ---
 
-### Task 7: 상단 바 — 이력서 버튼, 30초 요약 대화창
+### Task 7: 상단 바 — 이력서 버튼, 30초 요약 대화창, 휴대폰 메뉴
 
 **Files:**
-- Create: `src/lib/resume.ts`, `src/components/Header.tsx`, `src/components/SummaryDialog.tsx`, `tests/unit/resume.test.ts`, `public/resume/.gitkeep`
-- Modify: `src/components/HomePage.tsx`, `src/styles/globals.css`
+- Create: `src/lib/resume.ts`, `src/components/Header.tsx`, `src/components/HeaderMore.tsx`, `src/components/Summary.tsx`, `tests/unit/resume.test.ts`, `public/resume/.gitkeep`
+- Modify: `src/components/HomePage.tsx`, `src/styles/globals.css`, `content/ko.json`·`en.json`·`ja.json` (`nav.menu` 추가)
 
 **Interfaces:**
 - Consumes: `getT` (Task 5), `LangSwitch` (Task 6), `facts` (Task 3)
 - Produces:
   - `resumeHref(locale: Locale, publicDir?: string): string | null` — `public/resume/{locale}.pdf`가 있으면 `/resume/{locale}.pdf`, 없으면 `null`
   - `<ResumeLink href: string|null label pendingLabel className? />` (Header.tsx에서 export, Contact에서 재사용)
-  - `<Header locale />`, `<SummaryDialog openLabel title close resultsHeading education keywords results: string[] resumeHref resumeLabel resumePendingLabel />`
+  - `<SummaryButton label />`, `<SummaryDialog title close resultsHeading education keywords results: string[] resumeHref resumeLabel resumePendingLabel />` (Summary.tsx. 대화창 id는 `summary-dialog`)
+  - `<HeaderMore label>{children}</HeaderMore>` — 휴대폰 폭(≤640px)에서만 접히는 메뉴
+  - `<Header locale />`
+
+**휴대폰 상단 바 설계:** 폭 640px 이하에서는 한 줄에 `SIGNAL` · `이력서` · `메뉴`만 보인다. `메뉴`를 누르면 아래로 `30초 요약`과 `KO · EN · JA`가 펼쳐진다. 데스크톱에서는 메뉴 버튼이 숨고 모든 버튼이 한 줄에 보인다. `<dialog>`는 접히는 영역(`display:none`) 안에 있으면 열리지 않으므로, 여는 버튼(`SummaryButton`)과 대화창(`SummaryDialog`)을 나눠 대화창은 메뉴 밖에 둔다.
 
 - [ ] **Step 1: 실패하는 테스트 `tests/unit/resume.test.ts`**
 
@@ -1334,48 +1377,79 @@ export function resumeHref(locale: Locale, publicDir = join(process.cwd(), 'publ
 
 - [ ] **Step 4: 통과 확인** — Run: `npx vitest run tests/unit/resume.test.ts` / Expected: 2 passed. 그리고 `touch public/resume/.gitkeep`.
 
-- [ ] **Step 5: `src/components/SummaryDialog.tsx`** (네이티브 `<dialog>`의 `showModal()`이 배경을 inert로 만들고 Esc로 닫으며, 닫히면 여는 버튼으로 포커스를 돌려준다)
+- [ ] **Step 5: `nav.menu` 문구 추가** — `content/ko.json`의 `nav`에 `"menu": "메뉴"`, `en.json`에 `"menu": "Menu"`, `ja.json`에 `"menu": "メニュー"`. Run: `npx vitest run tests/unit/content.test.ts` / Expected: PASS(키 목록 일치)
+
+- [ ] **Step 6: `src/components/Summary.tsx`** (네이티브 `<dialog>`의 `showModal()`이 배경을 inert로 만들고 Esc로 닫는다. 닫히면 마지막으로 연 버튼으로 포커스를 돌려준다)
 
 ```tsx
 'use client';
-import { useRef } from 'react';
 
-type Props = {
-  openLabel: string; title: string; close: string; resultsHeading: string;
+const DIALOG_ID = 'summary-dialog';
+let lastOpener: HTMLElement | null = null;
+
+export function SummaryButton({ label }: { label: string }) {
+  return (
+    <button type="button" className="pill" aria-haspopup="dialog" onClick={(e) => {
+      lastOpener = e.currentTarget;
+      (document.getElementById(DIALOG_ID) as HTMLDialogElement | null)?.showModal();
+    }}>
+      {label}
+    </button>
+  );
+}
+
+type DialogProps = {
+  title: string; close: string; resultsHeading: string;
   education: string; keywords: string; results: string[];
   resumeHref: string | null; resumeLabel: string; resumePendingLabel: string;
 };
 
-export function SummaryDialog(p: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const opener = useRef<HTMLButtonElement>(null);
+export function SummaryDialog(p: DialogProps) {
+  return (
+    <dialog id={DIALOG_ID} className="summary" aria-labelledby="summary-title" onClose={() => lastOpener?.focus()}>
+      <p className="eyebrow">{p.title}</p>
+      <h2 id="summary-title" className="display">CHOI HALIM</h2>
+      <p className="mono">ML ENGINEER · {p.keywords}</p>
+      <p className="muted">{p.education}</p>
+      <h3>{p.resultsHeading}</h3>
+      <ul>{p.results.map((r) => <li key={r}>{r}</li>)}</ul>
+      <form method="dialog" className="summary-actions">
+        {p.resumeHref
+          ? <a className="pill" href={p.resumeHref} download>{p.resumeLabel}</a>
+          : <span className="pill is-pending" aria-disabled="true">{p.resumePendingLabel}</span>}
+        <button className="pill">{p.close}</button>
+      </form>
+    </dialog>
+  );
+}
+```
+
+- [ ] **Step 7: `src/components/HeaderMore.tsx`**
+
+```tsx
+'use client';
+import { useState } from 'react';
+
+export function HeaderMore({ label, children }: { label: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
     <>
-      <button ref={opener} type="button" className="pill" onClick={() => ref.current?.showModal()}>{p.openLabel}</button>
-      <dialog ref={ref} className="summary" aria-labelledby="summary-title" onClose={() => opener.current?.focus()}>
-        <p className="eyebrow">{p.title}</p>
-        <h2 id="summary-title" className="display">CHOI HALIM</h2>
-        <p className="mono">ML ENGINEER · {p.keywords}</p>
-        <p className="muted">{p.education}</p>
-        <h3>{p.resultsHeading}</h3>
-        <ul>{p.results.map((r) => <li key={r}>{r}</li>)}</ul>
-        <div className="summary-actions">
-          {p.resumeHref
-            ? <a className="pill" href={p.resumeHref} download>{p.resumeLabel}</a>
-            : <span className="pill is-pending" aria-disabled="true">{p.resumePendingLabel}</span>}
-          <button type="button" className="pill" onClick={() => ref.current?.close()}>{p.close}</button>
-        </div>
-      </dialog>
+      <button type="button" className="pill menu-toggle" aria-expanded={open} aria-controls="header-more"
+              onClick={() => setOpen((v) => !v)}>
+        {label}
+      </button>
+      <div id="header-more" className="header-more" data-open={open}>{children}</div>
     </>
   );
 }
 ```
 
-- [ ] **Step 6: `src/components/Header.tsx`**
+- [ ] **Step 8: `src/components/Header.tsx`**
 
 ```tsx
+import { HeaderMore } from './HeaderMore';
 import { LangSwitch } from './LangSwitch';
-import { SummaryDialog } from './SummaryDialog';
+import { SummaryButton, SummaryDialog } from './Summary';
 import { getT } from '@/lib/content';
 import type { Locale } from '@/lib/i18n';
 import { resumeHref } from '@/lib/resume';
@@ -1394,20 +1468,23 @@ export function Header({ locale }: { locale: Locale }) {
       <span className="brand display">SIGNAL</span>
       <div className="header-actions">
         <ResumeLink href={resume} label={t('nav.resume')} pendingLabel={t('nav.resumePending')} />
-        <SummaryDialog
-          openLabel={t('nav.summary')} title={t('summary.title')} close={t('summary.close')}
-          resultsHeading={t('summary.resultsHeading')} education={t('about.education')} keywords={t('hero.keywords')}
-          results={[t('summary.r1'), t('summary.r2'), t('summary.r3')]}
-          resumeHref={resume} resumeLabel={t('nav.resume')} resumePendingLabel={t('nav.resumePending')}
-        />
-        <LangSwitch current={locale} label={t('nav.language')} />
+        <HeaderMore label={t('nav.menu')}>
+          <SummaryButton label={t('nav.summary')} />
+          <LangSwitch current={locale} label={t('nav.language')} />
+        </HeaderMore>
       </div>
+      <SummaryDialog
+        title={t('summary.title')} close={t('summary.close')}
+        resultsHeading={t('summary.resultsHeading')} education={t('about.education')} keywords={t('hero.keywords')}
+        results={[t('summary.r1'), t('summary.r2'), t('summary.r3')]}
+        resumeHref={resume} resumeLabel={t('nav.resume')} resumePendingLabel={t('nav.resumePending')}
+      />
     </header>
   );
 }
 ```
 
-- [ ] **Step 7: `HomePage.tsx` 갱신**
+- [ ] **Step 9: `HomePage.tsx` 갱신**
 
 ```tsx
 import { Header } from './Header';
@@ -1423,32 +1500,40 @@ export function HomePage({ locale }: { locale: Locale }) {
 }
 ```
 
-- [ ] **Step 8: 스타일 추가 (`globals.css` 끝)**
+- [ ] **Step 10: 스타일 추가 (`globals.css` 끝)**
 
 ```css
 .site-header { position: sticky; top: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center;
   gap: 12px; padding: 12px 16px; background: rgba(7, 11, 22, 0.8); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .brand { font-size: 1rem; letter-spacing: 0.1em; }
-.header-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.header-more { display: flex; gap: 8px; align-items: center; }
+.menu-toggle { display: none; }
 .pill { font: 600 0.8rem var(--font-mono); color: var(--tx); background: none; border: 1px solid var(--line); border-radius: 999px;
   padding: 6px 14px; text-decoration: none; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
 .pill:hover { border-color: var(--dot); }
 .pill.is-pending { color: var(--mute); border-style: dashed; cursor: not-allowed; }
+@media (max-width: 640px) {
+  .menu-toggle { display: inline-flex; }
+  .header-more { display: none; position: absolute; top: 100%; left: 0; right: 0; padding: 12px 16px;
+    justify-content: space-between; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .header-more[data-open="true"] { display: flex; }
+}
 .summary { margin: auto; max-width: min(560px, 100% - 32px); background: var(--bg2); color: var(--tx);
   border: 1px solid var(--line); border-radius: 12px; padding: 28px; }
 .summary::backdrop { background: rgba(7, 11, 22, 0.7); }
-.summary h2 { font-size: 2rem; }
+.summary h2 { font-size: 2rem; margin-top: 4px; }
 .summary ul { margin: 8px 0 0 20px; }
 .summary-actions { display: flex; gap: 8px; margin-top: 20px; }
 ```
 
-- [ ] **Step 9: 확인** — Run: `npm run typecheck && npm test && npm run build && grep -c "이력서 준비 중" out/index.html` / Expected: 1 이상(PDF가 아직 없으므로)
+- [ ] **Step 11: 확인** — Run: `npm run typecheck && npm test && npm run build && grep -c "이력서 준비 중" out/index.html` / Expected: 1 이상(PDF가 아직 없으므로)
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: header with resume button, 30-second summary dialog"
+git commit -m "feat: header with resume button, summary dialog, mobile menu"
 ```
 
 ---
@@ -1754,7 +1839,23 @@ export function HomePage({ locale }: { locale: Locale }) {
 Run: `npm run typecheck && npm test && npm run build && grep -c "<email>" out/index.html; grep -c "GATE 06" out/ja/index.html`
 Expected: 첫 grep은 `0`(주소가 HTML에 없음), 두 번째는 1 이상. `npx serve out -l 4173`을 띄워 세 언어 페이지를 눈으로 훑고, 폭 375px에서 가로 스크롤이 없는지 확인한다.
 
-- [ ] **Step 15: Commit**
+- [ ] **Step 15: ⏸ 화면 확인 체크포인트 (사용자)**
+
+배포 전에 사용자가 처음으로 실제 화면을 보는 단계다. 스크린숏은 저장소가 아니라 스크래치 폴더에 저장한다.
+
+```bash
+npx serve out -l 4173 --no-clipboard &
+SHOTS="${TMPDIR:-/tmp}/signal-shots"; mkdir -p "$SHOTS"   # 세션 스크래치 폴더가 있으면 그쪽을 쓴다
+for p in "ko:/" "ja:/ja/"; do
+  name=${p%%:*}; path=${p#*:}
+  npx playwright screenshot --full-page --viewport-size=1440,900 "http://localhost:4173$path" "$SHOTS/$name-desktop.png"
+  npx playwright screenshot --full-page --viewport-size=390,844  "http://localhost:4173$path" "$SHOTS/$name-mobile.png"
+done
+kill %1
+```
+Read 도구로 네 장을 직접 확인해 넘침·겹침·대비 문제가 없는지 먼저 본다. 그다음 사용자에게 로컬 주소(`npx serve out -l 4173`)와 확인할 점(휴대폰 상단 바와 메뉴, 섹션 순서, 글자 크기, 탑승권 카드)을 알리고 **답을 받을 때까지 멈춘다.** 수정 요청은 이 Task 안에서 반영하고 다시 캡처한다. (3D·플립·리빌 같은 연출은 계획 3·4 몫이니, 이 단계에서는 구조와 읽기 쉬운지만 본다.)
+
+- [ ] **Step 16: Commit**
 
 ```bash
 git add -A
@@ -1792,7 +1893,13 @@ export default defineConfig({
 
 ```ts
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+// 휴대폰 폭에서는 30초 요약과 언어 전환이 메뉴 안에 있다.
+async function openMenuIfCollapsed(page: Page) {
+  const toggle = page.getByRole('button', { name: /^(메뉴|Menu|メニュー)$/ });
+  if (await toggle.isVisible()) await toggle.click();
+}
 
 const PAGES = [
   { path: '/', lang: 'ko' },
@@ -1856,6 +1963,7 @@ test('건너뛰기 링크가 첫 Tab에 나타나고 본문으로 이동한다',
 
 test('30초 요약: 열기, Esc로 닫기, 포커스 복귀', async ({ page }) => {
   await page.goto('/');
+  await openMenuIfCollapsed(page);
   const opener = page.getByRole('button', { name: '30초 요약' });
   await opener.click();
   const dialog = page.getByRole('dialog');
@@ -1868,7 +1976,8 @@ test('30초 요약: 열기, Esc로 닫기, 포커스 복귀', async ({ page }) =
 
 test('언어 전환 링크와 선택 기억', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'JA' }).first().click();
+  await openMenuIfCollapsed(page);
+  await page.getByRole('link', { name: 'JA' }).click();
   await expect(page).toHaveURL(/\/ja\/$/);
   expect(await page.evaluate(() => localStorage.getItem('signal.lang'))).toBe('ja');
 });
@@ -1890,6 +1999,33 @@ for (const bad of ['/nope/', '/en/xyz/']) {
     await expect(page.getByRole('link', { name: '첫 화면으로' })).toHaveAttribute('href', '/');
   });
 }
+
+test('휴대폰 폭: 상단 바는 한 줄이고, 메뉴를 열어야 언어 전환이 보인다', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/');
+  const header = page.locator('.site-header');
+  expect((await header.boundingBox())!.height).toBeLessThan(72);
+  const toggle = page.getByRole('button', { name: '메뉴' });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('link', { name: 'EN' })).toBeHidden();
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('link', { name: 'EN' })).toBeVisible();
+});
+
+test('데스크톱 폭에서는 메뉴 버튼 없이 모두 보인다', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: '메뉴' })).toBeHidden();
+  await expect(page.getByRole('button', { name: '30초 요약' })).toBeVisible();
+});
+
+test('공개 전: noindex와 robots.txt', async ({ page, request }) => {
+  await page.goto('/');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  expect(await (await request.get('/robots.txt')).text()).toContain('Disallow: /');
+});
 
 test('모바일 폭에서 가로 스크롤이 없다', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
@@ -1943,17 +2079,60 @@ git commit -m "test: e2e and axe checks; add CI workflow"
 ### Task 10: GitHub 저장소와 Vercel 배포 (⏸ 외부 작업 — 사용자 확인 후)
 
 **Files:**
-- Modify: `CLAUDE.md` (진행 표: 계획 1 완료, 배포 주소 기록)
+- Create: `README.md`
+- Modify: `CLAUDE.md` (진행 표: 계획 1 완료, 배포 주소 기록, 공개용 항공권 저장소도 noreply 이메일로 커밋하라는 주의)
 
 **Interfaces:**
 - Consumes: CI 워크플로 (Task 9)
 - Produces: GitHub `hyde0395/signal-ml-portfolio`, Vercel 운영 주소 `https://<project>.vercel.app`
+
+- [ ] **Step 0: `README.md`** (면접관이 저장소에 들어왔을 때 읽는 문서. 사실만, 담백하게. 배포 주소는 Step 5에서 채운다)
+
+````markdown
+# SIGNAL — ML Engineer Portfolio
+
+CHOI HALIM(최하림)의 ML 엔지니어 포트폴리오 사이트입니다. 대표 프로젝트인 한·일 항공권 가격 예측(`airfare-forecasting-ml`)을 실제 수집 데이터로 만든 3D 가격 지형 위에서 설명합니다.
+
+- 사이트: (배포 후 기록)
+- 언어: 한국어 `/` · English `/en/` · 日本語 `/ja/`
+
+## 구조
+
+| 경로 | 역할 |
+|---|---|
+| `data/facts.json` | 사이트에 나오는 모든 수치의 유일한 원본 |
+| `content/{ko,en,ja}.json` | 문장만. 수치는 `{model.tss.mae}` 같은 자리표시로 참조 |
+| `scripts/export_facts.py` | 모델 저장소의 스냅샷(기준일까지 자른 CSV + 학습용 필터)에서 `facts.json`을 다시 만든다 |
+| `src/lib/i18n.ts` | 자리표시 해석과 언어별 숫자·날짜 표기 |
+| `app/(ko|en|ja)` | 언어별 root layout, 정적 export |
+
+## 수치가 틀리지 않게 하는 장치
+
+- 문장에 숫자를 직접 쓰면 단위 테스트가 실패합니다(`tests/unit/content.test.ts`).
+- 자리표시가 `facts.json`에 없는 경로를 가리키면 빌드가 실패합니다.
+- `export_facts.py`는 다시 센 행 수가 모델 학습 행 수와 다르면 멈춥니다.
+
+## 실행
+
+```bash
+npm ci
+npm run dev        # 개발 서버
+npm test           # 단위 테스트
+npm run build      # 정적 export → out/
+npm run e2e        # Playwright + axe
+npm run facts      # 모델 저장소에서 수치 갱신 (AIRFARE_ROOT 필요)
+```
+
+Next.js (App Router, static export) · TypeScript · zod · Vitest · Playwright · GitHub Actions · Vercel
+````
 
 - [ ] **Step 1: ⏸ 사용자에게 확인** — "GitHub에 `signal-ml-portfolio` 저장소를 만들고 올릴까요? 공개(public)/비공개 중 무엇으로 할까요?"를 묻고 답을 기다린다. (포트폴리오 저장소 자체는 공개를 권한다. 원본 CSV는 이 저장소에 없다.)
 
 - [ ] **Step 2: 저장소 생성과 푸시** (Step 1 답에 따라 `--public` 또는 `--private`)
 
 ```bash
+git log --format='%ae %ce' | sort -u    # noreply 주소 한 줄만 나와야 한다. 다른 주소가 보이면 푸시하지 말고 Task 1 Step 0을 다시 한다
+git add README.md && git commit -m "docs: add README"
 gh repo create hyde0395/signal-ml-portfolio --public --source . --remote origin --push
 gh run watch --exit-status
 ```
@@ -1971,10 +2150,10 @@ curl -s https://<운영주소>/ | grep -o 'hrefLang="ja"[^>]*' | head -1
 ```
 Expected: `200`, `200`, `404`, 그리고 hreflang 링크의 href가 `https://<운영주소>/ja/`.
 
-- [ ] **Step 5: CLAUDE.md 갱신과 Commit** — 진행 표에 "계획 1 완료 · 배포 주소 https://…"를 적고, "다음: 계획 2(데모) 작성"으로 바꾼다.
+- [ ] **Step 5: README·CLAUDE.md 갱신과 Commit** — README의 "사이트: (배포 후 기록)"을 운영 주소로 바꾼다(공개 전 noindex 상태라는 점은 적지 않는다). CLAUDE.md 진행 표에 "계획 1 완료 · 배포 주소 https://…"를 적고 "다음: 계획 2(데모) 작성"으로 바꾼다. 그리고 "나중에 만들 공개용 항공권 저장소도 커밋 이메일을 noreply로 설정하고 기존 기록을 확인할 것"을 주의 사항에 추가한다.
 
 ```bash
-git add CLAUDE.md
+git add README.md CLAUDE.md
 git commit -m "docs: record plan 1 completion and deploy URL"
 git push
 ```

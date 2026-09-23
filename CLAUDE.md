@@ -180,3 +180,5 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - 시각적인 결정은 비주얼 컴패니언으로 보여준다. 서버는 `--project-dir ~/dev/signal-ml-portfolio`로 시작한다(폴더 이동으로 포트가 바뀔 수 있으니 새 URL을 사용자에게 알려준다).
 - 이 프로젝트는 iCloud 밖인 `~/dev/signal-ml-portfolio`에 있다. 항공권 저장소(`~/Documents/airfare-forecasting-ml`)는 iCloud 안이라, 추출 스크립트를 돌리기 전에 그쪽 CLAUDE.md의 워밍 절차를 확인한다.
 - 이 폴더를 git 저장소로 만들 때 `.superpowers/`를 `.gitignore`에 추가한다.
+- **커밋 이메일**: 이 저장소는 GitHub noreply(`55799748+hyde0395@users.noreply.github.com`)로 커밋한다. 개인 이메일이 git 기록에 남으면 사이트의 이메일 숨김이 무의미해진다. 계획 1 Task 1 Step 0에서 설정하고 기존 기록도 고친다. 나중에 만들 공개용 항공권 저장소에도 똑같이 적용한다.
+- **검색 노출**: 계획 4에서 공개하기 전까지 `noindex`(스위치: `src/lib/site.ts`의 `LAUNCHED`).
