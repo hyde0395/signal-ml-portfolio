@@ -355,6 +355,7 @@ interface ForecastSource {
 - **통계**: Vercel Web Analytics(쿠키 없음)로 방문 수와 유입 경로를 봅니다.
   - 이력서 다운로드 수는 custom event가 필요합니다. 이 기능은 Vercel 유료 요금제에서만 쓸 수 있습니다.
   - 무료(Hobby) 요금제에서는 다운로드 수 집계를 **넣지 않습니다.** 요금제를 올리면 이벤트 한 줄만 추가하면 되도록 다운로드 버튼에 이벤트 자리를 남겨 둡니다.
+- **공개 전 검색 노출 차단**: 계획 4에서 공개하기 전까지는 `noindex`와 `robots.txt`의 `Disallow: /`로 검색 노출을 막습니다. 스위치는 `src/lib/site.ts`의 `LAUNCHED` 하나입니다.
 
 ---
 

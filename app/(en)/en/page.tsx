@@ -1,5 +1,5 @@
 import { HomePage } from '@/components/HomePage';
 
 export default function Page() {
-  return <HomePage locale="ko" />;
+  return <HomePage locale="en" />;
 }

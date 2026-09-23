@@ -29,3 +29,11 @@ section { padding-block: 96px; }
 section h2 { font-size: clamp(1.75rem, 4vw, 2.75rem); margin: 8px 0 24px; }
 section h3 { font-size: 1.25rem; margin: 40px 0 12px; }
 section p + p { margin-top: 12px; }
+
+.lang-switch { display: flex; gap: 4px; font-size: 0.8rem; }
+.lang-switch a { color: var(--mute); text-decoration: none; padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; }
+.lang-switch a[aria-current] { color: var(--tx); border-color: var(--line); }
+.lang-hint { position: fixed; left: 16px; bottom: 16px; z-index: 50; display: flex; gap: 8px; align-items: center;
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+.lang-hint button { background: none; border: 0; color: var(--mute); font-size: 1.25rem; cursor: pointer; min-width: 32px; min-height: 32px; }
+.not-found { padding-block: 25vh; display: grid; gap: 12px; }
