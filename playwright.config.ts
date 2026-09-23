@@ -6,8 +6,16 @@ export default defineConfig({
   testDir: 'tests/e2e',
   use: { baseURL: 'http://localhost:4173' },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    {
+      name: 'desktop',
+      // CI의 헤드리스 Chromium은 기본 GPU 백엔드가 없어 WebGL이 꺼진다. swiftshader 소프트웨어
+      // 렌더러를 강제로 켜서 3D 배경(data-3d="on")이 로컬과 동일하게 테스트되게 한다.
+      use: { ...devices['Desktop Chrome'], launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] } },
+    },
+    {
+      name: 'mobile',
+      use: { ...devices['Pixel 7'], launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] } },
+    },
   ],
   // out/ 폴더를 정적 서버로 서빙한다. CI가 아니면 이미 떠 있는 서버를 재사용한다.
   webServer: { command: 'npx serve out -l 4173 --no-clipboard', port: 4173, reuseExistingServer: !process.env.CI },
