@@ -31,7 +31,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 ### 다음 세션 할 일 (순서대로)
 
 1. ✅ **결정됨(2026-09-24): 예약 곡선은 A — 날마다 표본 수만큼 점을 진하게/크게.** 먼 출발일(dtd 61~90)은 표본이 41~13,392건으로 들쭉날쭉해 값이 튀므로, 데이터를 빼지 않고 표본이 적은 날을 흐리고 작게 그려 불확실성을 보여 준다. 스펙 §5.2에 기록
-2. **계획 3 최종 검토 수정 (한 번에)** — branch `plan-3-terrain`에서
+2. **계획 3 최종 검토 수정 (한 번에)** — branch `plan-3-terrain`에서. ⏳ 2026-09-24 맥미니에서 진행 중 → 끝나면 이 줄을 ✅로 바꾸고 push. **push 전에는 다른 기기에서 이 브랜치를 고치지 않는다**
    - ① `?capture=` 값을 `FIGURE_KEYS`에 있는 것만 받기 + `<TerrainScene>`을 에러 경계로 감싸 오류 시 `onFail('error')`(지금은 `/?capture=zzz`로 페이지 전체가 사라짐). e2e: `/?capture=bogus`에서도 h1·본문이 보인다
    - ② 3D 켜진 상태 글자 대비: 첫 화면(`.hero-sub`, `.hero-keywords`)과 `#case` 제목·도입에도 반투명 배경(또는 text-shadow). axe `color-contrast`가 그라데이션 위 글자를 "incomplete"로 넘겨 실제로 검사 못 하므로 테스트를 정직하게 고치기
    - ③ 휴대폰 3-2(insight) 카메라를 훨씬 가까이(지금 z≈64로 곡선이 거의 안 보임). Pixel 7 폭으로 확인
@@ -39,9 +39,21 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - ⑤ 1번 결정 반영(셰이더/데이터가 바뀌면 `npm run build && npm run fallbacks`로 대체 이미지 다시 생성)
    - 싸게 같이: 청크 테스트를 `index.html`·`en/`·`ja/` 모두로, 캡처 스크립트 `browser.close`를 finally로, 문서 경로 오타(README·스펙 §5.3의 `src/sections/ChapterFigure.tsx` → `src/components/sections/`), 스펙 §5.2에 curve 레이어·§5.3 대체 이미지 5장·§3의 3-5 띠는 계획 2로 이동 기록, `scenes.ts:27` 오래된 주석, 3D 청크 실제 크기(gzip 334KB) 스펙에 기록
    - 수정 후: 한 번 재검토 → **CI 확인은 PR로**(CI는 main push/PR에서만 돈다. 헤드리스 swiftshader가 느리면 3D가 꺼질 수 있음) → main 병합 → Vercel 자동 배포 확인
-3. **계획 2(데모) 계획서 작성**: 스펙 §6 기반. 3-5 챕터의 **q10~q90 띠는 `export_demo.py`와 함께 계획 2에서 지형 위에 얹는다.**
-4. 그다음 계획 4(연출·마감, 공개 시 `LAUNCHED = true`)
-5. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개, LinkedIn, 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체)
+3. **계획 2(데모) 계획서 작성 → 실행** (`superpowers:writing-plans`, 실행은 subagent-driven). 스펙 §6 + "데모·배포·성능·접근성" 절 기준. 담을 것:
+   - `scripts/export_demo.py`: `v2_predictor.pkl` + `recommend_action()`로 기준일 2026-09-22, 6개 노선 × LCC/FSC × 출발일 D+3~90의 예측가·q10·q90·추천(BUY_NOW/DROP_EXPECTED/WAIT)·**이유 코드와 값**(문장 아님, 예: `{"action":"DROP_EXPECTED","bestDay":30,"bestPrice":171000,"savingPct":-8.7,"confidence":"medium"}`). 대표 편 = 최근 3주 관측 50건 이상. 대표 편 없는 조합은 `null`. 출력 `public/data/demo.<기준일>.json`, gzip ≤500KB(넘으면 출발일을 주 단위로). 모델 실행 전 항공권 저장소 iCloud 워밍, NeuralProphet 로그는 `redirect_stdout`로 억제
+   - `ForecastSource` 인터페이스(`meta`, `getStrip`, `getForecast`) + `StaticForecastSource`(demo.json). 나중에 `ApiForecastSource`로 교체 가능
+   - 데모 UI **B1**: 문장형 선택("〔노선〕 가는 〔LCC/FSC〕를 〔출발일〕에 타려면, 지금 살까요?", 언어별 문장 틀) + 출발일 막대(=날짜 선택기, 높이=기준일에 사면 예측가, 공휴일 호박색+이름표, ←/→·Home/End, `role="slider"`) + 결과(플립 가격, q10~q90 띠, 추천 배지+이유, 확신도는 WAIT/DROP만) + "미리 계산된 예측 · 2026-09-22 기준". 초기 선택값은 DROP_EXPECTED가 나오는 조합(`facts.json` `demoDefault`). 불러오기 실패 → 안내+다시 시도, 예측 없는 날짜 → 회색 점선·선택 불가. 결과 변경은 조작 멈춘 뒤 `aria-live` 한 번
+   - 섹션 위치: `HomePage.tsx`의 케이스 스터디와 기술 스택 사이(`{/* 계획 2 */}` 자리), 장면 키 추가 필요(scenes.ts)
+   - **3-5 챕터 q10~q90 띠**를 지형 위에 얹는다(모델 예측 구간 사용). 대체 이미지 `interval.webp` 다시 생성
+   - 문구 3개 언어(숫자 직접 기입 금지 테스트 통과), e2e(키보드 조작, 실패 경로, axe)
+4. **계획 4(연출·마감) 계획서 작성 → 실행**. 담을 것:
+   - 로딩 화면 `LOADING 242,874 ROWS` 플립 카운터(최대 1.2초, 같은 세션 재방문 시 생략), 플립 글자판(글자당 약 40ms, 0.8초 이내), 텍스트 리빌(단어 단위, 0.9초, 단어당 60ms), 이징 `cubic-bezier(.16,1,.3,1)` 하나, bounce 금지
+   - GSAP ScrollTrigger + Lenis(지금 카메라는 가벼운 스크롤 감지+감쇠). 움직임 줄이기에서는 모두 끔
+   - 언어별 링크 미리보기(OG) 이미지, Vercel Web Analytics(다운로드 버튼에 이벤트 자리만)
+   - 용량 검사 스크립트(초기 JS gzip ≤150KB — 지금 약 176KB라 줄여야 함, 3D 청크 목표 ≈250KB — 지금 334KB), Lighthouse 모바일 ≥90, LCP ≤2.5s, CLS <0.1
+   - 공개 전환: `src/lib/site.ts`의 `LAUNCHED = true`(noindex·robots 해제)
+   - 남겨 둔 작은 지적들(계획 1·3 최종 검토 분류표의 "나중에" 항목) 중 방문자에게 보이는 것 정리
+5. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`, 파일명 `CHOI_HALIM_resume_<언어>.pdf`로 내려받아짐), LinkedIn 주소(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체, 커밋 이메일 noreply 확인)
 
 ### 다른 기기(맥북)에서 이어서 작업하기
 
@@ -205,3 +217,13 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - **코드 주석 (사용자 요청 2026-09-23)**: 코드에 한국어 주석을 단다. 파일마다 맨 위에 무엇을 하는 파일인지 한두 줄, 그리고 이유가 드러나지 않는 로직에는 "왜 이렇게 했는지"를 적는다. 코드를 한 줄씩 그대로 옮겨 적는 주석은 달지 않는다. 계획서 코드와 구현 에이전트 지시에도 이 규칙을 넣는다.
 - **커밋 이메일**: 이 저장소는 GitHub noreply(`55799748+hyde0395@users.noreply.github.com`)로 커밋한다. 개인 이메일이 git 기록에 남으면 사이트의 이메일 숨김이 무의미해진다. 계획 1 Task 1 Step 0에서 설정하고 기존 기록도 고친다. 나중에 만들 공개용 항공권 저장소에도 똑같이 적용한다.
 - **검색 노출**: 계획 4에서 공개하기 전까지 `noindex`(스위치: `src/lib/site.ts`의 `LAUNCHED`).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
