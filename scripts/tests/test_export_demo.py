@@ -42,6 +42,25 @@ def test_route_class_base_is_mean_price():
     assert ed.route_class_base(kept) == {("ICN_NRT", "LCC"): 200_000.0, ("KIX_ICN", "FSC"): 50_000.0}
 
 
+def test_representative_tie_breaks_by_key_order():
+    # 항공사 B(9시)와 A(8시)가 동률(60행씩) → 키 정렬(항공사·시각·경유) 순으로 첫 번째인 A를 고른다
+    kept = pd.DataFrame(obs(60, airline="B", hour=9) + obs(60, airline="A", hour=8))
+    reps = ed.pick_representatives(kept, "2026-09-22")
+    assert reps[("ICN_NRT", "LCC")]["airline"] == "A"
+
+
+def test_representative_window_edge_is_inclusive_of_21_days_ago():
+    # as_of=2026-09-22 기준 21일 전 시작은 09-02(포함), 09-01은 창 밖(제외)
+    kept = pd.DataFrame(
+        obs(50, airline="E", cls="FSC", ts="2026-09-02 10:00:00")
+        + obs(50, airline="F", o="KIX", d="ICN", ts="2026-09-01 23:00:00")
+    )
+    reps = ed.pick_representatives(kept, "2026-09-22")
+    assert reps[("ICN_NRT", "FSC")] is not None
+    assert reps[("ICN_NRT", "FSC")]["airline"] == "E"
+    assert reps[("KIX_ICN", "LCC")] is None
+
+
 def res(**kw):
     base = dict(action="BUY_NOW", d_now=40, past_optimal=False, best_day=30, saving_pct=3.2, best_price=171_000,
                 wait_days=10, saving=5_000, global_best_day=30, confidence=None)
@@ -73,6 +92,12 @@ def test_encode_reco_rejects_mismatched_action():
     # saving 3%인데 모델이 WAIT라고 하면 모델 쪽 규칙이 바뀐 것 → 조용히 틀린 이유를 쓰지 않고 멈춘다
     with pytest.raises(ValueError):
         ed.encode_reco(res(action="WAIT", saving_pct=3.0))
+
+
+def test_encode_reco_rejects_unknown_action():
+    # recommend_action에 4번째 상태(예: HOLD)가 생기면 조용히 넘어가지 않고 멈춘다
+    with pytest.raises(ValueError):
+        ed.encode_reco(res(action="HOLD"))
 
 
 def test_slug():

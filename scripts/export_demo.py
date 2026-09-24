@@ -40,6 +40,7 @@ BAND_MAX_GZIP_BYTES = 50 * 1024
 CONFIDENCE = {"높음": "high", "보통": "medium"}
 BUY_WHY = {"IMMINENT", "PAST_OPTIMAL", "AT_LOW", "SMALL_SAVING"}
 PREFERENCE = ["DROP_EXPECTED", "WAIT", "BUY_NOW"]
+ACTIONS = {"BUY_NOW", "DROP_EXPECTED", "WAIT"}   # recommend_action이 돌려줄 수 있는 값(4번째 상태 방지)
 
 
 def depart_dates(as_of: str) -> list[str]:
@@ -78,7 +79,12 @@ def route_class_base(kept: pd.DataFrame) -> dict[tuple[str, str], float]:
 
 
 def encode_reco(res: dict) -> dict:
-    """recommend_action() 반환값 → 이유 코드와 값. 분기 순서는 recommend_action과 같다."""
+    """recommend_action() 반환값 → 이유 코드와 값. 분기 순서는 recommend_action과 같다.
+
+    FALLING/LATER_LOW는 모델이 trend를 돌려주지 않아 action으로 가른다 — 그래서 아래 대조는
+    BUY_NOW 규칙 변경만 잡는다."""
+    if res["action"] not in ACTIONS:
+        raise ValueError(f"모르는 action: {res['action']!r} — recommend_action에 새 상태가 생겼는지 확인한다")
     if res["d_now"] <= 1:
         why = "IMMINENT"
     elif res["past_optimal"]:
@@ -104,7 +110,7 @@ def encode_reco(res: dict) -> dict:
         "saving": int(res["saving"]),
         "savingPct": round(float(res["saving_pct"]), 1),
         "globalBestDay": int(res["global_best_day"]),
-        "confidence": None if action == "BUY_NOW" else CONFIDENCE.get(res["confidence"]),
+        "confidence": None if action == "BUY_NOW" else CONFIDENCE[res["confidence"]],
     }
 
 
