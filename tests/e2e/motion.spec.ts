@@ -55,6 +55,30 @@ test('제목은 화면에 들어오면 단어 단위로 떠올라 끝내 보인�
     .toBe(1);
 });
 
+// 3D가 켜지면 .chapter가 min-height:100vh로 늘어나 페이지가 길어진다(GATE 02 제목이 574~655px 아래로). 트리거
+// 위치를 다시 재지 않으면 리빌·플립이 옛 위치(더 위)에서 미리 터져, 화면에 들어오기 전에 이미 끝나 있다(run.ts의
+// ResizeObserver가 막는다). 리빌과 플립은 같은 ScrollTrigger 위치 계산을 쓰므로, 발동 여부가 DOM에 바로 드러나는
+// 플립(발동하면 sr-only 완성값이 생긴다)으로 본다 — 리빌의 opacity는 진행 중 값과 끝난 값을 가르려면 오래 기다려야 한다.
+// 페이지 아래쪽(#stack-h)은 swiftshader에서 3D가 무거워(약 11fps) 병렬 실행 전체를 멈춰 세웠으므로 위쪽 챕터를 쓴다.
+test('3D가 켜져 페이지가 길어진 뒤에도 GATE 플립은 제목이 화면에 들어올 때 시작한다', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-3d', 'on', { timeout: 20_000 });
+  await expect(page.locator('.reveal-word').first()).toBeAttached({ timeout: 10_000 }); // 연출 시작됨
+  // run.ts는 본문 크기 변화를 150ms 모아 refresh한다 — 그 창 안에서 스크롤하면 옛 위치로 판정되므로 잠시 기다린다
+  await page.waitForTimeout(500);
+  const gate = page.locator('[data-chapter="insight"] [data-flip-on-enter]');
+  // 제목 윗변을 화면 높이 95% 지점에 둔다 — 트리거(85%)에는 아직 닿지 않은 자리
+  await gate.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 0.95 * window.innerHeight));
+  await page.waitForTimeout(500); // Lenis가 자리 잡고 ScrollTrigger가 스크롤을 반영할 시간
+  const flipped = await gate.locator('.sr-only').count();
+  // 부하가 큰 환경(swiftshader 병렬)에서는 프레임 감시가 도중에 3D를 꺼(페이지가 다시 짧아짐) 이 검사의
+  // 전제(3D가 켜진 긴 페이지)가 깨질 수 있다 — 그때는 건너뛴다
+  test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '도중에 3D가 꺼져 전제가 깨짐(프레임 저하)');
+  expect(flipped).toBe(0);
+  await gate.evaluate((n) => n.scrollIntoView({ block: 'center' }));
+  await expect(gate.locator('.sr-only')).toHaveText('GATE 02 — INSIGHT', { timeout: 5_000 });
+});
+
 test('GATE 제목은 플립 뒤 완성값이고, 스크린리더용 완성값이 따로 있다', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });

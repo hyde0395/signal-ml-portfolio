@@ -39,6 +39,17 @@ export function startMotion(doc: Document): () => void {
   lenis.on('scroll', ScrollTrigger.update);
 
   const cancels: (() => void)[] = [];
+  // 트리거 위치는 만들 때 한 번 재 두는데, 3D 판정(pending → on)이 끝나면 .chapter가 min-height:100vh로
+  // 늘어나 페이지가 수천 px 길어진다. ScrollTrigger 3.15는 본문 크기 변화를 스스로 감지하지 않고 Lenis도
+  // refresh를 부르지 않아, 그대로 두면 3D 방문자에게 리빌·플립이 화면 밖에서 미리 끝나 버린다.
+  // 본문 크기가 바뀌면 잠시 모아(150ms) 위치를 다시 잰다.
+  let refreshTimer: number | undefined;
+  const resize = new ResizeObserver(() => {
+    window.clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 150);
+  });
+  resize.observe(doc.body);
+
   const ctx = gsap.context(() => {
     doc.querySelectorAll<HTMLElement>('[data-reveal]').forEach((el) => {
       gsap.from(wrapWords(el), {
@@ -53,9 +64,12 @@ export function startMotion(doc: Document): () => void {
   });
 
   return () => {
+    resize.disconnect();
+    window.clearTimeout(refreshTimer);
     cancels.forEach((c) => c());
     ctx.revert();
     gsap.ticker.remove(raf);
+    gsap.ticker.lagSmoothing(500, 33); // GSAP 기본값으로 되돌린다
     lenis.destroy();
   };
 }
