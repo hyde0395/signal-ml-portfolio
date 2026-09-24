@@ -103,12 +103,12 @@
       "rangeAria": "{model.interval.level}%予測区間 {v.lo}ウォンから{v.hi}ウォン"
     },
     "why": {
-      "IMMINENT": "出発が間近です。今買うほうがよいです。",
-      "PAST_OPTIMAL": "予測される最安時点(D-{v.globalBestDay})はすでに過ぎました。残りの期間では今が最も安いと予測されます。",
+      "IMMINENT": "出発が間近です。今買うのがよいでしょう。",
+      "PAST_OPTIMAL": "予測される最安時点(出発{v.globalBestDay}日前)はすでに過ぎました。残りの期間では今が最も安いと予測されます。",
       "AT_LOW": "今が予測最安値です。待つと値上がりする可能性が高いです。",
-      "SMALL_SAVING": "D-{v.bestDay}の予測最安値との差は{v.savingPct|fixed1}%で、予測誤差の範囲内です。",
-      "FALLING": "価格は下がっています。あと{v.waitDays}日様子を見る価値があります。予測安値は約{v.bestPrice}ウォン(今より{v.savingPct|fixed1}%安い)です。",
-      "LATER_LOW": "D-{v.bestDay}(約{v.waitDays}日後)に買うと、約{v.saving}ウォン({v.savingPct|fixed1}%)安くなると予測されます。"
+      "SMALL_SAVING": "出発{v.bestDay}日前の予測最安値との差は{v.savingPct|fixed1}%で、予測誤差の範囲内です。今買っても大きな差はありません。",
+      "FALLING": "価格は下がっています。あと{v.waitDays}日様子を見てもよさそうです。予測される底値は約{v.bestPrice}ウォン(今より{v.savingPct|fixed1}%安い)です。",
+      "LATER_LOW": "出発{v.bestDay}日前(約{v.waitDays}日後)に買うと、約{v.saving}ウォン({v.savingPct|fixed1}%)安くなると予測されます。"
     },
     "confidence": { "label": "確信度", "high": "高", "medium": "中" },
     "asOf": "事前計算した予測 · {v.asOf|date}時点",

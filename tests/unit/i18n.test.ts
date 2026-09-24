@@ -64,6 +64,7 @@ describe('데모용 형식', () => {
     expect(formatValue('2026-11-14', 'md', 'en')).toMatch(/Sat.*Nov.*14/);
     expect(formatValue('2026-11-14', 'md', 'ja')).toMatch(/11月14日.*土/);
   });
+  it('형식 이름에 숫자가 있어도 문장 안에서 채운다', () => expect(interpolate('{v.x|fixed1}%', { v: { x: 8.66 } }, 'ko')).toBe('8.7%'));
 });
 
 describe('prefill', () => {

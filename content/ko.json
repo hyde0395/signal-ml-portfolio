@@ -106,7 +106,7 @@
       "IMMINENT": "출발이 임박했습니다. 지금 사는 편이 낫습니다.",
       "PAST_OPTIMAL": "예상 최저 시점(D-{v.globalBestDay})은 이미 지났습니다. 남은 기간에는 지금이 가장 쌀 것으로 예측됩니다.",
       "AT_LOW": "지금이 예상 최저가입니다. 기다리면 오를 가능성이 높습니다.",
-      "SMALL_SAVING": "D-{v.bestDay}의 예상 최저가와 차이가 {v.savingPct|fixed1}%로, 예측 오차 범위 안입니다.",
+      "SMALL_SAVING": "D-{v.bestDay}의 예상 최저가와 차이가 {v.savingPct|fixed1}%로, 예측 오차 범위 안입니다. 지금 사도 차이가 크지 않습니다.",
       "FALLING": "가격이 내려가는 중입니다. {v.waitDays}일 더 지켜볼 만합니다. 예상 저점은 약 {v.bestPrice}원(지금보다 {v.savingPct|fixed1}% 낮음)입니다.",
       "LATER_LOW": "D-{v.bestDay}(약 {v.waitDays}일 뒤)에 사면 약 {v.saving}원({v.savingPct|fixed1}%) 쌀 것으로 예측됩니다."
     },

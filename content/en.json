@@ -104,11 +104,11 @@
     },
     "why": {
       "IMMINENT": "Departure is very close. Buying now is the better choice.",
-      "PAST_OPTIMAL": "The predicted lowest point (D-{v.globalBestDay}) has already passed. For the remaining days, now is predicted to be the cheapest.",
-      "AT_LOW": "Now is the predicted lowest price. Waiting is more likely to cost more.",
-      "SMALL_SAVING": "The gap to the predicted low at D-{v.bestDay} is {v.savingPct|fixed1}%, within the model's error range.",
+      "PAST_OPTIMAL": "The predicted lowest point ({v.globalBestDay} days before departure) has already passed. For the remaining days, now is predicted to be the cheapest.",
+      "AT_LOW": "Today's price is the predicted low. Waiting will likely cost more.",
+      "SMALL_SAVING": "The gap to the predicted low {v.bestDay} days before departure is {v.savingPct|fixed1}%, within the model's error range. Buying now makes little difference.",
       "FALLING": "The price is falling. It may be worth watching for {v.waitDays} more days: the predicted low is about ₩{v.bestPrice} ({v.savingPct|fixed1}% below now).",
-      "LATER_LOW": "Buying at D-{v.bestDay} (about {v.waitDays} days from now) is predicted to save about ₩{v.saving} ({v.savingPct|fixed1}%)."
+      "LATER_LOW": "Buying {v.bestDay} days before departure (in about {v.waitDays} days) is predicted to save about ₩{v.saving} ({v.savingPct|fixed1}%)."
     },
     "confidence": { "label": "Confidence", "high": "High", "medium": "Medium" },
     "asOf": "Precomputed prediction · as of {v.asOf|date}",
