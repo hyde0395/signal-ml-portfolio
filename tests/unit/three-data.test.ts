@@ -199,6 +199,14 @@ describe('예측 구간 띠(band, kind 4)', () => {
     expect(Array.from(withBand.terrain.slice(0, plain.count * 3))).toEqual(Array.from(plain.terrain));
     expect(Array.from(withBand.map.slice(0, plain.count * 3))).toEqual(Array.from(plain.map));
   });
+
+  it('지형 출발일과 맞지 않는(사이에 끼는) 날짜의 띠는 세우지 않는다 — 먼 구간 겹침 방지', () => {
+    // fixture 레이어가 출발일 번호 0~2를 쓰므로 날짜는 3개로 두고, 02일이 01일과 05일 사이에 끼게 한다
+    const sparse: Terrain = { ...terrain, dates: ['2026-10-01', '2026-10-05', '2026-10-08'] };
+    const between: Band = { asOf: '2026-09-22', dates: ['2026-10-02'], lo: [-100], hi: [100] };
+    const plain = buildPointCloud(sparse, map, { noiseStride: 1 });
+    expect(buildPointCloud(sparse, map, { noiseStride: 1, band: between }).count).toBe(plain.count);
+  });
 });
 
 describe('커밋된 band.json', () => {

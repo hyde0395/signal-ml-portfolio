@@ -136,6 +136,9 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     b.dates.forEach((d, i) => {
       const di = dateIndex(t.dates, d);
       if (di === null) return;
+      // 지형 출발일 사이에 끼는 날짜는 건너뛴다. 먼 구간은 지형 날짜가 주 1회라, 매일 있는 띠를 사이에
+      // 보간하면 좁은 z에 겹쳐 흰 덩어리가 된다(휴대폰 세로 화면에서 특히). 지형과 같은 간격으로만 세운다
+      if (Math.abs(di - Math.round(di)) > 1e-6) return;
       const dtd = daysBetween(b.asOf, d);
       for (let k = 0; k < BAND_STEPS; k++) {
         const pct = b.lo[i] + ((b.hi[i] - b.lo[i]) * k) / (BAND_STEPS - 1);

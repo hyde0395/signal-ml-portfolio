@@ -37,7 +37,8 @@ export const vertexShader = /* glsl */ `
     // 그대로 쓰면 차이가 작다 → 0.35~1을 0~1로 늘려, 수십 행짜리 먼 dtd는 거의 바닥값(흐리고 작게)이 된다
     float trust = smoothstep(0.35, 1.0, aWeight);
     // 예약 곡선(kind 3)은 "선"으로 읽혀야 해서 제거 레이어보다도 살짝 더 크게(1.3), 표본이 적으면 절반 이하로
-    float size = aKind < 0.5 ? 1.0 : (aKind < 1.5 ? 0.7 : (aKind < 2.5 ? 1.1 : (aKind < 3.5 ? 1.3 * mix(0.4, 1.0, trust) : 1.0)));
+    // 예측 구간 띠(kind 4)는 지형 출발일에만 듬성듬성 세우므로(data.ts), 듬성해진 만큼 점을 키워 선이 끊겨 보이지 않게 1.25
+    float size = aKind < 0.5 ? 1.0 : (aKind < 1.5 ? 0.7 : (aKind < 2.5 ? 1.1 : (aKind < 3.5 ? 1.3 * mix(0.4, 1.0, trust) : 1.25)));
     // 원래 12.0이었으나 첫 점검에서 점이 1~2px로 너무 작아 "지형"으로 안 읽혔다 → 20.0으로 키움
     gl_PointSize = uSize * size * (20.0 / -mv.z);
 
