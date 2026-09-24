@@ -175,9 +175,13 @@ describe('예측 구간 띠(band, kind 4)', () => {
     at(pc.map, s).forEach((v, i) => expect(v).toBeCloseTo(at(pc.terrain, s)[i], 5)); // 지도 장면에서도 제자리
   });
 
-  it('band가 없으면 점 구름은 예전과 같다', () => {
-    const a = buildPointCloud(terrain, map, { noiseStride: 1, seed: 7 });
-    const b = buildPointCloud(terrain, map, { noiseStride: 1, seed: 7, band: undefined });
-    expect(Array.from(b.scatter)).toEqual(Array.from(a.scatter));
+  it('띠를 더해도 앞 레이어의 좌표·난수 순서는 그대로다(대체 이미지 불변)', () => {
+    // band 유무를 비교하면(이전 테스트) 둘 다 "band 없음" 경로를 타서 항상 통과하는 동어반복이었다.
+    // 실제로 band를 넣었을 때 앞쪽(신호~예약 곡선) 점들의 좌표와 난수 순서가 그대로인지 검사한다.
+    const plain = buildPointCloud(terrain, map, { noiseStride: 1, seed: 7 });
+    const withBand = buildPointCloud(terrain, map, { noiseStride: 1, seed: 7, band });
+    expect(Array.from(withBand.scatter.slice(0, plain.count * 3))).toEqual(Array.from(plain.scatter));
+    expect(Array.from(withBand.terrain.slice(0, plain.count * 3))).toEqual(Array.from(plain.terrain));
+    expect(Array.from(withBand.map.slice(0, plain.count * 3))).toEqual(Array.from(plain.map));
   });
 });
