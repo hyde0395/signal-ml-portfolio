@@ -4,78 +4,55 @@ ML 엔지니어 포트폴리오 사이트. 사이트 브랜드는 **SIGNAL**.
 
 Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용 개발자 포트폴리오**. 목표 포지션은 **ML 엔지니어**.
 
-## 현재 진행 상태 (2026-09-24 기준)
+## 현재 상태 (2026-09-24, 맥북에서 작업 후 정리)
 
-설계 완료. 계획 1·3 완료·배포(계획 3은 2026-09-24 main 병합, CI 통과). 계획 2(데모) 완료·배포(2026-09-24, PR #1 main 병합, CI 통과): docs/superpowers/plans/2026-09-24-plan-2-demo.md. 계획 4-1(성능·공유·마감) 완료·배포(2026-09-24, PR #2 main 병합). 계획 4-2(연출·성능) 구현 완료 2026-09-24, branch `plan-4-2-motion` PR — 사용자가 Vercel 미리보기로 연출을 보고 승인하면 병합. 그 뒤 운영 Lighthouse 재측정, 공개 전 할 일(스펙 §14)과 공개 전환.
+**구현은 끝났고, 공개 전 준비만 남았다.** 계획 1·2·3·4-1·4-2가 모두 main에 병합되어 운영 사이트에 배포돼 있다.
 
-| 단계 | 상태 |
-|---|---|
-| 목적·대상 파악 | ✅ 완료 |
-| 콘셉트 결정 | ✅ 완료 |
-| 기술 스택 결정 | ✅ 완료 |
-| 설계 1/4: 페이지 구성 | ✅ 승인 |
-| 설계 2/4: 비주얼 시스템 | ✅ 승인 (배경 A + 글꼴 B + 포인트 호박색) |
-| 프로젝트 이름 | ✅ 저장소 `signal-ml-portfolio`, 브랜드 **SIGNAL** |
-| 설계 3/4: 3D 지형·데이터 파이프라인 | ✅ 승인 |
-| 작업 폴더 이동 | ✅ `~/dev/signal-ml-portfolio` (iCloud 밖) |
-| 설계 4/4: 데모·배포·성능·접근성·다국어·콘텐츠 | ✅ 승인 |
-| 스펙 문서 작성 (`docs/superpowers/specs/2026-09-23-portfolio-design.md`) → 사용자 검토 | ✅ 승인 |
-| 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감), 순서는 1 → 3 → 2 → 4 | — |
-| 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
-| 계획 3: 3D 지형 | ✅ 완료 2026-09-24 · main 병합(fast-forward) · CI 통과 |
-| 계획 2: 데모 | ✅ 완료 2026-09-24 · PR #1 main 병합(fast-forward) · CI 통과 |
-| 계획 4-1: 성능·공유·마감 | ✅ 완료 2026-09-24 · PR #2 main 병합(fast-forward) |
-| 계획 4-2: 연출·성능 | ✅ 구현 2026-09-24 · branch `plan-4-2-motion` · PR, 사용자 연출 확인 후 병합 |
+- 운영: https://signal-ml-portfolio.vercel.app (아직 `noindex` — 공개 전환 전)
+- GitHub: https://github.com/hyde0395/signal-ml-portfolio (공개), main = 운영, PR = Vercel 미리보기
+- CI(GitHub Actions): 타입 검사 → 단위 테스트 → 빌드 → 용량 검사 → e2e(desktop·mobile, axe)
 
-**다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
+| 계획 | 내용 | 계획서 | 상태 |
+|---|---|---|---|
+| 1 기반 | 텍스트 사이트, 3개 언어, 테스트, CI, 배포 | `docs/superpowers/plans/2026-09-23-plan-1-foundation.md` | ✅ |
+| 3 3D 지형 | 점 지형, 지도 장면, 예약 곡선, 대체 이미지 | `2026-09-23-plan-3-terrain.md` | ✅ |
+| 2 데모 | 미리 계산한 예측 데모, 3-5 예측 구간 띠 | `2026-09-24-plan-2-demo.md` | ✅ PR #1 |
+| 4-1 성능·공유 | 초기 JS 분리, 용량 검사, OG 이미지, Web Analytics, 첫 화면 CLS 0 | `2026-09-24-plan-4-1-performance.md` | ✅ PR #2·#3 |
+| 4-2 연출·성능 | 3D 판정 대기(LCP), 로딩 화면, 플립 글자판, 제목 리빌, Lenis | `2026-09-24-plan-4-2-motion.md` | ✅ PR #4 |
 
-### 다음 세션 할 일 (순서대로)
+**운영 측정 (4-2 병합 뒤, Lighthouse 모바일)**: 성능 ko 87 · en 92 · ja 84~89, LCP 1.5 / 1.3 / 2.2~2.4s, CLS 0, TBT 350~500ms, 접근성 100. 초기 JS gzip 139.3KB/150KB, 3D 청크 240.8KB/250KB. 배포 직후 첫 측정은 CDN이 차가워 크게 낮게 나온다(ja 53) — 한 번 더 잰다. 로컬 `npm run lighthouse`는 캐시 없는 서버·소프트웨어 3D라 늘 낮게 나오므로 전후 비교에만 쓴다.
 
-1. ✅ **결정됨(2026-09-24): 예약 곡선은 A — 날마다 표본 수만큼 점을 진하게/크게.** 먼 출발일(dtd 61~90)은 표본이 41~13,392건으로 들쭉날쭉해 값이 튀므로, 데이터를 빼지 않고 표본이 적은 날을 흐리고 작게 그려 불확실성을 보여 준다. 스펙 §5.2에 기록
-2. ✅ **계획 3 최종 검토 수정 완료 (2026-09-24, 맥미니)** — 재검토 통과, `plan-3-terrain`에 push됨. ✅ 2026-09-24 main 병합·CI 통과 (아래 목록은 기록용)
-   - ① `?capture=` 값을 `FIGURE_KEYS`에 있는 것만 받기 + `<TerrainScene>`을 에러 경계로 감싸 오류 시 `onFail('error')`(지금은 `/?capture=zzz`로 페이지 전체가 사라짐). e2e: `/?capture=bogus`에서도 h1·본문이 보인다
-   - ② 3D 켜진 상태 글자 대비: 첫 화면(`.hero-sub`, `.hero-keywords`)과 `#case` 제목·도입에도 반투명 배경(또는 text-shadow). axe `color-contrast`가 그라데이션 위 글자를 "incomplete"로 넘겨 실제로 검사 못 하므로 테스트를 정직하게 고치기
-   - ③ 휴대폰 3-2(insight) 카메라를 훨씬 가까이(지금 z≈64로 곡선이 거의 안 보임). Pixel 7 폭으로 확인
-   - ④ 프레임 저하 감지를 이동 평균(EMA/2초 창)으로 — 빠른 프레임 하나에 초기화되는 문제
-   - ⑤ 1번 결정 반영(셰이더/데이터가 바뀌면 `npm run build && npm run fallbacks`로 대체 이미지 다시 생성)
-   - 싸게 같이: 청크 테스트를 `index.html`·`en/`·`ja/` 모두로, 캡처 스크립트 `browser.close`를 finally로, 문서 경로 오타(README·스펙 §5.3의 `src/sections/ChapterFigure.tsx` → `src/components/sections/`), 스펙 §5.2에 curve 레이어·§5.3 대체 이미지 5장·§3의 3-5 띠는 계획 2로 이동 기록, `scenes.ts:27` 오래된 주석, 3D 청크 실제 크기 스펙에 기록(측정 결과 gzip 약 245KB로 목표 안)
-   - 수정 후: 한 번 재검토 → **CI 확인은 PR로**(CI는 main push/PR에서만 돈다. 헤드리스 swiftshader가 느리면 3D가 꺼질 수 있음) → main 병합 → Vercel 자동 배포 확인
-3. ✅ **계획 2(데모)** — 계획서 `docs/superpowers/plans/2026-09-24-plan-2-demo.md`. 2026-09-24 main 병합. 남은 일: 한국어 데모 문구 사용자 검토, 영·일 검수(스펙 §14)
-4. **계획 4-1(성능·공유·마감) 완료 2026-09-24** — 계획서 `docs/superpowers/plans/2026-09-24-plan-4-1-performance.md`, PR #2 main 병합. 끝낸 것:
-   - 초기 JS에서 zod·사전·facts 경로 분리(`FIGURE_KEYS`를 가벼운 모듈로 이동) ✅ (계획 4-1)
-   - 용량 검사 스크립트(`npm run size`, CI에서도 실행) ✅ (계획 4-1)
-   - 언어별 링크 미리보기(OG) 이미지 ✅ (계획 4-1)
-   - Vercel Web Analytics(다운로드 버튼 이벤트 자리) ✅ (계획 4-1)
-   - band.json을 못 받아도 지형은 그린다(띠만 대체 이미지) ✅ (계획 4-1)
-   - 스크린리더 추천 배지 언어별 낭독 ✅ (계획 4-1)
-   - 데모 날짜 축 연도 표기(해를 넘길 때) ✅ (계획 4-1)
-   - 첫 화면 CLS 0, LCP 이미지 우선 로딩(Task 7b) ✅ (계획 4-1)
+## 다음 세션에서 할 일 (순서대로)
 
-   데모 문구 검토(한국어 사용자 검토, 영·일 검수)는 남아 있다(스펙 §14, 3번 항목 참고).
+1. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
+   - 이력서 PDF 3개: `public/resume/{ko,en,ja}.pdf` (내려받을 때 `CHOI_HALIM_resume_<언어>.pdf`). 파일이 생기면 헤더·연락처의 "준비 중"이 자동으로 링크가 된다
+   - 문구 검토: 한국어는 사용자, 영어는 사용자, 일본어는 사용자가 섭외한 검수자(학과 일본어명 포함). 데모 문구(`content/*.json`의 `demo`)도 포함
+   - LinkedIn 주소: `data/facts.json`의 `contact.linkedin` (비어 있으면 버튼 숨김)
+   - 공개용 항공권 저장소: 만들면 `facts.json`의 `codeLinks.baseUrl`만 바꾼다(그 전까지 "코드 보기" 404는 의도된 상태). 그 저장소도 커밋 이메일 noreply
+   - Vercel 대시보드 → 프로젝트 → Analytics에서 Web Analytics 켜기
+2. **공개 전환**: 위가 끝나면 `src/lib/site.ts`의 `LAUNCHED = true` (noindex·`robots.txt` Disallow 해제). 사용자가 정한다
+3. **남은 개선 (급하지 않음)**
+   - 성능 ko·ja 90: 남은 몫은 TBT(3D·연출 코드의 메인 스레드 점유)와 ja의 렌더 지연. `experimental.inlineCss`는 시험 후 되돌림(HTML이 커져 ko·ja 악화, 스펙 §8.2). 다음 후보: 3D 시작을 더 늦추기(첫 입력·스크롤 뒤), 지형 점 구름 만들기를 Web Worker로
+   - 휴대폰 3-5 예측 구간 띠: 지형 출발일과 맞는 날만 세우고 점을 키웠지만 세로 화면에서 흩어진 흰 점으로 보인다. 사용자가 2026-09-24 "이대로" 승인 — 다시 손볼지는 사용자에게 묻는다
+   - 계획 4-2 최종 검토의 작은 지적(`flip.ts`는 글자를 코드 포인트 단위로 나눔, 리빌은 제목 안쪽 마크업을 지움 — 지금 제목은 모두 글자만이라 문제없음)
+4. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
 
-   **계획 4-2(연출·성능)**: 구현 2026-09-24 — 계획서 `docs/superpowers/plans/2026-09-24-plan-4-2-motion.md`, branch `plan-4-2-motion` PR(사용자 연출 확인 후 병합)
-   - ✅ (계획 4-2, 판정 대기로 첫 화면 이미지를 LCP에서 뺌·연출 JS 지연 로딩. 운영 90 달성 여부는 병합 뒤 재측정) 성능 90 조금 미달: **운영(4-1 병합 후, 2026-09-24) 성능 ko 87 · en 87 · ja 86, LCP 2.5 / 2.8 / 2.7s, CLS 0, TBT 300~370ms, 접근성 100.** 로컬 측정(ko 63/en 79/ja 62)은 캐시 없는 서버·소프트웨어 3D 탓에 과장된다 — 판단은 운영 수치로. 남은 LCP는 렌더 지연(ja 약 450ms)과 첫 바이트(ko 한 번 1.4s, Vercel 콜드) 몫. 다음 후보: 렌더 차단 CSS(Pretendard dynamic-subset CDN CSS)·글꼴 표시 전략, 안 쓰는 JS 약 247KiB, 계획 4-2 연출 JS가 LCP·TBT를 다시 늘리지 않게 지연 로딩
-   - ✅ (계획 4-2) 로딩 화면 `LOADING 242,874 ROWS` 플립 카운터(최대 1.2초, 같은 세션 재방문 시 생략), 플립 글자판(글자당 약 40ms, 0.8초 이내), 텍스트 리빌(단어 단위, 0.9초, 단어당 60ms), 이징 `cubic-bezier(.16,1,.3,1)` 하나, bounce 금지
-   - ✅ (계획 4-2) GSAP ScrollTrigger + Lenis(지금 카메라는 가벼운 스크롤 감지+감쇠). 움직임 줄이기에서는 모두 끔
-   - ✅ (계획 4-2 Task 5, 사용자 확인 필요 — 아래) 휴대폰 3-5 예측 구간 띠: 데스크톱은 선명하지만 휴대폰 세로 화면에서는 흰 점 덩어리로만 보인다(먼 출발일이 주 1회 수집이라 z가 좁게 몰림). 띠 점 크기·밝기나 표시 방식 조정
-   - 남음(4-2에 넣지 않음) 공개 전환: `src/lib/site.ts`의 `LAUNCHED = true`(noindex·robots 해제)
-   - 남겨 둔 작은 지적들(계획 1·3 최종 검토 분류표의 "나중에" 항목) 중 방문자에게 보이는 것 정리
-   - **남은 것·관찰(4-2 뒤)**:
-     - 휴대폰 3-5 띠: 지형 출발일과 맞는 날만 세우고 점을 키웠지만(Task 5) 세로 화면에서 여전히 흩어진 흰 점으로 보여 '띠'로 바로 읽히지 않는다 — 사용자 확인 필요
-     - 운영 Lighthouse 재측정(병합 뒤). 로컬(4-2): 성능 ko 51~62 · en 77~79 · ja 74~77, LCP ko 4.4~5.1s · en 2.9~3.5s · ja 2.9~3.3s, CLS 0(스펙 §8.2)
-     - 렌더 차단 CSS: `experimental.inlineCss`는 시험해 보고 되돌림(HTML이 커져 ko·ja FCP·LCP 악화, ja는 Noto Sans JP CSS 약 192KB까지 인라인). 다른 방법(글꼴 @font-face 분리 등)은 운영 수치를 보고 판단
-     - 공개 전 할 일(스펙 §14, 아래 5번)과 공개 전환(`LAUNCHED = true`)
-5. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`, 파일명 `CHOI_HALIM_resume_<언어>.pdf`로 내려받아짐), LinkedIn 주소(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체, 커밋 이메일 noreply 확인), Vercel 대시보드 → 프로젝트 → Analytics에서 Web Analytics 켜기(사용자 작업)
+**작업 방식**: 새 기능은 `superpowers:brainstorming`(필요하면) → `superpowers:writing-plans` → 사용자가 고른 실행 방식(지금까지는 subagent-driven-development). 브랜치 → PR → CI 통과 → 사용자 확인 → main에 fast-forward 병합 → 운영 확인. 이미 정해진 결정은 다시 묻지 않는다.
 
-### 다른 기기(맥북)에서 이어서 작업하기
+## 다른 컴퓨터(맥미니·맥북)에서 이어서 하기
 
-- `git clone https://github.com/hyde0395/signal-ml-portfolio.git ~/dev/signal-ml-portfolio` → `git switch main`(또는 진행 중인 브랜치)
-- **커밋 이메일을 이 저장소에 다시 설정** (로컬 설정은 clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
-- Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test`, `npm run build`, `npm run e2e`
-- `.superpowers/`(비주얼 컴패니언 시안, SDD 작업 기록)는 git에 없다. 계획 3의 남은 일은 위 "다음 세션 할 일"에 모두 옮겨 두었다
-- 데이터 스크립트(`npm run facts|terrain|map|demo|pytest`)만 항공권 저장소가 필요하다. `~/Documents/airfare-forecasting-ml`가 iCloud로 동기화되지만 `.venv`는 기기마다 깨지므로 그쪽 CLAUDE.md 절차로 새로 만든다(`brew install python@3.11` → `.venv` 재생성). 지형·지도 JSON은 이미 커밋되어 있어 다시 뽑지 않아도 된다. 2026-09-24부터는 iCloud 밖 `~/.venvs/airfare-py311`(Python 3.11)을 기기마다 만들어 쓴다. `scripts/py.sh`가 AIRFARE_PYTHON → ~/.venvs/airfare-py311 → 항공권 저장소 .venv 순서로 고른다. 항공권 저장소 .venv를 지우고 다시 만들지 않는다(삭제가 다른 기기로 동기화된다)
-- Claude 메모리(`~/.claude/projects/...`)는 기기마다 따로다. 중요한 규칙(문구 톤, 한국어 주석, noreply 이메일)은 이 파일에 적혀 있다
-- 맥미니에서 다시 작업하기 전엔 `git pull`
+1. 받기: 처음이면 `git clone git@github.com:hyde0395/signal-ml-portfolio.git ~/dev/signal-ml-portfolio`, 이미 있으면 `git switch main && git pull --ff-only`
+2. **커밋 이메일을 이 저장소에 설정** (clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
+3. **push는 SSH 원격으로** 한다(`git remote -v`가 `git@github.com:…`인지 확인, 아니면 `git remote set-url origin git@github.com:hyde0395/signal-ml-portfolio.git`). HTTPS(gh 토큰)는 `workflow` 권한이 없어 `.github/workflows/`를 바꾸는 push가 거절된다(`gh auth refresh -s workflow`로 권한을 더하는 방법도 있다)
+4. Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test` · `npm run build` · `npm run size` · `npm run e2e`
+5. 데이터 스크립트(`npm run facts|terrain|map|demo|pytest`)만 항공권 저장소가 필요하다. 사이트 빌드·테스트에는 필요 없다(JSON은 커밋되어 있음)
+   - 항공권 저장소 `~/Documents/airfare-forecasting-ml`는 iCloud로 동기화되지만 `.venv`는 기기마다 깨진다. **그 `.venv`를 지우거나 다시 만들지 않는다**(삭제가 다른 기기로 동기화된다)
+   - 대신 기기마다 iCloud 밖에 `~/.venvs/airfare-py311`을 만든다: `brew install python@3.11` → `"$(brew --prefix python@3.11)/bin/python3.11" -m venv ~/.venvs/airfare-py311` → `~/.venvs/airfare-py311/bin/pip install -r ~/Documents/airfare-forecasting-ml/requirements.txt pytest`. `scripts/py.sh`가 AIRFARE_PYTHON → `~/.venvs/airfare-py311` → 항공권 저장소 `.venv` 순서로 고른다(맥북에는 2026-09-24에 만들어 둠)
+   - 모델을 돌리기 전에 그쪽 CLAUDE.md의 iCloud 워밍 절차를 따른다
+6. `.superpowers/`(비주얼 컴패니언 시안, 작업 기록)와 `.lighthouse/`는 git에 없다. Claude 메모리(`~/.claude/projects/…`)도 기기마다 따로다 — 필요한 규칙은 모두 이 파일에 있다
+7. 맥북에서는 이 저장소가 `~/dev/untitled folder/signal-ml-portfolio`에 clone되어 있다(맥미니는 `~/dev/signal-ml-portfolio`). 경로만 다르고 내용은 같다
+
+**CI에서 가끔 보는 일시 오류**: 빌드 중 `Can't resolve '@vercel/turbopack-next/internal/font/google/font'` — Google Fonts를 못 받아서다. 코드 문제가 아니므로 실패한 작업만 다시 돌린다(`gh run rerun <id> --failed`).
 
 ## 확정된 결정
 
@@ -117,7 +94,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
   - 플립 글자판: 글자당 약 40ms, 전체 0.8초 이내
   - 텍스트 리빌: 단어 단위로 아래에서 떠오름, 0.9초, 단어당 60ms 지연
   - 이징은 `cubic-bezier(.16,1,.3,1)`(expo.out) 하나로 통일, bounce 금지
-- 시안 파일: `.superpowers/brainstorm/*/content/visual-style.html`, `visual-style-v2.html`
+- 시안 파일: `.superpowers/brainstorm/*/content/visual-style.html`, `visual-style-v2.html` (git에 없음, 처음 작업한 맥미니에만 있다)
 
 ### 3D 지형과 데이터 파이프라인 (승인됨)
 
@@ -224,11 +201,12 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - 사용자와는 **한국어**로 대화한다. 설명은 쉬운 말로 하고, 전문 용어는 풀어서 쓴다.
 - 질문은 한 번에 하나씩, 가능하면 선택지를 준다.
 - 시각적인 결정은 비주얼 컴패니언으로 보여준다. 서버는 `--project-dir ~/dev/signal-ml-portfolio`로 시작한다(폴더 이동으로 포트가 바뀔 수 있으니 새 URL을 사용자에게 알려준다).
-- 이 프로젝트는 iCloud 밖인 `~/dev/signal-ml-portfolio`에 있다. 항공권 저장소(`~/Documents/airfare-forecasting-ml`)는 iCloud 안이라, 추출 스크립트를 돌리기 전에 그쪽 CLAUDE.md의 워밍 절차를 확인한다.
-- 이 폴더를 git 저장소로 만들 때 `.superpowers/`를 `.gitignore`에 추가한다.
+- 이 프로젝트는 iCloud 밖(`~/dev/…`)에 둔다. 항공권 저장소(`~/Documents/airfare-forecasting-ml`)는 iCloud 안이라, 추출 스크립트를 돌리기 전에 그쪽 CLAUDE.md의 워밍 절차를 확인한다. `.superpowers/`는 `.gitignore`에 있다.
 - **코드 주석 (사용자 요청 2026-09-23)**: 코드에 한국어 주석을 단다. 파일마다 맨 위에 무엇을 하는 파일인지 한두 줄, 그리고 이유가 드러나지 않는 로직에는 "왜 이렇게 했는지"를 적는다. 코드를 한 줄씩 그대로 옮겨 적는 주석은 달지 않는다. 계획서 코드와 구현 에이전트 지시에도 이 규칙을 넣는다.
-- **커밋 이메일**: 이 저장소는 GitHub noreply(`55799748+hyde0395@users.noreply.github.com`)로 커밋한다. 개인 이메일이 git 기록에 남으면 사이트의 이메일 숨김이 무의미해진다. 계획 1 Task 1 Step 0에서 설정하고 기존 기록도 고친다. 나중에 만들 공개용 항공권 저장소에도 똑같이 적용한다.
-- **검색 노출**: 계획 4에서 공개하기 전까지 `noindex`(스위치: `src/lib/site.ts`의 `LAUNCHED`).
+- **커밋 이메일**: 이 저장소는 GitHub noreply(`55799748+hyde0395@users.noreply.github.com`)로 커밋한다. 개인 이메일이 git 기록에 남으면 사이트의 이메일 숨김이 무의미해진다. 새 기기에서 clone하면 다시 설정한다. 나중에 만들 공개용 항공권 저장소에도 똑같이 적용한다.
+- **검색 노출**: 공개 전환 전까지 `noindex`(스위치: `src/lib/site.ts`의 `LAUNCHED`). 공개는 사용자가 정한다.
+- **병합**: main에 직접 커밋하지 않는다(문서 한 줄 고침 정도는 예외). 브랜치 → PR → CI → 사용자 확인 → fast-forward 병합. main에 올리면 곧바로 운영 배포된다.
+- **성능 예산**: 초기 JS gzip ≤150KB는 CI(`npm run size`)가 지킨다. 무거운 라이브러리(three, zod, gsap, lenis)는 `import()`로만 불러오고, `tests/unit/client-imports.test.ts`가 초기 청크 경계를 검사한다.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
