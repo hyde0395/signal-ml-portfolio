@@ -1,6 +1,6 @@
 // 출발일 막대 계산 검사: 예측 없는 날 건너뛰기, 처음·끝, 누른 위치 → 막대 번호, 높이 비율.
 import { describe, expect, it } from 'vitest';
-import { barScale, edgeSelectable, indexFromX, nearestSelectable, stepSelectable } from '@/demo/strip';
+import { barScale, dayFormat, edgeSelectable, indexFromX, nearestSelectable, stepSelectable } from '@/demo/strip';
 
 const d = (prices: (number | null)[]) => prices.map((price) => ({ price }));
 
@@ -52,4 +52,12 @@ describe('barScale', () => {
     expect(s(150)).toBeCloseTo(0.575);
   });
   it('값이 모두 같으면 가운데 높이', () => expect(barScale([5, 5])(5)).toBe(0.6));
+});
+
+describe('dayFormat', () => {
+  it('같은 해 안이면 월·일(md), 해를 넘기면 연도까지(date)', () => {
+    expect(dayFormat(['2026-09-25', '2026-12-21'])).toBe('md');
+    expect(dayFormat(['2026-11-02', '2027-01-29'])).toBe('date');
+    expect(dayFormat([])).toBe('md');
+  });
 });

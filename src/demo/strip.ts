@@ -38,3 +38,8 @@ export function barScale(prices: (number | null)[]): (p: number) => number {
   if (max === min) return () => 0.6;
   return (p) => FLOOR + ((1 - FLOOR) * (p - min)) / (max - min);
 }
+
+// 출발일 목록이 해를 넘기면(기준일이 10월 이후면 D+90이 다음 해) 월·일만으로는 어느 해인지 모호하므로 연도까지 쓴다
+export function dayFormat(dates: string[]): 'md' | 'date' {
+  return dates.length > 0 && dates[0].slice(0, 4) !== dates[dates.length - 1].slice(0, 4) ? 'date' : 'md';
+}

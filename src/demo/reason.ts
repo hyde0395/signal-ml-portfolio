@@ -18,6 +18,7 @@ export function confidenceText(texts: DemoTexts, reco: Reco): string | null {
 // 데모 문구에 새 {v.이름}을 넣으면 여기에도 추가해야 테스트가 통과한다.
 export const SAMPLE_VALUES = {
   date: '2026-11-14',
+  day: 'Sat, November 14',
   asOf: '2026-09-22',
   price: 187400,
   lo: 152000,

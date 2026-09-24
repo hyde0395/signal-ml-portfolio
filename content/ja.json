@@ -92,12 +92,17 @@
     },
     "strip": {
       "label": "出発日",
-      "valuetext": "{v.date|md}、予測価格 {v.price}ウォン",
+      "valuetext": "{v.day}、予測価格 {v.price}ウォン",
       "holiday": "祝日付近: {v.holiday}",
       "legendHoliday": "祝日付近の出発日",
       "legendNoData": "予測なし"
     },
     "money": "{v.price}ウォン",
+  "badges": {
+    "BUY_NOW": "今すぐ購入",
+    "DROP_EXPECTED": "値下がり予想",
+    "WAIT": "待つのがおすすめ"
+  },
     "result": {
       "price": "予測価格",
       "range": "{model.interval.level}%予測区間",
@@ -113,7 +118,7 @@
     },
     "confidence": { "label": "確信度", "high": "高", "medium": "中" },
     "asOf": "事前計算した予測 · {v.asOf|date}時点",
-    "announce": "{v.date|md}出発、予測価格 {v.price}ウォン、{v.action}。",
+    "announce": "{v.day}出発、予測価格 {v.price}ウォン、{v.action}。",
     "loading": "デモデータを読み込んでいます。",
     "error": "デモデータを読み込めませんでした。",
     "retry": "再試行",

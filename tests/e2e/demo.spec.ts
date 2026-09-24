@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 // site.spec.ts와 같은 이유로 JSON은 fs로 읽는다(Playwright TS 로더의 JSON import 제약)
 const read = (p: string) => JSON.parse(readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf-8'));
 const facts = read('../../data/facts.json') as { demoDefault: { route: string; cabin: string; date: string } };
-const ko = read('../../content/ko.json') as { demo: { routeLabel: string; error: string; retry: string } };
+const ko = read('../../content/ko.json') as { demo: { routeLabel: string; error: string; retry: string; badges: Record<string, string> } };
 
 async function openDemo(page: Page, path = '/') {
   await page.goto(path);
@@ -22,7 +22,13 @@ test('처음에는 facts.demoDefault 조합(DROP EXPECTED)이 선택돼 있다',
   await openDemo(page);
   await expect(page.getByLabel(ko.demo.routeLabel)).toHaveValue(facts.demoDefault.route);
   await expect(page.locator('.demo-cabin')).toHaveText(facts.demoDefault.cabin);
-  await expect(page.locator('.demo-result .badge')).toHaveText('DROP EXPECTED');
+  await expect(page.locator('.demo-result .badge [aria-hidden="true"]')).toHaveText('DROP EXPECTED');
+});
+
+test('/ja/: 추천 배지를 스크린리더가 일본어로 읽는다', async ({ page }) => {
+  await openDemo(page, '/ja/');
+  const ja = read('../../content/ja.json') as { demo: { badges: Record<string, string> } };
+  await expect(page.locator('.demo-result .badge .sr-only')).toHaveText(ja.demo.badges.DROP_EXPECTED);
 });
 
 test('키보드: Home·→·End로 날짜를 고른다', async ({ page }) => {
@@ -83,9 +89,9 @@ test('조작한 뒤 결과를 aria-live로 알린다', async ({ page }) => {
   // 처음 날짜가 이미 끝이면 End나 Home 중 하나는 제자리라 조작으로 치지 않는다 → 둘 다 눌러 한 번은 바뀌게 한다
   await page.keyboard.press('End');
   await page.keyboard.press('Home');
-  await expect(live).toContainText(/BUY NOW|DROP EXPECTED|WAIT/);
-  // 알림은 지금 화면의 배지와 같은 결과여야 한다
-  await expect(live).toContainText((await page.locator('.demo-result .badge').textContent())!);
+  await expect(live).toContainText(new RegExp(Object.values(ko.demo.badges).join('|')));
+  // 알림은 지금 화면의 배지(낭독용 문구)와 같은 결과여야 한다
+  await expect(live).toContainText((await page.locator('.demo-result .badge .sr-only').textContent())!);
 });
 
 test('데모 데이터를 못 받으면 안내가 뜨고, 다시 시도하면 불러온다', async ({ page }) => {

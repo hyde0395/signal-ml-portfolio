@@ -92,12 +92,17 @@
     },
     "strip": {
       "label": "Departure date",
-      "valuetext": "{v.date|md}, predicted ₩{v.price}",
+      "valuetext": "{v.day}, predicted ₩{v.price}",
       "holiday": "near a holiday: {v.holiday}",
       "legendHoliday": "Departures near a holiday",
       "legendNoData": "No prediction"
     },
     "money": "₩{v.price}",
+  "badges": {
+    "BUY_NOW": "Buy now",
+    "DROP_EXPECTED": "Price drop expected",
+    "WAIT": "Wait"
+  },
     "result": {
       "price": "Predicted price",
       "range": "{model.interval.level}% prediction interval",
@@ -113,7 +118,7 @@
     },
     "confidence": { "label": "Confidence", "high": "High", "medium": "Medium" },
     "asOf": "Precomputed prediction · as of {v.asOf|date}",
-    "announce": "Departing {v.date|md}, predicted ₩{v.price}, {v.action}.",
+    "announce": "Departing {v.day}, predicted ₩{v.price}, {v.action}.",
     "loading": "Loading demo data.",
     "error": "Couldn't load the demo data.",
     "retry": "Try again",

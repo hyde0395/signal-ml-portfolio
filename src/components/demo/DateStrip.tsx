@@ -4,7 +4,7 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
 import type { DemoTexts } from '@/lib/content';
 import { formatValue, interpolate, type Locale } from '@/lib/i18n';
-import { barScale, edgeSelectable, indexFromX, nearestSelectable, stepSelectable } from '@/demo/strip';
+import { barScale, dayFormat, edgeSelectable, indexFromX, nearestSelectable, stepSelectable } from '@/demo/strip';
 import type { StripDay } from '@/demo/types';
 
 // 손가락이 가로로 이만큼 움직여야 날짜 끌기로 본다. 그 전엔 세로 스크롤일 수도 있어서 고르지 않는다
@@ -25,6 +25,7 @@ export function DateStrip({ days, index, onChange, locale, texts }: Props) {
   const first = edgeSelectable(days, 'first');
   const last = edgeSelectable(days, 'last');
   const cur = days[index];
+  const fmt = dayFormat(days.map((d) => d.date));
 
   const pick = (clientX: number) => {
     const el = ref.current;
@@ -85,7 +86,7 @@ export function DateStrip({ days, index, onChange, locale, texts }: Props) {
     first < 0
       ? texts.strip.legendNoData // 고를 수 있는 날이 하나도 없으면 값 범위 대신 "예측 없음"만 읽힌다
       : cur && cur.price !== null
-      ? interpolate(texts.strip.valuetext, { v: { date: cur.date, price: cur.price } }, locale) +
+      ? interpolate(texts.strip.valuetext, { v: { day: formatValue(cur.date, fmt, locale), price: cur.price } }, locale) +
         (cur.holiday ? `, ${interpolate(texts.strip.holiday, { v: { holiday: holidayLabel(texts, cur.holiday) } }, locale)}` : '')
       : undefined;
 
@@ -122,8 +123,8 @@ export function DateStrip({ days, index, onChange, locale, texts }: Props) {
       </div>
       {days.length > 0 && (
         <p className="strip-axis mono" aria-hidden="true">
-          <span>{formatValue(days[0].date, 'md', locale)}</span>
-          <span>{formatValue(days[days.length - 1].date, 'md', locale)}</span>
+          <span>{formatValue(days[0].date, fmt, locale)}</span>
+          <span>{formatValue(days[days.length - 1].date, fmt, locale)}</span>
         </p>
       )}
       {/* 날짜를 옮길 때 아래 내용이 들썩이지 않도록 이름표 줄은 늘 자리를 차지한다 */}

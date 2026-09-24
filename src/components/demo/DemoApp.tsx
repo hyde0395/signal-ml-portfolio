@@ -4,11 +4,11 @@
 // 초기 JS에 싣지 않는다. 화면은 ForecastSource 인터페이스만 알기 때문에, 나중에 API로 바꿔도 이 파일은 그대로다.
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { DateStrip } from './DateStrip';
-import { BADGE, DemoResult } from './DemoResult';
+import { DemoResult } from './DemoResult';
 import type { DemoTexts } from '@/lib/content';
 import { formatValue, interpolate, type Locale } from '@/lib/i18n';
 import { reasonText } from '@/demo/reason';
-import { edgeSelectable, nearestSelectable } from '@/demo/strip';
+import { dayFormat, edgeSelectable, nearestSelectable } from '@/demo/strip';
 import { ROUTES, type Cabin, type Forecast, type ForecastSource, type Route, type StripDay } from '@/demo/types';
 
 type Props = {
@@ -119,7 +119,11 @@ export function DemoApp({ locale, texts, dataUrl, initial, initialAsOf }: Props)
         setAnnounce(texts.noForecast);
         return;
       }
-      const head = interpolate(texts.announce, { v: { date: forecast.date, price: forecast.price, action: BADGE[forecast.reco.action] } }, locale);
+      const head = interpolate(
+        texts.announce,
+        { v: { day: formatValue(forecast.date, dayFormat(days.map((d) => d.date)), locale), price: forecast.price, action: texts.badges[forecast.reco.action] } },
+        locale,
+      );
       setAnnounce(`${head} ${reasonText(texts, forecast.reco, locale)}`);
     }, ANNOUNCE_DELAY_MS);
     return () => window.clearTimeout(id);
@@ -147,7 +151,7 @@ export function DemoApp({ locale, texts, dataUrl, initial, initialAsOf }: Props)
         {cabin}
       </button>
     ),
-    date: <span className="demo-slot is-date">{day ? formatValue(day.date, 'md', locale) : '—'}</span>,
+    date: <span className="demo-slot is-date">{day ? formatValue(day.date, dayFormat(days.map((d) => d.date)), locale) : '—'}</span>,
   };
 
   return (

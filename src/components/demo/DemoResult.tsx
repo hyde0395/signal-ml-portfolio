@@ -33,7 +33,11 @@ export function DemoResult({ forecast, locale, texts }: { forecast: Forecast; lo
         <span className="muted">{texts.result.range}</span>
         <span>{money(hi)}</span>
       </p>
-      <p className={`badge is-${reco.action.toLowerCase()}`}>{BADGE[reco.action]}</p>
+      {/* 보이는 배지는 세 언어 공통 영어, 스크린리더는 그 언어 낭독 문구를 읽는다 */}
+      <p className={`badge is-${reco.action.toLowerCase()}`}>
+        <span aria-hidden="true">{BADGE[reco.action]}</span>
+        <span className="sr-only">{texts.badges[reco.action]}</span>
+      </p>
       <p>{reasonText(texts, reco, locale)}</p>
       {conf && <p className="muted">{conf}</p>}
     </div>

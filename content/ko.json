@@ -92,12 +92,17 @@
     },
     "strip": {
       "label": "출발일",
-      "valuetext": "{v.date|md}, 예측가 {v.price}원",
+      "valuetext": "{v.day}, 예측가 {v.price}원",
       "holiday": "공휴일 주변: {v.holiday}",
       "legendHoliday": "공휴일 주변 출발일",
       "legendNoData": "예측 없음"
     },
     "money": "{v.price}원",
+  "badges": {
+    "BUY_NOW": "지금 구매",
+    "DROP_EXPECTED": "가격 하락 예상",
+    "WAIT": "대기 추천"
+  },
     "result": {
       "price": "예측가",
       "range": "{model.interval.level}% 예측 구간",
@@ -113,7 +118,7 @@
     },
     "confidence": { "label": "확신도", "high": "높음", "medium": "보통" },
     "asOf": "미리 계산된 예측 · {v.asOf|date} 기준",
-    "announce": "{v.date|md} 출발, 예측가 {v.price}원, {v.action}.",
+    "announce": "{v.day} 출발, 예측가 {v.price}원, {v.action}.",
     "loading": "데모 데이터를 불러오는 중입니다.",
     "error": "데모 데이터를 불러오지 못했습니다.",
     "retry": "다시 시도",
