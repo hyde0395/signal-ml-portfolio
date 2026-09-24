@@ -24,7 +24,8 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
 | 계획 3: 3D 지형 | ✅ 완료 2026-09-24 · main 병합(fast-forward) · CI 통과 |
 | 계획 2: 데모 | ✅ 완료 2026-09-24 · PR #1 main 병합(fast-forward) · CI 통과 |
-| 계획 4: 연출·마감 | ⏳ 예정 |
+| 계획 4-1: 성능·공유·마감 | ✅ 구현 2026-09-24 · branch `plan-4-1-performance` · PR 병합 대기 |
+| 계획 4-2: 연출 | ⏳ 다음 |
 
 **다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
 
@@ -40,19 +41,26 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 싸게 같이: 청크 테스트를 `index.html`·`en/`·`ja/` 모두로, 캡처 스크립트 `browser.close`를 finally로, 문서 경로 오타(README·스펙 §5.3의 `src/sections/ChapterFigure.tsx` → `src/components/sections/`), 스펙 §5.2에 curve 레이어·§5.3 대체 이미지 5장·§3의 3-5 띠는 계획 2로 이동 기록, `scenes.ts:27` 오래된 주석, 3D 청크 실제 크기 스펙에 기록(측정 결과 gzip 약 245KB로 목표 안)
    - 수정 후: 한 번 재검토 → **CI 확인은 PR로**(CI는 main push/PR에서만 돈다. 헤드리스 swiftshader가 느리면 3D가 꺼질 수 있음) → main 병합 → Vercel 자동 배포 확인
 3. ✅ **계획 2(데모)** — 계획서 `docs/superpowers/plans/2026-09-24-plan-2-demo.md`. 2026-09-24 main 병합. 남은 일: 한국어 데모 문구 사용자 검토, 영·일 검수(스펙 §14)
-4. **계획 4(연출·마감) 계획서 작성 → 실행**. 담을 것:
+4. **계획 4-1(성능·공유·마감) 완료 2026-09-24** — 계획서 `docs/superpowers/plans/2026-09-24-plan-4-1-performance.md`, branch `plan-4-1-performance`, PR 병합 대기. 끝낸 것:
+   - 초기 JS에서 zod·사전·facts 경로 분리(`FIGURE_KEYS`를 가벼운 모듈로 이동) ✅ (계획 4-1)
+   - 용량 검사 스크립트(`npm run size`, CI에서도 실행) ✅ (계획 4-1)
+   - 언어별 링크 미리보기(OG) 이미지 ✅ (계획 4-1)
+   - Vercel Web Analytics(다운로드 버튼 이벤트 자리) ✅ (계획 4-1)
+   - band.json을 못 받아도 지형은 그린다(띠만 대체 이미지) ✅ (계획 4-1)
+   - 스크린리더 추천 배지 언어별 낭독 ✅ (계획 4-1)
+   - 데모 날짜 축 연도 표기(해를 넘길 때) ✅ (계획 4-1)
+   - 첫 화면 CLS 0, LCP 이미지 우선 로딩(Task 7b) ✅ (계획 4-1)
+
+   데모 문구 검토(한국어 사용자 검토, 영·일 검수)는 남아 있다(스펙 §14, 3번 항목 참고).
+
+   **계획 4-2(연출)**: 담을 것
+   - 성능 90 미달(로컬 ko 63/en 79/ja 62): LCP의 대부분이 렌더 지연(이미지 로딩은 해결). ko·ja가 꾸준히 느려 글꼴 로딩(Pretendard dynamic-subset CDN CSS, Noto Sans JP)이 유력한 원인 — 렌더 차단 CSS·글꼴 표시 전략부터 조사. Lighthouse 상위 절감 항목(Task 7): 캐시 수명(로컬 서버 한정, Vercel은 해당 없음), 안 쓰는 JS 약 247KiB, 렌더 차단 요청. 4-1 병합 후 운영 주소로 다시 잰다.
    - 로딩 화면 `LOADING 242,874 ROWS` 플립 카운터(최대 1.2초, 같은 세션 재방문 시 생략), 플립 글자판(글자당 약 40ms, 0.8초 이내), 텍스트 리빌(단어 단위, 0.9초, 단어당 60ms), 이징 `cubic-bezier(.16,1,.3,1)` 하나, bounce 금지
    - GSAP ScrollTrigger + Lenis(지금 카메라는 가벼운 스크롤 감지+감쇠). 움직임 줄이기에서는 모두 끔
-   - 언어별 링크 미리보기(OG) 이미지, Vercel Web Analytics(다운로드 버튼에 이벤트 자리만)
-   - 용량 검사 스크립트(초기 JS gzip ≤150KB — 지금 약 176KB라 줄여야 함, 3D 청크 목표 ≈250KB — 지금 약 245KB(통과)), Lighthouse 모바일 ≥90, LCP ≤2.5s, CLS <0.1
+   - 휴대폰 3-5 예측 구간 띠: 데스크톱은 선명하지만 휴대폰 세로 화면에서는 흰 점 덩어리로만 보인다(먼 출발일이 주 1회 수집이라 z가 좁게 몰림). 띠 점 크기·밝기나 표시 방식 조정
    - 공개 전환: `src/lib/site.ts`의 `LAUNCHED = true`(noindex·robots 해제)
    - 남겨 둔 작은 지적들(계획 1·3 최종 검토 분류표의 "나중에" 항목) 중 방문자에게 보이는 것 정리
-   - 초기 JS에 zod(약 391KB raw 청크)가 들어 있다: Backdrop → three/capability → ChapterFigure → lib/content → lib/facts → zod 경로. 3D 판별 코드가 ChapterFigure(문구·facts)를 끌어오지 않게 FIGURE_KEYS를 가벼운 모듈로 옮기는 등으로 끊는다(초기 JS 150KB 목표와 직결)
-   - 3-5 예측 구간 띠: 데스크톱은 선명하지만 휴대폰 세로 화면에서는 흰 점 덩어리로만 보인다(먼 출발일이 주 1회 수집이라 z가 좁게 몰림). 띠 점 크기·밝기나 표시 방식 조정
-   - 데모 문구 검토: 한국어 사용자 검토, 영·일 검수. 스크린리더 알림의 추천 배지는 세 언어 공통 영어(BUY NOW 등)라 ko/ja에서 영어로 읽힌다 — 언어별 낭독 문구가 필요한지 결정
-   - band.json을 못 받으면 3D 전체가 대체 이미지로 바뀐다(지형과 같은 Promise.all) — 띠만 빼고 지형은 살릴지 결정
-   - 데모 날짜 축 형식(md)은 연도를 뺀다 — 기준일을 바꿔 90일 창이 해를 넘기면 날짜가 모호해진다
-5. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`, 파일명 `CHOI_HALIM_resume_<언어>.pdf`로 내려받아짐), LinkedIn 주소(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체, 커밋 이메일 noreply 확인)
+5. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`, 파일명 `CHOI_HALIM_resume_<언어>.pdf`로 내려받아짐), LinkedIn 주소(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체, 커밋 이메일 noreply 확인), Vercel 대시보드 → 프로젝트 → Analytics에서 Web Analytics 켜기(사용자 작업)
 
 ### 다른 기기(맥북)에서 이어서 작업하기
 

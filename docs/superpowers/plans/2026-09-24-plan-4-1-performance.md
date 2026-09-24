@@ -708,6 +708,49 @@ git commit -m "chore: local Lighthouse measurement script"
 
 ---
 
+### Task 7b: 첫 화면 CLS·LCP (실행 중 추가, 2026-09-24)
+
+Task 7 측정에서 성능이 목표(90)에 크게 못 미쳤다. 운영 사이트(Vercel) 측정: 성능 61, LCP 5.1s, CLS 0.197, TBT 400ms.
+- **CLS 0.197 전부가 `.hero-copy.text-scrim`**: 3D가 켜지며(`html[data-3d="on"]`) 첫 화면 대체 이미지(`.scene-figure`)가 `display:none`이 되고, `.text-scrim`의 여백·음수 margin도 그때 생겨 글이 밀린다.
+- **LCP 요소가 첫 화면 대체 이미지(`hero.webp`)**인데 `loading="lazy"`라 늦게 받기 시작한다(resource load delay 약 750ms).
+
+**Files:** `src/styles/globals.css`, `src/components/sections/ChapterFigure.tsx`, `src/components/sections/Hero.tsx`, `tests/e2e/terrain.spec.ts`
+
+- [ ] **Step 1: CLS e2e 먼저** — `tests/e2e/terrain.spec.ts`에 추가: 첫 화면 이름 영역이 3D가 켜지기 전후로 움직이지 않는다.
+
+```ts
+test('3D가 켜져도 첫 화면 이름 영역이 움직이지 않는다(CLS)', async ({ page }) => {
+  await page.goto('/');
+  const box = async () => (await page.locator('.hero-copy').boundingBox())!;
+  const before = await box();
+  await expect(page.locator('html')).toHaveAttribute('data-3d', 'on', { timeout: 20_000 });
+  const after = await box();
+  expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1);
+});
+```
+
+(`page.goto` 직후엔 3D가 아직 꺼져 있다 — Backdrop이 idle 콜백 뒤에 불러온다.) 실행해 실패를 확인한다.
+
+- [ ] **Step 2: 첫 화면 대체 이미지를 흐름에서 빼기** — 첫 화면(`#hero`)의 대체 이미지는 글 뒤 배경처럼 `position:absolute`로 깔아, 보이든 숨든 글 위치가 바뀌지 않게 한다. 케이스 스터디 챕터 이미지는 지금처럼 흐름 안에 둔다(첫 화면 밖이라 CLS에 들지 않는다).
+
+```css
+/* 첫 화면 대체 이미지는 글 뒤 배경으로 깐다. 흐름 안에 두면 3D가 켜져 숨을 때 이름이 밀려 CLS가 생긴다 */
+.hero { position: relative; }
+.hero .scene-figure { position: absolute; inset: 0; margin: 0; z-index: -1; }
+.hero .scene-figure img { width: 100%; height: 100%; object-fit: cover; border: 0; border-radius: 0; opacity: 0.55; }
+```
+
+- [ ] **Step 3: `.text-scrim`의 상자 크기는 3D와 상관없이 같게** — `html[data-3d="on"] .text-scrim { … }` 규칙에서 `width`, `max-width`, `margin-inline`, `padding`, `border-radius`를 3D 조건 없는 `.text-scrim { … }`으로 옮기고, 3D 조건 규칙에는 `background`·`box-shadow`만 남긴다. 3D가 꺼졌을 때도 첫 화면 글 뒤에 이미지가 깔리므로 `background: rgba(7, 11, 22, 0.86)`는 `#hero .text-scrim`에 항상 준다(글자 대비). `.case-head`는 3D일 때만 배경.
+
+- [ ] **Step 4: LCP** — `ChapterFigure`에 `priority?: boolean` prop을 더해 `priority`면 `loading="eager"`와 `fetchPriority="high"`, 아니면 지금처럼 `loading="lazy"`. `Hero.tsx`에서 `<ChapterFigure locale={locale} sceneKey="hero" priority />`.
+
+- [ ] **Step 5: 확인** — `npm run build && npx playwright test tests/e2e/terrain.spec.ts tests/e2e/site.spec.ts`(글자 대비 화소 검사 포함 통과), 움직임 줄이기(3D 꺼짐)에서 첫 화면을 캡처해 이미지 위 글자가 읽히는지 Read로 확인, `npm run lighthouse`로 다시 재서 전후 CLS·LCP를 기록한다.
+
+- [ ] **Step 6: 커밋** — `perf: stop hero layout shift when 3D turns on; load hero fallback eagerly`
+
+---
+
 ### Task 8: 문서 갱신, 전체 검증, PR
 
 **Files:**

@@ -262,6 +262,8 @@ interface ForecastSource {
 | 프레임 | 데스크톱 60fps, 모바일 30fps 이상 |
 | Lighthouse 성능 | 모바일 90 이상 |
 
+**측정 (계획 4-1, 2026-09-24)**: 초기 JS gzip ko 138.5KB · en 138.5KB · ja 138.5KB(npm run size, Task 5 후), 3D 지연 청크 gzip 240.7KB. Lighthouse 모바일(로컬 `npm run lighthouse`, 캐시 헤더 없는 로컬 서버·GPU 없는 소프트웨어 3D라 실제보다 낮게 나옴, Task 7b 후 2회차): 성능 ko 63 · en 79 · ja 62, 접근성 100, CLS 0, LCP ko 5.8s · en 3.8s · ja 6.3s. 운영(Vercel, 계획 2 시점) 참고: 성능 61, LCP 5.1s, CLS 0.197(Task 7b에서 해결). 성능 목표(모바일 90 이상)는 계획 4-2로 넘긴다
+
 ### 8.3 기기에 맞춘 조절
 
 - 모바일에서는 점 개수를 절반으로 줄이고, 화면 해상도 배율(DPR)을 최대 1.5로 제한합니다.
@@ -371,7 +373,7 @@ interface ForecastSource {
 
 - **링크 미리보기**
   - 언어별 OG 이미지를 둡니다. 지형 대체 이미지 위에 `CHOI HALIM`, `ML ENGINEER`, 언어별 이름 표기를 올립니다.
-  - 빌드할 때 생성합니다.
+  - `scripts/capture-og.mjs`로 실제 3D 첫 화면에 이름을 얹어 캡처하고 커밋합니다(CJK 글꼴 파일을 넣지 않기 위해 빌드 시 생성 대신).
   - 제목, 설명, 파비콘, `sitemap.xml`도 준비합니다.
 - **통계**: Vercel Web Analytics(쿠키 없음)로 방문 수와 유입 경로를 봅니다.
   - 이력서 다운로드 수는 custom event가 필요합니다. 이 기능은 Vercel 유료 요금제에서만 쓸 수 있습니다.
