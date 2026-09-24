@@ -6,7 +6,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 현재 진행 상태 (2026-09-24 기준)
 
-설계 완료. 계획 1·3 완료·배포(계획 3은 2026-09-24 main 병합, CI 통과). 계획 2(데모) 구현 완료(2026-09-24, branch `plan-2-demo`): docs/superpowers/plans/2026-09-24-plan-2-demo.md. PR로 CI 확인 후 main 병합 대기.
+설계 완료. 계획 1·3 완료·배포(계획 3은 2026-09-24 main 병합, CI 통과). 계획 2(데모) 완료·배포(2026-09-24, PR #1 main 병합, CI 통과): docs/superpowers/plans/2026-09-24-plan-2-demo.md. 다음은 계획 4(연출·마감).
 
 | 단계 | 상태 |
 |---|---|
@@ -23,7 +23,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감), 순서는 1 → 3 → 2 → 4 | — |
 | 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
 | 계획 3: 3D 지형 | ✅ 완료 2026-09-24 · main 병합(fast-forward) · CI 통과 |
-| 계획 2: 데모 | ✅ 구현 완료 2026-09-24 · branch `plan-2-demo` · **PR로 CI 확인 후 main 병합 대기** |
+| 계획 2: 데모 | ✅ 완료 2026-09-24 · PR #1 main 병합(fast-forward) · CI 통과 |
 | 계획 4: 연출·마감 | ⏳ 예정 |
 
 **다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
@@ -39,7 +39,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - ⑤ 1번 결정 반영(셰이더/데이터가 바뀌면 `npm run build && npm run fallbacks`로 대체 이미지 다시 생성)
    - 싸게 같이: 청크 테스트를 `index.html`·`en/`·`ja/` 모두로, 캡처 스크립트 `browser.close`를 finally로, 문서 경로 오타(README·스펙 §5.3의 `src/sections/ChapterFigure.tsx` → `src/components/sections/`), 스펙 §5.2에 curve 레이어·§5.3 대체 이미지 5장·§3의 3-5 띠는 계획 2로 이동 기록, `scenes.ts:27` 오래된 주석, 3D 청크 실제 크기 스펙에 기록(측정 결과 gzip 약 245KB로 목표 안)
    - 수정 후: 한 번 재검토 → **CI 확인은 PR로**(CI는 main push/PR에서만 돈다. 헤드리스 swiftshader가 느리면 3D가 꺼질 수 있음) → main 병합 → Vercel 자동 배포 확인
-3. ✅ **계획 2(데모)** — 계획서 `docs/superpowers/plans/2026-09-24-plan-2-demo.md`. 남은 일: PR CI 확인 → main 병합 → Vercel 배포 확인. 한국어 데모 문구 사용자 검토, 영·일 검수(스펙 §14)
+3. ✅ **계획 2(데모)** — 계획서 `docs/superpowers/plans/2026-09-24-plan-2-demo.md`. 2026-09-24 main 병합. 남은 일: 한국어 데모 문구 사용자 검토, 영·일 검수(스펙 §14)
 4. **계획 4(연출·마감) 계획서 작성 → 실행**. 담을 것:
    - 로딩 화면 `LOADING 242,874 ROWS` 플립 카운터(최대 1.2초, 같은 세션 재방문 시 생략), 플립 글자판(글자당 약 40ms, 0.8초 이내), 텍스트 리빌(단어 단위, 0.9초, 단어당 60ms), 이징 `cubic-bezier(.16,1,.3,1)` 하나, bounce 금지
    - GSAP ScrollTrigger + Lenis(지금 카메라는 가벼운 스크롤 감지+감쇠). 움직임 줄이기에서는 모두 끔
