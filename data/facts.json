@@ -112,5 +112,10 @@
         "pct": 2.1
       }
     ]
+  },
+  "demoDefault": {
+    "route": "ICN_NRT",
+    "cabin": "LCC",
+    "date": "2026-12-21"
   }
 }

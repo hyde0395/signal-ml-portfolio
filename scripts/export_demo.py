@@ -163,3 +163,102 @@ def choose_default(series: dict, dates: list[str]) -> dict:
             route, cabin = best[1].split("/")
             return {"route": route, "cabin": cabin, "date": best[2]}
     raise SystemExit("예측이 하나도 없다 — 대표 편 조건(REP_WINDOW_DAYS, REP_MIN_ROWS)을 확인한다")
+
+
+def load_holidays(dates: list[str]) -> list[tuple[pd.Timestamp, str]]:
+    """workalendar(항공권 저장소 공휴일 피처와 같은 라이브러리)에서 한·일 공휴일과 코드를 모은다.
+    한국을 먼저 넣어, 거리가 같으면 한국 공휴일 이름을 보여 준다. 일본 오봉(8/13~16)은 항공권
+    저장소가 따로 더하지만 데모 출발일 범위(9월 말~12월)에 없어 넣지 않는다."""
+    from workalendar.asia import Japan, SouthKorea
+    years = sorted({int(d[:4]) for d in dates} | {int(dates[-1][:4]) + 1})
+    out: list[tuple[pd.Timestamp, str]] = []
+    for prefix, cal in (("kr", SouthKorea()), ("jp", Japan())):
+        for y in years:
+            out += [(pd.Timestamp(day), f"{prefix}_{slug(name)}") for day, name in cal.holidays(y)]
+    return out
+
+
+def quiet() -> contextlib.ExitStack:
+    """NeuralProphet·V2Predictor가 예측마다 찍는 로그를 삼킨다(항공권 저장소 CLAUDE.md의 시뮬레이션 재현 방법)."""
+    buf = io.StringIO()
+    stack = contextlib.ExitStack()
+    stack.enter_context(contextlib.redirect_stdout(buf))
+    stack.enter_context(contextlib.redirect_stderr(buf))
+    return stack
+
+
+def forecast_series(predictor, route: str, cabin: str, rep: dict, dates: list[str], as_of: str) -> dict:
+    origin, dest = route.split("_")
+    price, lo, hi, reco = [], [], [], []
+    for day in dates:
+        dep = pd.Timestamp(day)
+        with quiet():
+            res = predictor.recommend_action(
+                origin=origin, destination=dest, departure_date=day, today=as_of,
+                airline=rep["airline"], airline_class=cabin, stops=rep["stops"],
+                duration_minutes=rep["duration_minutes"], departure_hour=rep["departure_hour"],
+                # 수집기(collect_data.py)와 같은 정의: 금·토·일 출발이 주말 편
+                is_weekend_flight=int(dep.weekday() >= 4), departure_month=dep.month,
+            )
+        if res["price_now_low"] is None or res["price_now_high"] is None:
+            raise SystemExit("pkl에 예측 구간 모델(q_models)이 없다 — 항공권 저장소에서 재학습이 필요하다")
+        price.append(int(res["price_now"]))
+        lo.append(int(res["price_now_low"]))
+        hi.append(int(res["price_now_high"]))
+        reco.append(encode_reco(res))
+    return {"price": price, "lo": lo, "hi": hi, "reco": reco}
+
+
+def write_json(path: Path, obj: dict, limit: int) -> None:
+    body = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    size = len(gzip.compress(body))
+    if size > limit:
+        raise SystemExit(f"{path.name} gzip {size:,}B > 목표 {limit:,}B — 출발일을 주 단위로 줄여야 한다(스펙 §6.2)")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(body)
+    print(f"{path.name}: gzip {size:,}B", flush=True)
+
+
+def main() -> None:
+    as_of = json.loads(METRICS_PATH.read_text(encoding="utf-8"))["_meta"]["asOf"]
+    raw = pd.read_csv(AIRFARE_ROOT / "data" / "raw" / "flight_prices.csv")
+    kept, _ = split_rows(raw, as_of)
+    dates = depart_dates(as_of)
+    reps = pick_representatives(kept, as_of)
+
+    from src.models.v2_predictor import load_predictor  # NeuralProphet·torch를 끌고 오는 무거운 import라 여기서 한다
+    with quiet():
+        predictor = load_predictor()
+
+    series: dict[tuple[str, str], dict | None] = {}
+    for (route, cabin), rep in reps.items():
+        label = "대표 편 없음" if rep is None else f"{rep['airline']} {rep['departure_hour']}시 경유{rep['stops']}"
+        print(f"{route}/{cabin}: {label}", flush=True)
+        series[(route, cabin)] = None if rep is None else forecast_series(predictor, route, cabin, rep, dates, as_of)
+
+    demo = {
+        "asOf": as_of,
+        "precomputed": True,
+        "routes": ROUTES,
+        "cabins": CABINS,
+        "dates": dates,
+        "holidays": holiday_codes(dates, load_holidays(dates)),
+        "series": {f"{r}/{c}": s for (r, c), s in series.items()},
+    }
+    write_json(ROOT / "public" / "data" / f"demo.{as_of}.json", demo, MAX_GZIP_BYTES)
+    write_json(ROOT / "public" / "data" / f"band.{as_of}.json",
+               build_band(series, route_class_base(kept), dates, as_of), BAND_MAX_GZIP_BYTES)
+
+    default = choose_default(demo["series"], dates)
+    facts = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
+    facts["demoDefault"] = default
+    FACTS_PATH.write_text(json.dumps(facts, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    counts = Counter(r["action"] for s in series.values() if s for r in s["reco"] if r)
+    print(f"추천 분포: {dict(counts)}")
+    print(f"기본 조합(facts.demoDefault): {default}")
+    print("공휴일 코드:", ", ".join(sorted(set(demo["holidays"].values()))))
+
+
+if __name__ == "__main__":
+    main()
