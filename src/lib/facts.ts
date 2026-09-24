@@ -2,6 +2,7 @@
 // 형식이 스키마와 다르면(재학습 후 export_facts.py가 잘못 갱신했다거나) 빌드 시점에 바로 실패한다.
 import { z } from 'zod';
 import raw from '../../data/facts.json';
+import { CABINS, ROUTES } from '@/demo/types';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const score = z.object({ r2: z.number(), mae: z.number(), mape: z.number() });
@@ -10,6 +11,8 @@ export type CodeChapter = (typeof chapters)[number];
 
 export const factsSchema = z.object({
   dataVersion: isoDate,
+  // 데모를 처음 열 때 고를 조합(스펙 §6.1). export_demo.py가 가격 하락 예상 중 절약률이 가장 큰 조합으로 채운다
+  demoDefault: z.object({ route: z.enum(ROUTES), cabin: z.enum(CABINS), date: isoDate }),
   profile: z.object({ graduation: z.string().regex(/^\d{4}-\d{2}$/) }),
   contact: z.object({
     emailReversed: z.string().includes('@'),

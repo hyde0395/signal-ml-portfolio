@@ -12,6 +12,7 @@ describe('facts.json', () => {
     expect(facts.data.filteredRows).toBe(242874);
     expect(facts.model.tss.r2).toBe(0.637);
     expect(facts.model.bookingCurve).toHaveLength(8);
+    expect(facts.demoDefault.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it('숫자 자리에 문자열이 오면 거부한다', () => {
