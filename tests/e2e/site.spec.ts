@@ -55,7 +55,8 @@ test.describe('JS 없이', () => {
       await expect(page.locator('#case table')).toBeVisible();
       await expect(page.getByText(content[lang].contact.emailFallback)).toBeVisible();
       // <noscript> 안의 텍스트는 실제로 화면에 보여도 Playwright의 getByText가 SCRIPT/NOSCRIPT
-      // 노드를 항상 건너뛰어 못 찾는다(엔진 한계). 클래스로 직접 짚는다
+      // 노드를 항상 건너뛰어 못 찾는다(엔진 한계). 클래스로 직접 짚어 내용과 가시성을 모두 확인한다
+      await expect(page.locator('.demo-nojs')).toBeVisible();
       await expect(page.locator('.demo-nojs')).toHaveText(content[lang].demo.noJs);
     });
   }

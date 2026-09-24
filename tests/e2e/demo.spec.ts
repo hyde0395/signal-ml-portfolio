@@ -1,5 +1,5 @@
 // 데모 e2e: 처음 조합, 키보드·누르기 조작, 노선·등급 바꾸기, 조작 뒤 알림, 불러오기 실패 후 다시 시도,
-// 움직임 줄이기, 세 언어 axe, 데이터 모듈(zod)이 초기 청크에 없는지.
+// 움직임 줄이기, 세 언어 axe, 데이터 모듈(source.ts)이 초기 청크에 없는지.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -38,8 +38,8 @@ test('키보드: Home·→·End로 날짜를 고른다', async ({ page }) => {
 });
 
 // 모바일(Pixel 7) 프로젝트는 터치 포인터라 DateStrip이 pointerup(탭)에서만 날짜를 고른다.
-// page.mouse.click은 마우스 포인터를 보내 즉시 선택되므로 두 프로젝트 모두에서 통하지만,
-// 혹시 터치 판정으로 바뀌는 경우를 대비해 프로젝트별로 마우스 클릭/탭을 나눠 쓴다.
+// page.mouse.click은 마우스 포인터라 두 프로젝트 모두에서 통과하지만, 그러면 모바일에서도 실제로는
+// 마우스 경로만 검증하게 된다. tap()으로 진짜 터치-탭 경로(pointerup 선택)를 타게 한다.
 async function clickLeftEdge(page: Page, testInfo: TestInfo) {
   const slider = page.getByRole('slider');
   const box = (await slider.boundingBox())!;
@@ -63,13 +63,21 @@ test('노선과 등급을 바꾸면 선택지와 막대가 새로 그려진다',
   const other = facts.demoDefault.route === 'ICN_KIX' ? 'ICN_NRT' : 'ICN_KIX';
   await page.getByLabel(ko.demo.routeLabel).selectOption(other);
   await page.locator('.demo-cabin').click();
+  await expect(page.getByLabel(ko.demo.routeLabel)).toHaveValue(other);
   await expect(page.locator('.demo-cabin')).toHaveText(facts.demoDefault.cabin === 'LCC' ? 'FSC' : 'LCC');
+  // 막대가 다시 그려지는 동안 잠깐 사라졌다 나타날 수 있으니, 값을 비교하기 전에 슬라이더가
+  // 다시 화면에 떠 있는지부터 확인한다
+  await expect(slider).toBeVisible();
   await expect(slider).not.toHaveAttribute('aria-valuetext', before);
 });
 
-test('조작한 뒤 결과를 aria-live로 한 번 알린다', async ({ page }) => {
+test('조작한 뒤 결과를 aria-live로 알린다', async ({ page }) => {
   const slider = await openDemo(page);
   const live = page.locator('#demo [aria-live="polite"]');
+  await expect(page.locator('.demo-result .badge')).toBeVisible();
+  // 알림은 조작이 멈추고 700ms 뒤에 뜬다. "처음 표시 때는 알리지 않는다"는, 일어나지 않아야 할
+  // 일이라 콜백을 기다릴 수 없다 — 700ms보다 넉넉히 긴 고정 대기로만 비어 있음을 확인할 수 있다
+  await page.waitForTimeout(1000);
   await expect(live).toHaveText(''); // 처음 표시 때는 알리지 않는다
   await slider.focus();
   // 처음 날짜가 이미 끝이면 End나 Home 중 하나는 제자리라 조작으로 치지 않는다 → 둘 다 눌러 한 번은 바뀌게 한다
@@ -91,6 +99,8 @@ test('데모 데이터를 못 받으면 안내가 뜨고, 다시 시도하면 �
   fail = false;
   await page.getByRole('button', { name: ko.demo.retry }).click();
   await expect(page.getByRole('slider')).toBeVisible();
+  // 다시 불러온 뒤에는 실패 알림이 완전히 사라져야 한다(예: 재시도 실패 상태가 남아 있지 않음)
+  await expect(page.locator('#demo').getByRole('alert')).toHaveCount(0);
 });
 
 test.describe('움직임 줄이기', () => {
@@ -107,14 +117,19 @@ test.describe('움직임 줄이기', () => {
 for (const path of ['/', '/en/', '/ja/']) {
   test(`${path} 데모를 불러온 뒤 axe 위반 없음`, async ({ page }) => {
     await openDemo(page, path);
+    // 결과 영역(가격·배지)까지 그려진 뒤에 검사해야 실제로 보여 주는 상태를 검사한 게 된다
+    await expect(page.locator('.demo-result .badge')).toBeVisible();
     const result = await new AxeBuilder({ page }).include('#demo').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(result.violations).toEqual([]);
   });
 }
 
-test('초기 HTML(세 언어)은 데모 데이터 모듈(zod 포함) 청크를 직접 불러오지 않는다', async () => {
+test('초기 HTML(세 언어)은 데모 데이터 모듈(source.ts) 청크를 직접 불러오지 않는다', async () => {
   const dir = 'out/_next/static/chunks';
-  // src/demo/source.ts의 검사 메시지 머리말. 이 문자열이 든 청크가 데이터 모듈 청크다
+  // zod 자체는 이 데모 데이터 모듈과 무관한 다른 경로(Backdrop→capability→ChapterFigure→
+  // lib/content→facts)로 이미 초기 청크에 들어 있다(계획 4에서 정리 예정). 여기서 확인하는 건
+  // src/demo/source.ts(데모 JSON 스키마 검사 모듈) 자체가 초기 청크에 직접 인라인되지 않았는지다.
+  // 검사 메시지 머리말 문자열이 든 청크가 그 데이터 모듈 청크다
   const marker = 'demo-series-length-mismatch';
   const chunks = readdirSync(dir).filter((f) => f.endsWith('.js') && readFileSync(`${dir}/${f}`, 'utf8').includes(marker));
   expect(chunks.length).toBeGreaterThan(0);
