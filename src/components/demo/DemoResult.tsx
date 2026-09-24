@@ -1,9 +1,12 @@
 // 데모 결과(스펙 §6.1): 예측가 → 80% 예측 구간 띠 → 추천 배지 + 이유 → (대기·하락일 때만) 확신도.
-// 예측가는 계획 4에서 플립 글자판으로 바뀔 자리라 data-flip을 붙여 둔다(지금은 완성된 값만 보인다).
+// 예측가는 플립 글자판(스펙 §4)으로 자리 잡는다. React는 이 칸의 자식을 그리지 않고 effect의 flip()이
+// 채운다 — 둘 다 같은 DOM을 건드리면 서로 덮어써서, React가 자식을 그리지 않게 비워 둔다.
+import { useEffect, useRef } from 'react';
 import type { DemoTexts } from '@/lib/content';
 import { interpolate, type Locale } from '@/lib/i18n';
 import { confidenceText, reasonText } from '@/demo/reason';
 import type { Action, Forecast } from '@/demo/types';
+import { flip } from '@/motion/flip';
 
 // 배지는 세 언어 공통 영어 표기(GATE 제목처럼)다. 색만으로 뜻을 전하지 않도록 늘 글자를 함께 쓴다(§9.4)
 export const BADGE: Record<Action, string> = { BUY_NOW: 'BUY NOW', DROP_EXPECTED: 'DROP EXPECTED', WAIT: 'WAIT' };
@@ -18,11 +21,17 @@ export function DemoResult({ forecast, locale, texts }: { forecast: Forecast; lo
   const raw = hi > lo ? BAND_FROM + ((BAND_TO - BAND_FROM) * (price - lo)) / (hi - lo) : 50;
   const mid = Math.min(100, Math.max(0, raw)); // 예측가가 구간 밖이어도 표시가 막대를 벗어나지 않게
   const conf = confidenceText(texts, reco);
+  const priceEl = useRef<HTMLSpanElement>(null);
+  const priceText = money(price);
+  useEffect(() => {
+    // 예측가는 플립 글자판(스펙 §4). React는 이 칸의 자식을 그리지 않고 flip이 채운다
+    if (priceEl.current) return flip(priceEl.current, priceText);
+  }, [priceText]);
   return (
     <div className="demo-result">
       <p className="demo-price">
         <span className="eyebrow">{texts.result.price}</span>
-        <span className="mono" data-flip>{money(price)}</span>
+        <span className="mono" data-flip ref={priceEl} />
       </p>
       <div className="band" role="img" aria-label={interpolate(texts.result.rangeAria, { v: { lo, hi } }, locale)}>
         <span className="band-fill" style={{ left: `${BAND_FROM}%`, right: `${100 - BAND_TO}%` }} />
