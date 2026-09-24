@@ -6,7 +6,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 현재 진행 상태 (2026-09-24 기준)
 
-설계 완료. 계획 1 완료·배포. 계획 3 완료(main 병합 대기). 다음은 계획 2(데모).
+설계 완료. 계획 1·3 완료·배포(계획 3은 2026-09-24 main 병합, CI 통과). 계획 2(데모) 진행 중: docs/superpowers/plans/2026-09-24-plan-2-demo.md.
 
 | 단계 | 상태 |
 |---|---|
@@ -22,8 +22,8 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 스펙 문서 작성 (`docs/superpowers/specs/2026-09-23-portfolio-design.md`) → 사용자 검토 | ✅ 승인 |
 | 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감), 순서는 1 → 3 → 2 → 4 | — |
 | 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
-| 계획 3: 3D 지형 | ✅ 구현·최종 검토·수정 완료 2026-09-24 · branch `plan-3-terrain`(push됨) · **PR로 CI 확인 후 main 병합 대기** |
-| 계획 2(데모) 계획서 작성 | ⏳ **다음** — `superpowers:writing-plans` → 사용자 검토 → 실행 |
+| 계획 3: 3D 지형 | ✅ 완료 2026-09-24 · main 병합(fast-forward) · CI 통과 |
+| 계획 2: 데모 | ⏳ **진행 중** — 계획서 `docs/superpowers/plans/2026-09-24-plan-2-demo.md`, branch `plan-2-demo` |
 | 계획 4: 연출·마감 | ⏳ 예정 |
 
 **다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
@@ -61,7 +61,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - **커밋 이메일을 이 저장소에 다시 설정** (로컬 설정은 clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
 - Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test`, `npm run build`, `npm run e2e`
 - `.superpowers/`(비주얼 컴패니언 시안, SDD 작업 기록)는 git에 없다. 계획 3의 남은 일은 위 "다음 세션 할 일"에 모두 옮겨 두었다
-- 데이터 스크립트(`npm run facts|terrain|map`)만 항공권 저장소가 필요하다. `~/Documents/airfare-forecasting-ml`가 iCloud로 동기화되지만 `.venv`는 기기마다 깨지므로 그쪽 CLAUDE.md 절차로 새로 만든다(`brew install python@3.11` → `.venv` 재생성). 지형·지도 JSON은 이미 커밋되어 있어 다시 뽑지 않아도 된다
+- 데이터 스크립트(`npm run facts|terrain|map`)만 항공권 저장소가 필요하다. `~/Documents/airfare-forecasting-ml`가 iCloud로 동기화되지만 `.venv`는 기기마다 깨지므로 그쪽 CLAUDE.md 절차로 새로 만든다(`brew install python@3.11` → `.venv` 재생성). 지형·지도 JSON은 이미 커밋되어 있어 다시 뽑지 않아도 된다 2026-09-24부터는 iCloud 밖 `~/.venvs/airfare-py311`(Python 3.11)을 기기마다 만들어 쓴다. `scripts/py.sh`가 AIRFARE_PYTHON → ~/.venvs/airfare-py311 → 항공권 저장소 .venv 순서로 고른다. 항공권 저장소 .venv를 지우고 다시 만들지 않는다(삭제가 다른 기기로 동기화된다)
 - Claude 메모리(`~/.claude/projects/...`)는 기기마다 따로다. 중요한 규칙(문구 톤, 한국어 주석, noreply 이메일)은 이 파일에 적혀 있다
 - 맥미니에서 다시 작업하기 전엔 `git pull`
 

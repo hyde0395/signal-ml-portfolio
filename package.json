@@ -9,9 +9,11 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "fallbacks": "node scripts/capture-fallbacks.mjs",
-    "facts": "${AIRFARE_ROOT:-$HOME/Documents/airfare-forecasting-ml}/.venv/bin/python scripts/export_facts.py",
-    "terrain": "${AIRFARE_ROOT:-$HOME/Documents/airfare-forecasting-ml}/.venv/bin/python scripts/export_terrain.py",
-    "map": "${AIRFARE_ROOT:-$HOME/Documents/airfare-forecasting-ml}/.venv/bin/python scripts/export_map.py"
+    "facts": "sh scripts/py.sh scripts/export_facts.py",
+    "terrain": "sh scripts/py.sh scripts/export_terrain.py",
+    "map": "sh scripts/py.sh scripts/export_map.py",
+    "demo": "sh scripts/py.sh scripts/export_demo.py",
+    "pytest": "sh scripts/py.sh -m pytest scripts/tests -q"
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.0",
