@@ -61,6 +61,11 @@ def test_representative_window_edge_is_inclusive_of_21_days_ago():
     assert reps[("KIX_ICN", "LCC")] is None
 
 
+def test_won_rounds_to_nearest_100():
+    assert ed.won(248_386) == 248_400
+    assert ed.won(172_949) == 172_900
+
+
 def res(**kw):
     base = dict(action="BUY_NOW", d_now=40, past_optimal=False, best_day=30, saving_pct=3.2, best_price=171_000,
                 wait_days=10, saving=5_000, global_best_day=30, confidence=None)

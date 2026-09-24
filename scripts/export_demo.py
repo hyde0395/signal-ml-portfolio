@@ -81,6 +81,12 @@ def route_class_base(kept: pd.DataFrame) -> dict[tuple[str, str], float]:
     return {(f"{o}_{d}", c): float(v) for (o, d, c), v in mean.items()}
 
 
+def won(x: float) -> int:
+    """100원 단위로 반올림한다. 모델의 MAE가 ~4.8만 원이라 원 단위(₩248,386)까지 보이면 실제보다
+    정밀해 보인다(거짓 정밀도) — 화면에 보여 줄 가격은 여기를 거친다."""
+    return int(round(x / 100) * 100)
+
+
 def encode_reco(res: dict) -> dict:
     """recommend_action() 반환값 → 이유 코드와 값. 분기 순서는 recommend_action과 같다.
 
@@ -108,9 +114,9 @@ def encode_reco(res: dict) -> dict:
         "action": action,
         "why": why,
         "bestDay": int(res["best_day"]),
-        "bestPrice": int(res["best_price"]),
+        "bestPrice": won(res["best_price"]),
         "waitDays": int(res["wait_days"]),
-        "saving": int(res["saving"]),
+        "saving": won(res["saving"]),
         "savingPct": round(float(res["saving_pct"]), 1),
         "globalBestDay": int(res["global_best_day"]),
         "confidence": None if action == "BUY_NOW" else CONFIDENCE[res["confidence"]],
@@ -214,9 +220,9 @@ def forecast_series(predictor, route: str, cabin: str, rep: dict, dates: list[st
             )
         if res["price_now_low"] is None or res["price_now_high"] is None:
             raise SystemExit("pkl에 예측 구간 모델(q_models)이 없다 — 항공권 저장소에서 재학습이 필요하다")
-        price.append(int(res["price_now"]))
-        lo.append(int(res["price_now_low"]))
-        hi.append(int(res["price_now_high"]))
+        price.append(won(res["price_now"]))
+        lo.append(won(res["price_now_low"]))
+        hi.append(won(res["price_now_high"]))
         reco.append(encode_reco(res))
     return {"price": price, "lo": lo, "hi": hi, "reco": reco}
 
