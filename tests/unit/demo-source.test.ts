@@ -70,6 +70,18 @@ describe('StaticForecastSource', () => {
     bad.series['ICN_NRT/LCC']!.price = [1];
     expect(() => demoSchema.parse(bad)).toThrow(/demo-series-length-mismatch/);
   });
+
+  it('price는 있는데 reco가 없으면 형식 오류(넷 다 있거나 넷 다 없어야 한다)', () => {
+    const bad = structuredClone(fixture) as typeof fixture;
+    bad.series['ICN_NRT/LCC']!.reco[0] = null;
+    expect(() => demoSchema.parse(bad)).toThrow(/demo-series-null-mismatch/);
+  });
+
+  it('series 키가 노선/등급 형식이 아니면 형식 오류', () => {
+    const bad = structuredClone(fixture) as typeof fixture;
+    (bad.series as Record<string, unknown>)['ICN_NRT/lcc'] = bad.series['ICN_NRT/LCC'];
+    expect(() => demoSchema.parse(bad)).toThrow();
+  });
 });
 
 describe('커밋된 demo.json', () => {

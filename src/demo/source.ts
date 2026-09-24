@@ -21,6 +21,8 @@ const reco = z.object({
   confidence: z.enum(['high', 'medium']).nullable(),
 });
 const series = z.object({ price: z.array(won), lo: z.array(won), hi: z.array(won), reco: z.array(reco.nullable()) });
+// series 키는 반드시 "노선/등급" 조합이어야 한다(오타 키는 getStrip/getForecast에서 조용히 무시돼 버그를 숨긴다)
+const SERIES_KEY = new RegExp(`^(${ROUTES.join('|')})/(${CABINS.join('|')})$`);
 
 export const demoSchema = z
   .object({
@@ -30,14 +32,24 @@ export const demoSchema = z
     cabins: z.array(z.enum(CABINS)),
     dates: z.array(isoDate).min(1),
     holidays: z.record(isoDate, z.string().regex(/^(kr|jp)_[a-z0-9_]+$/)),
-    series: z.record(z.string(), series.nullable()),
+    series: z.record(z.string().regex(SERIES_KEY), series.nullable()),
   })
   .superRefine((d, ctx) => {
     for (const [key, s] of Object.entries(d.series)) {
-      if (s && [s.price, s.lo, s.hi, s.reco].some((a) => a.length !== d.dates.length)) {
+      if (!s) continue;
+      if ([s.price, s.lo, s.hi, s.reco].some((a) => a.length !== d.dates.length)) {
         // 영어 머리말은 e2e가 "이 모듈이 초기 청크에 없는지" 찾을 때 쓰는 표식이다(tests/e2e/demo.spec.ts)
         ctx.addIssue({ code: 'custom', message: `demo-series-length-mismatch: ${key} 배열 길이가 dates와 다르다` });
+        continue; // 길이가 다르면 인덱스가 안 맞으니 아래 null 정합성 검사는 건너뛴다
       }
+      // getStrip은 price만 보고 고를 수 있는 날로 그리므로, 네 값(price/lo/hi/reco) 중 일부만 비면
+      // 고를 수 있는데 결과가 비는 날이 생긴다(스펙 §6.4) → 넷 다 있거나 넷 다 없어야 한다
+      d.dates.forEach((date, i) => {
+        const nulls = [s.price[i], s.lo[i], s.hi[i], s.reco[i]].filter((v) => v === null).length;
+        if (nulls !== 0 && nulls !== 4) {
+          ctx.addIssue({ code: 'custom', message: `demo-series-null-mismatch: ${key} ${date} price/lo/hi/reco 중 일부만 비어 있다` });
+        }
+      });
     }
   });
 export type DemoData = z.infer<typeof demoSchema>;
