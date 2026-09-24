@@ -230,9 +230,15 @@ export async function loadSceneData(dataVersion: string, fetcher: typeof fetch =
   const [terrain, map, band] = await Promise.all([
     get(`/data/terrain.${dataVersion}.json`),
     get('/data/map.v1.json'),
-    get(`/data/band.${dataVersion}.json`),
+    // 띠는 3-5 장면에 얹는 덧붙임이라, 못 받거나 형식이 틀려도 3D 전체를 대체 이미지로 바꾸지 않고 띠만 뺀다
+    get(`/data/band.${dataVersion}.json`)
+      .then((b) => bandSchema.parse(b))
+      .catch((e: unknown) => {
+        console.warn('예측 구간 띠 없이 그린다', e);
+        return undefined;
+      }),
   ]);
-  return { terrain: terrainSchema.parse(terrain), map: mapSchema.parse(map), band: bandSchema.parse(band) };
+  return { terrain: terrainSchema.parse(terrain), map: mapSchema.parse(map), band };
 }
 
 function pairs(flat: number[]): [number, number][] {

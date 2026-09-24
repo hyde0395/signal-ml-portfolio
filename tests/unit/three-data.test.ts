@@ -134,7 +134,8 @@ describe('loadSceneData', () => {
     expect(fetcher).toHaveBeenCalledWith('/data/terrain.2026-09-22.json');
     expect(fetcher).toHaveBeenCalledWith('/data/band.2026-09-22.json');
     expect(data.terrain.dates).toHaveLength(3);
-    expect(data.band.dates).toHaveLength(2);
+    // band는 이제 optional 타입이지만, 이 테스트는 정상 응답만 주므로 항상 채워진다
+    expect(data.band?.dates).toHaveLength(2);
   });
   it('404면 reject (빈 캔버스로 텍스트를 가리지 않도록 호출 측이 대체 화면으로 간다)', async () => {
     const fetcher = vi.fn(() => Promise.resolve(new Response('no', { status: 404 })));
@@ -154,6 +155,17 @@ describe('loadSceneData', () => {
     const badMap = { ...map, coast: [] };
     const fetcher = vi.fn((url: string) => ok(url.includes('terrain') ? terrain : badMap));
     await expect(loadSceneData('2026-09-22', fetcher as unknown as typeof fetch)).rejects.toThrow();
+  });
+  it('띠(band)만 못 받으면 지형은 살리고 band는 undefined', async () => {
+    const fetcher = vi.fn((url: string) =>
+      url.includes('band') ? Promise.resolve(new Response('no', { status: 404 })) : ok(url.includes('terrain') ? terrain : map));
+    const data = await loadSceneData('2026-09-22', fetcher as unknown as typeof fetch);
+    expect(data.terrain.dates).toHaveLength(3);
+    expect(data.band).toBeUndefined();
+  });
+  it('띠 형식이 틀려도 band만 undefined', async () => {
+    const fetcher = vi.fn((url: string) => ok(url.includes('band') ? { nope: true } : url.includes('terrain') ? terrain : map));
+    expect((await loadSceneData('2026-09-22', fetcher as unknown as typeof fetch)).band).toBeUndefined();
   });
 });
 

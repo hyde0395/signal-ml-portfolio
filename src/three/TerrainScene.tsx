@@ -16,7 +16,7 @@ const SLOW_FPS = 30;
 const SLOW_SECONDS = 2;
 
 export default function TerrainScene({ dataVersion, onReady, onFail, capture }: Props) {
-  const [data, setData] = useState<{ terrain: Terrain; map: MapData; band: Band } | null>(null);
+  const [data, setData] = useState<{ terrain: Terrain; map: MapData; band?: Band } | null>(null);
   const [level, setLevel] = useState(0);        // 0 정상, 1 낮춤(DPR 1·잡음 숨김)
   const [running, setRunning] = useState(true); // 탭 숨김·연락처 섹션에서는 멈춘다
   const portrait = useRef(false);
