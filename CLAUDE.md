@@ -31,7 +31,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 ### 다음 세션 할 일 (순서대로)
 
 1. ✅ **결정됨(2026-09-24): 예약 곡선은 A — 날마다 표본 수만큼 점을 진하게/크게.** 먼 출발일(dtd 61~90)은 표본이 41~13,392건으로 들쭉날쭉해 값이 튀므로, 데이터를 빼지 않고 표본이 적은 날을 흐리고 작게 그려 불확실성을 보여 준다. 스펙 §5.2에 기록
-2. ✅ **계획 3 최종 검토 수정 완료 (2026-09-24, 맥미니)** — 재검토 통과, `plan-3-terrain`에 push됨. **남은 일: PR로 CI 확인 → main 병합 → Vercel 배포 확인** (아래 목록은 기록용)
+2. ✅ **계획 3 최종 검토 수정 완료 (2026-09-24, 맥미니)** — 재검토 통과, `plan-3-terrain`에 push됨. ✅ 2026-09-24 main 병합·CI 통과 (아래 목록은 기록용)
    - ① `?capture=` 값을 `FIGURE_KEYS`에 있는 것만 받기 + `<TerrainScene>`을 에러 경계로 감싸 오류 시 `onFail('error')`(지금은 `/?capture=zzz`로 페이지 전체가 사라짐). e2e: `/?capture=bogus`에서도 h1·본문이 보인다
    - ② 3D 켜진 상태 글자 대비: 첫 화면(`.hero-sub`, `.hero-keywords`)과 `#case` 제목·도입에도 반투명 배경(또는 text-shadow). axe `color-contrast`가 그라데이션 위 글자를 "incomplete"로 넘겨 실제로 검사 못 하므로 테스트를 정직하게 고치기
    - ③ 휴대폰 3-2(insight) 카메라를 훨씬 가까이(지금 z≈64로 곡선이 거의 안 보임). Pixel 7 폭으로 확인
@@ -50,6 +50,8 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 초기 JS에 zod(약 391KB raw 청크)가 들어 있다: Backdrop → three/capability → ChapterFigure → lib/content → lib/facts → zod 경로. 3D 판별 코드가 ChapterFigure(문구·facts)를 끌어오지 않게 FIGURE_KEYS를 가벼운 모듈로 옮기는 등으로 끊는다(초기 JS 150KB 목표와 직결)
    - 3-5 예측 구간 띠: 데스크톱은 선명하지만 휴대폰 세로 화면에서는 흰 점 덩어리로만 보인다(먼 출발일이 주 1회 수집이라 z가 좁게 몰림). 띠 점 크기·밝기나 표시 방식 조정
    - 데모 문구 검토: 한국어 사용자 검토, 영·일 검수. 스크린리더 알림의 추천 배지는 세 언어 공통 영어(BUY NOW 등)라 ko/ja에서 영어로 읽힌다 — 언어별 낭독 문구가 필요한지 결정
+   - band.json을 못 받으면 3D 전체가 대체 이미지로 바뀐다(지형과 같은 Promise.all) — 띠만 빼고 지형은 살릴지 결정
+   - 데모 날짜 축 형식(md)은 연도를 뺀다 — 기준일을 바꿔 90일 창이 해를 넘기면 날짜가 모호해진다
 5. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`, 파일명 `CHOI_HALIM_resume_<언어>.pdf`로 내려받아짐), LinkedIn 주소(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체, 커밋 이메일 noreply 확인)
 
 ### 다른 기기(맥북)에서 이어서 작업하기
@@ -58,7 +60,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - **커밋 이메일을 이 저장소에 다시 설정** (로컬 설정은 clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
 - Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test`, `npm run build`, `npm run e2e`
 - `.superpowers/`(비주얼 컴패니언 시안, SDD 작업 기록)는 git에 없다. 계획 3의 남은 일은 위 "다음 세션 할 일"에 모두 옮겨 두었다
-- 데이터 스크립트(`npm run facts|terrain|map`)만 항공권 저장소가 필요하다. `~/Documents/airfare-forecasting-ml`가 iCloud로 동기화되지만 `.venv`는 기기마다 깨지므로 그쪽 CLAUDE.md 절차로 새로 만든다(`brew install python@3.11` → `.venv` 재생성). 지형·지도 JSON은 이미 커밋되어 있어 다시 뽑지 않아도 된다. 2026-09-24부터는 iCloud 밖 `~/.venvs/airfare-py311`(Python 3.11)을 기기마다 만들어 쓴다. `scripts/py.sh`가 AIRFARE_PYTHON → ~/.venvs/airfare-py311 → 항공권 저장소 .venv 순서로 고른다. 항공권 저장소 .venv를 지우고 다시 만들지 않는다(삭제가 다른 기기로 동기화된다)
+- 데이터 스크립트(`npm run facts|terrain|map|demo|pytest`)만 항공권 저장소가 필요하다. `~/Documents/airfare-forecasting-ml`가 iCloud로 동기화되지만 `.venv`는 기기마다 깨지므로 그쪽 CLAUDE.md 절차로 새로 만든다(`brew install python@3.11` → `.venv` 재생성). 지형·지도 JSON은 이미 커밋되어 있어 다시 뽑지 않아도 된다. 2026-09-24부터는 iCloud 밖 `~/.venvs/airfare-py311`(Python 3.11)을 기기마다 만들어 쓴다. `scripts/py.sh`가 AIRFARE_PYTHON → ~/.venvs/airfare-py311 → 항공권 저장소 .venv 순서로 고른다. 항공권 저장소 .venv를 지우고 다시 만들지 않는다(삭제가 다른 기기로 동기화된다)
 - Claude 메모리(`~/.claude/projects/...`)는 기기마다 따로다. 중요한 규칙(문구 톤, 한국어 주석, noreply 이메일)은 이 파일에 적혀 있다
 - 맥미니에서 다시 작업하기 전엔 `git pull`
 
@@ -106,7 +108,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ### 3D 지형과 데이터 파이프라인 (승인됨)
 
-- **데이터 추출 스크립트** (`scripts/`): 항공권 저장소의 `.venv/bin/python`으로 실행하고 결과를 `public/data/`에 저장. 사이트는 JSON만 읽으므로 빌드·배포에 항공권 저장소가 필요 없다.
+- **데이터 추출 스크립트** (`scripts/`): `scripts/py.sh`가 고른 파이썬(AIRFARE_PYTHON → `~/.venvs/airfare-py311` → 항공권 저장소 `.venv` 순서)으로 실행하고 결과를 `public/data/`에 저장. 사이트는 JSON만 읽으므로 빌드·배포에 항공권 저장소가 필요 없다.
   - `export_terrain.py`: 원본 CSV + 항공권 저장소의 필터 함수(`src/processing/features.py`를 import해 재사용) → `terrain.json`
   - `export_demo.py`: `v2_predictor.pkl` + `recommend_action()` → `demo.json`
   - `export_facts.py`: 사이트에 나오는 모든 수치를 한 곳에 → `facts.json` (항공권 저장소 CLAUDE.md 기준)
@@ -146,7 +148,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
   - 주소 `/`(ko 기본)·`/en`·`/ja`, 상단 `KO · EN · JA` 전환, 선택 언어 기억. 브라우저 언어가 다르면 안내만 띄우고 자동 이동은 하지 않는다. 언어별 `lang`·`hreflang`·OG 이미지
   - 문장은 `content/{ko,en,ja}.json`, 수치는 `facts.json`만. 테스트: 숫자 직접 기입 금지(3개 언어) + 세 파일 키 일치
   - 작업 순서: Claude 한국어 초안 → 사용자 검토 → Claude 영·일 초안 → 영어는 사용자, 일본어는 사용자가 섭외한 검수자
-  - 데모 문장 틀은 언어별로 따로. `demo.json`에는 추천 이유를 문장 대신 **코드+값**(예: `{"code":"DROP","day":30,"price":171000,"pct":-8.7}`)으로 저장하고 사이트가 언어별로 조립. 공휴일 이름표도 3개 언어
+  - 데모 문장 틀은 언어별로 따로. `demo.json`에는 추천 이유를 문장 대신 **코드+값**으로 저장하고 사이트가 언어별로 조립한다(형식은 스펙 §6.2 "구현 결과" 참고). 공휴일 이름표도 3개 언어
   - 일본어 페이지만 Noto Sans JP(`next/font` 조각 로딩), ko/en에서는 로딩 안 함. `GATE 01 — PROBLEM` 같은 영어 연출 글자는 공통
 
 > ⚠️ **"코드 보기" 링크는 당분간 404가 뜨는 게 의도된 상태다.** 지금 `github.com/hyde0395/airfare-forecasting-ml`은 비공개(PRIVATE)라서 링크를 눌러도 404가 나온다. 사용자가 나중에 **공개용 저장소를 새로 만들 예정**이다. 그때 바꾸기 쉽도록 저장소 기본 주소와 챕터별 파일 경로는 데이터 파일(`facts.json`) 한 곳에만 둔다. 공개 저장소가 생기면 그 주소만 바꾼다. 그 전까지 404를 "버그"로 고치려 하지 않는다.

@@ -1,6 +1,9 @@
 // JSON → 점 좌표 변환 검사: 좌표계, 레이어 순서, 잡음 솎아내기, 공휴일·노선 표시, 로딩 실패.
+import { readFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { describe, expect, it, vi } from 'vitest';
-import { buildPointCloud, curveWeight, dateIndex, loadSceneData, mapPosition, terrainPosition, type Band, type MapData, type Terrain } from '@/three/data';
+import { bandSchema, buildPointCloud, curveWeight, dateIndex, loadSceneData, mapPosition, terrainPosition, type Band, type MapData, type Terrain } from '@/three/data';
+import { facts } from '@/lib/facts';
 
 const terrain: Terrain = {
   asOf: '2026-09-22', maxDtd: 100, clip: { min: -60, max: 200 },
@@ -183,5 +186,20 @@ describe('예측 구간 띠(band, kind 4)', () => {
     expect(Array.from(withBand.scatter.slice(0, plain.count * 3))).toEqual(Array.from(plain.scatter));
     expect(Array.from(withBand.terrain.slice(0, plain.count * 3))).toEqual(Array.from(plain.terrain));
     expect(Array.from(withBand.map.slice(0, plain.count * 3))).toEqual(Array.from(plain.map));
+  });
+});
+
+describe('커밋된 band.json', () => {
+  const body = readFileSync(`public/data/band.${facts.dataVersion}.json`);
+  const data = bandSchema.parse(JSON.parse(body.toString('utf-8')));
+
+  it('기준일이 맞고, 출발일 88개를 담고, gzip 50KB 이하다', () => {
+    expect(data.asOf).toBe(facts.dataVersion);
+    expect(data.dates).toHaveLength(88);
+    expect(gzipSync(body).length).toBeLessThanOrEqual(50 * 1024);
+  });
+
+  it('모든 출발일에서 lo ≤ hi', () => {
+    data.lo.forEach((lo, i) => expect(lo).toBeLessThanOrEqual(data.hi[i]!));
   });
 });

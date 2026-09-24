@@ -32,7 +32,7 @@ export type MapData = z.infer<typeof mapSchema>;
 // 노선·등급 평균 대비 %×10으로 평균한 값이라 지형 높이와 같은 눈금이다.
 export const bandSchema = z.object({
   asOf: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  dates: z.array(z.string()).min(1),
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1),
   lo: ints,
   hi: ints,
 }).refine((b) => b.lo.length === b.dates.length && b.hi.length === b.dates.length, 'band 배열 길이가 서로 다르다');

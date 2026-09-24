@@ -66,7 +66,7 @@
       "heading": "Prediction interval calibration",
       "body1": "Instead of a single price, I also output a {model.interval.level}% prediction interval.",
       "body2": "A fixed interval's actual coverage dropped to {model.interval.driftLow}% on more recent data. I adjusted the interval width to account for the shifting distribution, reaching {model.interval.coverage}% coverage on the most recent window.",
-      "body3": "The white band along the front edge of the landscape is the prediction interval for each departure date, computed on the reference date. You can check it date by date in the demo below."
+      "body3": "The white band along the front edge of the landscape shows the prediction interval for each departure date, computed on the reference date and averaged across {data.routes} routes and both cabin classes as % of each average price. The demo below shows the amounts for a single route."
     },
     "limits": {
       "heading": "Limitations and next steps",
