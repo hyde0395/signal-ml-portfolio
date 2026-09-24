@@ -1,4 +1,4 @@
-# main 브랜치 push와 모든 PR에서 타입 검사, 단위 테스트, 빌드, e2e를 순서대로 돌린다.
+# main 브랜치 push와 모든 PR에서 타입 검사, 단위 테스트, 빌드, 용량 검사, e2e를 순서대로 돌린다.
 # e2e가 실패하면 playwright-report를 아티팩트로 올려 원인을 나중에 내려받아 볼 수 있게 한다.
 name: ci
 on:
@@ -15,6 +15,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npm run size
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
         env: { CI: 'true' }

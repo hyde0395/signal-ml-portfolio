@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
+    "size": "node scripts/check-size.mjs",
     "test": "vitest run",
     "e2e": "playwright test",
     "fallbacks": "node scripts/capture-fallbacks.mjs",
