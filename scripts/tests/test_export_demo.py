@@ -133,17 +133,54 @@ def reco(action, pct):
     return {"action": action, "savingPct": pct}
 
 
+def reco_list(n, overrides):
+    # overrides: {인덱스: (action, savingPct)}. 나머지 인덱스는 예측 없음(None)으로 채운다
+    lst = [None] * n
+    for i, (action, pct) in overrides.items():
+        lst[i] = reco(action, pct)
+    return lst
+
+
+# choose_default의 DEFAULT_DAY_RANGE(D-day 14~75)는 dates[i] = as_of + FIRST_DAY + i 이므로
+# i = DEFAULT_DAY_RANGE - FIRST_DAY(3) = (11, 72). 아래 테스트는 이 경계를 그대로 쓴다.
+IN_RANGE_I = 40     # 11..72 안(전형적인 "범위 안" 인덱스)
+OUT_RANGE_I = 85    # 72보다 커서 범위 밖(D+88 근방)
+
+
 def test_choose_default_prefers_biggest_drop():
+    # 범위 안(11..72)에서는 기존과 같이 절약률이 큰 조합을 고른다(BUY_NOW는 선호 순서상 밀린다)
+    dates = ed.depart_dates("2026-09-22")
     series = {
-        "ICN_NRT/LCC": {"reco": [reco("BUY_NOW", 1.0), reco("DROP_EXPECTED", 9.1)]},
-        "ICN_KIX/FSC": {"reco": [reco("DROP_EXPECTED", 12.5), None]},
+        "ICN_NRT/LCC": {"reco": reco_list(len(dates), {20: ("BUY_NOW", 1.0), 21: ("DROP_EXPECTED", 9.1)})},
+        "ICN_KIX/FSC": {"reco": reco_list(len(dates), {15: ("DROP_EXPECTED", 12.5)})},
         "HND_ICN/LCC": None,
     }
-    assert ed.choose_default(series, ["2026-09-25", "2026-09-26"]) == {"route": "ICN_KIX", "cabin": "FSC", "date": "2026-09-25"}
+    assert ed.choose_default(series, dates) == {"route": "ICN_KIX", "cabin": "FSC", "date": dates[15]}
 
 
 def test_choose_default_falls_back_to_wait_then_buy_now():
-    wait = {"ICN_NRT/LCC": {"reco": [reco("BUY_NOW", 5.0), reco("WAIT", 16.0)]}}
-    assert ed.choose_default(wait, ["2026-09-25", "2026-09-26"])["date"] == "2026-09-26"
-    buy = {"ICN_NRT/LCC": {"reco": [reco("BUY_NOW", 1.0), reco("BUY_NOW", 4.0)]}}
-    assert ed.choose_default(buy, ["2026-09-25", "2026-09-26"])["date"] == "2026-09-26"
+    dates = ed.depart_dates("2026-09-22")
+    wait = {"ICN_NRT/LCC": {"reco": reco_list(len(dates), {20: ("BUY_NOW", 5.0), 21: ("WAIT", 16.0)})}}
+    assert ed.choose_default(wait, dates)["date"] == dates[21]
+    buy = {"ICN_NRT/LCC": {"reco": reco_list(len(dates), {20: ("BUY_NOW", 1.0), 21: ("BUY_NOW", 4.0)})}}
+    assert ed.choose_default(buy, dates)["date"] == dates[21]
+
+
+def test_choose_default_in_range_drop_beats_bigger_out_of_range_drop():
+    # savingPct는 출발일이 멀수록 구조적으로 커진다. 범위(D-day 14~75) 밖의 더 큰 절약률(20.0%,
+    # OUT_RANGE_I)이 있어도, 범위 안의 더 작은 절약률(5.0%, IN_RANGE_I)을 먼저 고른다
+    dates = ed.depart_dates("2026-09-22")
+    series = {
+        "ICN_NRT/LCC": {"reco": reco_list(len(dates), {IN_RANGE_I: ("DROP_EXPECTED", 5.0)})},
+        "ICN_KIX/FSC": {"reco": reco_list(len(dates), {OUT_RANGE_I: ("DROP_EXPECTED", 20.0)})},
+    }
+    assert ed.choose_default(series, dates) == {"route": "ICN_NRT", "cabin": "LCC", "date": dates[IN_RANGE_I]}
+
+
+def test_choose_default_falls_back_to_out_of_range_drop_when_none_in_range():
+    # 범위 안에 DROP_EXPECTED가 하나도 없으면(범위 밖에만 있으면) 그래도 DROP_EXPECTED를 고른다
+    # (WAIT·BUY_NOW로 밀리지 않는다) — 전체 범위로 넓히는 안전망
+    dates = ed.depart_dates("2026-09-22")
+    series = {"ICN_NRT/LCC": {"reco": reco_list(len(dates), {OUT_RANGE_I: ("DROP_EXPECTED", 20.0)})}}
+    result = ed.choose_default(series, dates)
+    assert result == {"route": "ICN_NRT", "cabin": "LCC", "date": dates[OUT_RANGE_I]}

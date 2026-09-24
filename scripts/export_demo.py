@@ -41,6 +41,9 @@ CONFIDENCE = {"높음": "high", "보통": "medium"}
 BUY_WHY = {"IMMINENT", "PAST_OPTIMAL", "AT_LOW", "SMALL_SAVING"}
 PREFERENCE = ["DROP_EXPECTED", "WAIT", "BUY_NOW"]
 ACTIONS = {"BUY_NOW", "DROP_EXPECTED", "WAIT"}   # recommend_action이 돌려줄 수 있는 값(4번째 상태 방지)
+# 데모 기본 조합의 출발까지 남은 일수(D-day) 범위. savingPct는 구조상 출발일이 멀수록 커져서, 그대로
+# 최댓값을 고르면 choose_default가 거의 항상 마지막 날(D+90)만 고른다 — 이 범위로 먼저 찾는다
+DEFAULT_DAY_RANGE = (14, 75)
 
 
 def depart_dates(as_of: str) -> list[str]:
@@ -150,18 +153,26 @@ def build_band(series: dict, base: dict[tuple[str, str], float], dates: list[str
 
 def choose_default(series: dict, dates: list[str]) -> dict:
     """데모를 처음 열 때 보여 줄 조합. 추천의 대부분이 '지금 구매'라 아무 조합이나 보여 주면 심심하므로
-    가격 하락 예상 중 절약률이 가장 큰 것을 고른다(스펙 §6.1). 없으면 대기 추천, 그다음 지금 구매."""
+    가격 하락 예상 중 절약률이 가장 큰 것을 고른다(스펙 §6.1). 없으면 대기 추천, 그다음 지금 구매.
+
+    같은 action 안에서는 먼저 DEFAULT_DAY_RANGE(D-day 14~75) 안에서만 찾고, 그 범위에 해당 action이
+    하나도 없을 때만 전체 출발일로 넓힌다 — savingPct가 날짜가 멀수록 커지도록 설계돼 있어, 범위를
+    두지 않으면 거의 항상 마지막 날(D+90)만 골라 데모 첫 화면이 매번 똑같아진다."""
+    i_lo, i_hi = DEFAULT_DAY_RANGE[0] - FIRST_DAY, DEFAULT_DAY_RANGE[1] - FIRST_DAY
     for action in PREFERENCE:
-        best = None
-        for key, s in series.items():
-            if not s:
-                continue
-            for i, r in enumerate(s["reco"]):
-                if r and r["action"] == action and (best is None or r["savingPct"] > best[0]):
-                    best = (r["savingPct"], key, dates[i])
-        if best:
-            route, cabin = best[1].split("/")
-            return {"route": route, "cabin": cabin, "date": best[2]}
+        for restrict in (True, False):
+            best = None
+            for key, s in series.items():
+                if not s:
+                    continue
+                for i, r in enumerate(s["reco"]):
+                    if restrict and not (i_lo <= i <= i_hi):
+                        continue
+                    if r and r["action"] == action and (best is None or r["savingPct"] > best[0]):
+                        best = (r["savingPct"], key, dates[i])
+            if best:
+                route, cabin = best[1].split("/")
+                return {"route": route, "cabin": cabin, "date": best[2]}
     raise SystemExit("예측이 하나도 없다 — 대표 편 조건(REP_WINDOW_DAYS, REP_MIN_ROWS)을 확인한다")
 
 
@@ -170,7 +181,8 @@ def load_holidays(dates: list[str]) -> list[tuple[pd.Timestamp, str]]:
     한국을 먼저 넣어, 거리가 같으면 한국 공휴일 이름을 보여 준다. 일본 오봉(8/13~16)은 항공권
     저장소가 따로 더하지만 데모 출발일 범위(9월 말~12월)에 없어 넣지 않는다."""
     from workalendar.asia import Japan, SouthKorea
-    years = sorted({int(d[:4]) for d in dates} | {int(dates[-1][:4]) + 1})
+    # 출발일 범위 앞뒤로도 ±3일 창이 걸칠 수 있어(연말·연초 경계) 전년·다음 해도 같이 모은다
+    years = sorted({int(d[:4]) for d in dates} | {int(dates[0][:4]) - 1, int(dates[-1][:4]) + 1})
     out: list[tuple[pd.Timestamp, str]] = []
     for prefix, cal in (("kr", SouthKorea()), ("jp", Japan())):
         for y in years:
@@ -227,8 +239,14 @@ def main() -> None:
     reps = pick_representatives(kept, as_of)
 
     from src.models.v2_predictor import load_predictor  # NeuralProphet·torch를 끌고 오는 무거운 import라 여기서 한다
+    from src.models.lookup_features import LOOKUP_VARIANT
     with quiet():
         predictor = load_predictor()
+    # quiet()가 load_predictor의 lookup 구성 불일치 경고(stdout)를 삼키므로, 여기서 직접 다시 확인해
+    # 낡은 pkl로 조용히 예측하지 않게 한다
+    saved = getattr(predictor, "lookup_variant", None)
+    if saved is not None and saved != LOOKUP_VARIANT:
+        raise SystemExit(f"pkl lookup 구성 {saved} ≠ 코드 {LOOKUP_VARIANT} — 항공권 저장소에서 재학습이 필요하다")
 
     series: dict[tuple[str, str], dict | None] = {}
     for (route, cabin), rep in reps.items():
