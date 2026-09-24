@@ -1,6 +1,6 @@
 // 3D 가능 여부: 스펙 §9.1 대체 화면 조건(움직임 줄이기, WebGL 없음, 메모리 2GB 이하).
 // 프레임 저하에 따른 전환은 TerrainScene이 실행 중에 따로 판단한다.
-import { FIGURE_KEYS, type FigureKey } from '@/components/sections/ChapterFigure';
+import { FIGURE_KEYS, type FigureKey } from './figureKeys';
 
 // ?capture=<장면>은 대체 이미지 캡처 스크립트 전용이다. 대체 이미지가 있는 다섯 장면 이름만 받는다.
 // 왜: 틀린 값(?capture=bogus)이 그대로 장면 표를 찾으면 undefined로 3D가 죽어 페이지가 비었고,

@@ -2,9 +2,8 @@
 // 기본은 보이고, 3D 캔버스가 준비되면 <html data-3d="on">이 CSS로 숨긴다(globals.css).
 import { getT } from '@/lib/content';
 import type { Locale } from '@/lib/i18n';
-
-export const FIGURE_KEYS = ['hero', 'problem', 'insight', 'bubble', 'interval'] as const;
-export type FigureKey = (typeof FIGURE_KEYS)[number];
+import type { FigureKey } from '@/three/figureKeys';
+export { FIGURE_KEYS, type FigureKey } from '@/three/figureKeys';
 
 export function ChapterFigure({ locale, sceneKey }: { locale: Locale; sceneKey: FigureKey }) {
   const t = getT(locale);
