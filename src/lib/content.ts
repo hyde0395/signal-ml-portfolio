@@ -3,7 +3,7 @@ import en from '../../content/en.json';
 import ja from '../../content/ja.json';
 import ko from '../../content/ko.json';
 import { facts } from './facts';
-import { createT, type Locale } from './i18n';
+import { createT, prefill, type Locale } from './i18n';
 
 export type Dict = typeof ko;
 export const dictionaries: Record<Locale, Dict> = { ko, en, ja };
@@ -22,4 +22,16 @@ export function flatten(dict: unknown, prefix = ''): Record<string, string> {
     else Object.assign(out, flatten(v, key));
   }
   return out;
+}
+
+export type DemoTexts = Dict['demo'];
+
+// 데모 문구: facts 수치는 서버에서 채우고 {v.…}는 남긴 채, 그 언어 것만 클라이언트 DemoApp에 넘긴다.
+// (세 언어 사전과 facts 전체를 클라이언트 JS에 싣지 않기 위해)
+export function demoTexts(locale: Locale): DemoTexts {
+  const walk = (node: unknown): unknown =>
+    typeof node === 'string'
+      ? prefill(node, facts, locale)
+      : Object.fromEntries(Object.entries(node as Record<string, unknown>).map(([k, v]) => [k, walk(v)]));
+  return walk(dictionaries[locale].demo) as DemoTexts;
 }

@@ -74,6 +74,59 @@
       "body3": "다음 단계는 같은 편의 최근 관측가를 피처로 넣어 기준선을 넘는 것입니다."
     }
   },
+  "demo": {
+    "heading": "지금 살까, 기다릴까",
+    "intro": "노선과 등급, 출발일을 고르면 기준일에 샀을 때의 예측가와 {model.interval.level}% 예측 구간, 추천을 보여 줍니다.",
+    "basis": "노선·등급마다 최근 관측이 가장 많은 편 하나를 골라 예측했습니다. 모델 서버 없이 미리 계산한 값입니다.",
+    "sentence": "[route] 가는 [cabin]를 [date]에 타려면, 지금 살까요?",
+    "routeLabel": "노선",
+    "cabinToggle": "등급 {v.cabin}, 눌러서 바꾸기",
+    "routes": {
+      "ICN_NRT": "인천 → 나리타",
+      "NRT_ICN": "나리타 → 인천",
+      "ICN_KIX": "인천 → 간사이",
+      "KIX_ICN": "간사이 → 인천",
+      "ICN_HND": "인천 → 하네다",
+      "HND_ICN": "하네다 → 인천"
+    },
+    "strip": {
+      "label": "출발일",
+      "valuetext": "{v.date|md}, 예측가 {v.price}원",
+      "holiday": "공휴일 주변: {v.holiday}",
+      "legendHoliday": "공휴일 주변 출발일",
+      "legendNoData": "예측 없음"
+    },
+    "money": "{v.price}원",
+    "result": {
+      "price": "예측가",
+      "range": "{model.interval.level}% 예측 구간",
+      "rangeAria": "{model.interval.level}% 예측 구간 {v.lo}원에서 {v.hi}원"
+    },
+    "why": {
+      "IMMINENT": "출발이 임박했습니다. 지금 사는 편이 낫습니다.",
+      "PAST_OPTIMAL": "예상 최저 시점(D-{v.globalBestDay})은 이미 지났습니다. 남은 기간에는 지금이 가장 쌀 것으로 예측됩니다.",
+      "AT_LOW": "지금이 예상 최저가입니다. 기다리면 오를 가능성이 높습니다.",
+      "SMALL_SAVING": "D-{v.bestDay}의 예상 최저가와 차이가 {v.savingPct|fixed1}%로, 예측 오차 범위 안입니다.",
+      "FALLING": "가격이 내려가는 중입니다. {v.waitDays}일 더 지켜볼 만합니다. 예상 저점은 약 {v.bestPrice}원(지금보다 {v.savingPct|fixed1}% 낮음)입니다.",
+      "LATER_LOW": "D-{v.bestDay}(약 {v.waitDays}일 뒤)에 사면 약 {v.saving}원({v.savingPct|fixed1}%) 쌀 것으로 예측됩니다."
+    },
+    "confidence": { "label": "확신도", "high": "높음", "medium": "보통" },
+    "asOf": "미리 계산된 예측 · {v.asOf|date} 기준",
+    "announce": "{v.date|md} 출발, 예측가 {v.price}원, {v.action}.",
+    "loading": "데모 데이터를 불러오는 중입니다.",
+    "error": "데모 데이터를 불러오지 못했습니다.",
+    "retry": "다시 시도",
+    "noForecast": "이 노선·등급은 대표 편이 없어 예측이 없습니다.",
+    "noJs": "데모는 JavaScript를 켜면 동작합니다.",
+    "holidays": {
+      "kr_midautumn_festival": "추석 연휴",
+      "kr_national_foundation_day": "개천절",
+      "kr_hangul_day": "한글날",
+      "jp_sports_day": "스포츠의 날(일본)",
+      "jp_culture_day": "문화의 날(일본)",
+      "jp_labour_thanksgiving_day": "근로감사의 날(일본)"
+    }
+  },
   "stack": {
     "heading": "기술 스택",
     "collect": { "title": "수집", "body": "Python · SerpApi · requests · tenacity · GitHub Actions" },

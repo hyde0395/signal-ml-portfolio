@@ -74,6 +74,59 @@
       "body3": "The next step is to beat the baseline by adding the same flight's recent observed prices as a feature."
     }
   },
+  "demo": {
+    "heading": "Buy now or wait?",
+    "intro": "Pick a route, cabin, and departure date to see the predicted price if bought on the reference date, its {model.interval.level}% prediction interval, and a recommendation.",
+    "basis": "For each route and cabin, the prediction uses the one flight observed most often recently. The values were computed in advance, without a model server.",
+    "sentence": "Flying [route] on [cabin], departing [date] — buy now?",
+    "routeLabel": "Route",
+    "cabinToggle": "Cabin {v.cabin}, press to switch",
+    "routes": {
+      "ICN_NRT": "Incheon → Narita",
+      "NRT_ICN": "Narita → Incheon",
+      "ICN_KIX": "Incheon → Kansai",
+      "KIX_ICN": "Kansai → Incheon",
+      "ICN_HND": "Incheon → Haneda",
+      "HND_ICN": "Haneda → Incheon"
+    },
+    "strip": {
+      "label": "Departure date",
+      "valuetext": "{v.date|md}, predicted ₩{v.price}",
+      "holiday": "near a holiday: {v.holiday}",
+      "legendHoliday": "Departures near a holiday",
+      "legendNoData": "No prediction"
+    },
+    "money": "₩{v.price}",
+    "result": {
+      "price": "Predicted price",
+      "range": "{model.interval.level}% prediction interval",
+      "rangeAria": "{model.interval.level}% prediction interval from ₩{v.lo} to ₩{v.hi}"
+    },
+    "why": {
+      "IMMINENT": "Departure is very close. Buying now is the better choice.",
+      "PAST_OPTIMAL": "The predicted lowest point (D-{v.globalBestDay}) has already passed. For the remaining days, now is predicted to be the cheapest.",
+      "AT_LOW": "Now is the predicted lowest price. Waiting is more likely to cost more.",
+      "SMALL_SAVING": "The gap to the predicted low at D-{v.bestDay} is {v.savingPct|fixed1}%, within the model's error range.",
+      "FALLING": "The price is falling. It may be worth watching for {v.waitDays} more days: the predicted low is about ₩{v.bestPrice} ({v.savingPct|fixed1}% below now).",
+      "LATER_LOW": "Buying at D-{v.bestDay} (about {v.waitDays} days from now) is predicted to save about ₩{v.saving} ({v.savingPct|fixed1}%)."
+    },
+    "confidence": { "label": "Confidence", "high": "High", "medium": "Medium" },
+    "asOf": "Precomputed prediction · as of {v.asOf|date}",
+    "announce": "Departing {v.date|md}, predicted ₩{v.price}, {v.action}.",
+    "loading": "Loading demo data.",
+    "error": "Couldn't load the demo data.",
+    "retry": "Try again",
+    "noForecast": "There is no representative flight for this route and cabin, so there is no prediction.",
+    "noJs": "The demo needs JavaScript to run.",
+    "holidays": {
+      "kr_midautumn_festival": "Chuseok holidays",
+      "kr_national_foundation_day": "National Foundation Day (Korea)",
+      "kr_hangul_day": "Hangul Day (Korea)",
+      "jp_sports_day": "Sports Day (Japan)",
+      "jp_culture_day": "Culture Day (Japan)",
+      "jp_labour_thanksgiving_day": "Labor Thanksgiving Day (Japan)"
+    }
+  },
   "stack": {
     "heading": "Tech stack",
     "collect": { "title": "Collection", "body": "Python · SerpApi · requests · tenacity · GitHub Actions" },

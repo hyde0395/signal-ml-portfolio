@@ -2,6 +2,7 @@
 // 채워지는지, 그리고 문장에 숫자를 직접 쓰지 않았는지(재학습으로 수치가 바뀌면 facts.json만
 // 고치면 되도록 강제한다).
 import { describe, expect, it } from 'vitest';
+import { SAMPLE_VALUES } from '@/demo/reason';
 import { facts } from '@/lib/facts';
 import { interpolate, LOCALES, PLACEHOLDER } from '@/lib/i18n';
 import { dictionaries, flatten } from '@/lib/content';
@@ -9,6 +10,8 @@ import { dictionaries, flatten } from '@/lib/content';
 const MAY_BE_EMPTY = new Set(['hero.nameSub']);
 
 const flat = Object.fromEntries(LOCALES.map((l) => [l, flatten(dictionaries[l])]));
+// 데모 문구의 {v.…}는 실행 중에 채워지므로 견본 값으로 채워 본다(src/demo/reason.ts)
+const source = { ...facts, v: SAMPLE_VALUES };
 
 describe('문구 파일', () => {
   it('세 언어의 키 목록이 같다', () => {
@@ -20,7 +23,7 @@ describe('문구 파일', () => {
   for (const locale of LOCALES) {
     it(`${locale}: 모든 자리표시가 facts에서 해석된다`, () => {
       for (const [key, text] of Object.entries(flat[locale])) {
-        expect(() => interpolate(text, facts, locale), key).not.toThrow();
+        expect(() => interpolate(text, source, locale), key).not.toThrow();
       }
     });
 

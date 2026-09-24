@@ -74,6 +74,59 @@
       "body3": "次のステップは、同じ便の直近観測価格を特徴量として追加し、基準線を上回ることです。"
     }
   },
+  "demo": {
+    "heading": "今買う? 待つ?",
+    "intro": "路線・クラス・出発日を選ぶと、基準日に買った場合の予測価格と{model.interval.level}%予測区間、おすすめを表示します。",
+    "basis": "路線・クラスごとに、直近で最も多く観測された便を一つ選んで予測しました。モデルサーバーなしで事前に計算した値です。",
+    "sentence": "[route]の[cabin]で[date]に出発するなら、今買うべき?",
+    "routeLabel": "路線",
+    "cabinToggle": "クラス {v.cabin}、押して切り替え",
+    "routes": {
+      "ICN_NRT": "仁川 → 成田",
+      "NRT_ICN": "成田 → 仁川",
+      "ICN_KIX": "仁川 → 関西",
+      "KIX_ICN": "関西 → 仁川",
+      "ICN_HND": "仁川 → 羽田",
+      "HND_ICN": "羽田 → 仁川"
+    },
+    "strip": {
+      "label": "出発日",
+      "valuetext": "{v.date|md}、予測価格 {v.price}ウォン",
+      "holiday": "祝日付近: {v.holiday}",
+      "legendHoliday": "祝日付近の出発日",
+      "legendNoData": "予測なし"
+    },
+    "money": "{v.price}ウォン",
+    "result": {
+      "price": "予測価格",
+      "range": "{model.interval.level}%予測区間",
+      "rangeAria": "{model.interval.level}%予測区間 {v.lo}ウォンから{v.hi}ウォン"
+    },
+    "why": {
+      "IMMINENT": "出発が間近です。今買うほうがよいです。",
+      "PAST_OPTIMAL": "予測される最安時点(D-{v.globalBestDay})はすでに過ぎました。残りの期間では今が最も安いと予測されます。",
+      "AT_LOW": "今が予測最安値です。待つと値上がりする可能性が高いです。",
+      "SMALL_SAVING": "D-{v.bestDay}の予測最安値との差は{v.savingPct|fixed1}%で、予測誤差の範囲内です。",
+      "FALLING": "価格は下がっています。あと{v.waitDays}日様子を見る価値があります。予測安値は約{v.bestPrice}ウォン(今より{v.savingPct|fixed1}%安い)です。",
+      "LATER_LOW": "D-{v.bestDay}(約{v.waitDays}日後)に買うと、約{v.saving}ウォン({v.savingPct|fixed1}%)安くなると予測されます。"
+    },
+    "confidence": { "label": "確信度", "high": "高", "medium": "中" },
+    "asOf": "事前計算した予測 · {v.asOf|date}時点",
+    "announce": "{v.date|md}出発、予測価格 {v.price}ウォン、{v.action}。",
+    "loading": "デモデータを読み込んでいます。",
+    "error": "デモデータを読み込めませんでした。",
+    "retry": "再試行",
+    "noForecast": "この路線・クラスは代表便がないため予測がありません。",
+    "noJs": "デモを使うにはJavaScriptを有効にしてください。",
+    "holidays": {
+      "kr_midautumn_festival": "秋夕の連休",
+      "kr_national_foundation_day": "開天節(韓国)",
+      "kr_hangul_day": "ハングルの日(韓国)",
+      "jp_sports_day": "スポーツの日",
+      "jp_culture_day": "文化の日",
+      "jp_labour_thanksgiving_day": "勤労感謝の日"
+    }
+  },
   "stack": {
     "heading": "技術スタック",
     "collect": { "title": "収集", "body": "Python · SerpApi · requests · tenacity · GitHub Actions" },

@@ -8,7 +8,8 @@ export const INTL_LOCALE: Record<Locale, string> = { ko: 'ko-KR', en: 'en-US', j
 // 전역(g) 플래그가 붙어 있다. String.replace에는 매번 새로 매칭되어 안전하지만, 같은 정규식
 // 객체를 .test()나 .exec()에 재사용하면 lastIndex가 호출 사이에 남아 결과가 들쭉날쭉해지므로
 // 그 용도로는 쓰지 않는다(쓰려면 매번 새 RegExp를 만들 것).
-export const PLACEHOLDER = /\{([A-Za-z0-9_.]+)(?:\|([a-z]+))?\}/g;
+// 형식 이름에 숫자를 허용한다(예: fixed1). 글자만 허용하면 {v.x|fixed1}이 안 채워진 채 남는다.
+export const PLACEHOLDER = /\{([A-Za-z0-9_.]+)(?:\|([a-z0-9]+))?\}/g;
 
 export function lookup(obj: unknown, path: string): unknown {
   return path.split('.').reduce<unknown>(
