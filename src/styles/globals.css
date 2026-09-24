@@ -41,6 +41,14 @@ section p + p { margin-top: 12px; }
 .not-found { padding-block: 25vh; display: grid; gap: 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 
+/* 로딩 화면: 0.85초 머문 뒤 0.35초 동안 사라진다(합 1.2초, 스펙 §8.1). 클릭을 막지 않고 레이아웃도 밀지 않는다 */
+.loader { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: var(--bg);
+  pointer-events: none; animation: loader-out 0.35s var(--ease) 0.85s forwards; }
+.loader p { font: 600 clamp(0.85rem, 2.4vw, 1.1rem) var(--font-mono); letter-spacing: 0.18em; color: var(--mute); }
+.loader [data-count] { color: var(--amb); }
+@keyframes loader-out { to { opacity: 0; visibility: hidden; } }
+html.no-loader .loader { display: none; }
+
 .site-header { position: sticky; top: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center;
   gap: 12px; padding: 12px 16px; background: rgba(7, 11, 22, 0.8); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .brand { font-size: 1rem; letter-spacing: 0.1em; }
