@@ -37,6 +37,7 @@ for (const { path, lang } of PAGES) {
     await expect(page.getByRole('heading', { level: 1, name: 'CHOI HALIM' })).toBeVisible();
     for (const id of ['about', 'case', 'demo', 'stack', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
     await expect(page.locator('[data-chapter]')).toHaveCount(6);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', new RegExp(`/og/${lang}\\.jpg$`));
   });
 
   test(`${path}: axe 위반 없음`, async ({ page }) => {

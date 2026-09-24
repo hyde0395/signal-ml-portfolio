@@ -10,6 +10,7 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "fallbacks": "node scripts/capture-fallbacks.mjs",
+    "og": "node scripts/capture-og.mjs",
     "facts": "sh scripts/py.sh scripts/export_facts.py",
     "terrain": "sh scripts/py.sh scripts/export_terrain.py",
     "map": "sh scripts/py.sh scripts/export_map.py",

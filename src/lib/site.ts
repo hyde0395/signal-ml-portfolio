@@ -6,6 +6,9 @@ import { LOCALE_PATH, type Locale } from './i18n';
 // 계획 4에서 공개할 때 true로 바꾼다. false인 동안 noindex + robots.txt Disallow.
 export const LAUNCHED = false;
 
+// 링크 미리보기(og:locale) 표기용. Open Graph는 BCP-47이 아니라 language_TERRITORY 형식을 쓴다.
+const OG_LOCALE: Record<Locale, string> = { ko: 'ko_KR', en: 'en_US', ja: 'ja_JP' };
+
 export function siteUrl(): URL {
   const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (!host) {
@@ -33,5 +36,16 @@ export function buildMetadata(locale: Locale, launched = LAUNCHED): Metadata {
       canonical: LOCALE_PATH[locale],
       languages: { ko: LOCALE_PATH.ko, en: LOCALE_PATH.en, ja: LOCALE_PATH.ja, 'x-default': LOCALE_PATH.ko },
     },
+    // 링크 미리보기: scripts/capture-og.mjs가 3D 첫 화면에 이름을 얹어 만든 언어별 이미지(스펙 §12)
+    openGraph: {
+      type: 'website',
+      siteName: 'SIGNAL',
+      locale: OG_LOCALE[locale],
+      url: LOCALE_PATH[locale],
+      title: t('meta.title'),
+      description: t('meta.description'),
+      images: [{ url: `/og/${locale}.jpg`, width: 1200, height: 630, alt: t('meta.title') }],
+    },
+    twitter: { card: 'summary_large_image', title: t('meta.title'), description: t('meta.description'), images: [`/og/${locale}.jpg`] },
   };
 }
