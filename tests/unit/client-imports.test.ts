@@ -5,6 +5,7 @@
 // import() 호출 자체를 애초에 잡지 않는다). 각 entry에서 정적 import로 닿는 모든 모듈을 따라가, 서버
 // 전용 모듈(lib/content: 세 언어 사전, lib/facts: 수치 + zod)이나 zod가 초기 JS에 끌려오지 않는지 확인한다.
 // import type과 import()(지연 로딩)는 초기 청크를 늘리지 않으므로 따라가지 않는다.
+// next/dynamic에 ssr:true를 주면 청크가 초기 HTML에 들어갈 수 있는데 이 검사는 import()를 모두 지연으로 본다 — 그 경우는 npm run size가 잡는다.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -81,5 +82,13 @@ describe('클라이언트 import 경계', () => {
       const path = graph.get(bad);
       expect(path, path && path.map(rel).join(' → ')).toBeUndefined();
     }
+  });
+
+  // resolveImport가 못 찾은 경로는 'missing:'으로 조용히 빠지므로, 그런 경로가 하나라도 있으면
+  // reachable 그래프가 실제보다 작게 잡혀 이 테스트 전체가 헛돌 수 있다 — 명시적으로 잡아낸다.
+  it.each(entryFiles.map((f) => [rel(f), f]))('%s의 reachable 그래프에 missing: 항목이 없다', (_, file) => {
+    const graph = reachable(file);
+    const missing = [...graph.keys()].filter((k) => k.startsWith('missing:'));
+    expect(missing, missing.map((k) => graph.get(k)!.map(rel).join(' → ')).join('\n')).toEqual([]);
   });
 });
