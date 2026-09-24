@@ -42,9 +42,11 @@ npm run e2e        # Playwright + axe
 npm run facts      # 모델 저장소에서 수치 갱신 (AIRFARE_ROOT 필요)
 npm run terrain    # 지형 데이터 추출 (export_terrain.py)
 npm run map        # 지도 데이터 추출 (export_map.py)
+npm run demo       # 데모 예측·예측 구간 띠 추출 (export_demo.py, 모델을 돌려 몇 분)
+npm run pytest     # 데이터 스크립트 테스트
 npm run fallbacks  # 대체 WebP 캡처 (capture-fallbacks.mjs, npm run build 이후)
 ```
 
-**재학습 후 업데이트 순서:** `npm run facts` → `npm run terrain` → `npm run build` → `npm run fallbacks` → commit
+**재학습 후 업데이트 순서:** `npm run facts` → `npm run terrain` → `npm run demo` → `npm run build` → `npm run fallbacks` → commit (데이터 스크립트의 파이썬은 `scripts/py.sh`가 고른다)
 
 Next.js (App Router, static export) · TypeScript · zod · Vitest · Playwright · GitHub Actions · Vercel

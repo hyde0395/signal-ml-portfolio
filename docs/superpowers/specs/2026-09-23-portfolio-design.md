@@ -63,7 +63,7 @@
 | 3-2 | 핵심 인사이트 | U자 곡선(골짜기), 공휴일 봉우리 |
 | 3-3 | R² 거품 빼기 | 잘못 매칭된 9,387개 점이 떨어져 나가는 연출 |
 | 3-4 | 검증 설계 | 평가 방식 3종 비교 |
-| 3-5 | 예측 구간 보정 | q10~q90 띠 연출 (띠는 모델 예측 구간이 필요해 계획 2(데모 데이터)로 옮김. 계획 3에서는 지형을 비스듬히 보는 장면만) |
+| 3-5 | 예측 구간 보정 | q10~q90 띠 연출 (계획 2에서 구현: 지형 앞 가장자리에 기준일의 출발일별 예측 구간 띠) |
 | 3-6 | 한계와 다음 단계 | 단순 기준선과 MAE 차이가 작다는 점을 **먼저** 밝힙니다 |
 | 4 | 인터랙티브 데모 | §6 |
 | 5 | 기술 스택 | 파이프라인 도식 |
@@ -142,7 +142,7 @@
 
 **구현 결과**
 
-`src/three/` 모듈 (data.ts, scenes.ts, activeScene.ts, capability.ts, shaders.ts, TerrainPoints.tsx, CameraRig.tsx, TerrainScene.tsx)과 `src/components/Backdrop.tsx`, `src/components/sections/ChapterFigure.tsx`(3D를 못 쓸 때의 정적 대체 이미지)로 구성. 3D는 첫 화면 텍스트가 뜬 뒤 지연 로딩되며, `<html data-3d="on|off">` 속성으로 접근성 대체 처리(reduced-motion / WebGL 미지원 / 저사양 / 프레임 저하)를 이루어낸다. 대체 이미지는 다섯 장(`public/fallback/*.webp`): 신호가 잡음에서 떠오르는 첫 화면(hero) / 한·일 해안선 + 노선 궤적(3-1 problem) / 측면 U자 곡선 + 실측 예약 곡선(3-2 insight) / 제거된 점 계층이 떨어지기 전(3-3 bubble) / 예측 구간 보정 챕터의 지형(3-5 interval). 재학습 후: `npm run facts` → `npm run terrain` → `npm run build` → `npm run fallbacks` 순서로 데이터 갱신 및 대체 WebP 이미지 캡처 후 커밋.
+`src/three/` 모듈 (data.ts, scenes.ts, activeScene.ts, capability.ts, shaders.ts, TerrainPoints.tsx, CameraRig.tsx, TerrainScene.tsx)과 `src/components/Backdrop.tsx`, `src/components/sections/ChapterFigure.tsx`(3D를 못 쓸 때의 정적 대체 이미지)로 구성. 3D는 첫 화면 텍스트가 뜬 뒤 지연 로딩되며, `<html data-3d="on|off">` 속성으로 접근성 대체 처리(reduced-motion / WebGL 미지원 / 저사양 / 프레임 저하)를 이루어낸다. 대체 이미지는 다섯 장(`public/fallback/*.webp`): 신호가 잡음에서 떠오르는 첫 화면(hero) / 한·일 해안선 + 노선 궤적(3-1 problem) / 측면 U자 곡선 + 실측 예약 곡선(3-2 insight) / 제거된 점 계층이 떨어지기 전(3-3 bubble) / 예측 구간 보정 챕터의 지형과 앞 가장자리의 예측 구간 띠(3-5 interval, 계획 2). 재학습 후: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run build` → `npm run fallbacks` 순서로 데이터 갱신 및 대체 WebP 이미지 캡처 후 커밋.
 
 ---
 
@@ -183,6 +183,15 @@
 - 대표 편은 최근 3주 동안 관측이 50건 이상인 편 중에서 고릅니다. 항공권 저장소의 시뮬레이션 기준과 같습니다. 대표 편이 없는 조합은 `null`로 둡니다.
 - 공휴일 이름은 코드로 저장합니다(예: `hangul_day`). 이름표는 언어별 문구 파일에서 가져옵니다.
 - 목표 용량은 **gzip 500KB 이하**입니다. 넘으면 출발일을 주 단위로 줄입니다.
+
+**구현 결과 (계획 2, 2026-09-24)**
+
+- `scripts/export_demo.py` → `public/data/demo.<기준일>.json`(88일 × 12조합, 열 방향 배열 `price`/`lo`/`hi`/`reco`, 대표 편 없는 조합은 `null`), `public/data/band.<기준일>.json`(3-5 띠), `facts.demoDefault`.
+- 이유 코드: `{action, why, bestDay, bestPrice, waitDays, saving, savingPct, globalBestDay, confidence}`. `why`는 `IMMINENT`·`PAST_OPTIMAL`·`AT_LOW`·`SMALL_SAVING`(BUY_NOW), `FALLING`(DROP_EXPECTED), `LATER_LOW`(WAIT). `savingPct`는 "지금보다 몇 % 싼가"라 양수다(위 예시의 −8.7은 같은 값을 변화율로 적은 것).
+- 확신도는 모델이 `높음`/`보통` 두 단계만 내므로 `high`/`medium`만 있다(대기·하락 예상은 절약률이 8% 이상이라 항상 둘 중 하나).
+- 공휴일 코드는 workalendar 영어 이름에서 만든 `kr_…`/`jp_…`이고, 이름표는 `content/*.json`의 `demo.holidays`에 있다.
+- 기본 조합(`facts.demoDefault`)은 가격 하락 예상 중 절약률이 가장 큰 조합을 고르되, 출발까지 14~75일(`DEFAULT_DAY_RANGE`) 안에서 먼저 찾는다 — 절약률은 구조상 출발일이 멀수록 커져 범위 없이 고르면 늘 막대 끝(D+90)이 뽑힌다. 현재 값: 인천→나리타 LCC, 2026-11-26 출발.
+- 대표 편은 노선·등급마다 최근 21일 50행 이상 관측된 편 중 가장 많은 편이며, 12개 조합 모두 대표 편이 있다(2026-09-22 기준).
 
 ### 6.3 데이터 접근 계층
 

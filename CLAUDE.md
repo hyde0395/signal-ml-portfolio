@@ -6,7 +6,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 현재 진행 상태 (2026-09-24 기준)
 
-설계 완료. 계획 1·3 완료·배포(계획 3은 2026-09-24 main 병합, CI 통과). 계획 2(데모) 진행 중: docs/superpowers/plans/2026-09-24-plan-2-demo.md.
+설계 완료. 계획 1·3 완료·배포(계획 3은 2026-09-24 main 병합, CI 통과). 계획 2(데모) 구현 완료(2026-09-24, branch `plan-2-demo`): docs/superpowers/plans/2026-09-24-plan-2-demo.md. PR로 CI 확인 후 main 병합 대기.
 
 | 단계 | 상태 |
 |---|---|
@@ -23,7 +23,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 구현 계획 — 4개로 분할 (1 기반 / 2 데모 / 3 3D 지형 / 4 연출·마감), 순서는 1 → 3 → 2 → 4 | — |
 | 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
 | 계획 3: 3D 지형 | ✅ 완료 2026-09-24 · main 병합(fast-forward) · CI 통과 |
-| 계획 2: 데모 | ⏳ **진행 중** — 계획서 `docs/superpowers/plans/2026-09-24-plan-2-demo.md`, branch `plan-2-demo` |
+| 계획 2: 데모 | ✅ 구현 완료 2026-09-24 · branch `plan-2-demo` · **PR로 CI 확인 후 main 병합 대기** |
 | 계획 4: 연출·마감 | ⏳ 예정 |
 
 **다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
@@ -39,13 +39,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - ⑤ 1번 결정 반영(셰이더/데이터가 바뀌면 `npm run build && npm run fallbacks`로 대체 이미지 다시 생성)
    - 싸게 같이: 청크 테스트를 `index.html`·`en/`·`ja/` 모두로, 캡처 스크립트 `browser.close`를 finally로, 문서 경로 오타(README·스펙 §5.3의 `src/sections/ChapterFigure.tsx` → `src/components/sections/`), 스펙 §5.2에 curve 레이어·§5.3 대체 이미지 5장·§3의 3-5 띠는 계획 2로 이동 기록, `scenes.ts:27` 오래된 주석, 3D 청크 실제 크기 스펙에 기록(측정 결과 gzip 약 245KB로 목표 안)
    - 수정 후: 한 번 재검토 → **CI 확인은 PR로**(CI는 main push/PR에서만 돈다. 헤드리스 swiftshader가 느리면 3D가 꺼질 수 있음) → main 병합 → Vercel 자동 배포 확인
-3. **계획 2(데모) 계획서 작성 → 실행** (`superpowers:writing-plans`, 실행은 subagent-driven). 스펙 §6 + "데모·배포·성능·접근성" 절 기준. 담을 것:
-   - `scripts/export_demo.py`: `v2_predictor.pkl` + `recommend_action()`로 기준일 2026-09-22, 6개 노선 × LCC/FSC × 출발일 D+3~90의 예측가·q10·q90·추천(BUY_NOW/DROP_EXPECTED/WAIT)·**이유 코드와 값**(문장 아님, 예: `{"action":"DROP_EXPECTED","bestDay":30,"bestPrice":171000,"savingPct":-8.7,"confidence":"medium"}`). 대표 편 = 최근 3주 관측 50건 이상. 대표 편 없는 조합은 `null`. 출력 `public/data/demo.<기준일>.json`, gzip ≤500KB(넘으면 출발일을 주 단위로). 모델 실행 전 항공권 저장소 iCloud 워밍, NeuralProphet 로그는 `redirect_stdout`로 억제
-   - `ForecastSource` 인터페이스(`meta`, `getStrip`, `getForecast`) + `StaticForecastSource`(demo.json). 나중에 `ApiForecastSource`로 교체 가능
-   - 데모 UI **B1**: 문장형 선택("〔노선〕 가는 〔LCC/FSC〕를 〔출발일〕에 타려면, 지금 살까요?", 언어별 문장 틀) + 출발일 막대(=날짜 선택기, 높이=기준일에 사면 예측가, 공휴일 호박색+이름표, ←/→·Home/End, `role="slider"`) + 결과(플립 가격, q10~q90 띠, 추천 배지+이유, 확신도는 WAIT/DROP만) + "미리 계산된 예측 · 2026-09-22 기준". 초기 선택값은 DROP_EXPECTED가 나오는 조합(`facts.json` `demoDefault`). 불러오기 실패 → 안내+다시 시도, 예측 없는 날짜 → 회색 점선·선택 불가. 결과 변경은 조작 멈춘 뒤 `aria-live` 한 번
-   - 섹션 위치: `HomePage.tsx`의 케이스 스터디와 기술 스택 사이(`{/* 계획 2 */}` 자리), 장면 키 추가 필요(scenes.ts)
-   - **3-5 챕터 q10~q90 띠**를 지형 위에 얹는다(모델 예측 구간 사용). 대체 이미지 `interval.webp` 다시 생성
-   - 문구 3개 언어(숫자 직접 기입 금지 테스트 통과), e2e(키보드 조작, 실패 경로, axe)
+3. ✅ **계획 2(데모)** — 계획서 `docs/superpowers/plans/2026-09-24-plan-2-demo.md`. 남은 일: PR CI 확인 → main 병합 → Vercel 배포 확인. 한국어 데모 문구 사용자 검토, 영·일 검수(스펙 §14)
 4. **계획 4(연출·마감) 계획서 작성 → 실행**. 담을 것:
    - 로딩 화면 `LOADING 242,874 ROWS` 플립 카운터(최대 1.2초, 같은 세션 재방문 시 생략), 플립 글자판(글자당 약 40ms, 0.8초 이내), 텍스트 리빌(단어 단위, 0.9초, 단어당 60ms), 이징 `cubic-bezier(.16,1,.3,1)` 하나, bounce 금지
    - GSAP ScrollTrigger + Lenis(지금 카메라는 가벼운 스크롤 감지+감쇠). 움직임 줄이기에서는 모두 끔
@@ -53,11 +47,14 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 용량 검사 스크립트(초기 JS gzip ≤150KB — 지금 약 176KB라 줄여야 함, 3D 청크 목표 ≈250KB — 지금 약 245KB(통과)), Lighthouse 모바일 ≥90, LCP ≤2.5s, CLS <0.1
    - 공개 전환: `src/lib/site.ts`의 `LAUNCHED = true`(noindex·robots 해제)
    - 남겨 둔 작은 지적들(계획 1·3 최종 검토 분류표의 "나중에" 항목) 중 방문자에게 보이는 것 정리
+   - 초기 JS에 zod(약 391KB raw 청크)가 들어 있다: Backdrop → three/capability → ChapterFigure → lib/content → lib/facts → zod 경로. 3D 판별 코드가 ChapterFigure(문구·facts)를 끌어오지 않게 FIGURE_KEYS를 가벼운 모듈로 옮기는 등으로 끊는다(초기 JS 150KB 목표와 직결)
+   - 3-5 예측 구간 띠: 데스크톱은 선명하지만 휴대폰 세로 화면에서는 흰 점 덩어리로만 보인다(먼 출발일이 주 1회 수집이라 z가 좁게 몰림). 띠 점 크기·밝기나 표시 방식 조정
+   - 데모 문구 검토: 한국어 사용자 검토, 영·일 검수. 스크린리더 알림의 추천 배지는 세 언어 공통 영어(BUY NOW 등)라 ko/ja에서 영어로 읽힌다 — 언어별 낭독 문구가 필요한지 결정
 5. 공개 전 할 일(스펙 §14): 일본어 검수, 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`, 파일명 `CHOI_HALIM_resume_<언어>.pdf`로 내려받아짐), LinkedIn 주소(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(코드 보기 링크 `facts.json` `codeLinks.baseUrl` 교체, 커밋 이메일 noreply 확인)
 
 ### 다른 기기(맥북)에서 이어서 작업하기
 
-- `git clone https://github.com/hyde0395/signal-ml-portfolio.git ~/dev/signal-ml-portfolio` → `git switch plan-3-terrain`
+- `git clone https://github.com/hyde0395/signal-ml-portfolio.git ~/dev/signal-ml-portfolio` → `git switch main`(또는 진행 중인 브랜치)
 - **커밋 이메일을 이 저장소에 다시 설정** (로컬 설정은 clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
 - Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test`, `npm run build`, `npm run e2e`
 - `.superpowers/`(비주얼 컴패니언 시안, SDD 작업 기록)는 git에 없다. 계획 3의 남은 일은 위 "다음 세션 할 일"에 모두 옮겨 두었다
