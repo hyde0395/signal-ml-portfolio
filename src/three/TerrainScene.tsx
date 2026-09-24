@@ -5,7 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pickActive, readCandidates } from './activeScene';
 import { CameraRig } from './CameraRig';
-import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
+import { buildPointCloud, loadSceneData, type Band, type MapData, type Terrain } from './data';
 import { initialFrameRate, stepFrameRate } from './frameRate';
 import { sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints } from './TerrainPoints';
@@ -16,7 +16,7 @@ const SLOW_FPS = 30;
 const SLOW_SECONDS = 2;
 
 export default function TerrainScene({ dataVersion, onReady, onFail, capture }: Props) {
-  const [data, setData] = useState<{ terrain: Terrain; map: MapData } | null>(null);
+  const [data, setData] = useState<{ terrain: Terrain; map: MapData; band: Band } | null>(null);
   const [level, setLevel] = useState(0);        // 0 정상, 1 낮춤(DPR 1·잡음 숨김)
   const [running, setRunning] = useState(true); // 탭 숨김·연락처 섹션에서는 멈춘다
   const portrait = useRef(false);
@@ -62,7 +62,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     if (!data) return null;
     // 세로 화면(대개 휴대폰)은 잡음 점을 절반만 그린다
     const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
-    return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7 });
+    return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7, band: data.band });
   }, [data]);
 
   if (!cloud) return null;

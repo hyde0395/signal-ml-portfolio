@@ -15,7 +15,7 @@ export function pickActive(cands: Candidate[], viewportH: number): { key: SceneK
   return { key: best.key, progress };
 }
 
-const SECTION_KEYS = new Set(['hero', 'about', 'stack', 'contact']); // 'case'는 챕터들이 대신한다
+const SECTION_KEYS = new Set(['hero', 'about', 'demo', 'stack', 'contact']); // 'case'는 챕터들이 대신한다
 
 export function readCandidates(doc: Document): Candidate[] {
   const out: Candidate[] = [];

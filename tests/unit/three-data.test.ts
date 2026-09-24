@@ -1,6 +1,6 @@
 // JSON → 점 좌표 변환 검사: 좌표계, 레이어 순서, 잡음 솎아내기, 공휴일·노선 표시, 로딩 실패.
 import { describe, expect, it, vi } from 'vitest';
-import { buildPointCloud, curveWeight, loadSceneData, mapPosition, terrainPosition, type MapData, type Terrain } from '@/three/data';
+import { buildPointCloud, curveWeight, dateIndex, loadSceneData, mapPosition, terrainPosition, type Band, type MapData, type Terrain } from '@/three/data';
 
 const terrain: Terrain = {
   asOf: '2026-09-22', maxDtd: 100, clip: { min: -60, max: 200 },
@@ -16,6 +16,7 @@ const map: MapData = {
   routes: [{ from: 'ICN', to: 'NRT', pts: [12645, 3746, 14039, 3577] }],
   airports: [{ code: 'ICN', lon: 126.45, lat: 37.46 }],
 };
+const band: Band = { asOf: '2026-09-22', dates: ['2026-10-02', '2026-12-01'], lo: [-100, 0], hi: [100, 0] };
 
 describe('terrainPosition', () => {
   it('147일 전은 왼쪽 끝, 출발 당일은 오른쪽 끝, +50%는 높이 2', () => {
@@ -124,11 +125,13 @@ describe('buildPointCloud 가중치', () => {
 
 describe('loadSceneData', () => {
   const ok = (body: unknown) => Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
-  it('기준일로 파일을 찾아 두 JSON을 검사해 돌려준다', async () => {
-    const fetcher = vi.fn((url: string) => ok(url.includes('terrain') ? terrain : map));
+  it('기준일로 파일을 찾아 세 JSON(지형·지도·띠)을 검사해 돌려준다', async () => {
+    const fetcher = vi.fn((url: string) => ok(url.includes('terrain') ? terrain : url.includes('band') ? band : map));
     const data = await loadSceneData('2026-09-22', fetcher as unknown as typeof fetch);
     expect(fetcher).toHaveBeenCalledWith('/data/terrain.2026-09-22.json');
+    expect(fetcher).toHaveBeenCalledWith('/data/band.2026-09-22.json');
     expect(data.terrain.dates).toHaveLength(3);
+    expect(data.band.dates).toHaveLength(2);
   });
   it('404면 reject (빈 캔버스로 텍스트를 가리지 않도록 호출 측이 대체 화면으로 간다)', async () => {
     const fetcher = vi.fn(() => Promise.resolve(new Response('no', { status: 404 })));
@@ -148,5 +151,33 @@ describe('loadSceneData', () => {
     const badMap = { ...map, coast: [] };
     const fetcher = vi.fn((url: string) => ok(url.includes('terrain') ? terrain : badMap));
     await expect(loadSceneData('2026-09-22', fetcher as unknown as typeof fetch)).rejects.toThrow();
+  });
+});
+
+describe('예측 구간 띠(band, kind 4)', () => {
+  it('dateIndex: 이웃한 두 출발일 사이를 날수로 보간하고, 범위 밖은 null', () => {
+    expect(dateIndex(['2026-10-01', '2026-10-03', '2026-10-07'], '2026-10-02')).toBe(0.5);
+    expect(dateIndex(['2026-10-01', '2026-10-03', '2026-10-07'], '2026-10-06')).toBe(1.75);
+    expect(dateIndex(['2026-10-01', '2026-10-03'], '2026-10-01')).toBe(0);
+    expect(dateIndex(['2026-10-01', '2026-10-03'], '2026-12-01')).toBeNull();
+  });
+
+  it('출발일마다 lo~hi를 점 6개 세로 줄로, 기준일 시점 예약 일수 자리에 세운다', () => {
+    const plain = buildPointCloud(terrain, map, { noiseStride: 1 });
+    const pc = buildPointCloud(terrain, map, { noiseStride: 1, band });
+    expect(pc.count).toBe(plain.count + 6); // 12-01은 지형 출발일 범위 밖이라 건너뛴다
+    const s = plain.count;
+    for (let k = 0; k < 6; k++) expect(pc.kind[s + k]).toBe(4);
+    // 10-02는 기준일 10일 뒤 → x = ((100-10)/100-0.5)*16 = 6.4, 출발일 번호 1(가운데) → z = 0, lo -10% → y = -0.4
+    const at = (arr: Float32Array, i: number) => [arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]];
+    at(pc.terrain, s).forEach((v, i) => expect(v).toBeCloseTo([6.4, -0.4, 0][i], 5));
+    expect(pc.terrain[(s + 5) * 3 + 1]).toBeCloseTo(0.4, 5); // hi +10%
+    at(pc.map, s).forEach((v, i) => expect(v).toBeCloseTo(at(pc.terrain, s)[i], 5)); // 지도 장면에서도 제자리
+  });
+
+  it('band가 없으면 점 구름은 예전과 같다', () => {
+    const a = buildPointCloud(terrain, map, { noiseStride: 1, seed: 7 });
+    const b = buildPointCloud(terrain, map, { noiseStride: 1, seed: 7, band: undefined });
+    expect(Array.from(b.scatter)).toEqual(Array.from(a.scatter));
   });
 });

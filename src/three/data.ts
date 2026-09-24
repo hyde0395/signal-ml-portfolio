@@ -28,6 +28,16 @@ export const mapSchema = z.object({
 export type Terrain = z.infer<typeof terrainSchema>;
 export type MapData = z.infer<typeof mapSchema>;
 
+// 3-5 챕터의 예측 구간 띠(export_demo.py가 만든다). 출발일마다 12개 노선·등급 조합의 lo·hi를
+// 노선·등급 평균 대비 %×10으로 평균한 값이라 지형 높이와 같은 눈금이다.
+export const bandSchema = z.object({
+  asOf: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  dates: z.array(z.string()).min(1),
+  lo: ints,
+  hi: ints,
+}).refine((b) => b.lo.length === b.dates.length && b.hi.length === b.dates.length, 'band 배열 길이가 서로 다르다');
+export type Band = z.infer<typeof bandSchema>;
+
 // 좌표계는 계획서 "좌표계" 절과 같다. 바꾸면 scenes.ts의 카메라 지점도 함께 바꿔야 한다.
 export const WORLD = { width: 16, depth: 20, heightPerPct: 0.04 } as const;
 const MAP_CENTER = { lon: 135.25, lat: 37.8 };
@@ -48,6 +58,28 @@ const CURVE_Z = 10.5;
 const CURVE_HEIGHT_PER_PCT = 0.12;
 const CURVE_POINTS_PER_DTD = 4;  // 점 하나로는 안 보여서 dtd마다 여러 점을 찍어 선처럼 보이게 한다
 const CURVE_X_JITTER = 0.05;     // 같은 dtd의 점들이 겹치지 않을 만큼만 x를 흔든다
+
+const BAND_STEPS = 6; // 출발일마다 lo~hi 사이에 찍는 점 수. 점 하나로는 "구간"이 아니라 점으로 읽힌다
+const DAY_MS = 86_400_000;
+
+function isoTime(iso: string): number {
+  return Date.parse(`${iso}T00:00:00Z`);
+}
+
+export function daysBetween(fromIso: string, toIso: string): number {
+  return Math.round((isoTime(toIso) - isoTime(fromIso)) / DAY_MS);
+}
+
+// 날짜 → 지형 출발일 축의 (소수) 번호. 지형 날짜는 가까운 쪽은 매일, 먼 쪽은 주 1회라 간격이 고르지 않아,
+// 이웃한 두 날짜 사이를 날수로 선형 보간한다. 범위 밖이면 null(그릴 자리가 없다).
+export function dateIndex(dates: string[], iso: string): number | null {
+  const t = isoTime(iso);
+  for (let i = 0; i + 1 < dates.length; i++) {
+    const a = isoTime(dates[i]), b = isoTime(dates[i + 1]);
+    if (t >= a && t <= b) return i + (b === a ? 0 : (t - a) / (b - a));
+  }
+  return null;
+}
 
 export function terrainPosition(dtd: number, dateIdx: number, pct10: number, maxDtd: number, nDates: number): [number, number, number] {
   // 왼쪽 = 먼 예약 시점, 오른쪽 = 출발 당일. 시간이 흐르는 방향을 왼쪽→오른쪽으로 읽게 한다.
@@ -81,9 +113,10 @@ export function curveWeight(n: number, nMax: number): number {
   return Math.min(1, Math.log1p(n) / Math.log1p(nMax));
 }
 
-export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: number; seed?: number }): PointCloud {
-  // 신호 → 잡음 → 제거 → 예약 곡선 순서로 한 배열에 담는다(Points 하나로 그리기 위해).
-  const rows: { dtd: number; date: number; pct: number; kind: number; weight: number }[] = [];
+export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: number; seed?: number; band?: Band }): PointCloud {
+  // 신호 → 잡음 → 제거 → 예약 곡선 → 예측 구간 띠 순서로 한 배열에 담는다(Points 하나로 그리기 위해).
+  // 띠를 맨 뒤에 두어, 띠가 있든 없든 앞 레이어들이 쓰는 난수 순서(= 캡처 이미지)가 바뀌지 않게 한다.
+  const rows: { dtd: number; date: number; pct: number; kind: number; weight: number; pos?: [number, number, number] }[] = [];
   const push = (l: Terrain['signal'], kind: number, stride = 1) => {
     for (let i = 0; i < l.pct.length; i += stride) rows.push({ dtd: l.dtd[i], date: l.date[i], pct: l.pct[i], kind, weight: 1 });
   };
@@ -96,6 +129,19 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
   for (let i = 0; i < t.curve.pct.length; i++) {
     const weight = curveWeight(t.curve.n[i], nMax);
     for (let j = 0; j < CURVE_POINTS_PER_DTD; j++) rows.push({ dtd: t.curve.dtd[i], date: -1, pct: t.curve.pct[i], kind: 3, weight });
+  }
+  // 예측 구간 띠(kind 4, 3-5 전용): x는 기준일 시점의 예약 일수라 지형 데이터가 끝나는 앞 가장자리("오늘")에 선다
+  if (opts.band) {
+    const b = opts.band;
+    b.dates.forEach((d, i) => {
+      const di = dateIndex(t.dates, d);
+      if (di === null) return;
+      const dtd = daysBetween(b.asOf, d);
+      for (let k = 0; k < BAND_STEPS; k++) {
+        const pct = b.lo[i] + ((b.hi[i] - b.lo[i]) * k) / (BAND_STEPS - 1);
+        rows.push({ dtd, date: -1, pct, kind: 4, weight: 1, pos: terrainPosition(dtd, di, pct, t.maxDtd, t.dates.length) });
+      }
+    });
   }
 
   const count = rows.length;
@@ -119,6 +165,16 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     out.kind[i] = r.kind;
     out.weight[i] = r.weight;
     out.holiday[i] = holidays.has(r.date) ? 1 : 0;
+
+    if (r.kind === 4 && r.pos) {
+      // 띠도 지도 목표 = 지형 목표로 둔다(지도 장면에서는 셰이더가 uBand로 숨긴다)
+      out.terrain.set(r.pos, i * 3);
+      out.map.set(r.pos, i * 3);
+      const u = rand() * 2 - 1, th = rand() * Math.PI * 2, rr = 14 * Math.cbrt(rand());
+      const s = Math.sqrt(1 - u * u);
+      out.scatter.set([rr * s * Math.cos(th), rr * u, rr * s * Math.sin(th)], i * 3);
+      return;
+    }
 
     if (r.kind === 3) {
       // 예약 곡선은 dtd만 있고 출발일(z)은 없으므로 지형 앞 가장자리 한 z(CURVE_Z)에 고정하고,
@@ -171,8 +227,12 @@ export async function loadSceneData(dataVersion: string, fetcher: typeof fetch =
     if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
     return res.json();
   };
-  const [terrain, map] = await Promise.all([get(`/data/terrain.${dataVersion}.json`), get('/data/map.v1.json')]);
-  return { terrain: terrainSchema.parse(terrain), map: mapSchema.parse(map) };
+  const [terrain, map, band] = await Promise.all([
+    get(`/data/terrain.${dataVersion}.json`),
+    get('/data/map.v1.json'),
+    get(`/data/band.${dataVersion}.json`),
+  ]);
+  return { terrain: terrainSchema.parse(terrain), map: mapSchema.parse(map), band: bandSchema.parse(band) };
 }
 
 function pairs(flat: number[]): [number, number][] {

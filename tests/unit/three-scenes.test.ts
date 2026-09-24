@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 
-const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'stack', 'contact'];
+const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'demo', 'stack', 'contact'];
 
 describe('SCENES', () => {
   it('모든 섹션·챕터 키가 있다', () => expect(Object.keys(SCENES).sort()).toEqual([...KEYS].sort()));
@@ -14,6 +14,9 @@ describe('SCENES', () => {
   });
   it('예약 곡선은 3-2(insight)에서만 보인다', () => {
     for (const k of KEYS) expect(SCENES[k].curve).toBe(k === 'insight' ? 1 : 0);
+  });
+  it('예측 구간 띠는 3-5(interval)에서만 보인다', () => {
+    for (const k of KEYS) expect(SCENES[k].band).toBe(k === 'interval' ? 1 : 0);
   });
 });
 
