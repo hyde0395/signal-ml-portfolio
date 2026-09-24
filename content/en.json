@@ -65,7 +65,8 @@
     "interval": {
       "heading": "Prediction interval calibration",
       "body1": "Instead of a single price, I also output a {model.interval.level}% prediction interval.",
-      "body2": "A fixed interval's actual coverage dropped to {model.interval.driftLow}% on more recent data. I adjusted the interval width to account for the shifting distribution, reaching {model.interval.coverage}% coverage on the most recent window."
+      "body2": "A fixed interval's actual coverage dropped to {model.interval.driftLow}% on more recent data. I adjusted the interval width to account for the shifting distribution, reaching {model.interval.coverage}% coverage on the most recent window.",
+      "body3": "The white band along the front edge of the landscape is the prediction interval for each departure date, computed on the reference date. You can check it date by date in the demo below."
     },
     "limits": {
       "heading": "Limitations and next steps",
@@ -150,6 +151,6 @@
     "problem": "Points outlining the Korean and Japanese coastlines, with route paths arcing from Incheon to Narita, Haneda, and Kansai",
     "insight": "A price landscape showing a U-shaped valley that climbs again as departure nears, with amber peaks at holiday departure dates",
     "bubble": "Mismatched points that were floating high above the landscape falling away",
-    "interval": "The price landscape viewed from an angled overhead perspective"
+    "interval": "White vertical bands along the front edge of the price landscape, showing the prediction interval for each departure date"
   }
 }

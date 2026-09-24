@@ -11,7 +11,7 @@ const CHAPTERS: { id: CodeChapter; gate: string; paras: number }[] = [
   { id: 'insight', gate: 'GATE 02 — INSIGHT', paras: 2 },
   { id: 'bubble', gate: 'GATE 03 — R² BUBBLE', paras: 3 },
   { id: 'validation', gate: 'GATE 04 — VALIDATION', paras: 2 },
-  { id: 'interval', gate: 'GATE 05 — INTERVAL', paras: 2 },
+  { id: 'interval', gate: 'GATE 05 — INTERVAL', paras: 3 },
   { id: 'limits', gate: 'GATE 06 — LIMITS', paras: 3 },
 ];
 
