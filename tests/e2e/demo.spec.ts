@@ -12,6 +12,9 @@ const ko = read('../../content/ko.json') as { demo: { routeLabel: string; error:
 
 async function openDemo(page: Page, path = '/') {
   await page.goto(path);
+  // 3D가 늦게 켜지면(data-3d="on") 챕터가 화면 높이로 늘어나 데모 위치가 크게 바뀐다. 켜짐·꺼짐이 정해진 뒤에
+  // 스크롤해야 이후 조작이 옮겨 간 자리를 누르지 않는다(좌표 클릭 테스트가 가끔 실패하던 원인)
+  await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
   await page.locator('#demo').scrollIntoViewIfNeeded();
   const slider = page.getByRole('slider');
   await expect(slider).toBeVisible({ timeout: 15_000 });
@@ -52,7 +55,8 @@ async function clickLeftEdge(page: Page, testInfo: TestInfo) {
   if (testInfo.project.name === 'mobile') {
     await slider.tap({ position: { x: 1, y: box.height / 2 } });
   } else {
-    await page.mouse.click(box.x + 1, box.y + box.height / 2);
+    // 좌표를 미리 읽어 두지 않고 요소 기준으로 누른다 — Playwright가 누르기 직전에 위치를 다시 잡는다
+    await slider.click({ position: { x: 1, y: box.height / 2 } });
   }
   return slider;
 }
