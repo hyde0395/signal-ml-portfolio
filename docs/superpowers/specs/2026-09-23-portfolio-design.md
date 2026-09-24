@@ -91,6 +91,7 @@
   - 플립 글자판은 글자당 약 40ms, 전체 0.8초 이내로 끝냅니다.
   - 텍스트 리빌은 단어 단위로 아래에서 떠오릅니다. 0.9초 동안, 단어마다 60ms씩 늦게 시작합니다.
   - 이징은 `cubic-bezier(.16,1,.3,1)`(expo.out) 하나로 통일합니다. bounce는 쓰지 않습니다.
+  - **구현(계획 4-2)**: 플립 글자판은 GSAP 없이 `requestAnimationFrame`만 쓰는 `src/motion/flip.ts` 하나로 로딩 카운터·GATE 제목·데모 예측가가 함께 씁니다(완성값은 `sr-only`, 움직이는 글자는 `aria-hidden`). 단어 리빌·Lenis 부드러운 스크롤·ScrollTrigger는 `src/motion/run.ts`에 모아 첫 그리기 뒤 `import()`로 지연 로딩하며(초기 JS에 들어가지 않음, `npm run size`가 지킴), 움직임 줄이기에서는 아예 불러오지 않습니다. 첫 화면 이름(`h1`)과 첫 화면 글은 LCP 요소라 리빌에서 뺍니다.
 - 시안: `.superpowers/brainstorm/12652-*/content/visual-style-v2.html`
 
 ---
@@ -249,6 +250,7 @@ interface ForecastSource {
 2. 로딩 화면은 **최대 1.2초의 고정 연출**입니다. 실제 로딩 진행률과는 연결하지 않습니다. 같은 세션에서 다시 들어오면 건너뜁니다(`sessionStorage`).
 3. 텍스트가 뜬 다음 3D 코드 묶음과 `terrain.json`을 **지연 로딩**합니다. 준비되면 점이 모여드는 연출로 등장합니다.
 4. `demo.json`은 데모 섹션에 가까워지면 불러옵니다(IntersectionObserver).
+5. 첫 그리기 전 `<head>`의 부트 스크립트(`src/lib/boot.ts`)가 3D 판정 대기(`<html data-3d="pending">`)를 걸어 대체 이미지를 숨깁니다. 판정이 끝나면 on/off로 바뀌며(최대 6초, 3D 코드가 뜨지 않아도 영원히 숨지 않음), 3D를 쓸 방문자는 첫 화면 이미지를 받지 않아 LCP가 이름 글자로 앞당겨집니다. 움직임 줄이기에서는 대기 없이 곧바로 이미지를 보입니다.
 
 ### 8.2 목표 수치
 
@@ -263,6 +265,9 @@ interface ForecastSource {
 | Lighthouse 성능 | 모바일 90 이상 |
 
 **측정 (계획 4-1, 2026-09-24)**: 초기 JS gzip ko 138.5KB · en 138.5KB · ja 138.5KB(npm run size, Task 5 후), 3D 지연 청크 gzip 240.7KB. Lighthouse 모바일(로컬 `npm run lighthouse`, 캐시 헤더 없는 로컬 서버·GPU 없는 소프트웨어 3D라 실제보다 낮게 나옴, Task 7b 후 2회차): 성능 ko 63 · en 79 · ja 62, 접근성 100, CLS 0, LCP ko 5.8s · en 3.8s · ja 6.3s. 운영(Vercel, 계획 2 시점) 참고: 성능 61, LCP 5.1s, CLS 0.197(Task 7b에서 해결). **운영(Vercel, 4-1 병합 후) 측정: 성능 ko 87 · en 87 · ja 86, LCP 2.5 / 2.8 / 2.7s, CLS 0, 접근성 100.** 성능 목표(모바일 90 이상)는 계획 4-2로 넘긴다(로컬 serve에서는 Vercel Analytics 스크립트 /_vercel/insights/script.js가 404로 콘솔 오류를 내 권장사항 점수가 조금 낮게 나온다 — 운영에서는 해당 없음)
+
+**측정 (계획 4-2, 2026-09-24, 로컬 `npm run lighthouse` 2회)**: 초기 JS gzip ko·en·ja 139.3KB, 3D 지연 청크 240.8KB. 성능 ko 51 / 62 · en 77 / 79 · ja 77 / 74, LCP ko 4.4 / 5.1s · en 3.5 / 2.9s · ja 2.9 / 3.3s, FCP ko 3.4 / 4.1s · en 2.3 / 2.3s · ja 2.0 / 2.1s, CLS 0, 접근성 100(로컬 SEO 66은 `noindex` 때문). 4-1 로컬(ko 63/en 79/ja 62, LCP 5.8/3.8/6.3s)보다 LCP가 en·ja에서 줄었다(ko는 로컬 편차가 커 판단 불가). 로컬 수치는 캐시 헤더 없는 서버·소프트웨어 3D라 실제보다 낮다 — **운영 수치는 병합 뒤 운영 주소로 다시 재야 한다.**
+- 실험(채택 안 함): `experimental.inlineCss`로 사이트 CSS를 HTML 안에 넣어 render-blocking을 없애 봤다. HTML gzip이 ko 11.2→51.8KB, ja 11.6→187.8KB로 커졌고(ja는 Noto Sans JP 글꼴 CSS 약 192KB까지 인라인, `<style>`과 RSC 페이로드에 두 번 들어감) 2회 측정에서 FCP ko 4.1 / 4.1s · en 2.0 / 2.1s · ja 4.7 / 3.0s, LCP ko 5.6 / 5.6s · en 3.4 / 3.4s · ja 6.2 / 3.9s로 ko·ja가 나빠져 되돌렸다. 렌더 차단 CSS는 글꼴 @font-face 분리 등 다른 방법으로 다음에 본다.
 
 ### 8.3 기기에 맞춘 조절
 

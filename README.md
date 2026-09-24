@@ -19,6 +19,8 @@ CHOI HALIM(최하림)의 ML 엔지니어 포트폴리오 사이트입니다. 대
 | `src/components/Backdrop.tsx` | 고정 3D 캔버스 |
 | `src/components/sections/ChapterFigure.tsx` | 3D를 쓸 수 없을 때 챕터에 보이는 정적 대체 이미지(장면 5개, 3개 언어 대체 텍스트) |
 | `src/lib/i18n.ts` | 자리표시 해석과 언어별 숫자·날짜 표기 |
+| `src/lib/boot.ts` | 첫 그리기 전 인라인 스크립트(3D 판정 대기, 로딩 화면 생략) |
+| `src/motion/` | 플립 글자판(`flip.ts`), 단어 리빌·Lenis·ScrollTrigger(`run.ts`, 첫 그리기 뒤 지연 로딩) |
 | `app/(ko|en|ja)` | 언어별 root layout, 정적 export |
 
 코드에는 한국어 주석을 달아 둡니다(파일 머리에 역할, 이유가 드러나지 않는 곳에 "왜").
