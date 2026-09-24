@@ -13,6 +13,7 @@ export function Loader({ rows }: { rows: string }) {
   }, [rows]);
   return (
     <div className="loader" aria-hidden="true">
+      {/* React는 {rows}를 한 번만 그리고 flip()이 자식을 바꿔 끼운다 — Loader가 다시 그려지지 않으므로 안전하다 */}
       <p>LOADING <span data-count ref={count}>{rows}</span> ROWS</p>
     </div>
   );

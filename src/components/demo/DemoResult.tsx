@@ -1,7 +1,7 @@
 // 데모 결과(스펙 §6.1): 예측가 → 80% 예측 구간 띠 → 추천 배지 + 이유 → (대기·하락일 때만) 확신도.
 // 예측가는 플립 글자판(스펙 §4)으로 자리 잡는다. React는 이 칸의 자식을 그리지 않고 effect의 flip()이
 // 채운다 — 둘 다 같은 DOM을 건드리면 서로 덮어써서, React가 자식을 그리지 않게 비워 둔다.
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { DemoTexts } from '@/lib/content';
 import { interpolate, type Locale } from '@/lib/i18n';
 import { confidenceText, reasonText } from '@/demo/reason';
@@ -23,7 +23,9 @@ export function DemoResult({ forecast, locale, texts }: { forecast: Forecast; lo
   const conf = confidenceText(texts, reco);
   const priceEl = useRef<HTMLSpanElement>(null);
   const priceText = money(price);
-  useEffect(() => {
+  // 그리기 전에 채워 빈 칸이 한 프레임 보이지 않게 useLayoutEffect를 쓴다. DemoResult는 데이터를 받은 뒤
+  // 클라이언트에서만 그려지므로(서버 HTML에 없음) 서버 렌더 경고와 무관하다.
+  useLayoutEffect(() => {
     // 예측가는 플립 글자판(스펙 §4). React는 이 칸의 자식을 그리지 않고 flip이 채운다
     if (priceEl.current) return flip(priceEl.current, priceText);
   }, [priceText]);
