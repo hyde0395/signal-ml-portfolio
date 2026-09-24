@@ -13,6 +13,16 @@ test('기본 환경: 3D가 켜지고 대체 이미지는 숨는다', async ({ pa
   await expect(page.locator('.scene-figure').first()).toBeHidden();
 });
 
+test('3D가 켜져도 첫 화면 이름 영역이 움직이지 않는다(CLS)', async ({ page }) => {
+  await page.goto('/');
+  const box = async () => (await page.locator('.hero-copy').boundingBox())!;
+  const before = await box();
+  await expect(page.locator('html')).toHaveAttribute('data-3d', 'on', { timeout: 20_000 });
+  const after = await box();
+  expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1);
+});
+
 test.describe('움직임 줄이기', () => {
   test.use({ reducedMotion: 'reduce' });
   test('캔버스 없이 대체 이미지와 대체 텍스트가 보인다', async ({ page }) => {

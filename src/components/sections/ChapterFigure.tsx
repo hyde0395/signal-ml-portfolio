@@ -5,11 +5,13 @@ import type { Locale } from '@/lib/i18n';
 import type { FigureKey } from '@/three/figureKeys';
 export { FIGURE_KEYS, type FigureKey } from '@/three/figureKeys';
 
-export function ChapterFigure({ locale, sceneKey }: { locale: Locale; sceneKey: FigureKey }) {
+// priority: 첫 화면 이미지는 LCP 요소라 lazy면 받기 시작이 늦어진다. 그 한 장만 바로·높은 우선순위로 받는다
+export function ChapterFigure({ locale, sceneKey, priority = false }: { locale: Locale; sceneKey: FigureKey; priority?: boolean }) {
   const t = getT(locale);
   return (
     <figure className="scene-figure">
-      <img src={`/fallback/${sceneKey}.webp`} alt={t(`figure.${sceneKey}`)} width={1280} height={720} loading="lazy" decoding="async" />
+      <img src={`/fallback/${sceneKey}.webp`} alt={t(`figure.${sceneKey}`)} width={1280} height={720}
+        loading={priority ? 'eager' : 'lazy'} fetchPriority={priority ? 'high' : undefined} decoding="async" />
     </figure>
   );
 }

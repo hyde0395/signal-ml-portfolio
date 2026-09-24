@@ -125,6 +125,12 @@ main { position: relative; z-index: 1; }
 .scene-figure { margin: 24px 0; }
 .scene-figure img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
 html[data-3d="on"] .scene-figure { display: none; }
+/* 첫 화면 대체 이미지는 글 뒤 배경으로 깐다. 흐름 안에 두면 3D가 켜져 숨을 때 이름이 밀려 CLS가 생긴다 */
+.hero { position: relative; }
+.hero .scene-figure { position: absolute; inset: 0; margin: 0; z-index: -1; }
+.hero .scene-figure img { width: 100%; height: 100%; object-fit: cover; border: 0; border-radius: 0; opacity: 0.55;
+  /* 이미지는 .wrap 폭까지라 좌우 끝이 선처럼 보인다. 가장자리를 흐려 배경에 녹인다 */
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
 
 /* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 움직일 시간을 주고, 글은 반투명 카드에 담아 대비를 지킨다 */
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
@@ -135,12 +141,13 @@ html[data-3d="on"] :is(.chapter, #about, #demo, #stack, #contact) {
   background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
 }
 /* 첫 화면 글과 사례 연구 제목: 챕터처럼 긴 카드를 두면 첫 화면 지형이 가려지므로, 글 덩어리 크기만 한
-   어두운 판을 깐다. box-shadow로 가장자리를 흐려 판 모양이 도드라지지 않게 하고, 음수 margin으로
-   padding만큼 되돌려 글 위치는 3D가 꺼졌을 때와 같게 둔다(16px: 가장 좁은 화면의 좌우 여백과 같아 가로 스크롤이 안 생긴다). */
-html[data-3d="on"] .text-scrim {
-  width: fit-content; max-width: calc(100% + 32px); margin-inline: -16px; padding: 16px;
-  background: rgba(7, 11, 22, 0.86); border-radius: 16px; box-shadow: 0 0 48px 24px rgba(7, 11, 22, 0.86);
-}
+   어두운 판을 깐다. 상자 크기(padding·음수 margin)는 3D와 상관없이 늘 같게 둬야 3D가 켜지는 순간 글이
+   밀리지 않는다(CLS). 음수 margin은 padding만큼 되돌려 글 줄을 다른 섹션과 맞춘다(16px: 가장 좁은 화면의
+   좌우 여백과 같아 가로 스크롤이 안 생긴다). */
+.text-scrim { width: fit-content; max-width: calc(100% + 32px); margin-inline: -16px; padding: 16px; border-radius: 16px; }
+/* 첫 화면은 3D가 꺼져도 글 뒤에 대체 이미지가 깔리므로 판을 항상 깐다(글자 대비).
+   box-shadow로 가장자리를 흐려 판 모양이 이미지·캔버스 위에서 도드라지지 않게 한다 */
+#hero .text-scrim, html[data-3d="on"] .text-scrim { background: rgba(7, 11, 22, 0.86); box-shadow: 0 0 48px 24px rgba(7, 11, 22, 0.86); }
 html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
 
 @media (max-width: 767px) {
