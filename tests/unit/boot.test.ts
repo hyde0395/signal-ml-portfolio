@@ -1,13 +1,13 @@
 // 부트 스크립트 검사: 실제로 <head>에 들어가는 문자열(BOOT_SCRIPT)을 가짜 window로 실행해 본다.
-import { describe, expect, it, vi } from 'vitest';
-import { BOOT_SCRIPT, PENDING_TIMEOUT_MS } from '@/lib/boot';
+import { describe, expect, it } from 'vitest';
+import { BOOT_SCRIPT, PENDING_TIMEOUT_MS, PENDING_TIMER_KEY } from '@/lib/boot';
 
 function fakeWindow({ reduced = false, search = '', visited = false, storageThrows = false } = {}) {
   const attrs = new Map<string, string>();
   const classes = new Set<string>();
   const store = new Map<string, string>(visited ? [['signal.loaded', '1']] : []);
   const timers: (() => void)[] = [];
-  const win = {
+  const win: Record<string, unknown> = {
     document: { documentElement: {
       setAttribute: (k: string, v: string) => attrs.set(k, v),
       getAttribute: (k: string) => attrs.get(k) ?? null,
@@ -19,10 +19,10 @@ function fakeWindow({ reduced = false, search = '', visited = false, storageThro
       getItem: (k: string) => { if (storageThrows) throw new Error('blocked'); return store.get(k) ?? null; },
       setItem: (k: string, v: string) => { store.set(k, v); },
     },
-    setTimeout: (fn: () => void, ms: number) => { expect(ms).toBe(PENDING_TIMEOUT_MS); timers.push(fn); },
+    setTimeout: (fn: () => void, ms: number) => { expect(ms).toBe(PENDING_TIMEOUT_MS); timers.push(fn); return timers.length; },
   };
   new Function('window', BOOT_SCRIPT)(win);
-  return { attrs, classes, store, runTimers: () => timers.forEach((f) => f()) };
+  return { win, attrs, classes, store, runTimers: () => timers.forEach((f) => f()) };
 }
 
 describe('BOOT_SCRIPT', () => {
@@ -31,6 +31,10 @@ describe('BOOT_SCRIPT', () => {
     expect(w.classes.has('no-loader')).toBe(false);
     expect(w.store.get('signal.loaded')).toBe('1');
     expect(w.attrs.get('data-3d')).toBe('pending');
+  });
+  it('판정 대기 타이머 id를 window에 남겨 Backdrop이 지울 수 있게 한다', () => {
+    expect(fakeWindow().win[PENDING_TIMER_KEY]).toBe(1);
+    expect(fakeWindow({ reduced: true }).win[PENDING_TIMER_KEY]).toBeUndefined();
   });
   it('같은 세션 재방문이면 로딩 화면 생략', () => {
     expect(fakeWindow({ visited: true }).classes.has('no-loader')).toBe(true);
