@@ -61,7 +61,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - **커밋 이메일을 이 저장소에 다시 설정** (로컬 설정은 clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
 - Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test`, `npm run build`, `npm run e2e`
 - `.superpowers/`(비주얼 컴패니언 시안, SDD 작업 기록)는 git에 없다. 계획 3의 남은 일은 위 "다음 세션 할 일"에 모두 옮겨 두었다
-- 데이터 스크립트(`npm run facts|terrain|map`)만 항공권 저장소가 필요하다. `~/Documents/airfare-forecasting-ml`가 iCloud로 동기화되지만 `.venv`는 기기마다 깨지므로 그쪽 CLAUDE.md 절차로 새로 만든다(`brew install python@3.11` → `.venv` 재생성). 지형·지도 JSON은 이미 커밋되어 있어 다시 뽑지 않아도 된다 2026-09-24부터는 iCloud 밖 `~/.venvs/airfare-py311`(Python 3.11)을 기기마다 만들어 쓴다. `scripts/py.sh`가 AIRFARE_PYTHON → ~/.venvs/airfare-py311 → 항공권 저장소 .venv 순서로 고른다. 항공권 저장소 .venv를 지우고 다시 만들지 않는다(삭제가 다른 기기로 동기화된다)
+- 데이터 스크립트(`npm run facts|terrain|map`)만 항공권 저장소가 필요하다. `~/Documents/airfare-forecasting-ml`가 iCloud로 동기화되지만 `.venv`는 기기마다 깨지므로 그쪽 CLAUDE.md 절차로 새로 만든다(`brew install python@3.11` → `.venv` 재생성). 지형·지도 JSON은 이미 커밋되어 있어 다시 뽑지 않아도 된다. 2026-09-24부터는 iCloud 밖 `~/.venvs/airfare-py311`(Python 3.11)을 기기마다 만들어 쓴다. `scripts/py.sh`가 AIRFARE_PYTHON → ~/.venvs/airfare-py311 → 항공권 저장소 .venv 순서로 고른다. 항공권 저장소 .venv를 지우고 다시 만들지 않는다(삭제가 다른 기기로 동기화된다)
 - Claude 메모리(`~/.claude/projects/...`)는 기기마다 따로다. 중요한 규칙(문구 톤, 한국어 주석, noreply 이메일)은 이 파일에 적혀 있다
 - 맥미니에서 다시 작업하기 전엔 `git pull`
 
