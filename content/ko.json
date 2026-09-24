@@ -98,11 +98,11 @@
       "legendNoData": "예측 없음"
     },
     "money": "{v.price}원",
-  "badges": {
-    "BUY_NOW": "지금 구매",
-    "DROP_EXPECTED": "가격 하락 예상",
-    "WAIT": "대기 추천"
-  },
+    "badges": {
+      "BUY_NOW": "지금 구매",
+      "DROP_EXPECTED": "가격 하락 예상",
+      "WAIT": "대기 추천"
+    },
     "result": {
       "price": "예측가",
       "range": "{model.interval.level}% 예측 구간",

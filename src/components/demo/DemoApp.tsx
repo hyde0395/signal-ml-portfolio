@@ -59,6 +59,7 @@ export function DemoApp({ locale, texts, dataUrl, initial, initialAsOf }: Props)
 
   const combo = `${route}/${cabin}`;
   const days = strip.days;
+  const fmt = dayFormat(days.map((d) => d.date));
 
   useEffect(() => {
     const el = root.current;
@@ -121,13 +122,13 @@ export function DemoApp({ locale, texts, dataUrl, initial, initialAsOf }: Props)
       }
       const head = interpolate(
         texts.announce,
-        { v: { day: formatValue(forecast.date, dayFormat(days.map((d) => d.date)), locale), price: forecast.price, action: texts.badges[forecast.reco.action] } },
+        { v: { day: formatValue(forecast.date, fmt, locale), price: forecast.price, action: texts.badges[forecast.reco.action] } },
         locale,
       );
       setAnnounce(`${head} ${reasonText(texts, forecast.reco, locale)}`);
     }, ANNOUNCE_DELAY_MS);
     return () => window.clearTimeout(id);
-  }, [forecast, texts, locale]);
+  }, [forecast, texts, locale, fmt]);
 
   const day = days[index];
   const slots: Record<Slot, ReactNode> = {
@@ -151,7 +152,7 @@ export function DemoApp({ locale, texts, dataUrl, initial, initialAsOf }: Props)
         {cabin}
       </button>
     ),
-    date: <span className="demo-slot is-date">{day ? formatValue(day.date, dayFormat(days.map((d) => d.date)), locale) : '—'}</span>,
+    date: <span className="demo-slot is-date">{day ? formatValue(day.date, fmt, locale) : '—'}</span>,
   };
 
   return (

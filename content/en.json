@@ -98,11 +98,11 @@
       "legendNoData": "No prediction"
     },
     "money": "₩{v.price}",
-  "badges": {
-    "BUY_NOW": "Buy now",
-    "DROP_EXPECTED": "Price drop expected",
-    "WAIT": "Wait"
-  },
+    "badges": {
+      "BUY_NOW": "Buy now",
+      "DROP_EXPECTED": "Price drop expected",
+      "WAIT": "Wait"
+    },
     "result": {
       "price": "Predicted price",
       "range": "{model.interval.level}% prediction interval",

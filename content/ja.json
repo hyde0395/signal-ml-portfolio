@@ -98,11 +98,11 @@
       "legendNoData": "予測なし"
     },
     "money": "{v.price}ウォン",
-  "badges": {
-    "BUY_NOW": "今すぐ購入",
-    "DROP_EXPECTED": "値下がり予想",
-    "WAIT": "待つのがおすすめ"
-  },
+    "badges": {
+      "BUY_NOW": "今すぐ購入",
+      "DROP_EXPECTED": "値下がり予想",
+      "WAIT": "待つのがおすすめ"
+    },
     "result": {
       "price": "予測価格",
       "range": "{model.interval.level}%予測区間",

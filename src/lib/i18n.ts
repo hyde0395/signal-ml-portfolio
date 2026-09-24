@@ -31,7 +31,8 @@ export function formatValue(value: unknown, format: string | undefined, locale: 
   if (format === 'fixed1' && typeof value === 'number') {
     return new Intl.NumberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
   }
-  // 데모의 출발일: 연도 없이 월·일·요일(예: 11월 14일 (토)). 같은 해 안의 날짜만 다루기 때문이다
+  // 데모의 출발일: 연도 없이 월·일·요일(예: 11월 14일 (토)). 출발일 범위가 해를 넘기면
+  // 호출 측(dayFormat)이 'date'로 바꾼다
   if (format === 'md' && typeof value === 'string') {
     return new Intl.DateTimeFormat(intl, { month: 'long', day: 'numeric', weekday: 'short', timeZone: 'UTC' })
       .format(new Date(`${value}T00:00:00Z`));
