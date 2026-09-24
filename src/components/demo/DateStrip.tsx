@@ -7,6 +7,9 @@ import { formatValue, interpolate, type Locale } from '@/lib/i18n';
 import { barScale, edgeSelectable, indexFromX, nearestSelectable, stepSelectable } from '@/demo/strip';
 import type { StripDay } from '@/demo/types';
 
+// 손가락이 가로로 이만큼 움직여야 날짜 끌기로 본다. 그 전엔 세로 스크롤일 수도 있어서 고르지 않는다
+const TOUCH_SLOP_PX = 8;
+
 type Props = { days: StripDay[]; index: number; onChange: (i: number) => void; locale: Locale; texts: DemoTexts };
 
 export function holidayLabel(texts: DemoTexts, code: string): string {
@@ -16,6 +19,8 @@ export function holidayLabel(texts: DemoTexts, code: string): string {
 export function DateStrip({ days, index, onChange, locale, texts }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  // 터치: 누른 자리와, 아직 끌기로 확정되지 않은 상태인지(pending)를 기억한다
+  const touch = useRef<{ x: number; pending: boolean } | null>(null);
   const scale = barScale(days.map((d) => d.price));
   const first = edgeSelectable(days, 'first');
   const last = edgeSelectable(days, 'last');
@@ -30,9 +35,38 @@ export function DateStrip({ days, index, onChange, locale, texts }: Props) {
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.pointerType === 'touch') {
+      // 페이지를 세로로 스크롤하려고 막대를 스친 것일 수 있어 바로 고르지 않는다.
+      // 세로 스크롤이면 브라우저가 pan-y로 가져가며 pointercancel을 보낸다
+      touch.current = { x: e.clientX, pending: true };
+      return;
+    }
     dragging.current = true;
     e.currentTarget.setPointerCapture(e.pointerId); // 막대 밖으로 끌고 나가도 계속 따라가게
     pick(e.clientX);
+  };
+
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const t = touch.current;
+    if (t?.pending && Math.abs(e.clientX - t.x) > TOUCH_SLOP_PX) {
+      t.pending = false;
+      dragging.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    if (dragging.current) pick(e.clientX);
+  };
+
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    // 가로로 끌지 않고 뗀 터치는 탭이다. 그 자리의 날짜를 고른다
+    if (touch.current?.pending) pick(e.clientX);
+    touch.current = null;
+    dragging.current = false;
+  };
+
+  const onPointerCancel = () => {
+    touch.current = null;
+    dragging.current = false;
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -48,7 +82,9 @@ export function DateStrip({ days, index, onChange, locale, texts }: Props) {
   };
 
   const valueText =
-    cur && cur.price !== null
+    first < 0
+      ? texts.strip.legendNoData // 고를 수 있는 날이 하나도 없으면 값 범위 대신 "예측 없음"만 읽힌다
+      : cur && cur.price !== null
       ? interpolate(texts.strip.valuetext, { v: { date: cur.date, price: cur.price } }, locale) +
         (cur.holiday ? `, ${interpolate(texts.strip.holiday, { v: { holiday: holidayLabel(texts, cur.holiday) } }, locale)}` : '')
       : undefined;
@@ -61,16 +97,16 @@ export function DateStrip({ days, index, onChange, locale, texts }: Props) {
         role="slider"
         tabIndex={0}
         aria-label={texts.strip.label}
-        aria-valuemin={first}
-        aria-valuemax={last}
-        aria-valuenow={index}
+        aria-valuemin={first < 0 ? undefined : first}
+        aria-valuemax={first < 0 ? undefined : last}
+        aria-valuenow={first < 0 ? undefined : index}
         aria-valuetext={valueText}
         aria-disabled={first < 0 ? true : undefined}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
-        onPointerMove={(e) => { if (dragging.current) pick(e.clientX); }}
-        onPointerUp={() => { dragging.current = false; }}
-        onPointerCancel={() => { dragging.current = false; }}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
       >
         {days.map((d, i) => (
           <span
@@ -89,12 +125,15 @@ export function DateStrip({ days, index, onChange, locale, texts }: Props) {
           <span>{formatValue(days[days.length - 1].date, 'md', locale)}</span>
         </p>
       )}
-      {cur?.holiday && (
-        <p className="strip-holiday">
-          <span aria-hidden="true">◆ </span>
-          {holidayLabel(texts, cur.holiday)}
-        </p>
-      )}
+      {/* 날짜를 옮길 때 아래 내용이 들썩이지 않도록 이름표 줄은 늘 자리를 차지한다 */}
+      <p className="strip-holiday">
+        {cur?.holiday && (
+          <>
+            <span aria-hidden="true">◆ </span>
+            {holidayLabel(texts, cur.holiday)}
+          </>
+        )}
+      </p>
       <p className="strip-legend">
         <span><span className="legend-mark is-holiday" aria-hidden="true" />{texts.strip.legendHoliday}</span>
         <span><span className="legend-mark is-empty" aria-hidden="true" />{texts.strip.legendNoData}</span>

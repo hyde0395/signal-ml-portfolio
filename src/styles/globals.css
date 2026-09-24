@@ -95,9 +95,9 @@ select.demo-slot option { background: var(--bg2); color: var(--tx); }
 .strip-bar.is-holiday { background: var(--amb); }
 .strip-bar.is-holiday::after { content: ''; position: absolute; left: 50%; top: -9px; width: 5px; height: 5px; background: var(--amb); transform: translateX(-50%) rotate(45deg); }
 .strip-bar.is-selected { opacity: 1; box-shadow: 0 0 0 1px var(--tx); }
-.strip-bar.is-empty { height: 100%; background: none; border: 1px dashed rgba(238, 243, 255, 0.35); opacity: 1; }
+.strip-bar.is-empty { height: 100%; background: none; border: 1px dashed rgba(238, 243, 255, 0.4); opacity: 1; }
 .strip-axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.75rem; color: var(--mute); }
-.strip-holiday { margin-top: 6px; color: var(--amb); font-size: 0.9rem; }
+.strip-holiday { margin-top: 6px; min-height: 1.7em; color: var(--amb); font-size: 0.9rem; }
 .strip-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; font-size: 0.8rem; color: var(--mute); }
 .legend-mark { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
 .legend-mark.is-holiday { background: var(--amb); transform: rotate(45deg) scale(0.7); }

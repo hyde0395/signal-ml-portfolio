@@ -15,7 +15,8 @@ const BAND_TO = 90;
 export function DemoResult({ forecast, locale, texts }: { forecast: Forecast; locale: Locale; texts: DemoTexts }) {
   const { price, lo, hi, reco } = forecast;
   const money = (v: number) => interpolate(texts.money, { v: { price: v } }, locale);
-  const mid = hi > lo ? BAND_FROM + ((BAND_TO - BAND_FROM) * (price - lo)) / (hi - lo) : 50;
+  const raw = hi > lo ? BAND_FROM + ((BAND_TO - BAND_FROM) * (price - lo)) / (hi - lo) : 50;
+  const mid = Math.min(100, Math.max(0, raw)); // 예측가가 구간 밖이어도 표시가 막대를 벗어나지 않게
   const conf = confidenceText(texts, reco);
   return (
     <div className="demo-result">
