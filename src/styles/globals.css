@@ -89,7 +89,7 @@ select.demo-slot { appearance: none; -webkit-appearance: none; }
 select.demo-slot option { background: var(--bg2); color: var(--tx); }
 .demo-slot.is-date { border-bottom-color: var(--amb); cursor: default; }
 .strip { display: flex; align-items: flex-end; gap: 1px; height: 120px; padding-top: 12px; border-bottom: 1px solid var(--line);
-  cursor: pointer; touch-action: pan-y; /* 가로로 끌면 날짜를 고르고, 세로로 밀면 페이지가 스크롤된다 */ }
+  cursor: pointer; touch-action: pan-y pinch-zoom; /* 가로로 끌면 날짜를 고른다. 세로 스크롤과 두 손가락 확대는 브라우저에 맡긴다 */ }
 .strip:focus-visible { outline-offset: 6px; }
 .strip-bar { position: relative; flex: 1; min-width: 2px; background: var(--dot); opacity: 0.55; border-radius: 1px 1px 0 0; }
 .strip-bar.is-holiday { background: var(--amb); }

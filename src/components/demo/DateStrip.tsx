@@ -97,9 +97,10 @@ export function DateStrip({ days, index, onChange, locale, texts }: Props) {
         role="slider"
         tabIndex={0}
         aria-label={texts.strip.label}
-        aria-valuemin={first < 0 ? undefined : first}
-        aria-valuemax={first < 0 ? undefined : last}
-        aria-valuenow={first < 0 ? undefined : index}
+        // 고를 날이 없어도 role=slider는 valuenow가 필수라(ARIA) 0으로 두고, 뜻은 valuetext와 aria-disabled로 전한다
+        aria-valuemin={first < 0 ? 0 : first}
+        aria-valuemax={first < 0 ? 0 : last}
+        aria-valuenow={first < 0 ? 0 : index}
         aria-valuetext={valueText}
         aria-disabled={first < 0 ? true : undefined}
         onKeyDown={onKeyDown}
