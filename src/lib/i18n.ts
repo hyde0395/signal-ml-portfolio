@@ -27,6 +27,14 @@ export function formatValue(value: unknown, format: string | undefined, locale: 
     return new Intl.NumberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'exceptZero' }).format(value);
   }
   if (format === 'plain' && typeof value === 'number') return String(value);
+  if (format === 'fixed1' && typeof value === 'number') {
+    return new Intl.NumberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+  }
+  // 데모의 출발일: 연도 없이 월·일·요일(예: 11월 14일 (토)). 같은 해 안의 날짜만 다루기 때문이다
+  if (format === 'md' && typeof value === 'string') {
+    return new Intl.DateTimeFormat(intl, { month: 'long', day: 'numeric', weekday: 'short', timeZone: 'UTC' })
+      .format(new Date(`${value}T00:00:00Z`));
+  }
   if (format === 'date' && typeof value === 'string') {
     return new Intl.DateTimeFormat(intl, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
       .format(new Date(`${value}T00:00:00Z`));
@@ -38,14 +46,23 @@ export function formatValue(value: unknown, format: string | undefined, locale: 
   throw new Error(`Cannot format ${JSON.stringify(value)} as "${format ?? 'default'}"`);
 }
 
+function fill(source: unknown, path: string, format: string | undefined, locale: Locale): string {
+  const value = lookup(source, path);
+  // 자리표시 경로가 facts에 없으면 조용히 빈 문자열로 두지 않고 throw한다. 그래야 화면에
+  // "{...}"가 그대로 찍히는 대신 빌드(테스트)에서 바로 잡힌다.
+  if (value === undefined) throw new Error(`Missing fact for placeholder {${path}}`);
+  return formatValue(value, format, locale);
+}
+
 export function interpolate(template: string, source: unknown, locale: Locale): string {
-  return template.replace(PLACEHOLDER, (_, path: string, format: string | undefined) => {
-    const value = lookup(source, path);
-    // 자리표시 경로가 facts에 없으면 조용히 빈 문자열로 두지 않고 throw한다. 그래야 화면에
-    // "{...}"가 그대로 찍히는 대신 빌드(테스트)에서 바로 잡힌다.
-    if (value === undefined) throw new Error(`Missing fact for placeholder {${path}}`);
-    return formatValue(value, format, locale);
-  });
+  return template.replace(PLACEHOLDER, (_, path: string, format: string | undefined) => fill(source, path, format, locale));
+}
+
+// 서버에서 facts 자리표시만 먼저 채우고, {v.…}(데모 화면이 실행 중에 채우는 값)는 그대로 남긴다.
+// 그래서 클라이언트에는 facts 전체가 아니라 채워진 문구만 넘어간다.
+export function prefill(template: string, source: unknown, locale: Locale): string {
+  return template.replace(PLACEHOLDER, (whole: string, path: string, format: string | undefined) =>
+    path.startsWith('v.') ? whole : fill(source, path, format, locale));
 }
 
 export function createT(dict: unknown, source: unknown, locale: Locale): (key: string) => string {
