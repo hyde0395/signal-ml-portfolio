@@ -6,7 +6,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 현재 진행 상태 (2026-09-24 기준)
 
-설계 완료. 계획 1·3 완료·배포(계획 3은 2026-09-24 main 병합, CI 통과). 계획 2(데모) 완료·배포(2026-09-24, PR #1 main 병합, CI 통과): docs/superpowers/plans/2026-09-24-plan-2-demo.md. 계획 4-1 PR 병합 대기, 다음은 계획 4-2(연출·성능).
+설계 완료. 계획 1·3 완료·배포(계획 3은 2026-09-24 main 병합, CI 통과). 계획 2(데모) 완료·배포(2026-09-24, PR #1 main 병합, CI 통과): docs/superpowers/plans/2026-09-24-plan-2-demo.md. 계획 4-1(성능·공유·마감) 완료·배포(2026-09-24, PR #2 main 병합). 다음은 계획 4-2(연출·성능).
 
 | 단계 | 상태 |
 |---|---|
@@ -24,7 +24,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 계획 1: 기반 (텍스트 사이트, 3개 언어, 테스트, CI, 배포) | ✅ 완료 2026-09-23 · main 병합 · 배포 https://signal-ml-portfolio.vercel.app (noindex) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개) · CI 통과 |
 | 계획 3: 3D 지형 | ✅ 완료 2026-09-24 · main 병합(fast-forward) · CI 통과 |
 | 계획 2: 데모 | ✅ 완료 2026-09-24 · PR #1 main 병합(fast-forward) · CI 통과 |
-| 계획 4-1: 성능·공유·마감 | ✅ 구현 2026-09-24 · branch `plan-4-1-performance` · PR 병합 대기 |
+| 계획 4-1: 성능·공유·마감 | ✅ 완료 2026-09-24 · PR #2 main 병합(fast-forward) |
 | 계획 4-2: 연출 | ⏳ 다음 |
 
 **다음 세션 시작 방법:** 위 표에서 첫 번째 미완료 단계부터 이어간다. 계획 실행은 사용자가 고른 방식의 스킬(subagent-driven-development 또는 executing-plans)로 한다. 이미 정해진 결정은 다시 묻지 않는다.
@@ -41,7 +41,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 싸게 같이: 청크 테스트를 `index.html`·`en/`·`ja/` 모두로, 캡처 스크립트 `browser.close`를 finally로, 문서 경로 오타(README·스펙 §5.3의 `src/sections/ChapterFigure.tsx` → `src/components/sections/`), 스펙 §5.2에 curve 레이어·§5.3 대체 이미지 5장·§3의 3-5 띠는 계획 2로 이동 기록, `scenes.ts:27` 오래된 주석, 3D 청크 실제 크기 스펙에 기록(측정 결과 gzip 약 245KB로 목표 안)
    - 수정 후: 한 번 재검토 → **CI 확인은 PR로**(CI는 main push/PR에서만 돈다. 헤드리스 swiftshader가 느리면 3D가 꺼질 수 있음) → main 병합 → Vercel 자동 배포 확인
 3. ✅ **계획 2(데모)** — 계획서 `docs/superpowers/plans/2026-09-24-plan-2-demo.md`. 2026-09-24 main 병합. 남은 일: 한국어 데모 문구 사용자 검토, 영·일 검수(스펙 §14)
-4. **계획 4-1(성능·공유·마감) 완료 2026-09-24** — 계획서 `docs/superpowers/plans/2026-09-24-plan-4-1-performance.md`, branch `plan-4-1-performance`, PR 병합 대기. 끝낸 것:
+4. **계획 4-1(성능·공유·마감) 완료 2026-09-24** — 계획서 `docs/superpowers/plans/2026-09-24-plan-4-1-performance.md`, PR #2 main 병합. 끝낸 것:
    - 초기 JS에서 zod·사전·facts 경로 분리(`FIGURE_KEYS`를 가벼운 모듈로 이동) ✅ (계획 4-1)
    - 용량 검사 스크립트(`npm run size`, CI에서도 실행) ✅ (계획 4-1)
    - 언어별 링크 미리보기(OG) 이미지 ✅ (계획 4-1)
