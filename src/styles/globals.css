@@ -39,6 +39,7 @@ section p + p { margin-top: 12px; }
   background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
 .lang-hint button { background: none; border: 0; color: var(--mute); font-size: 1.25rem; cursor: pointer; min-width: 32px; min-height: 32px; }
 .not-found { padding-block: 25vh; display: grid; gap: 12px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 
 .site-header { position: sticky; top: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center;
   gap: 12px; padding: 12px 16px; background: rgba(7, 11, 22, 0.8); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
@@ -80,6 +81,40 @@ section p + p { margin-top: 12px; }
 .pass dt { font-size: 0.7rem; letter-spacing: 0.14em; color: var(--mute); }
 .pass dd { word-break: break-all; }
 @media (max-width: 640px) { .vtable { font-size: 0.8rem; } .vtable th, .vtable td { padding: 8px 4px; } }
+/* 데모(스펙 §6.1): 질문 문장 속 밑줄 선택지, 출발일 막대, 결과 카드 */
+.demo-app { margin-top: 32px; display: grid; gap: 20px; }
+.demo-question { font-size: clamp(1.15rem, 2.4vw, 1.5rem); line-height: 1.9; }
+.demo-slot { font: inherit; color: var(--tx); background: none; border: 0; border-bottom: 2px solid var(--dot); border-radius: 0; padding: 0 2px; cursor: pointer; }
+select.demo-slot { appearance: none; -webkit-appearance: none; }
+select.demo-slot option { background: var(--bg2); color: var(--tx); }
+.demo-slot.is-date { border-bottom-color: var(--amb); cursor: default; }
+.strip { display: flex; align-items: flex-end; gap: 1px; height: 120px; padding-top: 12px; border-bottom: 1px solid var(--line);
+  cursor: pointer; touch-action: pan-y; /* 가로로 끌면 날짜를 고르고, 세로로 밀면 페이지가 스크롤된다 */ }
+.strip:focus-visible { outline-offset: 6px; }
+.strip-bar { position: relative; flex: 1; min-width: 2px; background: var(--dot); opacity: 0.55; border-radius: 1px 1px 0 0; }
+.strip-bar.is-holiday { background: var(--amb); }
+.strip-bar.is-holiday::after { content: ''; position: absolute; left: 50%; top: -9px; width: 5px; height: 5px; background: var(--amb); transform: translateX(-50%) rotate(45deg); }
+.strip-bar.is-selected { opacity: 1; box-shadow: 0 0 0 1px var(--tx); }
+.strip-bar.is-empty { height: 100%; background: none; border: 1px dashed rgba(238, 243, 255, 0.35); opacity: 1; }
+.strip-axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.75rem; color: var(--mute); }
+.strip-holiday { margin-top: 6px; color: var(--amb); font-size: 0.9rem; }
+.strip-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; font-size: 0.8rem; color: var(--mute); }
+.legend-mark { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+.legend-mark.is-holiday { background: var(--amb); transform: rotate(45deg) scale(0.7); }
+.legend-mark.is-empty { border: 1px dashed rgba(238, 243, 255, 0.5); }
+.demo-result { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: rgba(19, 32, 58, 0.5); }
+.demo-price { display: grid; gap: 4px; }
+.demo-price .mono { font-size: clamp(1.75rem, 5vw, 2.5rem); line-height: 1.1; }
+.band { position: relative; height: 10px; border-radius: 5px; background: var(--line); }
+.band-fill { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: rgba(143, 184, 255, 0.45); }
+.band-mid { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--tx); }
+.band-labels { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 0.85rem; }
+.badge { justify-self: start; padding: 4px 10px; border: 1px solid currentColor; border-radius: 4px; font: 600 0.8rem var(--font-mono); letter-spacing: 0.14em; }
+.badge.is-buy_now { color: var(--tx); }
+.badge.is-drop_expected { color: var(--dot); }
+.badge.is-wait { color: var(--amb); }
+.demo-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.demo-asof { font-size: 0.8rem; color: var(--mute); }
 
 /* 3D 배경 — 캔버스는 본문 뒤에 고정. body 배경 그라데이션 위, main 아래에 오도록 z-index를 나눈다. */
 .backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
@@ -94,9 +129,9 @@ html[data-3d="on"] .scene-figure { display: none; }
 /* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 움직일 시간을 주고, 글은 반투명 카드에 담아 대비를 지킨다 */
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
 /* .pass(탑승권 카드)는 자기 배경이 있는 640px 카드라 560px 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제) */
-html[data-3d="on"] :is(.chapter, #about, #stack, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass) { max-width: 560px; }
+html[data-3d="on"] :is(.chapter, #about, #demo, #stack, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass) { max-width: 560px; }
 /* #stack·#contact도 다른 섹션과 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제) */
-html[data-3d="on"] :is(.chapter, #about, #stack, #contact) {
+html[data-3d="on"] :is(.chapter, #about, #demo, #stack, #contact) {
   background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
 }
 /* 첫 화면 글과 사례 연구 제목: 챕터처럼 긴 카드를 두면 첫 화면 지형이 가려지므로, 글 덩어리 크기만 한
@@ -111,7 +146,7 @@ html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
 @media (max-width: 767px) {
   /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
   html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
-  html[data-3d="on"] :is(.chapter, #about, #stack, #contact) {
+  html[data-3d="on"] :is(.chapter, #about, #demo, #stack, #contact) {
     background: linear-gradient(0deg, rgba(7, 11, 22, 0.92) 55%, rgba(7, 11, 22, 0) 100%);
   }
 }

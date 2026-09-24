@@ -4,6 +4,7 @@ import { Header } from './Header';
 import { About } from './sections/About';
 import { CaseStudy } from './sections/CaseStudy';
 import { Contact } from './sections/Contact';
+import { Demo } from './sections/Demo';
 import { Hero } from './sections/Hero';
 import { Stack } from './sections/Stack';
 import { facts } from '@/lib/facts';
@@ -18,7 +19,7 @@ export function HomePage({ locale }: { locale: Locale }) {
         <Hero locale={locale} />
         <About locale={locale} />
         <CaseStudy locale={locale} />
-        {/* 계획 2: 데모 섹션이 여기에 들어간다 */}
+        <Demo locale={locale} />
         <Stack locale={locale} />
         <Contact locale={locale} />
       </main>
