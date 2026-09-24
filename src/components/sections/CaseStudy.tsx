@@ -21,12 +21,12 @@ export function CaseStudy({ locale }: { locale: Locale }) {
     <section id="case" data-section="case" className="wrap" aria-labelledby="case-h">
       <div className="case-head text-scrim">
         <p className="eyebrow">CASE STUDY</p>
-        <h2 id="case-h" className="display">{t('case.heading')}</h2>
+        <h2 id="case-h" className="display" data-reveal>{t('case.heading')}</h2>
       </div>
       {/* data-chapter: 계획 3의 3D 카메라가 스크롤에 맞춰 챕터별 지점으로 이동할 때 쓸 자리(hook) */}
       {CHAPTERS.map((c) => (
         <article key={c.id} data-chapter={c.id} className="chapter" aria-labelledby={`ch-${c.id}`}>
-          <p className="eyebrow">{c.gate}</p>
+          <p className="eyebrow" data-flip-on-enter>{c.gate}</p>
           <h3 id={`ch-${c.id}`}>{t(`case.${c.id}.heading`)}</h3>
           {(FIGURE_KEYS as readonly string[]).includes(c.id) && (
             <ChapterFigure locale={locale} sceneKey={c.id as FigureKey} />

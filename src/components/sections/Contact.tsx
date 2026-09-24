@@ -13,7 +13,7 @@ export function Contact({ locale }: { locale: Locale }) {
   return (
     <section id="contact" data-section="contact" className="wrap" aria-labelledby="contact-h">
       <p className="eyebrow">CONTACT</p>
-      <h2 id="contact-h" className="display">{t('contact.heading')}</h2>
+      <h2 id="contact-h" className="display" data-reveal>{t('contact.heading')}</h2>
       <div className="pass">
         <p className="pass-head mono">BOARDING PASS · SIGNAL</p>
         <dl>

@@ -10,7 +10,7 @@ export function Stack({ locale }: { locale: Locale }) {
   return (
     <section id="stack" data-section="stack" className="wrap" aria-labelledby="stack-h">
       <p className="eyebrow">STACK</p>
-      <h2 id="stack-h" className="display">{t('stack.heading')}</h2>
+      <h2 id="stack-h" className="display" data-reveal>{t('stack.heading')}</h2>
       <ol className="pipeline">
         {STEPS.map((s) => (
           <li key={s}>

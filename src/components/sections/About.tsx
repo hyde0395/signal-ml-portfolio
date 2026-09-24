@@ -10,7 +10,7 @@ export function About({ locale }: { locale: Locale }) {
   return (
     <section id="about" data-section="about" className="wrap" aria-labelledby="about-h">
       <p className="eyebrow">ABOUT</p>
-      <h2 id="about-h" className="display">{t('about.heading')}</h2>
+      <h2 id="about-h" className="display" data-reveal>{t('about.heading')}</h2>
       <p className="muted">{t('about.education')}</p>
       <p>{t('about.body1')}</p>
       <p>{t('about.body2')}</p>

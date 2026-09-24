@@ -14,7 +14,8 @@ import { describe, expect, it } from 'vitest';
 const SRC = fileURLToPath(new URL('../../src', import.meta.url));
 const APP = fileURLToPath(new URL('../../app', import.meta.url));
 const FORBIDDEN_FILES = ['lib/content.ts', 'lib/facts.ts'].map((f) => join(SRC, f));
-const FORBIDDEN_PACKAGES = ['zod'];
+// gsap·lenis는 motion/run.ts를 통한 import()(지연 청크)로만 불러와야 한다(초기 JS 150KB)
+const FORBIDDEN_PACKAGES = ['zod', 'gsap', 'lenis'];
 // `import type …`는 빼고, `import x from '…'`·`import '…'`·`export … from '…'`의 경로를 잡는다(여러 줄 import 포함)
 const STATIC_IMPORT = /^\s*(?:import|export)\s+(?!type\s)(?:[^'";]*?\sfrom\s+)?['"]([^'"]+)['"]/gm;
 
@@ -76,7 +77,7 @@ describe('클라이언트 import 경계', () => {
     expect(relEntries).not.toContain('three/TerrainScene.tsx'); // next/dynamic(import())로만 불려온다
   });
 
-  it.each(entryFiles.map((f) => [rel(f), f]))('%s는 서버 전용 모듈·zod에 닿지 않는다', (_, file) => {
+  it.each(entryFiles.map((f) => [rel(f), f]))('%s는 서버 전용 모듈·zod·gsap·lenis에 닿지 않는다', (_, file) => {
     const graph = reachable(file);
     for (const bad of [...FORBIDDEN_FILES, ...FORBIDDEN_PACKAGES.map((p) => `pkg:${p}`)]) {
       const path = graph.get(bad);

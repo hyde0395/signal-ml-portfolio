@@ -11,7 +11,7 @@ export function Demo({ locale }: { locale: Locale }) {
   return (
     <section id="demo" data-section="demo" className="wrap" aria-labelledby="demo-h">
       <p className="eyebrow">DEMO</p>
-      <h2 id="demo-h" className="display">{t('demo.heading')}</h2>
+      <h2 id="demo-h" className="display" data-reveal>{t('demo.heading')}</h2>
       <p>{t('demo.intro')}</p>
       <p className="muted">{t('demo.basis')}</p>
       <noscript><p className="demo-nojs">{t('demo.noJs')}</p></noscript>

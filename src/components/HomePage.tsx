@@ -2,6 +2,7 @@
 import { Backdrop } from './Backdrop';
 import { Header } from './Header';
 import { Loader } from './Loader';
+import { Motion } from './Motion';
 import { About } from './sections/About';
 import { CaseStudy } from './sections/CaseStudy';
 import { Contact } from './sections/Contact';
@@ -25,6 +26,7 @@ export function HomePage({ locale }: { locale: Locale }) {
         <Stack locale={locale} />
         <Contact locale={locale} />
       </main>
+      <Motion />
     </>
   );
 }
