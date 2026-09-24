@@ -24,7 +24,7 @@ const content = Object.fromEntries(
     lang,
     JSON.parse(readFileSync(fileURLToPath(new URL(`../../content/${lang}.json`, import.meta.url)), 'utf-8')),
   ]),
-) as Record<(typeof PAGES)[number]['lang'], { case: { heading: string }; contact: { emailFallback: string } }>;
+) as Record<(typeof PAGES)[number]['lang'], { case: { heading: string }; contact: { emailFallback: string }; demo: { noJs: string } }>;
 
 // public/resume/ja.pdf가 실제로 나중에 채워지면 "준비 중" 가정이 깨지므로, 파일 존재 여부를
 // 미리 확인해 그 경우 해당 테스트를 건너뛴다.
@@ -35,7 +35,7 @@ for (const { path, lang } of PAGES) {
     await page.goto(path);
     await expect(page.locator('html')).toHaveAttribute('lang', lang);
     await expect(page.getByRole('heading', { level: 1, name: 'CHOI HALIM' })).toBeVisible();
-    for (const id of ['about', 'case', 'stack', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
+    for (const id of ['about', 'case', 'demo', 'stack', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
     await expect(page.locator('[data-chapter]')).toHaveCount(6);
   });
 
@@ -54,6 +54,9 @@ test.describe('JS 없이', () => {
       await expect(page.getByRole('heading', { name: content[lang].case.heading })).toBeVisible();
       await expect(page.locator('#case table')).toBeVisible();
       await expect(page.getByText(content[lang].contact.emailFallback)).toBeVisible();
+      // <noscript> 안의 텍스트는 실제로 화면에 보여도 Playwright의 getByText가 SCRIPT/NOSCRIPT
+      // 노드를 항상 건너뛰어 못 찾는다(엔진 한계). 클래스로 직접 짚는다
+      await expect(page.locator('.demo-nojs')).toHaveText(content[lang].demo.noJs);
     });
   }
 });
