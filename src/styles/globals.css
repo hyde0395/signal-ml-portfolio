@@ -124,7 +124,8 @@ main { position: relative; z-index: 1; }
 /* 대체 이미지: 기본은 보이고, 3D가 켜지면 숨긴다(JS가 없거나 3D가 불가능해도 장면을 볼 수 있게) */
 .scene-figure { margin: 24px 0; }
 .scene-figure img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
-html[data-3d="on"] .scene-figure { display: none; }
+/* 3D가 켜졌거나 판정 대기 중이면 대체 이미지를 숨긴다. 대기 중에 보이면 곧 사라질 이미지가 LCP가 되고 받아진다 */
+html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
 /* 첫 화면 대체 이미지는 글 뒤 배경으로 깐다. 흐름 안에 두면 3D가 켜져 숨을 때 이름이 밀려 CLS가 생긴다 */
 .hero { position: relative; }
 .hero .scene-figure { position: absolute; inset: 0; margin: 0; z-index: -1; }

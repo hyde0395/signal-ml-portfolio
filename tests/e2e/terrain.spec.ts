@@ -23,6 +23,14 @@ test('3D가 켜져도 첫 화면 이름 영역이 움직이지 않는다(CLS)', 
   expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1);
 });
 
+test('3D가 켜지는 환경에서는 첫 화면 대체 이미지를 받지 않는다(LCP는 이름 글자)', async ({ page }) => {
+  const hero: string[] = [];
+  page.on('request', (r) => { if (r.url().includes('/fallback/hero.webp')) hero.push(r.url()); });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-3d', 'on', { timeout: 20_000 });
+  expect(hero).toEqual([]);
+});
+
 test.describe('움직임 줄이기', () => {
   test.use({ reducedMotion: 'reduce' });
   test('캔버스 없이 대체 이미지와 대체 텍스트가 보인다', async ({ page }) => {

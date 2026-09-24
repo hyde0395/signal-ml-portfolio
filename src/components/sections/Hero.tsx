@@ -16,7 +16,7 @@ export function Hero({ locale }: { locale: Locale }) {
         <p className="mono hero-role">{t('hero.role')}</p>
         <p className="hero-keywords">{t('hero.keywords')}</p>
       </div>
-      <ChapterFigure locale={locale} sceneKey="hero" priority />
+      <ChapterFigure locale={locale} sceneKey="hero" />
     </section>
   );
 }
