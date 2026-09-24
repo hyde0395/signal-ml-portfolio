@@ -262,7 +262,7 @@ interface ForecastSource {
 | 프레임 | 데스크톱 60fps, 모바일 30fps 이상 |
 | Lighthouse 성능 | 모바일 90 이상 |
 
-**측정 (계획 4-1, 2026-09-24)**: 초기 JS gzip ko 138.5KB · en 138.5KB · ja 138.5KB(npm run size, Task 5 후), 3D 지연 청크 gzip 240.7KB. Lighthouse 모바일(로컬 `npm run lighthouse`, 캐시 헤더 없는 로컬 서버·GPU 없는 소프트웨어 3D라 실제보다 낮게 나옴, Task 7b 후 2회차): 성능 ko 63 · en 79 · ja 62, 접근성 100, CLS 0, LCP ko 5.8s · en 3.8s · ja 6.3s. 운영(Vercel, 계획 2 시점) 참고: 성능 61, LCP 5.1s, CLS 0.197(Task 7b에서 해결). 성능 목표(모바일 90 이상)는 계획 4-2로 넘긴다
+**측정 (계획 4-1, 2026-09-24)**: 초기 JS gzip ko 138.5KB · en 138.5KB · ja 138.5KB(npm run size, Task 5 후), 3D 지연 청크 gzip 240.7KB. Lighthouse 모바일(로컬 `npm run lighthouse`, 캐시 헤더 없는 로컬 서버·GPU 없는 소프트웨어 3D라 실제보다 낮게 나옴, Task 7b 후 2회차): 성능 ko 63 · en 79 · ja 62, 접근성 100, CLS 0, LCP ko 5.8s · en 3.8s · ja 6.3s. 운영(Vercel, 계획 2 시점) 참고: 성능 61, LCP 5.1s, CLS 0.197(Task 7b에서 해결). 성능 목표(모바일 90 이상)는 계획 4-2로 넘긴다(로컬 serve에서는 Vercel Analytics 스크립트 /_vercel/insights/script.js가 404로 콘솔 오류를 내 권장사항 점수가 조금 낮게 나온다 — 운영에서는 해당 없음)
 
 ### 8.3 기기에 맞춘 조절
 

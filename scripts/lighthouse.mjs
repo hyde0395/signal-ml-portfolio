@@ -17,9 +17,10 @@ async function waitForServer(url, timeoutMs = 15_000) {
   throw new Error(`${url}이(가) 응답하지 않았다`);
 }
 
-await waitForServer(`http://localhost:${PORT}/`);
-await mkdir('.lighthouse', { recursive: true });
 try {
+  // 서버 기동 대기·폴더 준비도 try 안에서 해야 여기서 실패해도 finally가 서버를 꼭 죽인다
+  await waitForServer(`http://localhost:${PORT}/`);
+  await mkdir('.lighthouse', { recursive: true });
   for (const [locale, path] of [['ko', '/'], ['en', '/en/'], ['ja', '/ja/']]) {
     const out = `.lighthouse/${locale}.json`;
     execFileSync('npx', ['-y', 'lighthouse@13', `http://localhost:${PORT}${path}`, '--quiet', '--output=json', `--output-path=${out}`,
