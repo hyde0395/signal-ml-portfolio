@@ -47,4 +47,16 @@ describe('sceneFor', () => {
     expect(sceneFor('insight', 0, true).target).toEqual([3.1, -3.5, 10.5]); // 곡선 한가운데, 곡선이 화면 위쪽에 오도록 낮춤
     expect(sceneFor('problem', 0, false).target).toEqual([-4.5, 0, 0]);
   });
+  it('interval은 가로 화면에서 그대로 지형을 비스듬히 내려다본다(계획 3 원래 구도, 대체 이미지 불변)', () => {
+    // 세로 화면 오버라이드를 추가해도 가로(데스크톱) 카메라·목표점은 손대지 않는다.
+    // 대체 이미지(interval.webp)는 이 값으로 캡처하므로, 바뀌면 다시 캡처해야 한다.
+    const s = sceneFor('interval', 0, false);
+    expect(s.camera).toEqual([-12, 5, 12]);
+    expect(s.target).toEqual([0, 0.5, 0]);
+  });
+  it('세로 화면 interval 목표점은 띠 한가운데 위, 글 카드 위쪽에 오도록 낮춘 y다', () => {
+    // 띠는 x -1.8~7.7, z 2.6~8.0 대각선이라 목표점의 x·z는 그 가운데(약 3, 5.3)로 잡았고,
+    // y는 띠 자체 세로 중심(약 1.3)보다 낮춰(-1.5) 화면에서 띠가 위쪽에, 글 카드와 안 겹치게 했다
+    expect(sceneFor('interval', 0, true).target).toEqual([3, -1.5, 5.3]);
+  });
 });
