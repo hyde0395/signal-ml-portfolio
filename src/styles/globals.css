@@ -243,3 +243,7 @@ html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
 .feature-gain { font-size: 1.75rem; font-weight: 700; }
 .feature-groups li.is-holiday .feature-gain { color: var(--amb); }
 .feature-names { font-size: 0.75rem; color: var(--mute); word-break: break-word; }
+
+/* 연락처 아래 개인 소개(옛 소개 섹션) */
+.contact-about { margin-top: 48px; max-width: 640px; }
+.contact-about h4 { font-size: 1rem; margin: 24px 0 10px; }
