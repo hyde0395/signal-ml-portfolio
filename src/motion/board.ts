@@ -4,7 +4,10 @@
 // run.ts가 불러오므로 움직임 줄이기에서는 아예 실행되지 않는다(서버가 그린 완성 글자가 그대로 보인다).
 export const SEQ = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-⇄';
 // 빈칸부터 모두 넘기면 숫자 칸이 40번 가까이 넘어가 5초를 넘긴다(시안 실측). 14번으로 잘라 약 2초
-export const BOARD = { flipMs: 60, maxFlips: 14, staggerMs: 5 } as const;
+// budgetMs: 메인 스레드가 느리면(3D 렌더링과 겹침 등) Web Animations의 .finished가 선언한 duration보다
+// 오래 걸려 칸마다 순서대로 기다리는 시간이 눈덩이처럼 불어난다. 보드 시작 이후 이 시간을 넘기면 남은 칸은
+// 애니메이션 없이 바로 완성 글자로 건너뛰어, 느린 환경에서도 전체 연출이 일정 시간 안에 끝나게 한다
+export const BOARD = { flipMs: 60, maxFlips: 14, staggerMs: 5, budgetMs: 2500 } as const;
 
 export function flipPath(target: string, maxFlips: number = BOARD.maxFlips): string[] {
   const to = SEQ.indexOf(target);
@@ -70,11 +73,15 @@ export function animateBoard(board: HTMLElement): () => void {
   let cancelled = false;
   const timers: number[] = [];
   const flaps = flapsOf(board);
+  const start = performance.now(); // 보드 전체 기준 시작 시각(칸마다 다른 stagger 지연과 무관하게 예산을 잰다)
   flaps.forEach((f, i) => {
     const path = flipPath(f.dataset.c ?? ' ');
     const h = halves(f);
     timers.push(window.setTimeout(async () => {
-      for (let k = 1; k < path.length && !cancelled; k++) await flipOnce(h, path[k - 1], path[k]);
+      for (let k = 1; k < path.length && !cancelled; k++) {
+        if (performance.now() - start > BOARD.budgetMs) { reset(h, path.at(-1)!); break; } // 예산 초과: 바로 완성값
+        await flipOnce(h, path[k - 1], path[k]);
+      }
     }, i * BOARD.staggerMs));
   });
   return () => {

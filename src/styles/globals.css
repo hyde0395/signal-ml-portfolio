@@ -187,7 +187,11 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 .collect-line { margin-block: 32px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .collect-line strong { color: var(--amb); letter-spacing: 0.14em; font-size: 0.8rem; }
 .data-tools { font-size: 0.8rem; }
-.board-housing { --flap-w: 44px; --flap-h: 66px; --flap-f: 42px; --green: #6FE3A5;
+/* 칸 크기는 화면 너비별로 다르다(axe scrollable-region-focusable 수정, 2026-09-25). .wrap이 1080px에서
+   막히므로 칸 25개(노선·목적지·건수·상태 글자 합)를 44px 그대로 다 펴면 항상 가로 스크롤이 생긴다.
+   768px부터 1080px 위로 올라갈수록 칸을 키워, 가장 넓은 화면에서 스크롤 없이 들어가는 최대 크기(약 32px)로 맞춘다.
+   767px 이하는 목적지·상태 두 열을 아예 숨기므로(아래 미디어쿼리) 19px로 더 작게 잡아도 된다. */
+.board-housing { --flap-w: 32px; --flap-h: 48px; --flap-f: 30px; --green: #6FE3A5;
   position: relative; margin-block: 32px; border-radius: 16px; padding: 10px; max-width: none;
   background: linear-gradient(180deg, #2a3346, #141a27 40%, #0d1220);
   box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px #000 inset, 0 1px 0 rgba(255, 255, 255, 0.13) inset; }
@@ -236,6 +240,17 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
   .flaps { gap: 2px; }
   .board-dest, .board-status .flaps, .board-table thead .board-status { display: none; }
   .board-lamp { margin: 0; }
+}
+/* 태블릿·좁은 데스크톱: 네 열을 다 보여주면서 가로 스크롤 없이 들어가야 하므로, 767px 이하의 휴대폰용
+   칸 크기(목적지·상태 열을 숨겨 여유가 있던)를 열을 숨기지 않은 채로 그대로 쓴다(Playwright로 768px 실측) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .board-housing { --flap-w: 19px; --flap-h: 30px; --flap-f: 18px; }
+  .board { padding: 16px 12px; }
+  .board-table th, .board-table td { padding: 0 4px; }
+}
+/* 중간 데스크톱: 1280px 이상 크기(아래)와 767px 이하 크기 사이를 잇는다(Playwright로 1024px 실측) */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .board-housing { --flap-w: 26px; --flap-h: 39px; --flap-f: 25px; }
 }
 
 /* ③ FEATURES(설계 2026-09-25 §3.3): 이번 계획에서는 그룹 목록. 공휴일만 호박색(④ 공휴일 봉우리와 같은 색) */

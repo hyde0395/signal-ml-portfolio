@@ -35,9 +35,14 @@ export function DepartureBoard({ locale }: { locale: Locale }) {
   const pad = (n: number) => fmt(n).padStart(width, ' ');
   return (
     <div className="board-housing">
-      <div className="board" data-board>
+      {/* overflow-x:auto인 스크롤 영역은 키보드로 닿아야 axe scrollable-region-focusable을 통과한다.
+          CSS로 화면 너비마다 스크롤이 안 생기게 맞췄지만, 혹시 남는 경우를 대비한 안전망이다.
+          라벨은 table caption(data.board.caption, "노선"/"route"/"路線" 포함)을 그대로 쓰면 데모 섹션의
+          getByLabel('노선') 같은 부분일치 찾기와 충돌한다(e2e 실측). 이미 화면에 보이는 제목 줄(DEPARTURES +
+          수집 현황)을 aria-labelledby로 가리켜 새 문구 없이 충돌 없는 이름을 만든다 */}
+      <div className="board" data-board tabIndex={0} role="region" aria-labelledby="board-caption">
         <div className="board-head">
-          <p><span className="board-title mono">DEPARTURES</span> <span className="board-sub">{t('data.board.sub')}</span></p>
+          <p id="board-caption"><span className="board-title mono">DEPARTURES</span> <span className="board-sub">{t('data.board.sub')}</span></p>
           <p className="board-range mono">{collectStart} → {collectEnd} · {collectDays} DAYS</p>
         </div>
         <table className="board-table">
