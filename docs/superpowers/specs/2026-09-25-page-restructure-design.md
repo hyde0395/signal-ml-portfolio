@@ -1,7 +1,7 @@
 # 페이지 구성 개편 설계 (2026-09-25)
 
 > 기존 설계 `2026-09-23-portfolio-design.md`의 §3(페이지 구성)을 바꾸는 문서다. 여기서 정하지 않은 것(비주얼 시스템, 다국어, 성능 목표, 배포, 접근성 원칙)은 기존 설계를 그대로 따른다.
-> 시안: `.superpowers/brainstorm/84335-*/content/flipboard-c-real-v3.html`(② 플립 보드), `.superpowers/brainstorm/86725-*/content/charts-v2.html`(④ 차트), `features.html`(③, 시안 A), `intro.html`(①, 시안 A). git에 없고 이 맥북에만 있다.
+> 시안(고른 것만, 브라우저로 바로 열림): `docs/superpowers/mockups/2026-09-25/` — `01-project.html`(① 시안 A), `02-data-flipboard.html`(② 실감 v3), `03-features.html`(③ 시안 A — 파일 안의 B는 고르지 않음), `04-charts.html`(④ 차트 4개). 시안 속 노선별 행 수·관측 편 수는 예시값이다(§5).
 
 ## 1. 왜 바꾸나
 

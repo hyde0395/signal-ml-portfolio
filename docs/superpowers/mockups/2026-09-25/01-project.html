@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<style>
+  :root { --bg:#070B16; --ink:#EEF3FF; --muted:#9aa7c7; --amber:#FFB547; --blue:#8FB8FF; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,sans-serif; }
+  .bar { padding:16px 28px; border-bottom:1px solid #13203A; color:var(--muted); font-size:14px; line-height:1.6; }
+  .bar b { color:var(--ink); }
+  .opt { margin:28px; border:1.5px solid #13203A; border-radius:16px; cursor:pointer; position:relative; overflow:hidden; }
+  .opt:hover { border-color:#2a3a5c; } .opt.sel { border-color:var(--amber); }
+  .opt.sel::after { content:"✓ 선택"; position:absolute; top:18px; right:22px; color:var(--amber); font-weight:700; z-index:3; }
+  .meta { padding:18px 30px 0; position:relative; z-index:2; }
+  .letter { font-family:"IBM Plex Mono",monospace; color:var(--amber); font-size:13px; letter-spacing:.14em; }
+  .meta h3 { margin:4px 0 2px; font-size:19px; } .meta p { margin:0; color:var(--muted); font-size:14px; }
+  .screen { position:relative; min-height:560px; padding:60px 56px; display:flex; flex-direction:column; justify-content:center; box-sizing:border-box; }
+  .screen canvas { position:absolute; inset:0; width:100%; height:100%; z-index:0; }
+  .screen > *:not(canvas) { position:relative; z-index:1; }
+  .eyebrow { font-family:"IBM Plex Mono",monospace; color:var(--amber); letter-spacing:.14em; font-size:14px; font-weight:700; margin-bottom:14px; }
+  .q { font-size:clamp(34px,5.6vw,76px); font-weight:800; letter-spacing:-.03em; line-height:1.05; margin:0 0 22px; max-width:16ch; word-break:keep-all; }
+  .sub { font-size:19px; color:#c9d3ea; line-height:1.6; max-width:40ch; margin:0 0 34px; }
+  .nums { display:flex; gap:48px; flex-wrap:wrap; }
+  .nums div b { display:block; font-family:"IBM Plex Mono",monospace; font-size:44px; font-weight:600; color:var(--amber); }
+  .nums div span { color:var(--muted); font-size:14px; }
+  .flow { display:flex; align-items:center; gap:0; flex-wrap:wrap; }
+  .flow .s { border:1.5px solid #8FB8FF55; border-radius:12px; padding:18px 22px; min-width:170px; background:#070B16cc; }
+  .flow .s b { display:block; font-family:"IBM Plex Mono",monospace; color:var(--amber); font-size:13px; letter-spacing:.14em; margin-bottom:6px; }
+  .flow .s span { font-size:18px; }
+  .flow .ln { width:40px; height:2px; background:linear-gradient(90deg,#8FB8FF 50%,transparent 50%) 0 0/10px 2px; }
+  .answer { border-left:3px solid var(--amber); padding:6px 0 6px 20px; max-width:44ch; }
+  .answer small { display:block; font-family:"IBM Plex Mono",monospace; color:var(--amber); letter-spacing:.14em; font-size:12px; margin-bottom:8px; }
+  .answer p { margin:0; font-size:24px; line-height:1.5; font-weight:600; }
+  .note { color:#6f7c99; font-size:13px; margin:22px 28px 40px; }
+  @media (max-width:760px){ .opt{margin:14px} .screen{padding:40px 22px; min-height:520px} .nums{gap:24px} .nums div b{font-size:32px} .flow{flex-direction:column;align-items:flex-start} .flow .ln{width:2px;height:20px;margin-left:24px;background:#8FB8FF66} .answer p{font-size:19px} }
+</style></head><body>
+<div class="bar"><b>① 프로젝트 소개 — 세 가지 방식.</b> 첫 화면(이름) 바로 다음 화면이에요. 배경은 첫 화면의 가격 지형 점이 그대로 이어지는 걸 흉내 냈어요. 문구는 자리 잡기용 초안이라 나중에 바꾸시면 돼요.</div>
+
+<div class="opt" data-choice="a" onclick="pick(this)">
+  <div class="meta"><div class="letter">A</div><h3>질문 + 숫자 4개</h3><p>큰 질문 한 줄, 설명 두 줄, 아래에 프로젝트 규모를 숫자로. 가장 흔하고 빨리 읽힘.</p></div>
+  <div class="screen"><canvas></canvas>
+    <div class="eyebrow">01 — PROJECT</div>
+    <h2 class="q">한·일 항공권, 언제 사야 할까?</h2>
+    <p class="sub">인천과 도쿄·오사카를 오가는 항공권 가격을 매일 모아, 출발일별 가격과 지금 살지 기다릴지를 예측했습니다.</p>
+    <div class="nums">
+      <div><b>6</b><span>노선</span></div>
+      <div><b>5개월</b><span>매일 자동 수집</span></div>
+      <div><b>33</b><span>피처</span></div>
+      <div><b>80%</b><span>예측 구간</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="opt" data-choice="b" onclick="pick(this)">
+  <div class="meta"><div class="letter">B</div><h3>질문 + 하는 일 3단계</h3><p>큰 질문 아래에 프로젝트가 하는 일을 수집 → 예측 → 추천 3칸으로. 뒤에 나올 ②③④의 예고편 역할.</p></div>
+  <div class="screen"><canvas></canvas>
+    <div class="eyebrow">01 — PROJECT</div>
+    <h2 class="q">한·일 항공권, 언제 사야 할까?</h2>
+    <p class="sub">인천과 도쿄·오사카를 오가는 6개 노선의 가격으로 만든 예측 모델입니다.</p>
+    <div class="flow">
+      <div class="s"><b>COLLECT</b><span>매일 가격 수집</span></div><div class="ln"></div>
+      <div class="s"><b>PREDICT</b><span>출발일별 가격 + 80% 구간</span></div><div class="ln"></div>
+      <div class="s"><b>DECIDE</b><span>지금 살까, 기다릴까</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="opt" data-choice="c" onclick="pick(this)">
+  <div class="meta"><div class="letter">C</div><h3>질문 + 답 먼저</h3><p>질문 바로 아래에 결론을 먼저 보여 주고, ②③④가 그 근거가 되는 구성. 30초만 보는 채용 담당자도 결론은 가져감.</p></div>
+  <div class="screen"><canvas></canvas>
+    <div class="eyebrow">01 — PROJECT</div>
+    <h2 class="q">한·일 항공권, 언제 사야 할까?</h2>
+    <p class="sub">인천과 도쿄·오사카를 오가는 6개 노선의 가격을 5개월 동안 매일 모아 분석했습니다.</p>
+    <div class="answer"><small>ANSWER</small><p>미리 사는 게 대체로 낫다. 다만 두 달 이상 남았다면 한 달 전후까지는 지켜볼 만하다.</p></div>
+  </div>
+</div>
+<p class="note">숫자·결론은 모두 facts.json에서 가져오는 값이에요(5개월, 6개 노선, 33개 피처, 80% 구간). C의 결론 문장은 항공권 저장소의 "포트폴리오 메시지"를 그대로 옮겼어요.</p>
+
+<script>
+function pick(el){ document.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel'); if (window.brainstorm) brainstorm.send({type:'click', choice:el.dataset.choice}); }
+// 배경: 첫 화면 지형을 흉내 낸 흐린 점 물결(오른쪽으로 갈수록 밝게 — 글자와 겹치지 않게)
+document.querySelectorAll('.screen canvas').forEach(cv => {
+  const dpr=Math.min(2,devicePixelRatio||1), W=cv.clientWidth, H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr;
+  const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  for (let i=0;i<90;i++) for (let j=0;j<26;j++) {
+    const u=i/89, v=j/25; const x=W*(.25+u*.8)+v*60, h=Math.sin(u*9+v*3)*14+Math.sin(u*23)*6+(Math.abs(u-.62)<.03?-26:0);
+    const y=H*(.35+v*.62)+h; const a=Math.min(.55,.08+u*.5)*(0.4+v*.6);
+    g.fillStyle = Math.abs(u-.62)<.03 ? `rgba(255,181,71,${a})` : `rgba(143,184,255,${a})`;
+    g.beginPath(); g.arc(x,y,1.1+v*.6,0,7); g.fill();
+  }
+});
+</script>
+</body></html>

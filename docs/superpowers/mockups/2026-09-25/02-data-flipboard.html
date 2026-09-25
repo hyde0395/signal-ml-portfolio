@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<style>
+  :root { --bg:#070B16; --panel:#0B1222; --flap:#161E2E; --flap2:#10172A; --ink:#EEF3FF; --amber:#FFB547; --blue:#8FB8FF; --green:#6FE3A5; --W:44px; --H:66px; --F:42px; }
+  body { margin:0; background:radial-gradient(ellipse at 50% 0%, #13203A 0%, var(--bg) 60%); color:var(--ink); font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; min-height:100vh; }
+  .bar { padding:14px 28px; font-family:system-ui,sans-serif; color:#9aa7c7; font-size:14px; border-bottom:1px solid #13203A; display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .bar b { color:var(--ink); }
+  .bar button { background:#13203A; color:var(--ink); border:1px solid #2a3a5c; border-radius:6px; padding:6px 12px; font:inherit; font-size:13px; cursor:pointer; }
+  .bar button[aria-pressed="true"] { border-color:var(--amber); color:var(--amber); }
+  section { box-sizing:border-box; padding:5vh 4vw 8vh; display:flex; flex-direction:column; gap:5vh; }
+  .eyebrow { color:var(--amber); letter-spacing:.14em; font-size:14px; font-weight:700; }
+
+  /* 수집 라인 */
+  .pipe { display:flex; align-items:stretch; }
+  .st { flex:1; border:1.5px solid #8FB8FF55; border-radius:12px; padding:20px 18px; background:#0B122288; }
+  .st b { display:block; color:var(--amber); font-size:15px; letter-spacing:.14em; margin-bottom:10px; }
+  .st span { font-family:system-ui,sans-serif; font-size:19px; line-height:1.45; }
+  .ln { width:4vw; min-width:24px; align-self:center; height:2px; background:linear-gradient(90deg,var(--blue) 50%,transparent 50%) 0 0/12px 2px; }
+
+  /* 보드 하우징: 금속 테두리 + 안쪽 그림자 + 모서리 나사 */
+  .housing { position:relative; border-radius:16px; padding:10px; background:linear-gradient(180deg,#2a3346,#141a27 40%,#0d1220); box-shadow:0 30px 60px -20px #000c, 0 0 0 1px #000 inset, 0 1px 0 #ffffff22 inset; }
+  .housing i { position:absolute; width:8px; height:8px; border-radius:50%; background:radial-gradient(circle at 35% 35%,#7a8499,#262d3b); box-shadow:0 1px 1px #000; }
+  .housing i:nth-of-type(1){top:10px;left:10px} .housing i:nth-of-type(2){top:10px;right:10px} .housing i:nth-of-type(3){bottom:10px;left:10px} .housing i:nth-of-type(4){bottom:10px;right:10px}
+  .board { background:#05080F; border-radius:10px; padding:22px 30px 26px; box-shadow:0 6px 20px #000 inset; }
+  .bhead { display:flex; justify-content:space-between; align-items:center; padding-bottom:14px; margin-bottom:6px; border-bottom:2px solid #1b2436; }
+  .bhead .t { display:flex; align-items:baseline; gap:14px; }
+  .bhead .t b { color:var(--amber); font-size:26px; letter-spacing:.12em; }
+  .bhead .t span { color:#9aa7c7; font-family:system-ui,sans-serif; font-size:18px; }
+  .bhead .s { color:var(--blue); font-size:16px; letter-spacing:.06em; }
+  table { width:100%; border-collapse:separate; border-spacing:0 12px; }
+  th { text-align:left; color:#6f7c99; font-weight:500; font-size:12px; letter-spacing:.18em; padding:6px 8px 0; }
+  th small { display:block; font-family:system-ui,sans-serif; letter-spacing:0; font-size:11px; color:#4f5a73; }
+  td { padding:0 8px; white-space:nowrap; vertical-align:middle; }
+  .row-sep td { height:0; }
+
+  /* 플랩 한 칸: 정적 위·아래 반쪽 + 접히는 위 반쪽 + 펴지는 아래 반쪽 */
+  .cells { display:inline-flex; gap:3px; vertical-align:middle; }
+  .flap { position:relative; width:var(--W); height:var(--H); perspective:260px; font-size:var(--F); font-weight:600; border-radius:5px; box-shadow:0 2px 3px #000, 0 0 0 1px #000; }
+  .half { position:absolute; left:0; right:0; height:50%; overflow:hidden; backface-visibility:hidden; }
+  .half > span { position:absolute; left:0; right:0; height:200%; line-height:var(--H); text-align:center; }
+  .top { top:0; border-radius:5px 5px 0 0; transform-origin:50% 100%; background:linear-gradient(180deg,#1d2638,var(--flap)); }
+  .bot { bottom:0; border-radius:0 0 5px 5px; transform-origin:50% 0%; background:linear-gradient(180deg,var(--flap2),#0c1220); }
+  .top > span { top:0; } .bot > span { bottom:0; }
+  .top::after { content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:#000; } /* 경첩 틈 */
+  .bot::before { content:""; position:absolute; left:0; right:0; top:0; height:6px; background:linear-gradient(#0008,transparent); z-index:1; } /* 위 날개가 드리운 그림자 */
+  .fold { z-index:3; } .unfold { z-index:2; transform:rotateX(90deg); }
+  .amber { color:var(--amber); } .green { color:var(--green); }
+  .lamp { display:inline-block; width:12px; height:12px; border-radius:50%; background:var(--green); box-shadow:0 0 10px var(--green), 0 0 2px #fff inset; margin-right:10px; vertical-align:middle; animation:blink 2.4s infinite; }
+  @keyframes blink { 0%,70%,100%{opacity:1} 80%{opacity:.35} }
+  .tot td { padding-top:10px; border-top:2px solid #1b2436; }
+  .note { font-family:system-ui,sans-serif; color:#9aa7c7; font-size:14px; line-height:1.6; margin:0; }
+
+  @media (max-width:760px){
+    :root { --W:19px; --H:30px; --F:18px; } td{padding:0 4px} .cells{gap:2px}
+    .pipe{flex-direction:column} .ln{width:2px;height:22px;align-self:flex-start;margin-left:28px;background:linear-gradient(180deg,var(--blue) 50%,transparent 50%) 0 0/2px 12px}
+    th:nth-child(2),td:nth-child(2){display:none}
+    td.green > span[data-f]{display:none} .lamp{margin:0} /* 휴대폰: 상태는 불빛만 */
+    .ln{background:#8FB8FF66;width:1.5px;min-width:0} th{letter-spacing:.06em;font-size:11px} th:last-child{font-size:0} th:last-child small{font-size:0} .board{padding:16px 8px}
+    .board{padding:16px 12px} .bhead{flex-direction:column;align-items:flex-start;gap:6px}
+  }
+</style></head><body>
+<div class="bar">
+  <span><b>C 실감 v3</b> — 빈칸부터 목표 글자까지 전부 넘겨요. 전체 약 2초, 펴질 때 살짝 튕김.</span>
+    <button id="sound" aria-pressed="false">소리 끔</button>
+  <button id="replay">다시 돌리기</button>
+</div>
+<section>
+  <div class="eyebrow">02 — DATA COLLECTION</div>
+  <div class="pipe">
+    <div class="st"><b>COLLECT</b><span>SerpApi<br>Google Flights 검색 결과</span></div><div class="ln"></div>
+    <div class="st"><b>SCHEDULE</b><span>GitHub Actions<br>매일 · 먼 출발일 주 1회</span></div><div class="ln"></div>
+    <div class="st"><b>FILTER</b><span>무결성 · 직항 확인<br>258,829 → 242,874</span></div><div class="ln"></div>
+    <div class="st"><b>JOIN</b><span>원/엔 환율 · 공휴일<br>유가</span></div>
+  </div>
+  <div class="housing"><i></i><i></i><i></i><i></i>
+    <div class="board">
+      <div class="bhead">
+        <div class="t"><b>DEPARTURES</b><span>수집 현황</span></div>
+        <div class="s">2026-04-23 → 2026-09-22 · 153 DAYS</div>
+      </div>
+      <table>
+        <tr><th>ROUTE<small>노선</small></th><th>DESTINATION<small>목적지</small></th><th>ROWS<small>수집 행</small></th><th>STATUS<small>상태</small></th></tr>
+        <tr><td data-f="ICN⇄NRT"></td><td data-f="NARITA"></td><td class="amber" data-f="119,124"></td><td class="green"><span class="lamp"></span><span data-f="DAILY"></span></td></tr>
+        <tr><td data-f="ICN⇄KIX"></td><td data-f="KANSAI"></td><td class="amber" data-f="113,479"></td><td class="green"><span class="lamp"></span><span data-f="DAILY"></span></td></tr>
+        <tr><td data-f="ICN⇄HND"></td><td data-f="HANEDA"></td><td class="amber" data-f=" 27,917"></td><td class="green"><span class="lamp"></span><span data-f="DAILY"></span></td></tr>
+        <tr class="tot"><td data-f="TOTAL  "></td><td></td><td class="amber" data-f="242,874"></td><td></td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="note">행 수는 아직 필터 전 원본 기준 예시 값(가는 편+오는 편)이에요.</p>
+</section>
+<script>
+(function(){
+  // 실제 플립 보드처럼 정해진 순서로만 글자가 넘어간다
+  const SEQ = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-⇄";
+  let realMode = true, soundOn = false, ctx = null, lastClick = 0;
+
+  function click(){
+    if (!soundOn) return;
+    const now = performance.now(); if (now - lastClick < 12) return; lastClick = now; // 동시에 수십 칸이 넘어가므로 소리는 솎아낸다
+    ctx = ctx || new (window.AudioContext||window.webkitAudioContext)();
+    const len = 0.018, buf = ctx.createBuffer(1, ctx.sampleRate*len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 3);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2200 + Math.random()*900; f.Q.value = 1.2;
+    const g = ctx.createGain(); g.gain.value = 0.25;
+    src.connect(f).connect(g).connect(ctx.destination); src.start();
+  }
+
+  function makeFlap(){
+    const el = document.createElement('span'); el.className = 'flap';
+    el.innerHTML = '<span class="half top"><span></span></span><span class="half bot"><span></span></span><span class="half top fold"><span></span></span><span class="half bot unfold"><span></span></span>';
+    const [t,b,f,u] = el.querySelectorAll('.half > span');
+    return { el, t, b, f, u, fh: f.parentNode, uh: u.parentNode, cur: ' ' };
+  }
+
+  // 한 번 넘기기: 위 날개(현재 글자)가 0→-90° 접히고, 아래 날개(다음 글자)가 90→0° 펴진다
+  function flipOnce(c, next, dur){
+    c.fh.getAnimations().forEach(a=>a.cancel()); c.uh.getAnimations().forEach(a=>a.cancel()); // 지난번 날개를 제자리로
+    c.t.textContent = next; c.b.textContent = c.cur; c.f.textContent = c.cur; c.u.textContent = next;
+    click();
+    const a = c.fh.animate([{transform:'rotateX(0deg)', filter:'brightness(1)'},{transform:'rotateX(-90deg)', filter:'brightness(.45)'}], {duration:dur/2, easing:'ease-in', fill:'forwards'});
+    return a.finished.then(() => c.uh.animate([{transform:'rotateX(90deg)', filter:'brightness(.6)'},{transform:'rotateX(0deg)', filter:'brightness(1)'}], {duration:dur/2, easing:'cubic-bezier(.3,1.5,.6,1)', fill:'forwards'}).finished)
+      .then(() => { c.cur = next; c.b.textContent = next; });
+  }
+
+  async function run(c, target, delay){
+    await new Promise(r => setTimeout(r, delay));
+    const to = SEQ.indexOf(target) < 0 ? 0 : SEQ.indexOf(target);
+    let from = SEQ.indexOf(c.cur); if (from < 0) from = 0;
+    let steps = (to - from + SEQ.length) % SEQ.length;
+    let dur = 60;
+    const MAX = 14; // 빈칸부터 전부 넘기면 숫자 칸이 40번 가까이 넘어가 5초 넘게 걸린다. 최대 14번으로 잘라 전체 약 2초
+    if (steps > MAX) { from = (to - MAX + SEQ.length) % SEQ.length; c.cur = SEQ[from]; c.t.textContent = c.b.textContent = c.cur; steps = MAX; }
+    for (let i = 1; i <= steps; i++) await flipOnce(c, SEQ[(from + i) % SEQ.length], dur);
+  }
+
+  const cellsByTarget = [];
+  document.querySelectorAll('[data-f]').forEach((host) => {
+    const box = document.createElement('span'); box.className = 'cells'; host.appendChild(box);
+    [...host.dataset.f].forEach((ch) => { const c = makeFlap(); c.t.textContent = c.b.textContent = ' '; box.appendChild(c.el); cellsByTarget.push([c, ch]); });
+  });
+
+  function start(){
+    cellsByTarget.forEach(([c]) => { c.cur = ' '; c.t.textContent = c.b.textContent = ' '; c.fh.getAnimations().forEach(a=>a.cancel()); c.uh.getAnimations().forEach(a=>a.cancel()); });
+    cellsByTarget.forEach(([c, ch], i) => run(c, ch, i*5));
+  }
+  document.getElementById('replay').onclick = start;
+  document.getElementById('sound').onclick = (e) => { soundOn = !soundOn; e.target.setAttribute('aria-pressed', soundOn); e.target.textContent = soundOn ? '소리 켬' : '소리 끔'; if (soundOn) start(); };
+  start();
+})();
+</script>
+</body></html>

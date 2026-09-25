@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<style>
+  :root { --bg:#070B16; --ink:#EEF3FF; --muted:#9aa7c7; --amber:#FFB547; --blue:#8FB8FF; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,sans-serif; }
+  .bar { padding:16px 28px; border-bottom:1px solid #13203A; color:var(--muted); font-size:14px; line-height:1.6; }
+  .bar b { color:var(--ink); }
+  .bar button { background:#13203A; color:var(--ink); border:1px solid #2a3a5c; border-radius:6px; padding:6px 12px; font:inherit; font-size:13px; cursor:pointer; margin-left:8px; }
+  .opt { margin:28px; border:1.5px solid #13203A; border-radius:16px; padding:30px 34px 34px; cursor:pointer; position:relative; }
+  .opt:hover { border-color:#2a3a5c; } .opt.sel { border-color:var(--amber); }
+  .opt.sel::after { content:"✓ 선택"; position:absolute; top:18px; right:22px; color:var(--amber); font-weight:700; }
+  .letter { font-family:"IBM Plex Mono",monospace; color:var(--amber); font-size:13px; letter-spacing:.14em; }
+  .opt > h3 { margin:4px 0 4px; font-size:20px; } .opt > p { margin:0 0 22px; color:var(--muted); font-size:14px; }
+  .eyebrow { font-family:"IBM Plex Mono",monospace; color:var(--amber); letter-spacing:.14em; font-size:13px; font-weight:700; margin-bottom:6px; }
+  .h2 { font-size:40px; font-weight:800; letter-spacing:-.02em; margin:0 0 6px; }
+  .lead { color:var(--muted); font-size:17px; margin:0 0 18px; }
+  canvas { width:100%; display:block; }
+  .cv-a { height:460px; } .cv-b { height:380px; }
+  .groups { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:12px; }
+  .g { border-top:2px solid #2a3a5c; padding-top:12px; }
+  .g.hol { border-color:var(--amber); }
+  .g .n { font-family:"IBM Plex Mono",monospace; font-size:28px; font-weight:700; }
+  .g.hol .n { color:var(--amber); }
+  .g b { display:block; font-size:17px; margin:2px 0 6px; }
+  .g span { color:var(--muted); font-size:14px; line-height:1.55; display:block; }
+  .g em { font-style:normal; color:var(--amber); font-size:13px; display:block; margin-top:6px; }
+  .foot { color:#6f7c99; font-size:13px; margin-top:16px; }
+  @media (max-width:760px){ .opt{margin:14px;padding:18px} .groups{grid-template-columns:1fr} .h2{font-size:28px} .cv-a{height:420px} }
+</style></head><body>
+<div class="bar"><b>③ 피처 섹션 — 두 가지 방식.</b> 두 시안 모두 ④ 차트처럼 배경 점이 날아와 모여요. 점 하나 = 중요도 약 0.1%, 덩어리 크기 = 그 그룹이 모델에서 차지한 중요도(XGBoost gain)예요. 마음에 드는 쪽을 눌러 주세요.
+<button id="replay">다시 모이기</button></div>
+
+<div class="opt" data-choice="a" onclick="pick(this)">
+  <div class="letter">A</div><h3>점 덩어리만 크게</h3>
+  <p>6개 그룹이 점 덩어리로 모여요. 덩어리 위에 그룹 이름·중요도·피처 개수만. 피처 이름은 덩어리에 마우스를 올리면(휴대폰은 누르면) 보여요. 가장 큼직하고 단순함.</p>
+  <div class="eyebrow">03 — FEATURES</div>
+  <div class="h2">33 FEATURES</div>
+  <p class="lead">가격 하나를 예측하기 위해 넣은 것들</p>
+  <canvas class="cv-a" id="ca"></canvas>
+</div>
+
+<div class="opt" data-choice="b" onclick="pick(this)">
+  <div class="letter">B</div><h3>점 덩어리 + 그룹 설명 (추천)</h3>
+  <p>위에는 A와 같은 점 덩어리(조금 작게), 아래에는 그룹마다 무엇이 들어 있는지 한 줄씩. 채용 담당자가 마우스를 올리지 않아도 "무엇으로 예측했나"를 바로 읽을 수 있음.</p>
+  <div class="eyebrow">03 — FEATURES</div>
+  <div class="h2">33 FEATURES</div>
+  <p class="lead">가격 하나를 예측하기 위해 넣은 것들</p>
+  <canvas class="cv-b" id="cb"></canvas>
+  <div class="groups">
+    <div class="g"><div class="n">46.8%</div><b>lookup 통계 · 13개</b><span>같은 노선·출발일, 같은 편(노선·항공사·출발 시각)의 과거 가격 중앙값·최솟값·편차</span><em>처음 보는 출발일에선 기본값으로 떨어짐 → 검증에서 발견</em></div>
+    <div class="g"><div class="n">26.0%</div><b>노선·항공사 · 5개</b><span>출발지, 도착지, 노선, 항공사, 등급(LCC/FSC)</span></div>
+    <div class="g hol"><div class="n">11.4%</div><b>공휴일 · 4개</b><span>한국·일본 공휴일 당일, 연휴 근처 여부</span></div>
+    <div class="g"><div class="n">6.8%</div><b>출발까지 남은 일수 · 4개</b><span>남은 일수와 그 로그·제곱·구간 — U자 예약 곡선을 잡기 위해</span></div>
+    <div class="g"><div class="n">4.6%</div><b>항공편 정보 · 5개</b><span>경유 수, 비행시간, 출발 시각, 주말 출발, 출발 월</span></div>
+    <div class="g"><div class="n">1.2%</div><b>시장 · 2개</b><span>원/엔 환율, 유가 단계</span></div>
+  </div>
+  <p class="foot">lookup 중요도는 노선·항공사 정보를 나눠 가진 몫이라 실제보다 크게 나와요(이 문구는 사이트에도 작게 표기). 넣었다가 뺀 피처(예약 요일: 넣으면 성능 하락)도 한 줄 덧붙일 수 있어요.</p>
+</div>
+
+<script>
+const G = [
+  { name:'lookup 통계', n:13, v:46.8, c:'#8FB8FF', feats:'rd_med · rd_min · rd_max · rd_std · rah_med · rah_std · ra_med · ra_std · rm_med · rm_std · r_med · r_std · global_med' },
+  { name:'노선·항공사', n:5, v:26.0, c:'#8FB8FF', feats:'origin · destination · route · airline · airline_class' },
+  { name:'공휴일', n:4, v:11.4, c:'#FFB547', feats:'is_kr_holiday · is_kr_near_holiday · is_jp_holiday · is_jp_near_holiday' },
+  { name:'남은 일수', n:4, v:6.8, c:'#8FB8FF', feats:'days_to_departure · log_days · days_sq · days_bucket_num' },
+  { name:'항공편 정보', n:5, v:4.6, c:'#8FB8FF', feats:'stops · duration_minutes · departure_hour · is_weekend_flight · departure_month' },
+  { name:'시장', n:2, v:1.2, c:'#8FB8FF', feats:'krw_jpy_rate · fuel_tier' },
+];
+function pick(el){ el.classList.toggle('sel'); if (window.brainstorm) brainstorm.send({type:'click', choice:el.dataset.choice, selected:el.classList.contains('sel')}); }
+
+// 덩어리 하나 = 해바라기 배열(golden angle)로 점을 채운 원. 점 개수 = 중요도 × 10
+function layout(W, H, scale){
+  const out = []; const R = G.map(g => Math.sqrt(g.v*10) * 4.2 * scale);
+  const total = R.reduce((a,r)=>a+2*r,0) + 28*(G.length-1); let x = (W-total)/2;
+  G.forEach((g,i) => { const r=R[i]; x += r; const cy = H*0.52; out.push({g, cx:x, cy, r}); x += r + 28; });
+  return out;
+}
+function run(cv, scale, showFeats){
+  const dpr=Math.min(2,devicePixelRatio||1), W=cv.clientWidth, H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  let blobs = layout(W,H,scale);
+  // 좁은 화면: 가로로 안 들어가면 두 줄로
+  const need = blobs.at(-1).cx + blobs.at(-1).r - blobs[0].cx + blobs[0].r;
+  if (need > W) { blobs = []; let s=11; const R=G.map(g=>Math.sqrt(g.v*10)*3*scale); let x=16,y=H*.33,row=0; G.forEach((g,i)=>{ if (x+2*R[i]>W-16){ x=16; y=H*.76; } blobs.push({g,cx:x+R[i],cy:y,r:R[i]}); x+=2*R[i]+18; }); }
+  const P=[]; let s=3; const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+  blobs.forEach(b => { const n=Math.round(b.g.v*10); for(let k=0;k<n;k++){ const a=k*2.39996, rr=b.r*Math.sqrt((k+.5)/n); P.push({tx:b.cx+Math.cos(a)*rr, ty:b.cy+Math.sin(a)*rr, sx:rnd()*W, sy:rnd()*H, c:b.g.c}); } });
+  let hover=-1;
+  cv.onmousemove = (e) => { const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top; hover = blobs.findIndex(b => Math.hypot(mx-b.cx,my-b.cy) < b.r+8); };
+  cv.onmouseleave = () => hover=-1;
+  const id=(cv._run=(cv._run||0)+1); const t0=performance.now(), ease=t=>t>=1?1:1-Math.pow(2,-10*t);
+  (function frame(now){
+    if (cv._run!==id) return; // 다시 모이기를 누르면 이전 루프는 멈춘다
+    const e=ease(Math.min(1,(now-t0)/1400)); ctx.clearRect(0,0,W,H);
+    for (const p of P){ ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.sx+(p.tx-p.sx)*e, p.sy+(p.ty-p.sy)*e, 1.7*scale, 0, 7); ctx.fill(); }
+    ctx.globalAlpha=Math.max(0,(e-.7)/.3);
+    blobs.forEach((b,i) => {
+      ctx.textAlign='center'; ctx.fillStyle = b.g.c==='#FFB547' ? '#FFB547' : '#EEF3FF';
+      ctx.font=`700 ${Math.round(15*scale)}px ui-monospace,Menlo,monospace`; ctx.fillText(b.g.v+'%', b.cx, b.cy-b.r-30*scale);
+      ctx.font=`600 ${Math.round(14*scale)}px system-ui`; ctx.fillStyle='#EEF3FF'; ctx.fillText(b.g.name, b.cx, b.cy-b.r-12*scale);
+      ctx.font=`${Math.round(12*scale)}px system-ui`; ctx.fillStyle='#6f7c99'; ctx.fillText(b.g.n+'개', b.cx, b.cy+b.r+20*scale);
+      if (showFeats && hover===i) { ctx.font='12px ui-monospace,Menlo,monospace'; ctx.fillStyle='#9aa7c7'; const w=b.g.feats; ctx.fillText(w.length>70?w.slice(0,70)+'…':w, Math.min(Math.max(b.cx, 240), W-240), H-14); }
+    });
+    ctx.globalAlpha=1; requestAnimationFrame(frame);
+  })(t0);
+}
+const all = () => { run(document.getElementById('ca'), 1.15, true); run(document.getElementById('cb'), .9, false); };
+document.getElementById('replay').onclick = all;
+requestAnimationFrame(all);
+</script>
+</body></html>

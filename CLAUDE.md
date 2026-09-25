@@ -24,6 +24,12 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 다음 세션에서 할 일 (순서대로)
 
+0. **★ 계획 5-1 실행 (2026-09-25 맥북에서 설계·계획 완료, 맥미니에서 실행 예정)**
+   - 페이지 구성을 `① PROJECT → ② DATA(플립 보드) → ③ FEATURES → ④ CHARTS`로 바꾸는 개편. 설계 `docs/superpowers/specs/2026-09-25-page-restructure-design.md`, 시안 `docs/superpowers/mockups/2026-09-25/`
+   - 브랜치 `feat/page-restructure`(설계·계획·시안 커밋만 있음, 코드는 아직). 받기: `git fetch && git switch feat/page-restructure`
+   - 실행: `docs/superpowers/plans/2026-09-25-plan-5-1-structure.md`를 **superpowers:subagent-driven-development**로(사용자 선택). 이미 정한 결정은 다시 묻지 않는다
+   - Task 1(`npm run facts`)만 항공권 저장소가 필요하다 — 맥미니의 항공권 `.venv`나 `~/.venvs/airfare-py311`, 실행 전 iCloud 워밍
+   - 5-1이 끝나면 계획 5-2(배경 점 → 피처 덩어리·차트 4개), 5-3(점 마우스 반응·덩어리 펼치기·차트 만지기)를 writing-plans로 쓴다. 설계 §4·§4.1·§5가 범위
 1. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
    - 이력서 PDF 3개: `public/resume/{ko,en,ja}.pdf` (내려받을 때 `CHOI_HALIM_resume_<언어>.pdf`). 파일이 생기면 헤더·연락처의 "준비 중"이 자동으로 링크가 된다
    - 문구 검토: 한국어는 사용자, 영어는 사용자, 일본어는 사용자가 섭외한 검수자(학과 일본어명 포함). 데모 문구(`content/*.json`의 `demo`)도 포함
