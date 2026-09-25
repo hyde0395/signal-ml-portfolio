@@ -24,7 +24,7 @@ const content = Object.fromEntries(
     lang,
     JSON.parse(readFileSync(fileURLToPath(new URL(`../../content/${lang}.json`, import.meta.url)), 'utf-8')),
   ]),
-) as Record<(typeof PAGES)[number]['lang'], { case: { heading: string }; contact: { emailFallback: string }; demo: { noJs: string } }>;
+) as Record<(typeof PAGES)[number]['lang'], { project: { heading: string }; contact: { emailFallback: string }; demo: { noJs: string } }>;
 
 // public/resume/ja.pdf가 실제로 나중에 채워지면 "준비 중" 가정이 깨지므로, 파일 존재 여부를
 // 미리 확인해 그 경우 해당 테스트를 건너뛴다.
@@ -35,8 +35,8 @@ for (const { path, lang } of PAGES) {
     await page.goto(path);
     await expect(page.locator('html')).toHaveAttribute('lang', lang);
     await expect(page.getByRole('heading', { level: 1, name: 'CHOI HALIM' })).toBeVisible();
-    for (const id of ['about', 'case', 'demo', 'stack', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
-    await expect(page.locator('[data-chapter]')).toHaveCount(6);
+    for (const id of ['project', 'data', 'features', 'charts', 'demo', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
+    await expect(page.locator('#charts [data-scene]')).toHaveCount(6);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', new RegExp(`/og/${lang}\\.jpg$`));
   });
 
@@ -52,8 +52,8 @@ test.describe('JS 없이', () => {
   for (const { path, lang } of PAGES) {
     test(`${path}: 모든 섹션 본문이 읽힌다`, async ({ page }) => {
       await page.goto(path);
-      await expect(page.getByRole('heading', { name: content[lang].case.heading })).toBeVisible();
-      await expect(page.locator('#case table')).toBeVisible();
+      await expect(page.getByRole('heading', { name: content[lang].project.heading })).toBeVisible();
+      await expect(page.locator('#charts table')).toBeVisible();
       await expect(page.getByText(content[lang].contact.emailFallback)).toBeVisible();
       // <noscript> 안의 텍스트는 실제로 화면에 보여도 Playwright의 getByText가 SCRIPT/NOSCRIPT
       // 노드를 항상 건너뛰어 못 찾는다(엔진 한계). 클래스로 직접 짚어 내용과 가시성을 모두 확인한다
@@ -152,9 +152,11 @@ test('공개 전: noindex와 robots.txt', async ({ page, request }) => {
   expect(await (await request.get('/robots.txt')).text()).toContain('Disallow: /');
 });
 
-test('모바일 폭에서 가로 스크롤이 없다', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 800 });
-  await page.goto('/ja/');
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
-});
+for (const path of ['/', '/en/', '/ja/']) {
+  test(`${path} 모바일 폭에서 가로 스크롤이 없다(플립 보드 포함)`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto(path);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+}

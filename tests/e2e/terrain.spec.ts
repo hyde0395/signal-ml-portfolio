@@ -63,7 +63,7 @@ test('잘못된 ?capture 값이어도 페이지가 비지 않는다', async ({ p
   await page.goto('/?capture=bogus');
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
   await expect(page.locator('h1')).toHaveText('CHOI HALIM');
-  await expect(page.locator('#case-h')).toBeVisible();
+  await expect(page.locator('#charts-h')).toBeVisible();
 });
 
 test('초기 HTML(세 언어)은 three 청크를 직접 불러오지 않는다', async () => {
@@ -116,8 +116,8 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
   const cases: [string, number][] = [
     ['.hero-keywords', 0.72],
     ['.hero-sub', 0.72],
-    ['#case-h', 1],
-    ['[data-chapter="insight"] > p:not(.eyebrow)', 1],
+    ['#charts-h', 1],
+    ['[data-scene="insight"] > p:not(.eyebrow)', 1],
   ];
   for (const [sel, alpha] of cases) {
     const { mean, p99 } = await backgroundContrast(page, sel, alpha);
