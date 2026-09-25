@@ -9,7 +9,7 @@ import type { Locale } from '@/lib/i18n';
 export function Demo({ locale }: { locale: Locale }) {
   const t = getT(locale);
   return (
-    <section id="demo" data-section="demo" className="wrap" aria-labelledby="demo-h">
+    <section id="demo" data-scene="demo" className="wrap" aria-labelledby="demo-h">
       <p className="eyebrow">DEMO</p>
       <h2 id="demo-h" className="display" data-reveal>{t('demo.heading')}</h2>
       <p>{t('demo.intro')}</p>

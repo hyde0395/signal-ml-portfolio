@@ -11,7 +11,7 @@ export function Contact({ locale }: { locale: Locale }) {
   const t = getT(locale);
   const { emailReversed, github, linkedin } = facts.contact;
   return (
-    <section id="contact" data-section="contact" className="wrap" aria-labelledby="contact-h">
+    <section id="contact" data-scene="contact" className="wrap" aria-labelledby="contact-h">
       <p className="eyebrow">CONTACT</p>
       <h2 id="contact-h" className="display" data-reveal>{t('contact.heading')}</h2>
       <div className="pass">
