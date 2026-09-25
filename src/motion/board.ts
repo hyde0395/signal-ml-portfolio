@@ -38,15 +38,24 @@ async function flipOnce(h: Halves, cur: string, next: string) {
   h.unfold.getAnimations().forEach((a) => a.cancel());
   write(h.top, next); write(h.bot, cur); write(h.fold, cur); write(h.unfold, next);
   const half = BOARD.flipMs / 2;
-  await h.fold.animate(
-    [{ transform: 'rotateX(0deg)', filter: 'brightness(1)' }, { transform: 'rotateX(-90deg)', filter: 'brightness(.45)' }],
-    { duration: half, easing: 'ease-in', fill: 'forwards' },
-  ).finished;
-  await h.unfold.animate(
-    [{ transform: 'rotateX(90deg)', filter: 'brightness(.6)' }, { transform: 'rotateX(0deg)', filter: 'brightness(1)' }],
-    { duration: half, easing: 'cubic-bezier(.3,1.5,.6,1)', fill: 'forwards' }, // 살짝 튕김(이 보드만 허용)
-  ).finished;
-  write(h.bot, next);
+  try {
+    // 취소되면 .finished가 AbortError로 reject된다. 콘솔 에러 없이 조용히 돌아간다
+    await h.fold.animate(
+      [{ transform: 'rotateX(0deg)', filter: 'brightness(1)' }, { transform: 'rotateX(-90deg)', filter: 'brightness(.45)' }],
+      { duration: half, easing: 'ease-in', fill: 'forwards' },
+    ).finished;
+    await h.unfold.animate(
+      [{ transform: 'rotateX(90deg)', filter: 'brightness(.6)' }, { transform: 'rotateX(0deg)', filter: 'brightness(1)' }],
+      { duration: half, easing: 'cubic-bezier(.3,1.5,.6,1)', fill: 'forwards' }, // 살짝 튕김(이 보드만 허용)
+    ).finished;
+    write(h.bot, next);
+  } catch (e) {
+    // 취소 시 AbortError가 throw되므로 묵시적으로 반환 (reset()이 완성 글자를 이미 썼으므로 덮어쓰지 않는다).
+    // 다른 에러는 위로 올려 보낸다
+    const err = e as DOMException | unknown;
+    if (err instanceof DOMException && err.name === 'AbortError') return;
+    throw e;
+  }
 }
 
 const flapsOf = (board: HTMLElement) => [...board.querySelectorAll<HTMLElement>('.flap')];
