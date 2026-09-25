@@ -19,66 +19,6 @@
     "role": "ML ENGINEER",
     "keywords": "時系列予測 · モデル検証 · データパイプライン"
   },
-  "about": {
-    "heading": "自己紹介",
-    "education": "水原大学 コンピュータソフトウェア学科 · {profile.graduation|month}卒業見込み",
-    "body1": "日韓の航空券価格を毎日自動収集し、そのデータで価格予測モデルを構築しました。",
-    "body2": "スコアより先に評価方法が正しいかを確認し、その過程で膨らんだR²を二度修正しました。",
-    "body3": "予測値とあわせて、どこまで信頼できる範囲かも示すようにしました。",
-    "skillsHeading": "主なスキル",
-    "skills": {
-      "collection": "収集の自動化 — GitHub Actionsが毎日価格を収集し、CSVを自動コミット",
-      "modeling": "時系列モデリング — 路線別NeuralProphetトレンド + XGBoost残差学習、Optunaで{model.optunaTrials}回チューニング",
-      "validation": "検証設計 — TimeSeriesSplit・GroupKFold・K-Foldの比較でリーク（漏れ）を確認",
-      "interval": "予測区間の補正 — {model.interval.level}%区間の実際のカバー率{model.interval.coverage}%"
-    }
-  },
-  "case": {
-    "heading": "日韓航空券、いつ買うべきか？",
-    "codeLink": "コードを見る",
-    "problem": {
-      "heading": "課題とデータ",
-      "body1": "仁川と東京（成田・羽田）、大阪（関西）を結ぶ{data.routes}路線の航空券価格を、{data.collectStart|date}から{data.collectEnd|date}まで収集しました。",
-      "body2": "SerpApi経由でGoogle Flightsの検索結果を取得し、GitHub Actionsが毎日実行します。元データ{data.rawRows}行のうち、エラーを除いて{data.filteredRows}行を使用しました。",
-      "body3": "近い出発日は毎日、遠い出発日は週に一回収集したため、遠い区間はデータがまばらです。地形上で点が少ない場所がその区間です。"
-    },
-    "insight": {
-      "heading": "主なインサイト",
-      "body1": "出発済みの{model.realizedFlights}便の価格を日次で追跡しました。出発直前（{model.bookingCurve.0.label}）は同じ便の平均より{model.bookingCurve.0.pct|signed}%高く、{model.bookingCurve.5.label}の区間が{model.bookingCurve.5.pct|signed}%で最も安くなりました。幅は約{model.curveWidth}ポイントのU字カーブです。",
-      "body2": "ただし価格をより大きく動かすのは、いつ買うかよりいつ出発するかでした。祝日や週末出発の便は地形上で山として現れます。"
-    },
-    "bubble": {
-      "heading": "R²の水増しを取り除く",
-      "body1": "最初に得たR² {model.bubble.firstR2}は、羽田路線で誤ってマッチングされた高額な行によって水増しされた値でした。この行を除外するとR²は{model.bubble.firstR2After}まで下がり、MAEはほとんど変わりませんでした。",
-      "body2": "同じことがもう一度ありました。直行と表示されていても実際には経由便だった行を{data.removedImplausible}件見つけて除外しました。MAEは{model.bubble.maeBefore}ウォンから{model.bubble.maeAfter}ウォンとほとんど変わらず、R²だけが{model.bubble.r2Before}から{model.bubble.r2After}に下がりました。これらの行がR²の分母の{model.bubble.denomShare}%を占めていました。",
-      "body3": "そのためR²だけでなく、MAEとデータの整合性をあわせて確認します。フィルタ条件が異なるため、今のR²と以前のR²を直接比較していません。"
-    },
-    "validation": {
-      "heading": "検証設計",
-      "body1": "同じモデルを三つの方法で評価しました。運用と同じ条件のTimeSeriesSplitを代表値として使います。",
-      "body2": "GroupKFoldで未知の出発日を評価すると、新しい出発日ではlookup統計量がデフォルト値になってしまう学習・提供間の不一致が見つかりました。未知の出発日では、lookupを含めたサービス構成がR² {model.gkfWithLookup.r2}、MAE {model.gkfWithLookup.mae}ウォンで、lookupなしのときより悪化しました。lookup構成{model.lookupVariants}通りをそれぞれ再チューニングして比較しました。",
-      "table": {
-        "caption": "評価方法別の性能",
-        "method": "評価方法",
-        "tss": "TimeSeriesSplit（運用基準）",
-        "gkf": "GroupKFold（未知の出発日、lookupなし）",
-        "kfold": "K-Fold（参考上限）",
-        "maeUnit": "ウォン"
-      }
-    },
-    "interval": {
-      "heading": "予測区間の補正",
-      "body1": "価格を一つだけ出すのではなく、{model.interval.level}%の予測区間もあわせて出力します。",
-      "body2": "固定した区間は、最近のデータほど実際のカバー率が{model.interval.driftLow}%まで低下していました。分布のシフト傾向を反映して区間幅を調整し、直近の区間で{model.interval.coverage}%をカバーしました。",
-      "body3": "地形の手前の縁に沿った白い帯は、基準日に計算した出発日ごとの予測区間を、{data.routes}路線・両クラスにわたって平均比の%で示したものです。路線ごとの金額は下のデモで確認できます。"
-    },
-    "limits": {
-      "heading": "限界と次のステップ",
-      "body1": "同じ便の直近観測価格をそのまま使う単純な基準線のMAEは{model.baselineMae}ウォンで、モデル（{model.tss.mae}ウォン）とほとんど差がありません。",
-      "body2": "推薦の{model.reco.buyNow}%が「今すぐ購入」です。実際の価格を追跡すると、出発から二か月以内では待つと平均的に損をしており、モデルも同じ方向を示していました。",
-      "body3": "次のステップは、同じ便の直近観測価格を特徴量として追加し、基準線を上回ることです。"
-    }
-  },
   "demo": {
     "heading": "今買う? 待つ?",
     "intro": "路線・クラス・出発日を選ぶと、基準日に買った場合の予測価格と{model.interval.level}%予測区間、おすすめを表示します。",
@@ -139,25 +79,6 @@
       "jp_sports_day": "スポーツの日",
       "jp_culture_day": "文化の日",
       "jp_labour_thanksgiving_day": "勤労感謝の日"
-    }
-  },
-  "stack": {
-    "heading": "技術スタック",
-    "collect": {
-      "title": "収集",
-      "body": "Python · SerpApi · requests · tenacity · GitHub Actions"
-    },
-    "external": {
-      "title": "外部データ",
-      "body": "yfinance（円/ウォン為替）· workalendar（日韓の祝日）· 原油価格"
-    },
-    "model": {
-      "title": "モデル",
-      "body": "NeuralProphet · XGBoost · Optuna · 分位点回帰 · SHAP"
-    },
-    "serve": {
-      "title": "提供・品質",
-      "body": "Streamlit · Plotly · pytest（テストファイル{model.testFiles}件）"
     }
   },
   "contact": {

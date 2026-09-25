@@ -144,9 +144,11 @@ html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
 /* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 움직일 시간을 주고, 글은 반투명 카드에 담아 대비를 지킨다 */
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
 /* .pass(탑승권 카드)는 자기 배경이 있는 640px 카드라 560px 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제) */
-html[data-3d="on"] :is(.chapter, #about, #demo, #stack, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass) { max-width: 560px; }
+/* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 판(.text-scrim)은
+   큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 판은 글 크기만큼만 커진다 */
+html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .board-housing, .collect-line, .feature-groups, .contact-about, .text-scrim) { max-width: 560px; }
 /* #stack·#contact도 다른 섹션과 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제) */
-html[data-3d="on"] :is(.chapter, #about, #demo, #stack, #contact) {
+html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) {
   background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
 }
 /* 첫 화면 글과 사례 연구 제목: 챕터처럼 긴 카드를 두면 첫 화면 지형이 가려지므로, 글 덩어리 크기만 한
@@ -157,12 +159,12 @@ html[data-3d="on"] :is(.chapter, #about, #demo, #stack, #contact) {
 /* 첫 화면은 3D가 꺼져도 글 뒤에 대체 이미지가 깔리므로 판을 항상 깐다(글자 대비).
    box-shadow로 가장자리를 흐려 판 모양이 이미지·캔버스 위에서 도드라지지 않게 한다 */
 #hero .text-scrim, html[data-3d="on"] .text-scrim { background: rgba(7, 11, 22, 0.86); box-shadow: 0 0 48px 24px rgba(7, 11, 22, 0.86); }
-html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
+html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 
 @media (max-width: 767px) {
   /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
   html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
-  html[data-3d="on"] :is(.chapter, #about, #demo, #stack, #contact) {
+  html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) {
     background: linear-gradient(0deg, rgba(7, 11, 22, 0.92) 55%, rgba(7, 11, 22, 0) 100%);
   }
 }
@@ -247,3 +249,11 @@ html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
 /* 연락처 아래 개인 소개(옛 소개 섹션) */
 .contact-about { margin-top: 48px; max-width: 640px; }
 .contact-about h4 { font-size: 1rem; margin: 24px 0 10px; }
+
+/* 옆 목차(설계 2026-09-25 §2.1): 본문(.wrap 최대 1080px) 왼쪽 여백이 충분한 넓은 화면에서만 보인다 */
+.side-nav { position: fixed; left: 20px; top: 50%; transform: translateY(-50%); z-index: 30; display: none; }
+.side-nav ol { list-style: none; display: grid; gap: 10px; }
+.side-nav a { font: 600 0.75rem var(--font-mono); letter-spacing: 0.1em; color: var(--mute); text-decoration: none; padding: 4px 6px; border-left: 2px solid transparent; }
+.side-nav a[aria-current] { color: var(--amb); border-left-color: var(--amb); }
+.side-nav a:hover { color: var(--tx); }
+@media (min-width: 1280px) { .side-nav { display: block; } }
