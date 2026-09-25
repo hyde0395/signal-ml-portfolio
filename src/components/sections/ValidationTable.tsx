@@ -1,4 +1,4 @@
-// 3-4 검증 설계 챕터에 들어가는 평가 방식 3종 비교표(TimeSeriesSplit / GroupKFold / K-Fold).
+// ④ 차트 섹션의 검증 블록에 들어가는 평가 방식 3종 비교표(TimeSeriesSplit / GroupKFold / K-Fold).
 import { getT } from '@/lib/content';
 import { facts } from '@/lib/facts';
 import { formatValue, type Locale } from '@/lib/i18n';
@@ -16,19 +16,19 @@ export function ValidationTable({ locale }: { locale: Locale }) {
   const n = (v: number) => formatValue(v, undefined, locale);
   return (
     <table className="vtable mono">
-      <caption>{t('case.validation.table.caption')}</caption>
+      <caption>{t('charts.validation.table.caption')}</caption>
       <thead>
         <tr>
-          <th scope="col">{t('case.validation.table.method')}</th>
+          <th scope="col">{t('charts.validation.table.method')}</th>
           <th scope="col">R²</th>
-          <th scope="col">MAE ({t('case.validation.table.maeUnit')})</th>
+          <th scope="col">MAE ({t('charts.validation.table.maeUnit')})</th>
           <th scope="col">MAPE</th>
         </tr>
       </thead>
       <tbody>
         {ROWS.map((r) => (
           <tr key={r.key} className={r.main ? 'is-main' : undefined}>
-            <th scope="row">{t(`case.validation.table.${r.key}`)}</th>
+            <th scope="row">{t(`charts.validation.table.${r.key}`)}</th>
             <td>{n(r.score.r2)}</td>
             <td>{n(r.score.mae)}</td>
             <td>{n(r.score.mape)}%</td>
