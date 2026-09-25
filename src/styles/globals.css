@@ -235,3 +235,11 @@ html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
   .board-dest, .board-status .flaps, .board-table thead .board-status { display: none; }
   .board-lamp { margin: 0; }
 }
+
+/* ③ FEATURES(설계 2026-09-25 §3.3): 이번 계획에서는 그룹 목록. 공휴일만 호박색(④ 공휴일 봉우리와 같은 색) */
+.feature-groups { list-style: none; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-block: 28px; }
+.feature-groups li { display: grid; gap: 4px; border-top: 2px solid var(--line); padding-top: 12px; }
+.feature-groups li.is-holiday { border-color: var(--amb); }
+.feature-gain { font-size: 1.75rem; font-weight: 700; }
+.feature-groups li.is-holiday .feature-gain { color: var(--amb); }
+.feature-names { font-size: 0.75rem; color: var(--mute); word-break: break-word; }
