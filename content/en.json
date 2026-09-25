@@ -7,9 +7,13 @@
     "skip": "Skip to content",
     "resume": "Resume",
     "resumePending": "Resume coming soon",
-    "language": "Language"
+    "language": "Language",
+    "sections": "Sections"
   },
-  "langHint": { "offer": "View in English →", "dismiss": "Dismiss" },
+  "langHint": {
+    "offer": "View in English →",
+    "dismiss": "Dismiss"
+  },
   "hero": {
     "nameSub": "",
     "role": "ML ENGINEER",
@@ -116,7 +120,11 @@
       "FALLING": "The price is falling. It may be worth watching for {v.waitDays} more days: the predicted low is about ₩{v.bestPrice} ({v.savingPct|fixed1}% below now).",
       "LATER_LOW": "Buying {v.bestDay} days before departure (in about {v.waitDays} days) is predicted to save about ₩{v.saving} ({v.savingPct|fixed1}%)."
     },
-    "confidence": { "label": "Confidence", "high": "High", "medium": "Medium" },
+    "confidence": {
+      "label": "Confidence",
+      "high": "High",
+      "medium": "Medium"
+    },
     "asOf": "Precomputed prediction · as of {v.asOf|date}",
     "announce": "Departing {v.day}, predicted ₩{v.price}, {v.action}.",
     "loading": "Loading demo data.",
@@ -135,10 +143,22 @@
   },
   "stack": {
     "heading": "Tech stack",
-    "collect": { "title": "Collection", "body": "Python · SerpApi · requests · tenacity · GitHub Actions" },
-    "external": { "title": "External data", "body": "yfinance (KRW/JPY rate) · workalendar (Korea/Japan holidays) · oil price" },
-    "model": { "title": "Model", "body": "NeuralProphet · XGBoost · Optuna · quantile regression · SHAP" },
-    "serve": { "title": "Serving & quality", "body": "Streamlit · Plotly · pytest ({model.testFiles} test files)" }
+    "collect": {
+      "title": "Collection",
+      "body": "Python · SerpApi · requests · tenacity · GitHub Actions"
+    },
+    "external": {
+      "title": "External data",
+      "body": "yfinance (KRW/JPY rate) · workalendar (Korea/Japan holidays) · oil price"
+    },
+    "model": {
+      "title": "Model",
+      "body": "NeuralProphet · XGBoost · Optuna · quantile regression · SHAP"
+    },
+    "serve": {
+      "title": "Serving & quality",
+      "body": "Streamlit · Plotly · pytest ({model.testFiles} test files)"
+    }
   },
   "contact": {
     "heading": "Contact",
@@ -148,14 +168,137 @@
     "linkedin": "LinkedIn",
     "resume": "Resume PDF",
     "resumePending": "Coming soon",
-    "emailFallback": "Enable JavaScript to see the email address"
+    "emailFallback": "Enable JavaScript to see the email address",
+    "about": {
+      "heading": "About",
+      "education": "B.S. in Computer Software, The University of Suwon · Expected {profile.graduation|month}",
+      "body1": "I automated daily collection of Korea–Japan airfare prices and built a price forecasting model from that data.",
+      "body2": "I checked whether the evaluation method was right before trusting the score, and in the process corrected an inflated R² twice.",
+      "body3": "Alongside each prediction, it also shows the range that can be trusted.",
+      "skillsHeading": "Core skills",
+      "skills": {
+        "collection": "Collection automation — GitHub Actions collects prices daily and auto-commits the CSV",
+        "modeling": "Time series modeling — per-route NeuralProphet trend + XGBoost residual learning, tuned with Optuna over {model.optunaTrials} trials",
+        "validation": "Validation design — checked for leakage by comparing TimeSeriesSplit, GroupKFold, and K-Fold",
+        "interval": "Prediction interval calibration — the {model.interval.level}% interval's actual coverage is {model.interval.coverage}%"
+      }
+    }
   },
-  "notFound": { "title": "Page not found", "home": "Back to home" },
+  "notFound": {
+    "title": "Page not found",
+    "home": "Back to home"
+  },
   "figure": {
     "hero": "Bright points gathering out of scattered, dim points to form a price landscape",
     "problem": "Points outlining the Korean and Japanese coastlines, with route paths arcing from Incheon to Narita, Haneda, and Kansai",
     "insight": "A price landscape showing a U-shaped valley that climbs again as departure nears, with amber peaks at holiday departure dates",
     "bubble": "Mismatched points that were floating high above the landscape falling away",
     "interval": "White vertical bands along the front edge of the price landscape, showing the prediction interval for each departure date"
+  },
+  "project": {
+    "heading": "Korea–Japan airfare: when should you buy?",
+    "body": "I collected airfares between Incheon and Tokyo/Osaka every day and built a model that forecasts prices by departure date and whether to buy now or wait.",
+    "stats": {
+      "routes": {
+        "value": "{data.routes}",
+        "label": "routes"
+      },
+      "period": {
+        "value": "{data.collectMonths} months",
+        "label": "of daily collection"
+      },
+      "features": {
+        "value": "{model.featureCount}",
+        "label": "features"
+      },
+      "interval": {
+        "value": "{model.interval.level}%",
+        "label": "prediction interval"
+      }
+    }
+  },
+  "data": {
+    "body1": "I collected airfare prices for {data.routes} routes between Incheon and Tokyo (Narita, Haneda) and Osaka (Kansai), from {data.collectStart|date} to {data.collectEnd|date}.",
+    "body2": "Results come from the Google Flights search via SerpApi, run daily by GitHub Actions. Of {data.rawRows} raw rows, {data.filteredRows} remained after filtering out errors.",
+    "sparse": "Near-term departure dates were collected daily, distant ones weekly, so the far end of the range is sparse. On the terrain, the sparse patches are that stretch.",
+    "heading": "The data",
+    "steps": {
+      "collect": "SerpApi · Google Flights search results",
+      "schedule": "GitHub Actions · daily (weekly for far-off dates)",
+      "filter": "Integrity and nonstop checks · {data.rawRows} → {data.filteredRows} rows",
+      "join": "KRW/JPY rate · Korea/Japan holidays · oil price"
+    },
+    "board": {
+      "sub": "Collection status",
+      "caption": "Rows collected per route (both directions)",
+      "route": "Route",
+      "destination": "Destination",
+      "rows": "Rows",
+      "status": "Status",
+      "daily": "Collected daily",
+      "total": "Total"
+    },
+    "tools": "Python · requests · tenacity · yfinance · workalendar"
+  },
+  "features": {
+    "model": "NeuralProphet · XGBoost · Optuna · quantile regression · SHAP",
+    "serve": "Streamlit · Plotly · pytest ({model.testFiles} test files)",
+    "heading": "{model.featureCount} FEATURES",
+    "lead": "What goes into predicting a single price. Percentages are each group's share of importance in the model (XGBoost gain).",
+    "unit": "features",
+    "groups": {
+      "lookup": "Lookup statistics",
+      "categorical": "Route & airline",
+      "holiday": "Holidays",
+      "days": "Days to departure",
+      "flight": "Flight details",
+      "market": "Market"
+    },
+    "lookupNote": "Lookup importance is inflated because it shares route and airline information. On unseen departure dates these statistics fall back to defaults — something the validation step uncovered."
+  },
+  "common": {
+    "codeLink": "View code"
+  },
+  "charts": {
+    "depart": {
+      "body1": "But what moves the price more than when you buy is when you fly. Flights departing on holidays and weekends rise as peaks on the terrain.",
+      "heading": "Price by departure date"
+    },
+    "curve": {
+      "body1": "I tracked prices day by day for {model.realizedFlights} flights that had already departed. Right before departure ({model.bookingCurve.0.label}), prices ran {model.bookingCurve.0.pct|signed}% above the same flight's average, while the {model.bookingCurve.5.label} window was cheapest at {model.bookingCurve.5.pct|signed}%. That's a U-shaped curve about {model.curveWidth}pp wide.",
+      "heading": "The U-shaped booking curve"
+    },
+    "bubble": {
+      "heading": "Deflating the R² bubble",
+      "body1": "The first R² of {model.bubble.firstR2} I got was inflated by high-priced rows mismatched on the Haneda route. Filtering those rows out brought R² down to {model.bubble.firstR2After}, while MAE barely changed.",
+      "body2": "The same thing happened again: I found and removed {data.removedImplausible} rows labeled nonstop but actually connecting flights. MAE barely changed, from ₩{model.bubble.maeBefore} to ₩{model.bubble.maeAfter}, while R² alone dropped from {model.bubble.r2Before} to {model.bubble.r2After}. Those rows made up {model.bubble.denomShare}% of the R² denominator.",
+      "body3": "So I don't look at R² alone — I check it together with MAE and data integrity. Because the filter conditions differ, I don't compare this R² directly with earlier ones."
+    },
+    "validation": {
+      "heading": "Validation design",
+      "body1": "I evaluated the same model three ways. TimeSeriesSplit, which matches production conditions, is the headline figure.",
+      "body2": "Evaluating on unseen departure dates with GroupKFold revealed a train/serve mismatch — on a new departure date, lookup statistics fall back to a default value. On those unseen departure dates, the lookup-enabled service configuration scored R² {model.gkfWithLookup.r2} and MAE ₩{model.gkfWithLookup.mae} — worse than without lookup. I retuned and compared {model.lookupVariants} lookup configurations.",
+      "table": {
+        "caption": "Performance by evaluation method",
+        "method": "Evaluation method",
+        "tss": "TimeSeriesSplit (production)",
+        "gkf": "GroupKFold (unseen departure dates, no lookup)",
+        "kfold": "K-Fold (reference upper bound)",
+        "maeUnit": "KRW"
+      }
+    },
+    "band": {
+      "heading": "Prediction interval calibration",
+      "body1": "Instead of a single price, I also output a {model.interval.level}% prediction interval.",
+      "body2": "A fixed interval's actual coverage dropped to {model.interval.driftLow}% on more recent data. I adjusted the interval width to account for the shifting distribution, reaching {model.interval.coverage}% coverage on the most recent window.",
+      "body3": "The white band along the front edge of the landscape shows the prediction interval for each departure date, computed on the reference date and averaged across {data.routes} routes and both cabin classes as % of each average price. The demo below shows the amounts for a single route."
+    },
+    "limits": {
+      "heading": "Limitations and next steps",
+      "body1": "A simple baseline that just reuses the same flight's most recent observed price has an MAE of ₩{model.baselineMae}, barely different from the model's ₩{model.tss.mae}.",
+      "body2": "{model.reco.buyNow}% of recommendations are 'buy now.' Tracking actual prices showed that within two months of departure, waiting was on average a loss — and the model pointed the same way.",
+      "body3": "The next step is to beat the baseline by adding the same flight's recent observed prices as a feature."
+    },
+    "heading": "What the data showed"
   }
 }
