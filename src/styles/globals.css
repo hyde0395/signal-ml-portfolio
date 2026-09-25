@@ -180,3 +180,58 @@ html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
 .project-stats dd { font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 600; color: var(--amb); line-height: 1.1; }
 .project-stats dt { font-size: 0.85rem; color: var(--mute); }
 @media (max-width: 640px) { .project-stats { gap: 24px; } }
+
+/* ② DATA(설계 2026-09-25 §3.2): 수집 라인 + 공항 출발 안내판 */
+.collect-line { margin-block: 32px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.collect-line strong { color: var(--amb); letter-spacing: 0.14em; font-size: 0.8rem; }
+.data-tools { font-size: 0.8rem; }
+.board-housing { --flap-w: 44px; --flap-h: 66px; --flap-f: 42px; --green: #6FE3A5;
+  position: relative; margin-block: 32px; border-radius: 16px; padding: 10px; max-width: none;
+  background: linear-gradient(180deg, #2a3346, #141a27 40%, #0d1220);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px #000 inset, 0 1px 0 rgba(255, 255, 255, 0.13) inset; }
+/* 네 모서리 나사: 요소를 늘리지 않고 배경 그림 네 개로 그린다 */
+.board-housing::before { content: ''; position: absolute; inset: 10px; pointer-events: none;
+  background: radial-gradient(circle, #7a8499 2px, #262d3b 3px, transparent 4px) 0 0 / 8px 8px no-repeat,
+    radial-gradient(circle, #7a8499 2px, #262d3b 3px, transparent 4px) 100% 0 / 8px 8px no-repeat,
+    radial-gradient(circle, #7a8499 2px, #262d3b 3px, transparent 4px) 0 100% / 8px 8px no-repeat,
+    radial-gradient(circle, #7a8499 2px, #262d3b 3px, transparent 4px) 100% 100% / 8px 8px no-repeat; }
+.board { background: #05080f; border-radius: 10px; padding: 22px 30px 26px; box-shadow: 0 6px 20px #000 inset; overflow-x: auto; }
+.board-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px;
+  padding-bottom: 14px; margin-bottom: 6px; border-bottom: 2px solid #1b2436; }
+.board-title { color: var(--amb); font-size: 1.6rem; font-weight: 700; letter-spacing: 0.12em; }
+.board-sub { color: var(--mute); margin-left: 10px; }
+.board-range { color: var(--dot); letter-spacing: 0.06em; }
+.board-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
+.board-table th, .board-table td { text-align: left; padding: 0 8px; white-space: nowrap; vertical-align: middle; }
+.board-table thead th { font: 500 0.75rem var(--font-mono); letter-spacing: 0.18em; color: #8a96b3; }
+.board-table thead small { display: block; font: 0.7rem var(--font-text); letter-spacing: 0; color: var(--mute); }
+.board-table tfoot th, .board-table tfoot td { padding-top: 10px; border-top: 2px solid #1b2436; }
+.flaps { display: inline-flex; gap: 3px; vertical-align: middle; }
+.flap { position: relative; width: var(--flap-w); height: var(--flap-h); perspective: 260px;
+  font: 600 var(--flap-f) var(--font-mono); color: var(--tx); border-radius: 5px; box-shadow: 0 2px 3px #000, 0 0 0 1px #000; }
+.board-table td:nth-child(3) .flap { color: var(--amb); }
+.board-status .flap { color: var(--green); }
+.flap-half { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; backface-visibility: hidden; }
+.flap-half > span { position: absolute; left: 0; right: 0; height: 200%; line-height: var(--flap-h); text-align: center; }
+.flap-top { top: 0; border-radius: 5px 5px 0 0; transform-origin: 50% 100%; background: linear-gradient(180deg, #1d2638, #161e2e); }
+.flap-bot { bottom: 0; border-radius: 0 0 5px 5px; transform-origin: 50% 0; background: linear-gradient(180deg, #10172a, #0c1220); }
+.flap-top > span { top: 0; }
+.flap-bot > span { bottom: 0; }
+.flap-top::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #000; } /* 경첩 선(핀은 넣지 않음) */
+.flap-bot::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: linear-gradient(rgba(0, 0, 0, 0.5), transparent); z-index: 1; }
+.flap-fold { z-index: 3; }
+.flap-unfold { z-index: 2; transform: rotateX(90deg); }
+.board-lamp { display: inline-block; width: 12px; height: 12px; margin-right: 10px; vertical-align: middle; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 10px var(--green); animation: board-blink 2.4s infinite; }
+@keyframes board-blink { 0%, 70%, 100% { opacity: 1; } 80% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .board-lamp { animation: none; } }
+/* 휴대폰: 칸을 줄이고 목적지 열과 상태 글자를 숨겨 390px 폭에 들어가게 한다(시안에서 확인) */
+@media (max-width: 767px) {
+  .board-housing { --flap-w: 19px; --flap-h: 30px; --flap-f: 18px; margin-inline: -8px; }
+  .board { padding: 16px 8px; }
+  .board-table th, .board-table td { padding: 0 4px; }
+  .board-table thead th { letter-spacing: 0.06em; font-size: 0.65rem; }
+  .flaps { gap: 2px; }
+  .board-dest, .board-status .flaps, .board-table thead .board-status { display: none; }
+  .board-lamp { margin: 0; }
+}

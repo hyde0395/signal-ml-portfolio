@@ -3,9 +3,11 @@
 // - Lenis: 부드러운 스크롤. 브라우저 기본 스크롤을 움직이므로 3D 카메라(scroll 이벤트)는 그대로 따라온다
 // - [data-reveal] 제목: 단어 단위로 아래에서 떠오름(0.9초, 단어당 60ms, expo.out = cubic-bezier(.16,1,.3,1))
 // - [data-flip-on-enter] GATE 제목: 화면에 들어오면 한 번 플립
+// - [data-board] 플립 보드: 화면에 들어오면 한 번, 칸마다 글자를 넘긴다(board.ts, 약 2초)
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import { animateBoard, prepareBoard } from './board';
 import { flip } from './flip';
 import { splitWords } from './words';
 
@@ -60,6 +62,10 @@ export function startMotion(doc: Document): () => void {
     doc.querySelectorAll<HTMLElement>('[data-flip-on-enter]').forEach((el) => {
       const text = el.textContent ?? '';
       ScrollTrigger.create({ trigger: el, start: ENTER, once: true, onEnter: () => cancels.push(flip(el, text)) });
+    });
+    doc.querySelectorAll<HTMLElement>('[data-board]').forEach((el) => {
+      prepareBoard(el);
+      ScrollTrigger.create({ trigger: el, start: ENTER, once: true, onEnter: () => cancels.push(animateBoard(el)) });
     });
   });
 
