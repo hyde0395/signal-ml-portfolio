@@ -6,7 +6,7 @@ import { CABINS, ROUTES } from '@/demo/types';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const score = z.object({ r2: z.number(), mae: z.number(), mape: z.number() });
-const chapters = ['problem', 'insight', 'bubble', 'validation', 'interval', 'limits'] as const;
+const chapters = ['problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'features'] as const;
 export type CodeChapter = (typeof chapters)[number];
 
 export const factsSchema = z.object({
@@ -27,6 +27,9 @@ export const factsSchema = z.object({
     rawRows: z.number().int(), filteredRows: z.number().int(), removedImplausible: z.number().int(),
     collectStart: isoDate, collectEnd: isoDate, departStart: isoDate, departEnd: isoDate,
     uniqueDepartures: z.number().int(), maxDtd: z.number().int(), routes: z.number().int(),
+    // ② 플립 보드(설계 2026-09-25 §3.2): 왕복 합산, 행 수가 많은 순
+    byRoute: z.array(z.object({ pair: z.enum(['ICN_NRT', 'ICN_KIX', 'ICN_HND']), rows: z.number().int() })).min(1),
+    collectDays: z.number().int(), collectMonths: z.number().int(),
   }),
   model: z.object({
     tss: score, kfold: score, gkfNoLookup: score, gkfWithLookup: score,
@@ -40,6 +43,12 @@ export const factsSchema = z.object({
     realizedFlights: z.number().int(),
     curveWidth: z.number(),
     bookingCurve: z.array(z.object({ label: z.string(), pct: z.number() })).length(8),
+    // ③ 피처 섹션: 그룹별 XGBoost gain(%)과 피처 이름. 순서 = 화면 순서
+    featureGroups: z.array(z.object({
+      id: z.enum(['lookup', 'categorical', 'holiday', 'days', 'flight', 'market']),
+      gain: z.number(), features: z.array(z.string()).min(1),
+    })).length(6),
+    featureCount: z.number().int(),
   }),
 });
 

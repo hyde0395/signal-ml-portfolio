@@ -26,4 +26,18 @@ describe('facts.json', () => {
       'https://github.com/hyde0395/airfare-forecasting-ml/blob/main/src/processing/features.py',
     );
   });
+
+  it('노선별 행 수의 합은 필터 후 행 수와 같다(플립 보드 TOTAL)', () => {
+    expect(facts.data.byRoute.map((r) => r.pair)).toEqual(['ICN_NRT', 'ICN_KIX', 'ICN_HND']);
+    expect(facts.data.byRoute.reduce((s, r) => s + r.rows, 0)).toBe(facts.data.filteredRows);
+  });
+
+  it('피처 그룹의 피처 수 합이 featureCount다', () => {
+    expect(facts.model.featureGroups.map((g) => g.id)).toEqual(['lookup', 'categorical', 'holiday', 'days', 'flight', 'market']);
+    expect(facts.model.featureGroups.reduce((s, g) => s + g.features.length, 0)).toBe(facts.model.featureCount);
+  });
+
+  it('피처 섹션 코드 링크', () => {
+    expect(codeUrl('features')).toBe('https://github.com/hyde0395/airfare-forecasting-ml/blob/main/src/processing/features.py');
+  });
 });
