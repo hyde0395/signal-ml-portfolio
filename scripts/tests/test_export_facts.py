@@ -39,6 +39,10 @@ def test_counts_filters_and_cutoff():
     assert stats["uniqueDepartures"] == 2
     assert stats["maxDtd"] == 147
     assert stats["routes"] == 1
+    # 왕복을 한 줄로 합친 노선별 행 수(ICN이 앞). 합은 filteredRows와 같다
+    assert stats["byRoute"] == [{"pair": "ICN_NRT", "rows": 2}]
+    assert stats["collectDays"] == 1
+    assert stats["collectMonths"] == 0
 
 
 def test_merge_keeps_site_config():
@@ -53,3 +57,26 @@ def test_merge_keeps_site_config():
 def test_row_count_mismatch_fails():
     with pytest.raises(SystemExit, match="242,874"):
         ef.check_snapshot({"filteredRows": 242_000}, {"trainedRows": 242_874})
+
+
+def test_by_route_merges_both_directions_and_sorts_by_rows():
+    raw = frame([
+        row("2026-04-23 10:00:00"),
+        row("2026-04-23 11:00:00", o="NRT", d="ICN"),
+        row("2026-09-22 12:00:00", o="ICN", d="KIX"),
+    ])
+    stats = ef.compute_data_stats(raw, "2026-09-22")
+    assert stats["byRoute"] == [{"pair": "ICN_NRT", "rows": 2}, {"pair": "ICN_KIX", "rows": 1}]
+    assert sum(r["rows"] for r in stats["byRoute"]) == stats["filteredRows"]
+    assert stats["collectDays"] == 153
+    assert stats["collectMonths"] == 5
+
+
+def test_feature_groups_must_cover_model_features_exactly():
+    model_features = ["a", "b", "c"]
+    good = [{"id": "x", "gain": 60.0, "features": ["a", "b"]}, {"id": "y", "gain": 40.0, "features": ["c"]}]
+    assert ef.check_feature_groups(good, model_features) == 3
+    with pytest.raises(SystemExit, match="c"):
+        ef.check_feature_groups([{"id": "x", "gain": 100.0, "features": ["a", "b"]}], model_features)
+    with pytest.raises(SystemExit, match="z"):
+        ef.check_feature_groups(good + [{"id": "z", "gain": 0.0, "features": ["z"]}], model_features)
