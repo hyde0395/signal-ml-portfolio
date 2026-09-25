@@ -170,3 +170,13 @@ html[data-3d="on"] .case-head > h2 { margin-bottom: 0; }
 /* 텍스트 리빌: 단어가 자기 줄 아래에서 떠오르도록 바깥 상자에서 잘라 낸다 */
 .reveal-word { display: inline-block; overflow: hidden; vertical-align: top; }
 .reveal-word > span { display: inline-block; }
+
+/* ① PROJECT(설계 2026-09-25 §3.1): 큰 질문, 설명, 호박색 숫자 4개 */
+.project { min-height: 80vh; display: flex; flex-direction: column; justify-content: center; }
+.project-q { font-size: clamp(2.2rem, 6vw, 4.75rem); max-width: 16ch; word-break: keep-all; text-transform: none; }
+.project-lead { font-size: clamp(1.05rem, 1.8vw, 1.2rem); max-width: 40ch; color: var(--mute); }
+.project-stats { display: flex; flex-wrap: wrap; gap: 40px; margin-top: 32px; }
+.project-stats div { display: flex; flex-direction: column-reverse; }
+.project-stats dd { font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 600; color: var(--amb); line-height: 1.1; }
+.project-stats dt { font-size: 0.85rem; color: var(--mute); }
+@media (max-width: 640px) { .project-stats { gap: 24px; } }
