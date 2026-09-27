@@ -3,11 +3,14 @@
 // 프레임이 떨어지면 단계적으로 낮추다가 대체 화면으로 넘긴다(스펙 §8.3). 캡처 모드도 여기서 처리한다.
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getChart, onChartsChange } from '@/charts/registry';
+import type { ChartEntry, ChartKey } from '@/charts/types';
 import { pickActive, readCandidates } from './activeScene';
 import { CameraRig } from './CameraRig';
+import { assignPoints, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, stepFrameRate } from './frameRate';
-import { CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
+import { CHART_DISTANCE, CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
 type Props = { dataVersion: string; onReady: () => void; onFail: (reason: string) => void; capture: SceneKey | null };
@@ -23,13 +26,24 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   const target = useRef<SceneState>(sceneFor(capture ?? 'hero', 0, false));
   const parallax = useRef(true);
   const slots = useRef<ChartSlots>({ pending: null });
+  // 지금 슬롯에 써 넣은 차트와 그 슬롯. 차트에서 차트로 넘어갈 때만 다른 슬롯에 써서 점이 두 배치 사이를 옮겨 간다
+  const chartState = useRef<{ key: ChartKey | null; entry: ChartEntry | null; slot: 0 | 1 }>({ key: null, entry: null, slot: 0 });
 
   useEffect(() => {
     loadSceneData(dataVersion).then(setData).catch((e) => onFail(`data: ${e.message}`));
   }, [dataVersion, onFail]);
 
-  // 스크롤·크기 변화 → 활성 장면 → 목표 상태. 캡처 모드에서는 고정.
+  const cloud = useMemo(() => {
+    if (!data) return null;
+    // 세로 화면(대개 휴대폰)은 잡음 점을 절반만 그린다
+    const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
+    return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7 });
+  }, [data]);
+
+  // 스크롤·크기 변화 → 활성 장면 → 목표 상태(차트 장면이면 그림 판 배치도). 캡처 모드에서는 고정.
   useEffect(() => {
+    // 점 구름이 새로 만들어지면 슬롯에 써 둔 배치는 옛 점 번호 기준이라 다시 써야 한다
+    chartState.current = { key: null, entry: null, slot: chartState.current.slot };
     if (capture) {
       portrait.current = window.innerHeight > window.innerWidth;
       // bubble의 대체 이미지는 "떨어지기 전, 높이 떠 있는" 순간을 보여줘야 하므로 진행도 0(drop=0)에서 찍는다
@@ -42,8 +56,27 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       portrait.current = window.innerHeight > window.innerWidth;
       const active = pickActive(readCandidates(document), window.innerHeight);
       if (!active) return;
-      // 차트 배치 연결 전까지는 차트 장면에서도 점을 지형에 둔다(Task 10에서 배치를 연결한다)
-      target.current = { ...sceneFor(active.key, active.progress, portrait.current), chart: 0 };
+      const s = sceneFor(active.key, active.progress, portrait.current);
+      document.documentElement.dataset.scene = active.key;
+      const chartKey = s.chart === 1 ? (active.key as ChartKey) : null;
+      const entry = chartKey ? getChart(chartKey) : undefined;
+      const cs = chartState.current;
+      if (chartKey && entry && cloud && (cs.key !== chartKey || cs.entry !== entry)) {
+        // 다른 차트에서 넘어오면 반대 슬롯에 쓰고 그쪽으로 옮겨 간다. 지형에서 들어오거나(key null)
+        // 같은 차트가 다시 배치되면(창 크기 변경) 지금 슬롯에 바로 쓴다
+        const slot: 0 | 1 = cs.key !== null && cs.key !== chartKey ? (cs.slot === 0 ? 1 : 0) : cs.slot;
+        const assign = assignPoints(entry.layout.group, entry.layout.n, cloud.date, cloud.kind);
+        const { pos, style } = slotBuffers(entry, assign, cloud.terrain, CHART_DISTANCE, CHART_FOV);
+        slots.current.pending = { slot, pos, style };
+        chartState.current = { key: chartKey, entry, slot };
+        document.documentElement.dataset.chart = chartKey;
+      }
+      if (!chartKey) {
+        chartState.current = { ...chartState.current, key: null, entry: null };
+        delete document.documentElement.dataset.chart;
+      }
+      // 배치가 아직 없으면(데이터를 받는 중) 점을 지형에 둔다 — 빈 화면 대신 멀리 보이는 지형
+      target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot };
       parallax.current = active.key === 'hero';
       setRunning(active.key !== 'contact' && !document.hidden);
     };
@@ -52,20 +85,16 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
     document.addEventListener('visibilitychange', schedule);
+    // 그림 판이 배치를 새로 올리면(처음 불러옴·창 크기 변경) 지금 장면에 다시 반영한다
+    const off = onChartsChange(schedule);
     return () => {
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
       document.removeEventListener('visibilitychange', schedule);
+      off();
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [capture]);
-
-  const cloud = useMemo(() => {
-    if (!data) return null;
-    // 세로 화면(대개 휴대폰)은 잡음 점을 절반만 그린다
-    const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
-    return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7 });
-  }, [data]);
+  }, [capture, cloud]);
 
   if (!cloud) return null;
   const maxDpr = level > 0 ? 1 : 1.5;
