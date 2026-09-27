@@ -4,9 +4,9 @@ ML 엔지니어 포트폴리오 사이트. 사이트 브랜드는 **SIGNAL**.
 
 Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용 개발자 포트폴리오**. 목표 포지션은 **ML 엔지니어**.
 
-## 현재 상태 (2026-09-24, 맥북에서 작업 후 정리)
+## 현재 상태 (2026-09-28, 맥미니에서 작업 후 정리)
 
-**구현은 끝났고, 공개 전 준비만 남았다.** 계획 1·2·3·4-1·4-2가 모두 main에 병합되어 운영 사이트에 배포돼 있다.
+계획 1·2·3·4-1·4-2·5-1은 main에 병합되어 운영 사이트에 배포돼 있다. **계획 5-2는 PR #6(브랜치 `plan-5-2`)으로 CI 통과, 사용자 확인·병합 대기.** 남은 것은 5-3(인터랙션)과 공개 전 준비.
 
 - 운영: https://signal-ml-portfolio.vercel.app (아직 `noindex` — 공개 전환 전)
 - GitHub: https://github.com/hyde0395/signal-ml-portfolio (공개), main = 운영, PR = Vercel 미리보기
@@ -20,7 +20,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 4-1 성능·공유 | 초기 JS 분리, 용량 검사, OG 이미지, Web Analytics, 첫 화면 CLS 0 | `2026-09-24-plan-4-1-performance.md` | ✅ PR #2·#3 |
 | 4-2 연출·성능 | 3D 판정 대기(LCP), 로딩 화면, 플립 글자판, 제목 리빌, Lenis | `2026-09-24-plan-4-2-motion.md` | ✅ PR #4 |
 | 5-1 구조 개편 | 섹션 목록, ①~④ 새 섹션, 플립 보드, 옆 목차, 개인 소개 이동 | `2026-09-25-plan-5-1-structure.md` | ✅ PR #5 (2026-09-27 병합·배포) |
-| 5-2 차트 | ② 두 화면·판 없는 보드, ③ 점 와플, ④ 점 달력·구간별 벌떼·불확실성 구름, 배경 점 → 차트 | `2026-09-27-plan-5-2-charts.md` | ✅ (PR 대기) |
+| 5-2 차트 | ② 두 화면·판 없는 보드, ③ 점 와플, ④ 점 달력·구간별 벌떼·불확실성 구름, 배경 점 → 차트 | `2026-09-27-plan-5-2-charts.md` | ✅ PR #6 (CI 통과, 병합 대기) |
 
 계획 5-3(인터랙션)이 남았다. 설계: `docs/superpowers/specs/2026-09-25-page-restructure-design.md`
 
@@ -30,19 +30,29 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 다음 세션에서 할 일 (순서대로)
 
-0. **★ 다음: 계획 5-3 계획서 작성** — 점 마우스 반응, 와플 눌러 SHAP 벌떼로 펼치기(초점·Enter·Esc, SHAP 값 추출 포함 — 항공권 저장소 `shap_analysis.py`의 pkl + `pred_contribs` 방식), 차트 직접 만지기(설계 §4.1). 계획 5-2는 브랜치 `plan-5-2`에서 구현·검사 완료(PR 대기)
-   - 별도 계획으로 뗀 것: **차트 3을 예측 대 실제 산점도로** 바꾸기. TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성의 예측값이 필요해 NeuralProphet를 폴드마다 다시 학습해야 한다(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
-1. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
+0. **★ 먼저: PR #6(계획 5-2) 확인하고 병합** — https://github.com/hyde0395/signal-ml-portfolio/pull/6
+   - 미리보기: https://signal-ml-portfolio-git-plan-5-2-hyde-0395s-projects.vercel.app (CI·Vercel 모두 통과, 2026-09-28)
+   - 사용자가 볼 것: ③ 와플(3D 점이 와플로 모임, 마우스를 올리면 피처 이름), ④ 차트 1 점 달력·2 구간별 벌떼(U자)·4 불확실성 구름(점과 이름표가 겹치는지), ② 두 화면(지도가 안 가려지는지, 판 없는 보드), 휴대폰
+   - 사용자가 "병합"이라고 하면: `git switch main && git pull --ff-only && git merge --ff-only plan-5-2 && git push origin main` → CI 통과·운영(https://signal-ml-portfolio.vercel.app)에 `#features .chart-stage`가 있는지 확인. 고칠 점을 말하면 `plan-5-2`에서 고쳐 PR에 더한다
+   - 5-2에서 사용자 대신 정한 것(되돌리기 쉬움): 그림 판 고정 구간을 CSS `::after` 50vh로, `<html>`의 활성 장면 표시는 `data-active-scene`, 차트 1 문구는 "일요일 출발일"(일 +20%·토 +3%), 차트 4 낭독 설명에서 "먼 출발일일수록 넓어진다" 삭제(데이터상 아님), 휴대폰 벌떼에서 칸을 넘치는 점은 그리지 않음, 달력 원 3D 색이 2D보다 조금 하얗게 보이는 것(가산 합성)은 그대로 둠. 자세한 내용은 설계 문서 "구현 결과 (계획 5-2)"
+1. **다음: 계획 5-3 계획서 작성** (`superpowers:writing-plans`, 실행은 subagent-driven-development — 사용자가 5-1·5-2에서 고름) — 설계 §4.1:
+   - 점이 마우스에 반응(모든 장면, 휴대폰은 누른 곳에서 물결 한 번), 차트에서는 미는 거리를 줄임
+   - ③ 와플 눌러 **SHAP 벌떼**로 펼치기(초점·Enter/Space·Esc, 한 번에 하나). SHAP 값 추출 포함: 항공권 저장소 `src/models/shap_analysis.py`처럼 `v2_predictor.pkl` + `booster.predict(pred_contribs=True)`(재학습 없음), 피처 33개 × 표본 약 150개를 `charts.json`의 `shap`으로. 범주형 피처(노선·항공사)는 값 색 대신 중간색
+   - 차트 직접 만지기: 차트 1·4는 마우스를 올리면 가장 가까운 출발일 강조 + 표시 상자, 차트 2는 세로선 슬라이더(구간 8개, `role="slider"`), 키보드 ←/→·Home/End, 조작 멈춘 뒤 한 번 알림
+   - 와플 이름표는 지금 `aria-hidden` 판 안에 있어 초점을 못 받는다 — 5-3에서 키보드 초점을 줄 때 접근성 구조를 다시 짠다
+   - 5-2 최종 검토에서 미룬 작은 것: 차트에서 차트로 가다 지형을 거쳐 다른 차트로 가면 보이는 슬롯에 바로 써서 잠깐 튄다(`TerrainScene`에 마지막으로 쓴 차트 키를 따로 두면 해결), 빠르게 스크롤해 차트를 벗어날 때 잠깐 번짐
+2. **별도 계획: 차트 3을 예측 대 실제 산점도로** — TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성(R² 0.84)의 예측값이 필요해 NeuralProphet를 폴드마다 다시 학습해야 한다(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음, 몇십 분 걸릴 수 있음). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
+3. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
    - 이력서 PDF 3개: `public/resume/{ko,en,ja}.pdf` (내려받을 때 `CHOI_HALIM_resume_<언어>.pdf`). 파일이 생기면 헤더·연락처의 "준비 중"이 자동으로 링크가 된다
    - 문구 검토: 한국어는 사용자, 영어는 사용자, 일본어는 사용자가 섭외한 검수자(학과 일본어명 포함). 데모 문구(`content/*.json`의 `demo`)도 포함
    - LinkedIn 주소: `data/facts.json`의 `contact.linkedin` (비어 있으면 버튼 숨김)
    - 공개용 항공권 저장소: 만들면 `facts.json`의 `codeLinks.baseUrl`만 바꾼다(그 전까지 "코드 보기" 404는 의도된 상태). 그 저장소도 커밋 이메일 noreply
    - Vercel 대시보드 → 프로젝트 → Analytics에서 Web Analytics 켜기
-2. **공개 전환**: 위가 끝나면 `src/lib/site.ts`의 `LAUNCHED = true` (noindex·`robots.txt` Disallow 해제). 사용자가 정한다
-3. **남은 개선 (급하지 않음)**
+4. **공개 전환**: 위가 끝나면 `src/lib/site.ts`의 `LAUNCHED = true` (noindex·`robots.txt` Disallow 해제). 사용자가 정한다
+5. **남은 개선 (급하지 않음)**
    - 성능 ko·ja 90: 남은 몫은 TBT(3D·연출 코드의 메인 스레드 점유)와 ja의 렌더 지연. `experimental.inlineCss`는 시험 후 되돌림(HTML이 커져 ko·ja 악화, 스펙 §8.2). 다음 후보: 3D 시작을 더 늦추기(첫 입력·스크롤 뒤), 지형 점 구름 만들기를 Web Worker로
    - 계획 4-2 최종 검토의 작은 지적(`flip.ts`는 글자를 코드 포인트 단위로 나눔, 리빌은 제목 안쪽 마크업을 지움 — 지금 제목은 모두 글자만이라 문제없음)
-4. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
+6. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
 
 **작업 방식**: 새 기능은 `superpowers:brainstorming`(필요하면) → `superpowers:writing-plans` → 사용자가 고른 실행 방식(지금까지는 subagent-driven-development). 브랜치 → PR → CI 통과 → 사용자 확인 → main에 fast-forward 병합 → 운영 확인. 이미 정해진 결정은 다시 묻지 않는다.
 
@@ -58,6 +68,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 모델을 돌리기 전에 그쪽 CLAUDE.md의 iCloud 워밍 절차를 따른다
 6. `.superpowers/`(비주얼 컴패니언 시안, 작업 기록)와 `.lighthouse/`는 git에 없다. Claude 메모리(`~/.claude/projects/…`)도 기기마다 따로다 — 필요한 규칙은 모두 이 파일에 있다
 7. 맥북에서는 이 저장소가 `~/dev/untitled folder/signal-ml-portfolio`에 clone되어 있다(맥미니는 `~/dev/signal-ml-portfolio`). 경로만 다르고 내용은 같다
+8. **맥북에서 5-2 이어받기**: PR #6이 아직 병합 전이면 `git fetch && git switch plan-5-2`(처음이면 `git switch -c plan-5-2 origin/plan-5-2`), 병합 뒤면 `git switch main && git pull --ff-only`. 새 의존성은 없지만 `npm ci`를 한 번 돌린다. 맥미니는 SSH 키가 GitHub에 등록돼 있지 않아 HTTPS로 push했다(workflow 파일을 바꾸지 않아 문제없었음)
 
 **CI에서 가끔 보는 일시 오류**: 빌드 중 `Can't resolve '@vercel/turbopack-next/internal/font/google/font'` — Google Fonts를 못 받아서다. 코드 문제가 아니므로 실패한 작업만 다시 돌린다(`gh run rerun <id> --failed`).
 
