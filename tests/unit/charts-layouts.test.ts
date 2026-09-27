@@ -1,0 +1,97 @@
+// 배치 함수 검사: 점 개수, 판 안(0..1), 강조 색, 크기 순서, 이름표. 좁은 휴대폰 판에서도 깨지지 않는지.
+import { describe, expect, it } from 'vitest';
+import type { ChartsData } from '@/charts/data';
+import { calendarLayout, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
+import { TONE, type ChartLayout } from '@/charts/types';
+
+const inside = (L: ChartLayout) => {
+  for (let i = 0; i < L.n; i++) {
+    expect(L.x[i]).toBeGreaterThanOrEqual(0); expect(L.x[i]).toBeLessThanOrEqual(1);
+    expect(L.y[i]).toBeGreaterThanOrEqual(0); expect(L.y[i]).toBeLessThanOrEqual(1);
+    expect(L.size[i]).toBeGreaterThanOrEqual(1.6);
+  }
+};
+
+const groups: FeatureGroupInput[] = [
+  { id: 'lookup', gain: 46.8, features: Array(13).fill('f'), name: 'L' },
+  { id: 'categorical', gain: 26.0, features: Array(5).fill('f'), name: 'C' },
+  { id: 'holiday', gain: 11.4, features: Array(4).fill('f'), name: 'H' },
+  { id: 'days', gain: 6.8, features: Array(4).fill('f'), name: 'D' },
+  { id: 'flight', gain: 4.6, features: Array(5).fill('f'), name: 'F' },
+  { id: 'market', gain: 1.2, features: Array(2).fill('f'), name: 'M' },
+];
+const fmt = { pct: (v: number) => `${v.toFixed(1)}%`, count: (n: number) => `${n}개` };
+
+describe('waffleLayout', () => {
+  const L = waffleLayout(groups, { w: 1080, h: 414 }, fmt);
+  it('그룹마다 점 100개, 켜진 점(알파 0.95) 수 = 반올림한 gain', () => {
+    expect(L.n).toBe(600);
+    for (let g = 0; g < 6; g++) {
+      let lit = 0;
+      for (let k = 0; k < 100; k++) if (L.alpha[g * 100 + k] > 0.5) lit++;
+      expect(lit).toBe(Math.round(groups[g].gain));
+    }
+  });
+  it('호박색은 공휴일 그룹의 켜진 점에만', () => {
+    for (let i = 0; i < L.n; i++) {
+      const holidayLit = Math.floor(i / 100) === 2 && L.alpha[i] > 0.5;
+      expect(L.tone[i] === TONE.amber).toBe(holidayLit);
+    }
+  });
+  it('넓은 판은 한 줄(이름표 y가 모두 같다), 좁은 판은 두 줄', () => {
+    expect(new Set(L.labels.map((l) => l.y)).size).toBe(1);
+    const narrow = waffleLayout(groups, { w: 340, h: 380 }, fmt);
+    expect(new Set(narrow.labels.map((l) => l.y)).size).toBe(2);
+    inside(narrow);
+  });
+  it('이름표는 그룹 여섯 개, 값·이름·개수·피처 목록', () => {
+    expect(L.labels).toHaveLength(6);
+    const h = L.labels[2];
+    expect(h).toMatchObject({ type: 'group', id: 'holiday', pct: '11.4%', name: 'H', count: '4개', holiday: true });
+    inside(L);
+  });
+});
+
+// 2026-10-05(월)부터 14일, 하루는 공휴일, 값이 날마다 다르다
+const dates = Array.from({ length: 14 }, (_, i) => new Date(Date.UTC(2026, 9, 5 + i)).toISOString().slice(0, 10));
+const charts: ChartsData = {
+  asOf: '2026-09-22',
+  dates,
+  depart: { pct: dates.map((_, i) => (i - 7) * 50), holiday: dates.map((_, i) => (i === 9 ? 'kr_hangul_day' : null)) },
+  labels: [{ date: dates[9], code: 'kr_hangul_day' }],
+  curve: { bins: [[1, 3], [4, 7], [8, 14], [15, 21], [22, 30], [31, 45], [46, 60], [61, 90]], mean: Array(8).fill(0), n: Array(8).fill(1), sample: { bin: [], pct: [] } },
+};
+const calS = { weekday: (i: number) => `w${i}`, month: (iso: string) => `m${iso.slice(5, 7)}`, holiday: (c: string) => `h:${c}` };
+
+describe('calendarLayout', () => {
+  const L = calendarLayout(charts, { w: 1080, h: 414 }, calS);
+  const PER = L.n / dates.length;
+  it('출발일마다 같은 수의 점, group = 출발일 번호', () => {
+    expect(Number.isInteger(PER)).toBe(true);
+    for (let i = 0; i < L.n; i++) expect(L.group[i]).toBe(Math.floor(i / PER));
+  });
+  it('공휴일 출발일만 호박색', () => {
+    for (let i = 0; i < L.n; i++) expect(L.tone[i] === TONE.amber).toBe(L.group[i] === 9);
+  });
+  it('비싼 출발일일수록 점 원이 넓다', () => {
+    const spread = (d: number) => {
+      const xs: number[] = [];
+      for (let i = d * PER; i < (d + 1) * PER; i++) xs.push(L.x[i] * 1080);
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    expect(spread(13)).toBeGreaterThan(spread(0));
+  });
+  it('같은 요일은 같은 줄(y), 다음 주 같은 요일은 오른쪽', () => {
+    const cy = (d: number) => L.y[d * PER] ;
+    const cx = (d: number) => L.x[d * PER];
+    expect(Math.abs(cy(0) - cy(7))).toBeLessThan(0.02);
+    expect(cx(7)).toBeGreaterThan(cx(0));
+  });
+  it('요일 이름표 7개, 공휴일 이름표는 labels만큼', () => {
+    const text = L.labels.filter((l) => l.type === 'text');
+    expect(text.filter((l) => l.type === 'text' && l.cls === 'tick').map((l) => (l as { text: string }).text)).toEqual(['w0', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6']);
+    expect(text.filter((l) => l.type === 'text' && l.cls === 'holiday').map((l) => (l as { text: string }).text)).toEqual(['h:kr_hangul_day']);
+    expect(text.some((l) => l.type === 'text' && l.cls === 'month')).toBe(true);
+  });
+  it('좁은 휴대폰 판(340×380)에서도 모든 점이 판 안, 지름 1.6px 이상', () => inside(calendarLayout(charts, { w: 340, h: 380 }, calS)));
+});
