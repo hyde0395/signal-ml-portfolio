@@ -289,7 +289,11 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 /* ③·④ 그림 판(설계 2026-09-25 §3.3·§3.4, 2026-09-27 개정): 판은 화면에 고정(sticky)되고 글 카드가 그 위로 지나간다.
    판이 고정된 동안에만 HTML 이름표와 3D 점이 정확히 겹치므로(three/chartTargets.ts) 판 높이는 화면 높이와 같다.
    판은 본문 폭을 다 쓰고 화면 위쪽에 둔다 — 점 달력(40주)·구름(88일)이 가로로 길어서다 */
-.chart-block { position: relative; padding-bottom: 50vh; }
+/* sticky 자식은 부모의 "내용 상자(content box)" 높이까지만 고정된다 — padding은 그 상자 밖이라 스크롤
+   거리로 안 쳐준다. 그래서 padding-bottom 대신 의사 요소로 같은 높이의 내용을 추가해 판이 화면 높이만큼
+   더 오래(카드가 다 지나갈 때까지) 고정되게 한다 */
+.chart-block { position: relative; }
+.chart-block::after { content: ''; display: block; height: 50vh; }
 .chart-stage { position: sticky; top: 0; height: 100vh; pointer-events: none; }
 .chart-plot { position: absolute; left: 0; right: 0; top: 11vh; height: 46vh; }
 .chart-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
