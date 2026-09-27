@@ -45,9 +45,9 @@ test.describe('움직임 줄이기', () => {
 
 test.describe('JS 없이', () => {
   test.use({ javaScriptEnabled: false });
-  test('서버 HTML만으로 대체 이미지 다섯 장이 있다', async ({ page }) => {
+  test('서버 HTML만으로 대체 이미지 세 장이 있다', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.scene-figure img')).toHaveCount(5);
+    await expect(page.locator('.scene-figure img')).toHaveCount(3);
     await expect(page.locator('.scene-figure img').first()).toBeVisible();
   });
 });
@@ -89,8 +89,8 @@ async function backgroundContrast(page: Page, selector: string, alpha: number) {
   const el = page.locator(selector).first();
   await el.evaluate((n) => n.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(3500); // 카메라·uniform이 새 장면으로 옮겨 가는 시간
-  // 글자색을 지운다. 셀렉터 그 요소만이 아니라 자손도 모두 지워야 한다 — .collect-line li·.feature-groups li처럼
-  // 안에 자기 색(예: strong의 호박색, .feature-names의 --mute)을 따로 지정한 자손이 섞인 경우, 부모에만 칠하면
+  // 글자색을 지운다. 셀렉터 그 요소만이 아니라 자손도 모두 지워야 한다 — .collect-steps li·.data-board 열 이름처럼
+  // 안에 자기 색(예: strong의 호박색, --mute)을 따로 지정한 자손이 섞인 경우, 부모에만 칠하면
   // 상속이 아니라 자손의 명시적 색이 이겨 글자가 그대로 남아 배경 화소를 오염시킨다(최종 리뷰 #1 추가 검사에서 발견)
   await el.evaluate((n) => {
     for (const x of [n, ...n.querySelectorAll('*')]) (x as HTMLElement).style.setProperty('color', 'transparent', 'important');
@@ -124,11 +124,11 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     ['.hero-keywords', 0.72],
     ['.hero-sub', 0.72],
     ['#charts-h', 1],
-    ['[data-scene="insight"] > p:not(.eyebrow)', 1],
-    // 최종 리뷰 #1: 1440px에서 수집 라인·피처 목록의 마지막 칸이 판 밖(지형·지도 점 위)에 있었다.
-    // 마지막 칸에는 .muted(대비 0.72) 글이 섞여 있어(featureNames) 그 값으로 잰다(더 엄격한 쪽)
-    ['.collect-line li:last-child', 1],
-    ['.feature-groups li:last-child', 0.72],
+    ['[data-scene="chartCurve"] .chart-copy > p:not(.sr-only):not(.eyebrow)', 1],
+    ['.collect-steps li:last-child', 1],
+    // 판 없는 보드: 머리줄과 열 이름(--mute·#8a96b3 글자라 0.72로 엄격하게)이 흐려진 지도 위에서도 읽혀야 한다
+    ['.data-board .board-head', 0.72],
+    ['.data-board .board-table thead', 0.72],
   ];
   for (const [sel, alpha] of cases) {
     const { mean, p99 } = await backgroundContrast(page, sel, alpha);
