@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>보드 테두리 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#070B16; --bg2:#13203A; --dot:#8FB8FF; --tx:#EEF3FF; --amb:#FFB547; --mute:#8a96b3; --line:#1b2436; --green:#6FE3A5; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: radial-gradient(1200px 800px at 70% 0%, var(--bg2), var(--bg)); color: var(--tx); font: 15px/1.6 -apple-system, "Pretendard", sans-serif; padding: 40px 32px 80px; }
+  h1 { font: 700 30px "Space Grotesk"; letter-spacing: -0.03em; }
+  .sub { color: var(--mute); margin: 6px 0 26px; max-width: 72ch; }
+  .opt { border: 1px solid var(--line); border-radius: 16px; padding: 22px 26px 30px; margin-bottom: 26px; cursor: pointer; background: rgba(7,11,22,.35); }
+  .opt:hover { border-color: #33415f; }
+  .opt.selected { border-color: var(--amb); box-shadow: 0 0 0 1px var(--amb) inset; }
+  .tag { font: 600 11px "IBM Plex Mono"; letter-spacing: .14em; color: var(--amb); }
+  .opt > h3 { font-size: 17px; margin: 2px 0 2px; }
+  .opt > p { color: var(--mute); font-size: 13.5px; margin-bottom: 20px; }
+
+  /* 공통: 표와 칸 */
+  .bt { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+  .bt th, .bt td { text-align: left; padding: 0 8px; white-space: nowrap; }
+  .bt thead th { font: 500 11px "IBM Plex Mono"; letter-spacing: .18em; color: #8a96b3; }
+  .bt thead small { display: block; font: 11px -apple-system, sans-serif; letter-spacing: 0; color: #66728f; }
+  .flaps { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .f { position: relative; width: 32px; height: 48px; font: 600 30px/48px "IBM Plex Mono"; text-align: center; color: var(--tx); border-radius: 4px; overflow: hidden;
+       background: linear-gradient(180deg, #1d2638 0 50%, #10172a 50% 100%); }
+  .f::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(0,0,0,.85); }
+  .rows .f { color: var(--amb); }
+  .st .f { color: var(--green); }
+  .lamp { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); margin-right: 10px; vertical-align: middle; }
+  .bt tfoot th, .bt tfoot td { padding-top: 12px; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+  .title { font: 700 24px "IBM Plex Mono"; letter-spacing: .12em; color: var(--amb); }
+  .title small { font: 400 13px -apple-system, sans-serif; letter-spacing: 0; color: var(--mute); margin-left: 10px; }
+  .range { font: 13px "IBM Plex Mono"; color: var(--dot); letter-spacing: .05em; }
+
+  /* A: 테두리 없는 평판 */
+  .a .board { background: rgba(5,8,15,.78); border: 1px solid rgba(143,184,255,.14); border-radius: 12px; padding: 22px 26px; backdrop-filter: blur(6px); }
+  .a .head { padding-bottom: 12px; border-bottom: 1px solid rgba(143,184,255,.12); }
+  .a tfoot th, .a tfoot td { border-top: 1px solid rgba(143,184,255,.12); }
+
+  /* B: 실제 공항판 — 무광 검정 판 + 위쪽 호박색 머리띠 */
+  .b .board { background: #06090f; border-radius: 6px; overflow: hidden; box-shadow: 0 24px 50px -20px rgba(0,0,0,.9), 0 0 0 1px #1a2130; }
+  .b .band { background: var(--amb); color: #111; display: flex; justify-content: space-between; align-items: center; padding: 8px 22px; }
+  .b .band .title { color: #111; font-size: 18px; }
+  .b .band .title small { color: #3a2a10; }
+  .b .band .range { color: #3a2a10; font-weight: 600; }
+  .b .inner { padding: 10px 22px 20px; }
+  .b tbody tr:nth-child(odd) td, .b tbody tr:nth-child(odd) th { background: rgba(255,255,255,.018); }
+  .b tfoot th, .b tfoot td { border-top: 1px solid #1a2130; }
+
+  /* C: 판 없이 떠 있는 칸 */
+  .c .head { padding-bottom: 14px; margin-bottom: 4px; border-bottom: 1px solid rgba(255,181,71,.35); }
+  .c .f { box-shadow: 0 8px 18px -8px rgba(0,0,0,.9), 0 0 0 1px rgba(143,184,255,.08); }
+  .c tfoot th, .c tfoot td { border-top: 1px solid rgba(143,184,255,.12); }
+  .c .wrap { padding: 4px 0; }
+</style>
+</head>
+<body>
+<h1>② 수집 현황 보드 — 테두리 시안</h1>
+<p class="sub">지금: 금속 틀 + 모서리 나사 → 무겁고 오래돼 보임. 칸(플립 글자)과 넘어가는 연출은 그대로 두고, 둘러싼 판만 바꾼 세 가지입니다. 칸 크기는 지금 데스크톱 값(32×48).</p>
+
+<div class="opt a" data-choice="flat" onclick="toggleSelect(this)">
+  <span class="tag">A · FLAT PANEL</span>
+  <h3>테두리 없는 평판 — 사이트의 다른 카드와 같은 결</h3>
+  <p>반투명 어두운 판 + 얇은 선 하나. 나사·금속 없음. 뒤 배경(지도)이 살짝 비침.</p>
+  <div class="board"><div class="head"><span class="title">DEPARTURES<small>수집 현황</small></span><span class="range">2026-04-23 → 2026-09-22 · 153 DAYS</span></div><table class="bt"></table></div>
+</div>
+
+<div class="opt b" data-choice="band" onclick="toggleSelect(this)">
+  <span class="tag">B · AIRPORT BAND</span>
+  <h3>공항판 머리띠 — 실제 출발 안내판처럼</h3>
+  <p>무광 검정 판 위쪽에 호박색 머리띠(DEPARTURES). 줄마다 아주 옅은 줄무늬. 테두리 장식 없이 "공항"이 바로 읽힘.</p>
+  <div class="board"><div class="band"><span class="title">DEPARTURES<small>수집 현황</small></span><span class="range">2026-04-23 → 2026-09-22 · 153 DAYS</span></div><div class="inner"><table class="bt"></table></div></div>
+</div>
+
+<div class="opt c" data-choice="float" onclick="toggleSelect(this)">
+  <span class="tag">C · FRAMELESS</span>
+  <h3>판 없이 떠 있는 칸 — 가장 가볍게</h3>
+  <p>판·배경 없이 칸만 그림자와 함께 떠 있음. 머리글 아래 호박색 얇은 선 하나. 지도가 칸 사이로 가장 많이 보임.</p>
+  <div class="wrap"><div class="head"><span class="title">DEPARTURES<small>수집 현황</small></span><span class="range">2026-04-23 → 2026-09-22 · 153 DAYS</span></div><table class="bt"></table></div>
+</div>
+
+<script>
+const rows = [['ICN⇄NRT','NARITA','118,209'],['ICN⇄KIX','KANSAI','112,624'],['ICN⇄HND','HANEDA',' 12,041']];
+const flaps = s => `<span class="flaps">${[...s].map(c=>`<span class="f">${c===' '?'&nbsp;':c}</span>`).join('')}</span>`;
+const html = `<thead><tr><th>ROUTE<small>노선</small></th><th>DESTINATION<small>목적지</small></th><th>ROWS<small>수집 행</small></th><th>STATUS<small>상태</small></th></tr></thead>
+<tbody>${rows.map(([r,d,n])=>`<tr><th>${flaps(r)}</th><td>${flaps(d)}</td><td class="rows">${flaps(n)}</td><td class="st"><span class="lamp"></span>${flaps('DAILY')}</td></tr>`).join('')}</tbody>
+<tfoot><tr><th>${flaps('TOTAL')}</th><td></td><td class="rows">${flaps('242,874')}</td><td></td></tr></tfoot>`;
+document.querySelectorAll('table.bt').forEach(t => t.innerHTML = html);
+</script>
+</body>
+</html>

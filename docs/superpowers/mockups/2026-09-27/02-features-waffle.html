@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>피처 카드 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#070B16; --bg2:#13203A; --dot:#8FB8FF; --tx:#EEF3FF; --amb:#FFB547; --mute:#8a96b3; --line:#1b2436; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: radial-gradient(1200px 800px at 70% 0%, var(--bg2), var(--bg)); color: var(--tx); font: 15px/1.6 -apple-system, "Pretendard", sans-serif; padding: 40px 32px 80px; }
+  h1 { font: 700 30px "Space Grotesk"; letter-spacing: -0.03em; }
+  .sub { color: var(--mute); margin: 6px 0 26px; max-width: 72ch; }
+  .opt { border: 1px solid var(--line); border-radius: 16px; padding: 22px 26px 28px; margin-bottom: 26px; cursor: pointer; background: rgba(7,11,22,.45); }
+  .opt:hover { border-color: #33415f; }
+  .opt.selected { border-color: var(--amb); box-shadow: 0 0 0 1px var(--amb) inset; }
+  .tag { font: 600 11px "IBM Plex Mono"; letter-spacing: .14em; color: var(--amb); }
+  .opt > h3 { font-size: 17px; margin: 2px 0 2px; }
+  .opt > p { color: var(--mute); font-size: 13.5px; margin-bottom: 18px; }
+  .sec-h { font: 700 40px "Space Grotesk"; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .sec-lead { color: #c9d3ea; max-width: 60ch; margin-bottom: 22px; font-size: 14.5px; }
+  .mono { font-family: "IBM Plex Mono", monospace; }
+
+  /* A: 순위 목록 + 점 줄 */
+  .rank { list-style: none; display: grid; gap: 2px; max-width: 980px; }
+  .rank li { display: grid; grid-template-columns: 84px 220px 1fr; align-items: center; gap: 20px; padding: 14px 18px; border-radius: 10px; background: rgba(19,32,58,.35); }
+  .rank .pct { font: 600 24px "IBM Plex Mono"; text-align: right; }
+  .rank .nm { font-weight: 600; }
+  .rank .nm small { display: block; font-weight: 400; color: var(--mute); font-size: 12px; }
+  .rank .dots { display: flex; flex-wrap: wrap; gap: 3px; }
+  .rank .dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--dot); opacity: .85; }
+  .rank .feat { grid-column: 2 / 4; font: 11.5px "IBM Plex Mono"; color: var(--mute); margin-top: -8px; }
+  .rank li.hol .pct, .rank li.hol .nm { color: var(--amb); }
+  .rank li.hol .dots i { background: var(--amb); }
+
+  /* B: 정돈된 카드 */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 1080px; }
+  .cards .c { background: linear-gradient(180deg, rgba(19,32,58,.72), rgba(10,16,30,.72)); border: 1px solid rgba(143,184,255,.12); border-radius: 14px; padding: 22px 24px; display: grid; gap: 6px; align-content: start; min-height: 170px; }
+  .cards .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .cards .pct { font: 600 34px "IBM Plex Mono"; letter-spacing: -.02em; }
+  .cards .cnt { font: 12px "IBM Plex Mono"; color: var(--mute); }
+  .cards .nm { font-weight: 600; font-size: 15.5px; }
+  .cards .bar { height: 3px; border-radius: 2px; background: rgba(143,184,255,.12); margin: 4px 0 8px; }
+  .cards .bar b { display: block; height: 100%; border-radius: 2px; background: var(--dot); }
+  .cards .pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .cards .pills span { font: 11px "IBM Plex Mono"; color: #aab6d3; background: rgba(143,184,255,.07); border-radius: 5px; padding: 2px 7px; }
+  .cards .chip { font: 600 10px "IBM Plex Mono"; letter-spacing: .12em; color: var(--amb); border: 1px solid rgba(255,181,71,.45); border-radius: 20px; padding: 1px 8px; }
+  .cards .c.hol .pct { color: var(--amb); }
+  .cards .c.hol .bar b { background: var(--amb); }
+
+  /* C: 점 와플 */
+  .waf { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; max-width: 1080px; }
+  .waf .w { display: grid; gap: 8px; align-content: start; }
+  .waf .grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; width: 132px; }
+  .waf .grid i { aspect-ratio: 1; border-radius: 50%; background: rgba(143,184,255,.13); }
+  .waf .grid i.on { background: var(--dot); }
+  .waf .w.hol .grid i.on { background: var(--amb); }
+  .waf .pct { font: 600 22px "IBM Plex Mono"; }
+  .waf .w.hol .pct { color: var(--amb); }
+  .waf .nm { font-weight: 600; font-size: 14px; line-height: 1.35; }
+  .waf .nm small { display: block; color: var(--mute); font-weight: 400; font-size: 12px; }
+  .note { color: var(--mute); font-size: 12.5px; margin-top: 16px; max-width: 80ch; }
+</style>
+</head>
+<body>
+<h1>③ FEATURES — 그룹 표시 시안</h1>
+<p class="sub">지금 문제: 카드 안쪽 여백이 없어 글자가 왼쪽 끝에 붙고, 공휴일 카드에만 있는 호박색 윗선이 어색함. 세 가지 방향입니다. 5-2에서 배경 점이 덩어리로 모이면, 이 부분은 덩어리 아래 라벨과 대체 화면(움직임 줄이기)에 그대로 쓰입니다.</p>
+
+<div class="opt" data-choice="rank" onclick="toggleSelect(this)">
+  <span class="tag">A · RANKED LIST</span>
+  <h3>순위 목록 + 점 줄 — 중요도 순으로 한 줄씩</h3>
+  <p>숫자 열을 오른쪽 정렬로 맞추고, 오른쪽에 점 개수(1점 ≈ 0.5%)로 크기를 보여 줌. 공휴일은 선 대신 숫자·점 색만 호박색.</p>
+  <div class="sec-h">33 FEATURES</div>
+  <p class="sec-lead">가격 하나를 예측하기 위해 넣은 것들입니다. 숫자는 모델 안에서 각 그룹이 차지한 중요도(XGBoost gain)입니다.</p>
+  <ul class="rank" id="rank"></ul>
+</div>
+
+<div class="opt" data-choice="cards" onclick="toggleSelect(this)">
+  <span class="tag">B · CARDS</span>
+  <h3>정돈된 카드 — 3열, 넉넉한 안쪽 여백</h3>
+  <p>반투명 카드 + 얇은 비율 막대 + 피처 이름은 작은 태그. 공휴일은 윗선 대신 오른쪽 위 작은 <span style="color:var(--amb)">HOLIDAY</span> 표식.</p>
+  <div class="sec-h">33 FEATURES</div>
+  <p class="sec-lead">가격 하나를 예측하기 위해 넣은 것들입니다. 숫자는 모델 안에서 각 그룹이 차지한 중요도(XGBoost gain)입니다.</p>
+  <div class="cards" id="cards"></div>
+</div>
+
+<div class="opt" data-choice="waffle" onclick="toggleSelect(this)">
+  <span class="tag">C · DOT WAFFLE</span>
+  <h3>점 와플 — 100칸 중 몇 칸</h3>
+  <p>그룹마다 점 100개 판에서 중요도만큼 켜짐. 사이트의 "점" 언어와 가장 잘 맞고, 5-2의 점 덩어리와 모양이 이어짐. 피처 이름은 마우스를 올리면(지금은 생략).</p>
+  <div class="sec-h">33 FEATURES</div>
+  <p class="sec-lead">가격 하나를 예측하기 위해 넣은 것들입니다. 숫자는 모델 안에서 각 그룹이 차지한 중요도(XGBoost gain)입니다.</p>
+  <div class="waf" id="waf"></div>
+</div>
+
+<p class="note">세 안 모두 "lookup 중요도는 실제보다 크게 나온다"는 작은 글과 모델·서비스 도구 줄은 아래에 그대로 둡니다.</p>
+
+<script>
+const G = [
+  ['lookup 통계', 46.8, ['rd_med','rd_min','rd_max','rd_std','rah_med','rah_std','ra_med','ra_std','rm_med','rm_std','r_med','r_std','global_med']],
+  ['노선·항공사', 26.0, ['origin','destination','route','airline','airline_class']],
+  ['공휴일', 11.4, ['is_kr_holiday','is_kr_near_holiday','is_jp_holiday','is_jp_near_holiday'], true],
+  ['출발까지 남은 일수', 6.8, ['days_to_departure','log_days','days_sq','days_bucket_num']],
+  ['항공편 정보', 4.6, ['stops','duration_minutes','departure_hour','is_weekend_flight','departure_month']],
+  ['시장', 1.2, ['krw_jpy_rate','fuel_tier']],
+];
+const f = v => v.toFixed(1) + '%';
+document.getElementById('rank').innerHTML = G.map(([n,g,fs,h]) =>
+  `<li class="${h?'hol':''}"><span class="pct">${f(g)}</span><span class="nm">${n}<small>${fs.length}개</small></span>
+   <span class="dots">${'<i></i>'.repeat(Math.max(1,Math.round(g*2)))}</span><span class="feat">${fs.join(' · ')}</span></li>`).join('');
+document.getElementById('cards').innerHTML = G.map(([n,g,fs,h]) =>
+  `<div class="c ${h?'hol':''}"><div class="top"><span class="pct">${f(g)}</span>${h?'<span class="chip">HOLIDAY</span>':`<span class="cnt">${fs.length}개</span>`}</div>
+   <span class="nm">${n}${h?` <span class="cnt">· ${fs.length}개</span>`:''}</span><div class="bar"><b style="width:${g/46.8*100}%"></b></div>
+   <div class="pills">${fs.map(x=>`<span>${x}</span>`).join('')}</div></div>`).join('');
+document.getElementById('waf').innerHTML = G.map(([n,g,fs,h]) => {
+  const on = Math.round(g); return `<div class="w ${h?'hol':''}"><div class="grid">${[...Array(100)].map((_,i)=>`<i class="${i<on?'on':''}"></i>`).join('')}</div>
+   <span class="pct">${f(g)}</span><span class="nm">${n}<small>${fs.length}개</small></span></div>`; }).join('');
+</script>
+</body>
+</html>

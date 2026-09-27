@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>차트 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#070B16; --bg2:#13203A; --dot:#8FB8FF; --tx:#EEF3FF; --amb:#FFB547; --mute:#8a96b3; --line:#1b2436; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: radial-gradient(1200px 800px at 70% 0%, var(--bg2), var(--bg)); color: var(--tx); font: 15px/1.6 -apple-system, "Pretendard", sans-serif; padding: 40px 32px 80px; }
+  h1 { font: 700 34px "Space Grotesk"; letter-spacing: -0.03em; }
+  .sub { color: var(--mute); margin: 6px 0 28px; max-width: 70ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); gap: 22px; }
+  .card { border: 1px solid var(--line); border-radius: 14px; background: rgba(7,11,22,.6); padding: 18px 18px 16px; cursor: pointer; transition: border-color .2s; }
+  .card:hover { border-color: #33415f; }
+  .card.selected { border-color: var(--amb); box-shadow: 0 0 0 1px var(--amb) inset; }
+  .tag { font: 600 11px "IBM Plex Mono"; letter-spacing: .14em; color: var(--amb); }
+  .card h3 { font-size: 18px; margin: 4px 0 2px; }
+  .card p { color: var(--mute); font-size: 13.5px; }
+  canvas { width: 100%; height: 300px; display: block; margin: 12px 0 8px; }
+  .where { font: 12px "IBM Plex Mono"; color: var(--dot); }
+  .btn { font: 600 12px "IBM Plex Mono"; background: none; color: var(--tx); border: 1px solid #33415f; border-radius: 6px; padding: 4px 10px; margin-top: 6px; cursor: pointer; }
+  .note { margin-top: 28px; color: var(--mute); font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>④ CHARTS — 점으로 그린 차트 시안</h1>
+<p class="sub">마음에 드는 차트를 눌러 고르세요(여러 개 가능). 모양을 보기 위한 <b>예시 데이터</b>입니다 — 실제 구현은 항공권 저장소 데이터로 뽑습니다. 실제 사이트에서는 배경 점들이 날아와 이 모양으로 모입니다.</p>
+
+<div class="grid">
+  <div class="card" data-choice="shap" onclick="toggleSelect(this)">
+    <span class="tag">A · SHAP BEESWARM</span>
+    <h3>SHAP 벌떼 그림 — 모델이 무엇을 보고 가격을 정했나</h3>
+    <p>점 하나 = 예측 하나. 오른쪽일수록 그 피처가 가격을 올림. 색 = 피처 값(파랑 낮음 → 호박 높음).</p>
+    <canvas id="c-shap"></canvas>
+    <span class="where">자리: ③ 덩어리를 펼치면 / 또는 ④ 한 장</span>
+  </div>
+  <div class="card" data-choice="calendar" onclick="toggleSelect(this)">
+    <span class="tag">B · DOT CALENDAR</span>
+    <h3>출발일 점 달력 — 언제 떠나느냐</h3>
+    <p>점 하나 = 출발일 하나(주 × 요일). 크기·밝기 = 평균 대비 가격. 공휴일 ±3일은 호박색.</p>
+    <canvas id="c-cal"></canvas>
+    <span class="where">자리: 지금 차트 1(출발일별 세로 기둥) 대신</span>
+  </div>
+  <div class="card" data-choice="swarm" onclick="toggleSelect(this)">
+    <span class="tag">C · BEESWARM BY DAYS</span>
+    <h3>구간별 분포 벌떼 — U자 예약 곡선</h3>
+    <p>점 하나 = 출발이 지난 편의 관측 하나. 구간마다 퍼진 정도까지 보이고, 밝은 선이 평균(U자). 가장 싼 구간은 호박색.</p>
+    <canvas id="c-swarm"></canvas>
+    <span class="where">자리: 지금 차트 2(U자 곡선) 대신</span>
+  </div>
+  <div class="card" data-choice="cloud" onclick="toggleSelect(this)">
+    <span class="tag">D · UNCERTAINTY CLOUD</span>
+    <h3>예측 불확실성 구름 — q10~q90</h3>
+    <p>출발일마다 예측 분포에서 뽑은 점을 흩뿌림. 예측가 근처는 빽빽, 가장자리는 성김. 먼 출발일일수록 구름이 넓어짐.</p>
+    <canvas id="c-cloud"></canvas>
+    <span class="where">자리: 지금 차트 4(세로 점선 띠) 대신</span>
+  </div>
+  <div class="card" data-choice="calib" onclick="toggleSelect(this)">
+    <span class="tag">E · CALIBRATION</span>
+    <h3>예측 구간 보정 — 80%를 정말 맞췄나</h3>
+    <p>점 하나 = 기간 하나의 실제 포함률. 보정 전에는 최근 기간이 69%까지 떨어지고, 보정 후 80% 선에 모임.</p>
+    <canvas id="c-calib"></canvas>
+    <button class="btn" onclick="event.stopPropagation(); calibToggle()">보정 전 ↔ 후</button>
+    <span class="where">&nbsp; 자리: 검증 표 옆(선택)</span>
+  </div>
+</div>
+<p class="note">추천 조합: 차트 B → C → (지금 R² 거품) → D, ③ 펼치기에 A. E는 선택.</p>
+
+<script>
+const C = { dot:'#8FB8FF', amb:'#FFB547', tx:'#EEF3FF', mute:'#8a96b3', line:'#1b2436' };
+function rng(seed){ return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+function gauss(r){ let u=0,v=0; while(!u) u=r(); v=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function setup(id){ const c=document.getElementById(id), d=devicePixelRatio||1, w=c.clientWidth, h=c.clientHeight; c.width=w*d; c.height=h*d; const x=c.getContext('2d'); x.scale(d,d); return {x,w,h}; }
+function dot(x,cx,cy,r,col,a){ x.globalAlpha=a; x.fillStyle=col; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill(); x.globalAlpha=1; }
+function mix(a,b,t){ const p=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)); const A=p(a),B=p(b); return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')+')'; }
+function label(x,t,cx,cy,col,align){ x.fillStyle=col||C.mute; x.font='11px "IBM Plex Mono"'; x.textAlign=align||'left'; x.fillText(t,cx,cy); }
+
+// 벌떼 배치: 같은 x 칸에 쌓이는 점을 위아래 번갈아 비킨다
+function swarm(xs, bin, step){ const cnt=new Map(); return xs.map(v=>{ const k=Math.round(v/bin); const n=cnt.get(k)||0; cnt.set(k,n+1); return (n%2?1:-1)*Math.ceil(n/2)*step; }); }
+
+// A. SHAP
+(function(){ const {x,w,h}=setup('c-shap'), r=rng(7);
+  const feats=[['rd_med',1.0],['route',.8],['is_kr_holiday',.55],['days_to_departure',.45],['airline_class',.4],['is_jp_holiday',.3],['departure_hour',.2],['krw_jpy_rate',.1]];
+  const L=130, R=w-16, top=14, rowH=(h-40)/feats.length, mid=(L+R)/2, sx=(R-L)/2/2.6;
+  x.strokeStyle=C.line; x.beginPath(); x.moveTo(mid,top); x.lineTo(mid,h-24); x.stroke();
+  feats.forEach(([name,s],i)=>{ const cy=top+rowH*(i+.5); label(x,name,L-10,cy+4,C.tx,'right');
+    const pts=[...Array(170)].map(()=>{ const fv=r(); const holiday=name.includes('holiday'); const val = holiday ? (fv>.85? s*1.8+gauss(r)*.15 : -s*.25+gauss(r)*.08) : (fv-.5)*2*s+gauss(r)*s*.25; return {v:val,fv:holiday?(fv>.85?1:0):fv}; });
+    const off=swarm(pts.map(p=>p.v*sx),3,2.4);
+    pts.forEach((p,j)=>{ const yy=cy+Math.max(-rowH/2+3,Math.min(rowH/2-3,off[j])); dot(x,mid+p.v*sx,yy,1.6,mix('#4d7fe0','#FFB547',p.fv),.9); }); });
+  label(x,'← 가격을 내림',L,h-6); label(x,'가격을 올림 →',R,h-6,C.mute,'right'); label(x,'SHAP 값',mid,h-6,C.mute,'center');
+})();
+
+// B. 점 달력
+(function(){ const {x,w,h}=setup('c-cal'), r=rng(3);
+  const start=new Date(2026,4,11), weeks=40, L=36, T=26, cw=(w-L-10)/weeks, ch=(h-T-30)/7;
+  const hol=[['2026-06-03',''],['2026-08-15',''],['2026-09-24','추석'],['2026-10-03',''],['2026-10-09',''],['2026-12-25','연말연시'],['2027-01-01',''],['2027-02-06','설']].map(([d,n])=>[new Date(d),n]);
+  ['월','화','수','목','금','토','일'].forEach((d,i)=>label(x,d,6,T+ch*(i+.5)+4));
+  const names=new Set();
+  for(let wk=0;wk<weeks;wk++) for(let dy=0;dy<7;dy++){ const d=new Date(start); d.setDate(d.getDate()+wk*7+dy);
+    if(d<new Date(2026,4,15)||d>new Date(2027,1,14)) continue;
+    let near=null; for(const [hd,n] of hol){ if(Math.abs(d-hd)<=3*864e5) near=[hd,n]; }
+    let v = (dy>=4?7:0) + (near?18+r()*10:0) + gauss(r)*4 + (d.getMonth()===7?6:0);
+    const cx=L+cw*(wk+.5), cy=T+ch*(dy+.5), rad=Math.max(1.2,Math.min(Math.min(cw,ch)*.46, 3+v*.18));
+    dot(x,cx,cy,rad, near?C.amb:C.dot, near?.95:Math.max(.25,Math.min(.95,.45+v/40)));
+    if(d.getDate()===1 && dy<1) label(x,(d.getMonth()+1)+'월',cx-6,T-10);
+    if(near&&near[1]&&!names.has(near[1])){ names.add(near[1]); label(x,near[1],cx,h-10,C.amb,'center'); }
+  }
+})();
+
+// C. 구간별 벌떼
+(function(){ const {x,w,h}=setup('c-swarm'), r=rng(11);
+  const b=[['D-61~90',2.1],['46~60',-4.3],['31~45',-5.0],['22~30',-3.7],['15~21',-2.4],['8~14',0.9],['4~7',4.4],['1~3',11.1]];
+  const L=34,R=w-10,T=12,B=h-26, cw=(R-L)/b.length, sy=v=>T+(B-T)*(1-(v+22)/44);
+  x.strokeStyle=C.line; x.beginPath(); x.moveTo(L,sy(0)); x.lineTo(R,sy(0)); x.stroke(); label(x,'+20%',2,sy(20)+4); label(x,'0',20,sy(0)+4); label(x,'−20%',2,sy(-20)+4);
+  const means=[];
+  b.forEach(([n,m],i)=>{ const cx=L+cw*(i+.5); const vals=[...Array(150)].map(()=>m+gauss(r)*7).filter(v=>Math.abs(v)<22);
+    const off=swarm(vals.map(v=>sy(v)),3,2.3); const cheap=m<=-3.7;
+    vals.forEach((v,j)=>dot(x,cx+Math.max(-cw/2+3,Math.min(cw/2-3,off[j])),sy(v),1.5,cheap?C.amb:C.dot,.55));
+    means.push([cx,sy(m)]); label(x,n,cx,h-8,C.mute,'center'); });
+  x.strokeStyle=C.tx; x.lineWidth=2; x.beginPath(); means.forEach(([a,c],i)=>i?x.lineTo(a,c):x.moveTo(a,c)); x.stroke();
+  means.forEach(([a,c])=>dot(x,a,c,3.5,C.tx,1));
+})();
+
+// D. 불확실성 구름
+(function(){ const {x,w,h}=setup('c-cloud'), r=rng(5);
+  const L=40,R=w-10,T=12,B=h-24, n=88, sx=i=>L+(R-L)*i/(n-1);
+  const med=i=>180000 + Math.sin(i/9)*12000 + (i>=18&&i<=22?55000:0) + (i>=60&&i<=64?30000:0) - i*250;
+  const lo=120000, hi=320000, sy=v=>B-(B-T)*(v-lo)/(hi-lo);
+  [150000,200000,250000,300000].forEach(v=>{ label(x,(v/1000)+'k',4,sy(v)+4); x.strokeStyle=C.line; x.beginPath(); x.moveTo(L,sy(v)); x.lineTo(R,sy(v)); x.stroke(); });
+  for(let i=0;i<n;i++){ const m=med(i), s=m*(.05+i*.0011), hol=(i>=18&&i<=22)||(i>=60&&i<=64);
+    for(let k=0;k<26;k++){ const g=gauss(r); if(Math.abs(g)>1.28) continue; dot(x,sx(i)+ (r()-.5)*2.5, sy(m+g*s), 1.3, hol?C.amb:C.dot, .18+.35*(1-Math.abs(g)/1.28)); }
+    dot(x,sx(i),sy(m),2.2,hol?C.amb:C.tx,.95); }
+  label(x,'D+3',L,h-6); label(x,'D+90',R,h-6,C.mute,'right'); label(x,'추석',sx(20),T+10,C.amb,'center');
+})();
+
+// E. 보정
+let calibAfter=false;
+function drawCalib(){ const {x,w,h}=setup('c-calib'), r=rng(9);
+  const L=40,R=w-10,T=14,B=h-26, n=18, sy=v=>B-(B-T)*(v-55)/(100-55), sx=i=>L+(R-L)*(i+.5)/n;
+  [60,70,80,90,100].forEach(v=>label(x,v+'%',4,sy(v)+4));
+  x.strokeStyle=C.amb; x.setLineDash([5,5]); x.beginPath(); x.moveTo(L,sy(80)); x.lineTo(R,sy(80)); x.stroke(); x.setLineDash([]); label(x,'목표 80%',R,sy(80)-6,C.amb,'right');
+  for(let i=0;i<n;i++){ const before=84-i*.85+gauss(r)*1.5, after=80.2+gauss(r)*1.2, v=calibAfter?after:before;
+    for(let k=0;k<14;k++) dot(x,sx(i)+(r()-.5)*10,sy(v+gauss(r)*1.2),1.4,C.dot,.35);
+    dot(x,sx(i),sy(v),3.2,calibAfter?C.tx:(v<75?C.amb:C.tx),.95); }
+  label(x,'오래된 기간',L,h-6); label(x,'최근 기간',R,h-6,C.mute,'right');
+  label(x,calibAfter?'보정 후 — 80.2%':'보정 전 — 최근 69%',L+(R-L)/2,T+6,C.tx,'center');
+}
+function calibToggle(){ calibAfter=!calibAfter; drawCalib(); }
+drawCalib();
+</script>
+</body>
+</html>
