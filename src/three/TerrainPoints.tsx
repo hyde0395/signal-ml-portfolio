@@ -1,5 +1,6 @@
 'use client';
-// 점 구름 하나(Points)와 셰이더 재질. 목표 장면 상태(target)로 uniform을 매 프레임 부드럽게 옮긴다.
+// 점 구름 하나(Points)와 셰이더 재질. 목표 장면 상태(target)로 uniform을 매 프레임 부드럽게 옮기고,
+// 새 차트 배치(slots.pending)가 오면 두 벌(A/B) 중 지정된 쪽 버퍼에 써 넣는다.
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -7,11 +8,20 @@ import type { PointCloud } from './data';
 import type { SceneState } from './scenes';
 import { fragmentShader, vertexShader } from './shaders';
 
-type Props = { cloud: PointCloud; target: React.RefObject<SceneState>; instant: boolean; showNoise: boolean };
+export type ChartSlotWrite = { slot: 0 | 1; pos: Float32Array; style: Float32Array };
+export type ChartSlots = { pending: ChartSlotWrite | null };
+
+type Props = {
+  cloud: PointCloud;
+  target: React.RefObject<SceneState>;
+  slots: React.RefObject<ChartSlots>;
+  instant: boolean;
+  showNoise: boolean;
+};
 
 const DAMP = 2.2; // 클수록 빨리 따라간다. 스펙의 expo.out 느낌(처음 빠르고 끝이 느림)에 가깝다
 
-export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
+export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Props) {
   const material = useRef<THREE.ShaderMaterial>(null);
 
   const geometry = useMemo(() => {
@@ -24,7 +34,10 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     g.setAttribute('aKind', new THREE.BufferAttribute(cloud.kind, 1));
     g.setAttribute('aHoliday', new THREE.BufferAttribute(cloud.holiday, 1));
     g.setAttribute('aRoute', new THREE.BufferAttribute(cloud.route, 1));
-    g.setAttribute('aWeight', new THREE.BufferAttribute(cloud.weight, 1));
+    // 차트 배치 두 벌: 처음엔 비어 있고(알파 0) TerrainScene이 차트 장면에 들어갈 때 채운다
+    for (const name of ['aChartA', 'aChartB', 'aStyleA', 'aStyleB']) {
+      g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(cloud.count * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    }
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 30); // 흩어짐 반경까지 포함 → 잘림 방지
     return g;
   }, [cloud]);
@@ -38,10 +51,12 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     uNoise: { value: 1 },
     uRemoved: { value: 0 },
     uDrop: { value: 0 },
-    uCurve: { value: 0 },
-    uBand: { value: 0 },
     uTime: { value: 0 },
     uSize: { value: 8 }, // 점이 너무 작아 지형이 안 보이던 문제 수정(3 → 8, shaders.ts 거리 감쇠 상수와 함께 조정)
+    uDim: { value: 1 },
+    uChart: { value: 0 },
+    uSlot: { value: 0 },
+    uDpr: { value: 1 },
     uDot: { value: new THREE.Color('#8FB8FF') },
     uAmber: { value: new THREE.Color('#FFB547') },
     uText: { value: new THREE.Color('#EEF3FF') },
@@ -51,6 +66,16 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     const m = material.current;
     const t = target.current;
     if (!m || !t) return;
+    const w = slots.current?.pending;
+    if (w) {
+      const pos = geometry.getAttribute(w.slot === 0 ? 'aChartA' : 'aChartB') as THREE.BufferAttribute;
+      const style = geometry.getAttribute(w.slot === 0 ? 'aStyleA' : 'aStyleB') as THREE.BufferAttribute;
+      (pos.array as Float32Array).set(w.pos);
+      (style.array as Float32Array).set(w.style);
+      pos.needsUpdate = true;
+      style.needsUpdate = true;
+      slots.current!.pending = null;
+    }
     const u = m.uniforms;
     const step = (key: string, goal: number) => {
       u[key].value = instant ? goal : THREE.MathUtils.damp(u[key].value, goal, DAMP, delta);
@@ -60,11 +85,13 @@ export function TerrainPoints({ cloud, target, instant, showNoise }: Props) {
     step('uNoise', showNoise ? t.noise : 0);
     step('uRemoved', t.removed);
     step('uDrop', t.drop);
-    step('uCurve', t.curve);
-    step('uBand', t.band);
+    step('uDim', t.dim);
+    step('uChart', t.chart);
+    step('uSlot', t.slot);
     // 캡처 모드에서는 uTime을 0으로 고정한다. 매번 같은 시각에 찍어야 대체 이미지가 항상 똑같이 나온다
     u.uTime.value = instant ? 0 : state.clock.elapsedTime;
     u.uSize.value = 8 * state.viewport.dpr;
+    u.uDpr.value = state.viewport.dpr;
   });
 
   return (

@@ -16,7 +16,7 @@ const three = readdirSync(dir).filter((f) => f.endsWith('.js') && readFileSync(`
 if (three.length === 0) throw new Error('3D 청크(WebGLRenderer)를 찾지 못했다 — npm run build를 먼저 돌린다');
 for (const f of three) items.push({ name: `3D 청크 ${f}`, bytes: gz(readFileSync(`${dir}/${f}`)), limit: BUDGET.threeChunk });
 
-for (const [key, file] of [['terrain', `terrain.${v}.json`], ['demo', `demo.${v}.json`], ['band', `band.${v}.json`], ['charts', `charts.${v}.json`]]) {
+for (const [key, file] of [['terrain', `terrain.${v}.json`], ['demo', `demo.${v}.json`], ['charts', `charts.${v}.json`]]) {
   items.push({ name: `데이터 ${file}`, bytes: gz(readFileSync(`out/data/${file}`)), limit: BUDGET[key] });
 }
 

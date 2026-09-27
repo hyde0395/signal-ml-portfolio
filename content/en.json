@@ -112,9 +112,7 @@
   "figure": {
     "hero": "Bright points gathering out of scattered, dim points to form a price landscape",
     "problem": "Points outlining the Korean and Japanese coastlines, with route paths arcing from Incheon to Narita, Haneda, and Kansai",
-    "insight": "A price landscape showing a U-shaped valley that climbs again as departure nears, with amber peaks at holiday departure dates",
-    "bubble": "Mismatched points that were floating high above the landscape falling away",
-    "interval": "White vertical bands along the front edge of the price landscape, showing the prediction interval for each departure date"
+    "bubble": "Mismatched points that were floating high above the landscape falling away"
   },
   "project": {
     "heading": "Korea–Japan airfare: when should you buy?",

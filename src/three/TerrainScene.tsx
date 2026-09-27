@@ -5,10 +5,10 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pickActive, readCandidates } from './activeScene';
 import { CameraRig } from './CameraRig';
-import { buildPointCloud, loadSceneData, type Band, type MapData, type Terrain } from './data';
+import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, stepFrameRate } from './frameRate';
-import { sceneFor, type SceneKey, type SceneState } from './scenes';
-import { TerrainPoints } from './TerrainPoints';
+import { CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
+import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
 type Props = { dataVersion: string; onReady: () => void; onFail: (reason: string) => void; capture: SceneKey | null };
 
@@ -16,12 +16,13 @@ const SLOW_FPS = 30;
 const SLOW_SECONDS = 2;
 
 export default function TerrainScene({ dataVersion, onReady, onFail, capture }: Props) {
-  const [data, setData] = useState<{ terrain: Terrain; map: MapData; band?: Band } | null>(null);
+  const [data, setData] = useState<{ terrain: Terrain; map: MapData } | null>(null);
   const [level, setLevel] = useState(0);        // 0 정상, 1 낮춤(DPR 1·잡음 숨김)
   const [running, setRunning] = useState(true); // 탭 숨김·연락처 섹션에서는 멈춘다
   const portrait = useRef(false);
   const target = useRef<SceneState>(sceneFor(capture ?? 'hero', 0, false));
   const parallax = useRef(true);
+  const slots = useRef<ChartSlots>({ pending: null });
 
   useEffect(() => {
     loadSceneData(dataVersion).then(setData).catch((e) => onFail(`data: ${e.message}`));
@@ -41,7 +42,8 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       portrait.current = window.innerHeight > window.innerWidth;
       const active = pickActive(readCandidates(document), window.innerHeight);
       if (!active) return;
-      target.current = sceneFor(active.key, active.progress, portrait.current);
+      // 차트 배치 연결 전까지는 차트 장면에서도 점을 지형에 둔다(Task 10에서 배치를 연결한다)
+      target.current = { ...sceneFor(active.key, active.progress, portrait.current), chart: 0 };
       parallax.current = active.key === 'hero';
       setRunning(active.key !== 'contact' && !document.hidden);
     };
@@ -62,7 +64,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     if (!data) return null;
     // 세로 화면(대개 휴대폰)은 잡음 점을 절반만 그린다
     const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
-    return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7, band: data.band });
+    return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7 });
   }, [data]);
 
   if (!cloud) return null;
@@ -73,14 +75,15 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       <Canvas
         dpr={[1, maxDpr]}
         frameloop={running || capture ? 'always' : 'never'}
-        camera={{ fov: 40, near: 0.1, far: 200, position: target.current.camera }}
+        // 차트 좌표 대응(three/scenes.ts CHART_DISTANCE)이 이 fov 값에 묶여 있다
+        camera={{ fov: CHART_FOV, near: 0.1, far: 200, position: target.current.camera }}
         gl={{ antialias: false, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: !!capture }}
         onCreated={(state) => {
           // 모바일에서는 GL 컨텍스트가 갑자기 끊길 수 있다 — 화면이 멈추는 대신 대체 이미지로 넘어간다
           state.gl.domElement.addEventListener('webglcontextlost', () => onFail('context'));
         }}
       >
-        <TerrainPoints cloud={cloud} target={target} instant={!!capture} showNoise={level === 0} />
+        <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} />
         <CameraRig target={target} instant={!!capture} parallax={parallax} />
         <FrameWatch
           enabled={!capture}

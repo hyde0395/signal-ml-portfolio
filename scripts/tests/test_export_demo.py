@@ -1,5 +1,5 @@
-# export_demo의 순수 함수 검사: 출발일 범위, 대표 편 고르기, 노선·등급 기준가, 추천 이유 코드,
-# 공휴일 코드, 3D 예측 구간 띠, 데모 기본 조합. 모델(pkl)은 쓰지 않는다.
+# export_demo의 순수 함수 검사: 출발일 범위, 대표 편 고르기, 추천 이유 코드, 공휴일 코드,
+# 데모 기본 조합. 모델(pkl)은 쓰지 않는다.
 import sys
 from pathlib import Path
 
@@ -35,11 +35,6 @@ def test_representative_is_most_observed_recent_flight_with_min_rows():
     assert reps[("ICN_NRT", "FSC")] is None
     assert reps[("HND_ICN", "LCC")] is None
     assert len(reps) == 12
-
-
-def test_route_class_base_is_mean_price():
-    kept = pd.DataFrame(obs(1, price=100_000) + obs(1, price=300_000) + obs(1, o="KIX", d="ICN", cls="FSC", price=50_000))
-    assert ed.route_class_base(kept) == {("ICN_NRT", "LCC"): 200_000.0, ("KIX_ICN", "FSC"): 50_000.0}
 
 
 def test_representative_tie_breaks_by_key_order():
@@ -120,18 +115,6 @@ def test_holiday_codes_nearest_within_three_days():
 def test_holiday_codes_tie_prefers_first_listed():
     hol = [(pd.Timestamp("2026-10-09"), "kr_a"), (pd.Timestamp("2026-10-09"), "jp_b")]
     assert ed.holiday_codes(["2026-10-08"], hol) == {"2026-10-08": "kr_a"}
-
-
-def test_band_averages_pct_of_route_class_base_and_skips_missing():
-    series = {
-        ("ICN_NRT", "LCC"): {"price": [110, None, None], "lo": [90, None, None], "hi": [150, None, None]},
-        ("ICN_KIX", "LCC"): {"price": [100, 200, None], "lo": [80, 150, None], "hi": [120, 260, None]},
-        ("ICN_HND", "FSC"): None,
-    }
-    base = {("ICN_NRT", "LCC"): 100.0, ("ICN_KIX", "LCC"): 100.0, ("ICN_HND", "FSC"): 300.0}
-    band = ed.build_band(series, base, ["2026-09-25", "2026-09-26", "2026-09-27"], "2026-09-22")
-    # 25일: lo (-10, -20) → -15% → ×10 = -150, hi (50, 20) → 35% → 350. 26일: KIX만. 27일: 값 없음 → 뺀다
-    assert band == {"asOf": "2026-09-22", "dates": ["2026-09-25", "2026-09-26"], "lo": [-150, 500], "hi": [350, 1600]}
 
 
 def reco(action, pct):

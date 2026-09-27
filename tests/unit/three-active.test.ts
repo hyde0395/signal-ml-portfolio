@@ -6,9 +6,9 @@ describe('pickActive', () => {
   it('챕터가 섹션 안에 있으면 챕터가 이긴다', () => {
     const r = pickActive([
       { key: 'about', top: -2000, bottom: 2000 },
-      { key: 'insight', top: 0, bottom: 800 },
+      { key: 'chartCurve', top: 0, bottom: 800 },
     ], 800);
-    expect(r).toEqual({ key: 'insight', progress: 0.5 });
+    expect(r).toEqual({ key: 'chartCurve', progress: 0.5 });
   });
   it('진행도는 0~1로 자른다', () => {
     expect(pickActive([{ key: 'hero', top: 390, bottom: 1400 }], 800)?.progress).toBeCloseTo(10 / 1010, 5);
@@ -27,9 +27,9 @@ describe('readCandidates', () => {
 
   it('data-scene 요소를 후보로 읽는다', () => {
     const seen: string[] = [];
-    expect(readCandidates(doc([el('about', 0, 900), el('insight', 100, 500)], seen))).toEqual([
+    expect(readCandidates(doc([el('about', 0, 900), el('chartCurve', 100, 500)], seen))).toEqual([
       { key: 'about', top: 0, bottom: 900 },
-      { key: 'insight', top: 100, bottom: 500 },
+      { key: 'chartCurve', top: 100, bottom: 500 },
     ]);
     expect(seen).toEqual(['[data-scene]']);
   });

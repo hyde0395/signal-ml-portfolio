@@ -32,8 +32,8 @@ describe('detectEnv', () => {
 });
 
 describe('parseCapture', () => {
-  it('대체 이미지가 있는 다섯 장면만 받는다', () => {
-    for (const k of ['hero', 'problem', 'insight', 'bubble', 'interval']) expect(parseCapture(`?capture=${k}`)).toBe(k);
+  it('대체 이미지가 있는 세 장면만 받는다', () => {
+    for (const k of ['hero', 'problem', 'bubble']) expect(parseCapture(`?capture=${k}`)).toBe(k);
   });
   it('모르는 값·빈 값·없음은 null', () => {
     expect(parseCapture('?capture=bogus')).toBeNull();

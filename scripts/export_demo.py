@@ -1,11 +1,9 @@
-"""public/data/demo.<기준일>.json과 band.<기준일>.json을 만들고 data/facts.json의 demoDefault를 고른다.
+"""public/data/demo.<기준일>.json을 만들고 data/facts.json의 demoDefault를 고른다.
 
 - demo: 6개 노선 × LCC/FSC × 출발일 D+3~90마다, 기준일에 샀다면의 예측가·80% 구간·추천을 담는다.
   추천 이유는 문장이 아니라 코드와 값이다. 사이트가 3개 언어 문구 틀로 문장을 조립한다(스펙 §6.2).
 - 대표 편: 모델은 "어느 편인지"(항공사·출발 시각·경유)를 받아야 예측하므로, 노선·등급마다 최근 21일
   동안 50행 이상 관측된 편 중 가장 많이 관측된 편을 쓴다(항공권 저장소 추천 시뮬레이션과 같은 기준).
-- band: 3-5 챕터의 3D 지형에 얹는 예측 구간 띠. 지형과 같은 "노선·등급 평균 대비 %"로 바꿔
-  출발일마다 12개 조합을 평균한다. 원가는 내보내지 않는다(데이터 공개 원칙 §11.4).
 
 실행: npm run demo   (모델을 1,056번 돌려 몇 분 걸린다)
 """
@@ -24,7 +22,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from export_facts import AIRFARE_ROOT, FACTS_PATH, METRICS_PATH  # noqa: E402  (AIRFARE_ROOT를 sys.path에 넣는 부수효과 포함)
-from export_terrain import ROUTE_CLASS, split_rows  # noqa: E402
+from export_terrain import split_rows  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 ROUTES = ["ICN_NRT", "NRT_ICN", "ICN_KIX", "KIX_ICN", "ICN_HND", "HND_ICN"]
@@ -36,7 +34,6 @@ FLIGHT = ["airline", "departure_hour", "stops"]
 TAU = 8.0                            # recommend_action의 "오차 범위" 기준(%)과 같다
 HOLIDAY_WINDOW = 3                   # 공휴일 ±3일(항공권 저장소 is_*_near_holiday와 같다)
 MAX_GZIP_BYTES = 500 * 1024          # 스펙 §6.2
-BAND_MAX_GZIP_BYTES = 50 * 1024
 CONFIDENCE = {"높음": "high", "보통": "medium"}
 BUY_WHY = {"IMMINENT", "PAST_OPTIMAL", "AT_LOW", "SMALL_SAVING"}
 PREFERENCE = ["DROP_EXPECTED", "WAIT", "BUY_NOW"]
@@ -73,12 +70,6 @@ def pick_representatives(kept: pd.DataFrame, as_of: str) -> dict[tuple[str, str]
             out[(route, cabin)] = {"airline": airline, "departure_hour": int(hour), "stops": int(stops),
                                    "duration_minutes": float(rows["duration_minutes"].median())}
     return out
-
-
-def route_class_base(kept: pd.DataFrame) -> dict[tuple[str, str], float]:
-    """노선·등급 평균가. export_terrain.add_route_class_pct와 같은 기준이라 띠가 지형 높이와 맞는다."""
-    mean = kept.groupby(ROUTE_CLASS)["price"].mean()
-    return {(f"{o}_{d}", c): float(v) for (o, d, c), v in mean.items()}
 
 
 def won(x: float) -> int:
@@ -136,24 +127,6 @@ def holiday_codes(dates: list[str], holidays: list[tuple[pd.Timestamp, str]]) ->
         near = [(abs((t - h).days), i, code) for i, (h, code) in enumerate(holidays) if abs((t - h).days) <= HOLIDAY_WINDOW]
         if near:
             out[d] = min(near)[2]
-    return out
-
-
-def build_band(series: dict, base: dict[tuple[str, str], float], dates: list[str], as_of: str) -> dict:
-    """출발일마다 12개 조합의 lo·hi를 노선·등급 평균 대비 %로 바꿔 평균한다(%×10 정수, 지형과 같은 양자화)."""
-    out = {"asOf": as_of, "dates": [], "lo": [], "hi": []}
-    for i, d in enumerate(dates):
-        lo, hi = [], []
-        for key, s in series.items():
-            if s is None or s["price"][i] is None:
-                continue
-            lo.append((s["lo"][i] / base[key] - 1) * 100)
-            hi.append((s["hi"][i] / base[key] - 1) * 100)
-        if not lo:
-            continue
-        out["dates"].append(d)
-        out["lo"].append(round(sum(lo) / len(lo) * 10))
-        out["hi"].append(round(sum(hi) / len(hi) * 10))
     return out
 
 
@@ -270,8 +243,6 @@ def main() -> None:
         "series": {f"{r}/{c}": s for (r, c), s in series.items()},
     }
     write_json(ROOT / "public" / "data" / f"demo.{as_of}.json", demo, MAX_GZIP_BYTES)
-    write_json(ROOT / "public" / "data" / f"band.{as_of}.json",
-               build_band(series, route_class_base(kept), dates, as_of), BAND_MAX_GZIP_BYTES)
 
     default = choose_default(demo["series"], dates)
     facts = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
