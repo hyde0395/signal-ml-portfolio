@@ -1,6 +1,6 @@
 // 장면 표: 섹션·챕터마다 카메라 위치와 셰이더 uniform 목표값을 정한다.
 // 캔버스는 이 값으로 "부드럽게 다가가기"만 하므로, 연출을 바꾸려면 이 표만 고치면 된다.
-export type SceneKey = 'hero' | 'about' | 'problem' | 'insight' | 'bubble' | 'validation' | 'interval' | 'limits' | 'demo' | 'stack' | 'contact';
+export type SceneKey = 'hero' | 'about' | 'problem' | 'insight' | 'bubble' | 'validation' | 'interval' | 'limits' | 'demo' | 'contact';
 
 export type SceneState = {
   camera: [number, number, number];
@@ -41,9 +41,8 @@ export const SCENES: Record<SceneKey, SceneState> = {
   // 3-5: 지형 앞 가장자리("오늘")에 기준일의 예측 구간 띠를 세운다. 비스듬히 내려다보는 시점은 계획 3 그대로
   interval: { ...base, camera: [-12, 5, 12], target: [0, 0.5, 0], band: 1 },
   limits: { ...base, camera: [0, 12, 26], target: [0, 0, 0], noise: 0.7 },
-  // 데모: 조작 화면이 주인공이라 지형은 멀리 물러나 잡음을 줄인다(stack과 같은 구도)
+  // 데모: 조작 화면이 주인공이라 지형은 멀리 물러나 잡음을 줄인다(연락처와 같은 구도)
   demo: { ...base, camera: [0, 16, 30], target: [0, 0, 0], noise: 0.3 },
-  stack: { ...base, camera: [0, 16, 30], target: [0, 0, 0], noise: 0.3 },
   contact: { ...base, camera: [0, 16, 30], target: [0, 0, 0], noise: 0.3 },
 };
 

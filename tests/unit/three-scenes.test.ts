@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 
-const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'demo', 'stack', 'contact'];
+const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'demo', 'contact'];
 
 describe('SCENES', () => {
   it('모든 섹션·챕터 키가 있다', () => expect(Object.keys(SCENES).sort()).toEqual([...KEYS].sort()));

@@ -68,6 +68,14 @@ export function prepareBoard(board: HTMLElement): void {
   for (const f of flapsOf(board)) reset(halves(f), flipPath(f.dataset.c ?? ' ')[0]);
 }
 
+// 정리(teardown) 전용: 칸을 최종(완성) 글자로 되돌린다. animateBoard가 돌려주는 취소 함수도 같은 일을
+// 하지만, 그건 화면에 들어와 애니메이션을 실제로 시작한 보드에만 존재한다. prepareBoard로 출발 글자를
+// 깔아만 두고 아직 화면에 들어오지 않은 보드는 그 취소 함수가 없어, run.ts가 정리될 때 출발 글자에
+// 그대로 멈춰 있었다(최종 리뷰 #7). 애니메이션을 시작하지 않고 값만 되돌리므로 비용이 거의 없다
+export function finalizeBoard(board: HTMLElement): void {
+  for (const f of flapsOf(board)) reset(halves(f), f.dataset.c ?? ' ');
+}
+
 // 글자를 넘긴다. 되돌리는 함수(취소 → 완성 글자)를 돌려준다
 export function animateBoard(board: HTMLElement): () => void {
   let cancelled = false;

@@ -7,7 +7,7 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { animateBoard, prepareBoard } from './board';
+import { animateBoard, finalizeBoard, prepareBoard } from './board';
 import { flip } from './flip';
 import { splitWords } from './words';
 
@@ -41,6 +41,9 @@ export function startMotion(doc: Document): () => void {
   lenis.on('scroll', ScrollTrigger.update);
 
   const cancels: (() => void)[] = [];
+  // prepareBoard를 부른 보드를 전부 기억해 둔다 — teardown에서 애니메이션을 이미 시작한 보드뿐 아니라
+  // 아직 화면에 들어오지 않아 출발 글자에 멈춰 있는 보드도 완성 글자로 되돌리기 위해서다(최종 리뷰 #7)
+  const boards: HTMLElement[] = [];
   // 트리거 위치는 만들 때 한 번 재 두는데, 3D 판정(pending → on)이 끝나면 .chapter가 min-height:100vh로
   // 늘어나 페이지가 수천 px 길어진다. ScrollTrigger 3.15는 본문 크기 변화를 스스로 감지하지 않고 Lenis도
   // refresh를 부르지 않아, 그대로 두면 3D 방문자에게 리빌·플립이 화면 밖에서 미리 끝나 버린다.
@@ -65,6 +68,7 @@ export function startMotion(doc: Document): () => void {
     });
     doc.querySelectorAll<HTMLElement>('[data-board]').forEach((el) => {
       prepareBoard(el);
+      boards.push(el);
       ScrollTrigger.create({ trigger: el, start: ENTER, once: true, onEnter: () => cancels.push(animateBoard(el)) });
     });
   });
@@ -72,7 +76,8 @@ export function startMotion(doc: Document): () => void {
   return () => {
     resize.disconnect();
     window.clearTimeout(refreshTimer);
-    cancels.forEach((c) => c());
+    cancels.forEach((c) => c()); // 화면에 들어와 이미 넘어가던 보드는 여기서 멈추고 완성 글자로 돌아간다
+    boards.forEach(finalizeBoard); // 아직 화면에 들어오지 않아 출발 글자 그대로였던 보드도 완성 글자로
     ctx.revert();
     gsap.ticker.remove(raf);
     gsap.ticker.lagSmoothing(500, 33); // GSAP 기본값으로 되돌린다

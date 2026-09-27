@@ -141,7 +141,7 @@
   "data": {
     "body1": "인천과 도쿄(나리타·하네다), 오사카(간사이)를 오가는 {data.routes}개 노선의 항공권 가격을 {data.collectStart|date}부터 {data.collectEnd|date}까지 모았습니다.",
     "body2": "SerpApi로 Google Flights 검색 결과를 가져오고, GitHub Actions가 매일 실행합니다. 원본 {data.rawRows}행 중 오류를 걸러 {data.filteredRows}행을 썼습니다.",
-    "sparse": "가까운 출발일은 매일, 먼 출발일은 매주 한 번 수집해서 먼 구간은 데이터가 성깁니다. 지형에서 점이 듬성한 곳이 그 구간입니다.",
+    "sparse": "가까운 출발일은 매일, 먼 출발일은 매주 한 번 수집해서 먼 구간은 데이터가 성깁니다. 점이 듬성한 곳이 그 구간입니다.",
     "heading": "수집한 데이터",
     "steps": {
       "collect": "SerpApi · Google Flights 검색 결과",
@@ -182,7 +182,7 @@
   },
   "charts": {
     "depart": {
-      "body1": "하지만 가격을 더 크게 흔드는 것은 언제 사느냐보다 언제 떠나느냐였습니다. 공휴일과 주말 출발편이 지형의 봉우리로 솟아 있습니다.",
+      "body1": "가격을 더 크게 흔드는 것은 언제 사느냐보다 언제 떠나느냐였습니다. 공휴일과 주말 출발편이 지형의 봉우리로 솟아 있습니다.",
       "heading": "출발일별 가격"
     },
     "curve": {

@@ -141,7 +141,7 @@
   "data": {
     "body1": "I collected airfare prices for {data.routes} routes between Incheon and Tokyo (Narita, Haneda) and Osaka (Kansai), from {data.collectStart|date} to {data.collectEnd|date}.",
     "body2": "Results come from the Google Flights search via SerpApi, run daily by GitHub Actions. Of {data.rawRows} raw rows, {data.filteredRows} remained after filtering out errors.",
-    "sparse": "Near-term departure dates were collected daily, distant ones weekly, so the far end of the range is sparse. On the terrain, the sparse patches are that stretch.",
+    "sparse": "Near-term departure dates were collected daily, distant ones weekly, so the far end of the range is sparse. The sparse patches you see are that stretch.",
     "heading": "The data",
     "steps": {
       "collect": "SerpApi · Google Flights search results",
@@ -182,7 +182,7 @@
   },
   "charts": {
     "depart": {
-      "body1": "But what moves the price more than when you buy is when you fly. Flights departing on holidays and weekends rise as peaks on the terrain.",
+      "body1": "What moves the price more than when you buy is when you fly. Flights departing on holidays and weekends rise as peaks on the terrain.",
       "heading": "Price by departure date"
     },
     "curve": {

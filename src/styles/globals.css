@@ -143,13 +143,22 @@ html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
 
 /* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 움직일 시간을 주고, 글은 반투명 카드에 담아 대비를 지킨다 */
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
-/* .pass(탑승권 카드)는 자기 배경이 있는 640px 카드라 560px 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제) */
+/* .pass(탑승권 카드)는 자기 배경이 있는 640px 카드라 560px 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제).
+   .contact-about(옛 소개, 640px)은 자기 배경이 없어 여기서 빼지 않는다 — 560px로 같이 줄어야 최종 리뷰 #4에서
+   지적된 "3D 켜진 상태에서 판 밖으로 삐져나오는 문제"가 없다 */
 /* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 판(.text-scrim)은
    큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 판은 글 크기만큼만 커진다 */
-html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .board-housing, .collect-line, .feature-groups, .contact-about, .text-scrim) { max-width: 560px; }
-/* #stack·#contact도 다른 섹션과 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제) */
+html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .board-housing, .collect-line, .feature-groups, .text-scrim) { max-width: 560px; }
+/* 각 섹션도 다른 챕터와 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제) */
 html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) {
   background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
+}
+/* 위 판은 600px까지만 불투명하고 760px에서 완전히 투명해지는데, 수집 라인·피처 목록은 훨씬 넓게 펼쳐져 있어
+   (자동 맞춤 그리드) 오른쪽 칸들이 판 밖 맨 지형·지도 점 위에 바로 뜬다(최종 리뷰 #1, 1440px 스크린샷으로 확인).
+   칸(li)마다 따로 판을 깐다 — 두 목록 모두 칸 패딩이 3D 여부와 무관하게 이미 같으므로 배경만 켜면 되고
+   (칸 크기가 안 바뀌니 3D가 켜지는 순간 글이 밀리는 CLS도 없다) */
+html[data-3d="on"] .collect-line li, html[data-3d="on"] .feature-groups li {
+  background: rgba(7, 11, 22, 0.82); border-radius: 8px;
 }
 /* 첫 화면 글과 사례 연구 제목: 챕터처럼 긴 카드를 두면 첫 화면 지형이 가려지므로, 글 덩어리 크기만 한
    어두운 판을 깐다. 상자 크기(padding·음수 margin)는 3D와 상관없이 늘 같게 둬야 3D가 켜지는 순간 글이
@@ -238,8 +247,19 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
   .board-table th, .board-table td { padding: 0 4px; }
   .board-table thead th { letter-spacing: 0.06em; font-size: 0.65rem; }
   .flaps { gap: 2px; }
-  .board-dest, .board-status .flaps, .board-table thead .board-status { display: none; }
+  /* 목적지 열은 머리글·칸이 통째로 없어져 표에서 완전히 빠진다. 상태 열은 다르다 — 몸 칸에 램프와
+     sr-only 완성값("매일 수집")이 그대로 남는데, 머리글(STATUS)까지 display:none으로 지우면 화면
+     낭독기가 그 칸을 아무 이름 없는 열로 읽는다(최종 리뷰 #6). 머리글은 지우지 않고 sr-only로
+     화면에서만 감춘다 */
+  .board-dest, .board-status .flaps { display: none; }
+  .board-table thead .board-status {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
   .board-lamp { margin: 0; }
+  /* 수집 기간 줄("2026-04-23 → 2026-09-22 · 153 DAYS")이 390px에서 단어 사이로 줄바꿈되면 "DAYS"만
+     남아 어색하다(최종 리뷰 #8). 글자를 살짝 줄이고 한 줄로 고정한다 — 넘치면 .board의 overflow-x:auto가
+     가로 스크롤로 받아 준다(칸 표와 같은 처리) */
+  .board-range { font-size: 0.75rem; white-space: nowrap; }
 }
 /* 태블릿·좁은 데스크톱: 네 열을 다 보여주면서 가로 스크롤 없이 들어가야 하므로, 767px 이하의 휴대폰용
    칸 크기(목적지·상태 열을 숨겨 여유가 있던)를 열을 숨기지 않은 채로 그대로 쓴다(Playwright로 768px 실측) */

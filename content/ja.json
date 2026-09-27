@@ -141,7 +141,7 @@
   "data": {
     "body1": "仁川と東京（成田・羽田）、大阪（関西）を結ぶ{data.routes}路線の航空券価格を、{data.collectStart|date}から{data.collectEnd|date}まで収集しました。",
     "body2": "SerpApi経由でGoogle Flightsの検索結果を取得し、GitHub Actionsが毎日実行します。元データ{data.rawRows}行のうち、エラーを除いて{data.filteredRows}行を使用しました。",
-    "sparse": "近い出発日は毎日、遠い出発日は週に一回収集したため、遠い区間はデータがまばらです。地形上で点が少ない場所がその区間です。",
+    "sparse": "近い出発日は毎日、遠い出発日は週に一回収集したため、遠い区間はデータがまばらです。点が少ない場所がその区間です。",
     "heading": "集めたデータ",
     "steps": {
       "collect": "SerpApi · Google Flights の検索結果",
@@ -182,7 +182,7 @@
   },
   "charts": {
     "depart": {
-      "body1": "ただし価格をより大きく動かすのは、いつ買うかよりいつ出発するかでした。祝日や週末出発の便は地形上で山として現れます。",
+      "body1": "価格をより大きく動かすのは、いつ買うかよりいつ出発するかでした。祝日や週末出発の便は地形上で山として現れます。",
       "heading": "出発日別の価格"
     },
     "curve": {
