@@ -215,7 +215,7 @@
       "body1": "Instead of a single price, I also output a {model.interval.level}% prediction interval.",
       "body2": "A fixed interval's actual coverage dropped to {model.interval.driftLow}% on more recent data. I adjusted the interval width to account for the shifting distribution, reaching {model.interval.coverage}% coverage on the most recent window.",
       "body3": "The dots in the cloud are spread inside the {model.interval.level}% prediction interval computed on the reference date for Incheon→Narita LCC. The bright dot in the middle is the predicted price; the sparser the edge, the less likely that price. Other routes are in the demo below.",
-      "alt": "Predicted price and prediction interval per departure date drawn as a dot cloud. The cloud widens for later dates.",
+      "alt": "Predicted price and prediction interval per departure date drawn as a dot cloud. The bright dot in the middle is the predicted price; the wider the interval on a date, the more widely its dots spread.",
       "axis": "Predicted price (KRW)"
     },
     "limits": {

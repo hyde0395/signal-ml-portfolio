@@ -41,7 +41,6 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 2. **공개 전환**: 위가 끝나면 `src/lib/site.ts`의 `LAUNCHED = true` (noindex·`robots.txt` Disallow 해제). 사용자가 정한다
 3. **남은 개선 (급하지 않음)**
    - 성능 ko·ja 90: 남은 몫은 TBT(3D·연출 코드의 메인 스레드 점유)와 ja의 렌더 지연. `experimental.inlineCss`는 시험 후 되돌림(HTML이 커져 ko·ja 악화, 스펙 §8.2). 다음 후보: 3D 시작을 더 늦추기(첫 입력·스크롤 뒤), 지형 점 구름 만들기를 Web Worker로
-   - 휴대폰 3-5 예측 구간 띠: 지형 출발일과 맞는 날만 세우고 점을 키웠지만 세로 화면에서 흩어진 흰 점으로 보인다. 사용자가 2026-09-24 "이대로" 승인 — 다시 손볼지는 사용자에게 묻는다
    - 계획 4-2 최종 검토의 작은 지적(`flip.ts`는 글자를 코드 포인트 단위로 나눔, 리빌은 제목 안쪽 마크업을 지움 — 지금 제목은 모두 글자만이라 문제없음)
 4. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
 
