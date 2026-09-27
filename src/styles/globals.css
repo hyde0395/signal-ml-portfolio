@@ -148,7 +148,9 @@ html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: 
    지적된 "3D 켜진 상태에서 판 밖으로 삐져나오는 문제"가 없다 */
 /* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 판(.text-scrim)은
    큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 판은 글 크기만큼만 커진다 */
-html[data-3d="on"] :is(.chapter, #project, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .text-scrim) { max-width: 560px; }
+/* .data-intro는 여기서 빼야 한다 — :is() 안에 #project가 있어 이 규칙의 명시도가 (1,2,2)로,
+   화면 1 전용 420px 규칙(.data-intro > …, 1,2,1)보다 세다. 빼지 않으면 이 560px가 항상 이긴다 */
+html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .text-scrim) { max-width: 560px; }
 /* 각 섹션도 다른 챕터와 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제).
    그림 판 블록은 .chart-copy가 자기 판을 갖는다 */
 html[data-3d="on"] :is(.chapter, #project, #demo, #contact) {
@@ -188,9 +190,10 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 
 /* ② DATA(설계 2026-09-25 §3.2, 2026-09-27 개정 — 두 화면): 화면 1의 글·수집 4단계 + 화면 2의 공항 출발 안내판 */
 /* ② 화면 1: 글과 수집 4단계는 왼쪽 좁은 열(지도가 오른쪽에 온전히 보이게, 설계 §3.2 2026-09-27).
-   3D가 켜지면 `html[data-3d="on"] :is(.chapter, #project, …) > :is(p, …)`(560px, 명시도 1-1-2)가 걸리므로
-   ID + 클래스 두 개(1-2-1)로 그보다 세게 적는다 */
-#data.data .data-intro > :is(p, h2, ol) { max-width: 420px; }
+   560px 규칙(위 `html[data-3d="on"] :is(.chapter, #project, …)`)은 :is() 안에 #project가 있어
+   명시도가 이 규칙보다 세므로, 숫자로 이기려 하지 않고 그 규칙의 :is() 목록에서 `.chapter:not(.data-intro)`로
+   .data-intro를 아예 빼서 겹치지 않게 한다 */
+.data-intro > :is(p, h2, ol) { max-width: 420px; }
 .collect-steps { list-style: none; display: grid; gap: 10px; margin-block: 24px; }
 .collect-steps li { display: grid; grid-template-columns: 104px 1fr; gap: 12px; align-items: baseline;
   padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(7, 11, 22, 0.72); }
@@ -200,7 +203,7 @@ html[data-3d="on"] .data-board { min-height: 100vh; display: flex; flex-directio
 .data-board > :is(p, a) { max-width: 560px; }
 /* 판이 없으므로 작은 글자(머리줄·열 이름·아래 글)가 흐려진 지도 점 위에서도 AA 대비를 지키게 글자 그림자를 깐다 */
 html[data-3d="on"] .data-board :is(.board-head, .board-table thead),
-html[data-3d="on"] .data-board > p { text-shadow: 0 0 6px #070B16, 0 0 2px #070B16; }
+html[data-3d="on"] .data-board > :is(p, a) { text-shadow: 0 0 6px #070B16, 0 0 2px #070B16; }
 .data-tools { font-size: 0.8rem; }
 /* 칸 크기는 화면 너비별로 다르다(axe scrollable-region-focusable 수정, 2026-09-25). .wrap이 1080px에서
    막히므로 칸 25개(노선·목적지·건수·상태 글자 합)를 44px 그대로 다 펴면 항상 가로 스크롤이 생긴다.
