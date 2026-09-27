@@ -135,6 +135,38 @@ describe('swarmLayout', () => {
     expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'tick')).toHaveLength(11);
     expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'axis')).toHaveLength(1);
   });
+  const S = { bin: (lo: number, hi: number) => `D-${lo}~${hi}`, pct: (v: number) => `${v}%`, axis: 'A' };
+  const binTexts = (lay: ReturnType<typeof swarmLayout>) =>
+    lay.labels.filter((l) => l.type === 'text' && l.cls === 'tick' && !l.text.endsWith('%')).map((l) => (l.type === 'text' ? l.text : ''));
+  it('좁은 판(340px)에서는 구간 이름표에 "D-"를 빼 서로 겹치지 않게, 넓은 판에서는 그대로', () => {
+    const narrow = binTexts(swarmLayout(curve, { w: 340, h: 380 }, S));
+    expect(narrow).toHaveLength(8);
+    for (const t of narrow) expect(t).not.toContain('D-');
+    for (const t of binTexts(L)) expect(t).toContain('D-');
+  });
+  it('구간 폭을 넘치는 점은 가장자리에 쌓지 않고 뺀다 — 같은 px 자리에 두 점이 없다', () => {
+    // 모든 표본이 한 구간·같은 값 → 한 줄에 몰린다. 좁은 판에서는 폭을 넘치는 점이 생긴다
+    const dense: ChartsData['curve'] = { ...charts.curve, mean, sample: { bin: new Array(200).fill(5), pct: new Array(200).fill(-50) } };
+    const D = swarmLayout(dense, { w: 340, h: 380 }, S);
+    const seen = new Set<string>();
+    let count = 0;
+    for (let i = 0; i < D.n; i++) {
+      if (D.size[i] !== 3) continue;
+      count++;
+      const key = `${Math.round(D.x[i] * 340 * 100)},${Math.round(D.y[i] * 380 * 100)}`;
+      expect(seen.has(key), `점 ${i}`).toBe(false);
+      seen.add(key);
+    }
+    expect(count).toBeGreaterThan(0);
+    expect(count).toBeLessThan(200);
+  });
+  it('호박색 구간은 평균이 가장 낮은 세 구간에서 정한다(고정 번호가 아니다)', () => {
+    const shifted = [-60, -55, -50, 10, 20, 30, 40, 50];
+    const b2: number[] = [], p2: number[] = [];
+    shifted.forEach((m, b) => { for (let k = 0; k < 5; k++) { b2.push(b); p2.push(m); } });
+    const X = swarmLayout({ ...charts.curve, mean: shifted, sample: { bin: b2, pct: p2 } }, { w: W, h: H }, S);
+    for (let i = 0; i < 40; i++) expect(X.tone[i] === TONE.amber, `표본 ${i}`).toBe([0, 1, 2].includes(Math.floor(i / 5)));
+  });
 });
 
 describe('invNorm', () => {

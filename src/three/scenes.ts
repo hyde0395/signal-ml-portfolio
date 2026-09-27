@@ -14,6 +14,7 @@ export type SceneState = {
   chart: number;    // 1 = 점이 그림 판 배치로 모인다(차트 장면). TerrainScene은 배치가 준비됐을 때만 1로 둔다
   slot: number;     // 차트 배치 두 벌(A=0, B=1) 중 보일 쪽. 장면 표에서는 0이고 TerrainScene이 정한다
   dim: number;      // 모든 지형·지도 점의 알파 배율
+  shift: number;    // 차트 배치 전체의 세계 y 이동량. 장면 표에서는 0이고 TerrainScene이 판 위치로 정한다(chartShiftY)
 };
 
 // 차트 장면 카메라: 원점을 정면(z축)에서 본다. 그림 판의 화면 px ↔ z=0 평면 좌표가 이 두 값으로 정해지므로
@@ -22,7 +23,7 @@ export const CHART_DISTANCE = 24;
 export const CHART_FOV = 40;
 const CHART = { camera: [0, 0, CHART_DISTANCE] as SceneState['camera'], target: [0, 0, 0] as SceneState['target'], chart: 1, noise: 0 };
 
-const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1 };
+const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0 };
 
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 비스듬히 내려다본 전경. 처음엔 assemble이 0에서 시작해 신호가 떠오른다(TerrainPoints 초기값).

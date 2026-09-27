@@ -22,6 +22,7 @@ export const vertexShader = /* glsl */ `
   uniform float uDim;
   uniform float uChart;      // 0 = 지형·지도, 1 = 차트 배치
   uniform float uSlot;       // 0 = A, 1 = B
+  uniform float uChartShift; // 차트 배치의 세계 y 이동(판이 고정되기 전·풀린 뒤 이름표를 따라가게)
   uniform float uDpr;
   uniform vec3 uDot;
   uniform vec3 uAmber;
@@ -41,7 +42,7 @@ export const vertexShader = /* glsl */ `
     // 덜 모인 점일수록 천천히 떠다닌다
     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
     if (aKind > 1.5) p.y -= uDrop * uDrop * 14.0; // 제거 레이어(kind 2)만 가속하며 떨어진다
-    p = mix(p, mix(aChartA, aChartB, uSlot), uChart);
+    p = mix(p, mix(aChartA, aChartB, uSlot) + vec3(0.0, uChartShift, 0.0), uChart);
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;

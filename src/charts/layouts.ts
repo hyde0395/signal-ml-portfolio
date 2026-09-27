@@ -113,8 +113,9 @@ export function calendarLayout(d: ChartsData, size: PlotSize, s: { weekday(i: nu
 
 // ④ 차트 2 구간별 분포 벌떼: 출발이 지난 편의 관측 하나 = 점 하나. 구간 8개를 왼쪽(D-61~90)에서
 // 오른쪽(D-1~3)으로 놓고, 구간 안에서 같은 높이의 점은 좌우로 번갈아 비켜 쌓는다. 구간 평균을 이은 밝은 선이 U자.
-// 가장 싼 구간(D-22~60 = 번호 4·5·6)의 점은 호박색. ±22% 밖은 그리지 않는다(몇 개가 축을 늘려 모양을 뭉개지 않게).
-export const SWARM = { dot: 3, gap: 0.4, clip: 22, linePts: 20, cheap: [4, 5, 6], marginLeft: 0.08, marginTop: 0.08, marginBottom: 0.12 } as const;
+// 평균이 가장 낮은 세 구간(지금 데이터로는 D-22~60)의 점은 호박색. ±22% 밖은 그리지 않는다(몇 개가 축을 늘려 모양을 뭉개지 않게).
+// narrowColPx: 구간 칸이 이보다 좁으면(휴대폰) 이름표에서 "D-"를 뺀다 — 9px 글자로 "D-61~90"이 칸 폭을 다 채워 옆 이름표와 겹친다
+export const SWARM = { dot: 3, gap: 0.4, clip: 22, linePts: 20, cheapCount: 3, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.08, marginBottom: 0.12 } as const;
 
 export function swarmLayout(c: ChartsData['curve'], size: PlotSize, s: { bin(lo: number, hi: number): string; pct(v: number): string; axis: string }): ChartLayout {
   const nb = c.bins.length;
@@ -131,15 +132,20 @@ export function swarmLayout(c: ChartsData['curve'], size: PlotSize, s: { bin(lo:
     const v = c.sample.pct[i] / 10;
     if (b >= 0 && b < nb && Math.abs(v) <= SWARM.clip) byBin[b].push(v);
   });
+  // 호박색 구간은 번호를 박아 두지 않고 평균으로 고른다 — 재추출로 곡선 모양이 바뀌어도 "가장 싼 구간"이 맞게
+  const cheapBins = c.mean.map((m, b) => [m, b] as const).sort((a, z) => a[0] - z[0]).slice(0, SWARM.cheapCount).map(([, b]) => b);
   byBin.forEach((vals, b) => {
-    const cheap = (SWARM.cheap as readonly number[]).includes(b);
+    const cheap = cheapBins.includes(b);
     const used = new Map<number, number>();
     for (const v of vals) {
       // 높이를 점 간격 단위 줄로 맞추고, 같은 줄의 k번째 점은 가운데에서 좌우로 번갈아 비킨다 → 겹치지 않는다
       const row = Math.round(y(v) / step);
       const k = used.get(row) ?? 0;
       used.set(row, k + 1);
-      const off = Math.min(colW * 0.45, Math.ceil(k / 2) * step) * (k % 2 ? 1 : -1);
+      const reach = Math.ceil(k / 2) * step;
+      // 칸 폭을 넘치는 점은 버린다. 가장자리에 붙여 두면 같은 자리에 겹겹이 쌓여(더하기 혼합) 밝은 세로 막대로 보인다
+      if (reach > colW * 0.45) continue;
+      const off = reach * (k % 2 ? 1 : -1);
       p.add((cx(b) + off) / size.w, (row * step) / size.h, SWARM.dot, 0.55, cheap ? TONE.amber : TONE.dot);
     }
   });
@@ -156,7 +162,8 @@ export function swarmLayout(c: ChartsData['curve'], size: PlotSize, s: { bin(lo:
   for (const [nx, ny] of nodes) p.add(nx / size.w, ny / size.h, 6, 1, TONE.text);
 
   const labels: ChartLabel[] = [];
-  c.bins.forEach(([lo, hi], b) => labels.push({ type: 'text', x: cx(b) / size.w, y: (top + innerH + 14) / size.h, text: s.bin(lo, hi), align: 'center', cls: 'tick' }));
+  const binText = (lo: number, hi: number) => (colW < SWARM.narrowColPx ? `${lo}~${hi}` : s.bin(lo, hi));
+  c.bins.forEach(([lo, hi], b) => labels.push({ type: 'text', x: cx(b) / size.w, y: (top + innerH + 14) / size.h, text: binText(lo, hi), align: 'center', cls: 'tick' }));
   for (const v of [20, 0, -20]) labels.push({ type: 'text', x: (left - 6) / size.w, y: y(v) / size.h, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: left / size.w, y: (top * 0.4) / size.h, text: s.axis, align: 'start', cls: 'axis' });
   return p.done(labels);

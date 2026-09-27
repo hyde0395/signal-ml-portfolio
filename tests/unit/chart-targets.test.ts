@@ -2,7 +2,7 @@
 // 슬롯 버퍼는 쓰는 점만 차트 자리·모양을 받고, 나머지는 지형 자리에서 알파 0.
 import { describe, expect, it } from 'vitest';
 import type { ChartEntry } from '@/charts/types';
-import { assignPoints, screenToWorld, slotBuffers } from '@/three/chartTargets';
+import { assignPoints, chartShiftY, screenToWorld, slotBuffers } from '@/three/chartTargets';
 
 const HALF_H = 24 * Math.tan((40 * Math.PI) / 360);
 
@@ -50,5 +50,16 @@ describe('slotBuffers', () => {
   it('안 쓰는 점은 지형 자리에 알파 0', () => {
     expect(Array.from(pos.slice(0, 3))).toEqual([1, 2, 3]);
     expect(style[0]).toBe(0);
+  });
+});
+
+describe('chartShiftY', () => {
+  it('판이 고정(top 0)이면 0, 판이 화면 맨 위보다 아래에 있으면 음수(점도 아래로)', () => {
+    expect(chartShiftY(0, 800, 24, 40)).toBe(0);
+    expect(chartShiftY(200, 800, 24, 40)).toBeLessThan(0);
+    expect(chartShiftY(-200, 800, 24, 40)).toBeGreaterThan(0);
+  });
+  it('판이 화면 한 높이만큼 내려가 있으면 시야 높이(halfH×2)만큼 내려간다', () => {
+    expect(chartShiftY(800, 800, 24, 40)).toBeCloseTo(-HALF_H * 2, 6);
   });
 });

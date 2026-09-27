@@ -7,7 +7,7 @@ import { getChart, onChartsChange } from '@/charts/registry';
 import type { ChartEntry, ChartKey } from '@/charts/types';
 import { pickActive, readCandidates } from './activeScene';
 import { CameraRig } from './CameraRig';
-import { assignPoints, slotBuffers } from './chartTargets';
+import { assignPoints, chartShiftY, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, stepFrameRate } from './frameRate';
 import { CHART_DISTANCE, CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
@@ -27,6 +27,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   const parallax = useRef(true);
   const slots = useRef<ChartSlots>({ pending: null });
   // 지금 슬롯에 써 넣은 차트와 그 슬롯. 차트에서 차트로 넘어갈 때만 다른 슬롯에 써서 점이 두 배치 사이를 옮겨 간다
+  const shiftKey = useRef<ChartKey | null>(null); // 점 이동량(shift)을 잴 판의 차트 — 차트를 벗어나도 마지막 것을 유지
   const chartState = useRef<{ key: ChartKey | null; entry: ChartEntry | null; slot: 0 | 1 }>({ key: null, entry: null, slot: 0 });
 
   useEffect(() => {
@@ -78,8 +79,18 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         chartState.current = { ...chartState.current, key: null, entry: null };
         delete document.documentElement.dataset.chart;
       }
+      // 차트 장면은 블록이 화면 가운데를 지나면 켜지지만 판은 윗변이 화면 맨 위에 닿은 동안만 고정된다.
+      // 들어오고 나가는 동안에는 이름표가 스크롤로 움직이므로, 판의 지금 위치만큼 점도 위아래로 옮긴다
+      // 차트가 아닌 장면으로 넘어간 뒤에도 마지막 차트의 판을 계속 따라간다 — uChart가 1→0으로 줄어드는 동안
+      // 0으로 바꾸면 점이 판 위치만큼 한 번에 튄다(uChart가 0이 되면 이 값은 화면에 영향이 없다)
+      if (chartKey) shiftKey.current = chartKey;
+      let shift = 0;
+      if (shiftKey.current) {
+        const top = document.querySelector(`[data-scene="${shiftKey.current}"] .chart-stage`)?.getBoundingClientRect().top;
+        if (top !== undefined) shift = chartShiftY(top, window.innerHeight, CHART_DISTANCE, CHART_FOV);
+      }
       // 배치가 아직 없으면(데이터를 받는 중) 점을 지형에 둔다 — 빈 화면 대신 멀리 보이는 지형
-      target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot };
+      target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot, shift };
       parallax.current = active.key === 'hero';
       setRunning(active.key !== 'contact' && !document.hidden);
     };

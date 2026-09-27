@@ -56,6 +56,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     uDim: { value: 1 },
     uChart: { value: 0 },
     uSlot: { value: 0 },
+    uChartShift: { value: 0 },
     uDpr: { value: 1 },
     uDot: { value: new THREE.Color('#8FB8FF') },
     uAmber: { value: new THREE.Color('#FFB547') },
@@ -88,6 +89,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     step('uDim', t.dim);
     step('uChart', t.chart);
     step('uSlot', t.slot);
+    // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
+    u.uChartShift.value = t.shift;
     // 캡처 모드에서는 uTime을 0으로 고정한다. 매번 같은 시각에 찍어야 대체 이미지가 항상 똑같이 나온다
     u.uTime.value = instant ? 0 : state.clock.elapsedTime;
     u.uSize.value = 8 * state.viewport.dpr;

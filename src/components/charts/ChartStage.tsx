@@ -63,10 +63,19 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
     // 판 크기가 바뀌면(창 조절·회전) 다시 배치한다 — 저장소를 거쳐 3D도 새 배치로 다시 쓴다
     const ro = new ResizeObserver(() => redraw());
     ro.observe(pl);
+    // 판 높이는 vh 단위라, 휴대폰 주소창이 접히고 펴져 innerHeight만 바뀌면 ResizeObserver가 안 불릴 수 있다
+    // (그러면 저장소의 rect.vh가 옛 값으로 남아 3D 점이 어긋난다). 창 resize도 받아 한 프레임에 한 번 다시 배치한다
+    let rf = 0;
+    const onResize = () => { if (!rf) rf = requestAnimationFrame(() => { rf = 0; redraw(); }); };
+    window.addEventListener('resize', onResize);
     // 3D가 도중에 꺼지면(저프레임 전환) 그 자리에서 2D로 그린다
     const mo = new MutationObserver(() => redraw());
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-3d'] });
-    return () => { alive = false; io.disconnect(); ro.disconnect(); mo.disconnect(); };
+    return () => {
+      alive = false; io.disconnect(); ro.disconnect(); mo.disconnect();
+      window.removeEventListener('resize', onResize);
+      if (rf) cancelAnimationFrame(rf);
+    };
   }, [chartKey, dataVersion, strings]);
 
   return (

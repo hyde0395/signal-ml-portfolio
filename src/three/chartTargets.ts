@@ -9,6 +9,14 @@ export function screenToWorld(sx: number, sy: number, vw: number, vh: number, di
   return [((sx / vw) * 2 - 1) * halfW + 0, (1 - (sy / vh) * 2) * halfH + 0]; // + 0: -0을 0으로
 }
 
+// 판이 고정되기 전·풀린 뒤(블록이 들어오고 나가는 동안)에도 점이 이름표와 함께 움직이도록 더할 세계 y 이동량.
+// 차트 장면은 블록이 화면 가운데를 지나면 켜지지만 판은 top ≤ 0 동안만 고정된다 — 그 사이 이름표는 스크롤로 움직인다.
+// stageTop: 지금 판(.chart-stage)의 화면 위치(px). 화면에서 아래(px +)는 세계 y의 아래(-)다.
+export function chartShiftY(stageTop: number, vh: number, dist: number, fovDeg: number): number {
+  const halfH = dist * Math.tan((fovDeg * Math.PI) / 360);
+  return (-stageTop * (2 * halfH)) / vh + 0; // + 0: -0을 0으로
+}
+
 // 배치 점마다 점 구름의 어느 점을 쓸지 고른다. group(지형 출발일 번호)이 있으면 그 출발일의 신호·잡음 점을 먼저
 // 쓴다 — 점 달력에서 "그 출발일의 점들이 모여 원을 이룬다"가 실제로 그렇게 되도록. 모자라거나 group이 없으면
 // 아직 안 쓴 점을 앞 번호부터. 제거 레이어(kind 2)는 잘못 매칭된 행이라 출발일 원에는 쓰지 않는다.
