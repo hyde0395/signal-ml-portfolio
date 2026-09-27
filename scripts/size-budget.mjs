@@ -2,7 +2,7 @@
 import { gzipSync } from 'node:zlib';
 
 // threeChunk: 스펙 "약 250KB"를 250,000B가 아니라 256,000B로 둔다(실측 244,928B가 목표 안이라는 계획 3 기록과 맞춤)
-export const BUDGET = { initialJs: 150 * 1024, threeChunk: 256_000, terrain: 300 * 1024, demo: 500 * 1024, band: 50 * 1024 };
+export const BUDGET = { initialJs: 150 * 1024, threeChunk: 256_000, terrain: 300 * 1024, demo: 500 * 1024, band: 50 * 1024, charts: 150 * 1024 };
 
 // 초기 HTML의 <script src>. noModule(옛 브라우저 전용 폴리필)은 요즘 브라우저가 받지 않으므로 초기 JS에서 뺀다
 export function initialScripts(html) {
