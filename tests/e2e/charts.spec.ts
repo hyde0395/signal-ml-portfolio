@@ -6,9 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 const STAGES = ['features', 'chartDepart', 'chartCurve', 'chartCloud'] as const;
 
 async function painted(page: Page, key: string) {
-  // html도 지금 장면을 data-scene으로 들고 있어(TerrainScene) 3D가 켜진 상태로 이 장면이 활성화되면
-  // "[data-scene=key] 자손"이 html 밑 페이지 전체와 겹쳐 다른 차트의 캔버스까지 걸린다 — html은 제외한다
-  return page.locator(`[data-scene="${key}"]:not(html) .chart-canvas`).evaluate((c: HTMLCanvasElement) => {
+  return page.locator(`[data-scene="${key}"] .chart-canvas`).evaluate((c: HTMLCanvasElement) => {
     if (c.width === 0) return false;
     const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
     for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return true;
@@ -99,9 +97,9 @@ test.describe('3D 켜짐', () => {
 
   test('② 두 번째 화면에서는 보드 장면(dataBoard), 첫 화면은 지도(problem)', async ({ page }) => {
     await center(page, '.data-intro');
-    await expect(page.locator('html')).toHaveAttribute('data-scene', 'problem', { timeout: 10_000 });
+    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'problem', { timeout: 10_000 });
     await center(page, '.data-board');
-    await expect(page.locator('html')).toHaveAttribute('data-scene', 'dataBoard', { timeout: 10_000 });
+    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'dataBoard', { timeout: 10_000 });
     await expect(page.locator('html')).not.toHaveAttribute('data-chart', /./);
   });
 });

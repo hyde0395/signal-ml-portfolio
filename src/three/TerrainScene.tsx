@@ -57,7 +57,10 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       const active = pickActive(readCandidates(document), window.innerHeight);
       if (!active) return;
       const s = sceneFor(active.key, active.progress, portrait.current);
-      document.documentElement.dataset.scene = active.key;
+      // data-scene이 아니라 data-active-scene으로 적는다 — data-scene은 챕터 블록이 자기 장면 이름을 적는
+      // 속성이라(activeScene.ts의 readCandidates가 [data-scene]을 찾는다), 같은 이름을 html에도 쓰면
+      // html 자신이 후보가 되고 `[data-scene="X"] 자손` 셀렉터가 페이지 전체와 겹친다(e2e에서 발견)
+      document.documentElement.dataset.activeScene = active.key;
       const chartKey = s.chart === 1 ? (active.key as ChartKey) : null;
       const entry = chartKey ? getChart(chartKey) : undefined;
       const cs = chartState.current;
@@ -93,6 +96,10 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       document.removeEventListener('visibilitychange', schedule);
       off();
       if (raf) cancelAnimationFrame(raf);
+      // 3D가 꺼지거나(실패·언마운트) 이 효과가 다시 돌 때 옛 값이 html에 남지 않게 지운다 —
+      // 남아 있으면 e2e 등이 "지금 장면"을 옛 값으로 잘못 읽는다
+      delete document.documentElement.dataset.activeScene;
+      delete document.documentElement.dataset.chart;
     };
   }, [capture, cloud]);
 

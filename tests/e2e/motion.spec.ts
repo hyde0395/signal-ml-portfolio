@@ -66,9 +66,7 @@ test('3D가 켜져 페이지가 길어진 뒤에도 GATE 플립은 제목이 화
   await expect(page.locator('.reveal-word').first()).toBeAttached({ timeout: 10_000 }); // 연출 시작됨
   // run.ts는 본문 크기 변화를 150ms 모아 refresh한다 — 그 창 안에서 스크롤하면 옛 위치로 판정되므로 잠시 기다린다
   await page.waitForTimeout(500);
-  // html도 지금 장면을 data-scene으로 들고 있어(TerrainScene) — chartCurve가 활성화되면 이 셀렉터가 html
-  // 밑 페이지 전체와 겹쳐 다른 곳의 플립까지 걸린다(:not(html)로 배제)
-  const gate = page.locator('[data-scene="chartCurve"]:not(html) [data-flip-on-enter]');
+  const gate = page.locator('[data-scene="chartCurve"] [data-flip-on-enter]');
   // 제목 윗변을 화면 높이 95% 지점에 둔다 — 트리거(85%)에는 아직 닿지 않은 자리
   await gate.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 0.95 * window.innerHeight));
   await page.waitForTimeout(500); // Lenis가 자리 잡고 ScrollTrigger가 스크롤을 반영할 시간
@@ -84,8 +82,7 @@ test('3D가 켜져 페이지가 길어진 뒤에도 GATE 플립은 제목이 화
 test('머리표는 플립 뒤 완성값이고, 스크린리더용 완성값이 따로 있다', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
-  // 같은 이유로 html을 배제한다 — bubble이 활성 장면이면 이 셀렉터가 페이지의 다른 .eyebrow까지 건드린다
-  const gate = page.locator('[data-scene="bubble"]:not(html) .eyebrow');
+  const gate = page.locator('[data-scene="bubble"] .eyebrow');
   await gate.scrollIntoViewIfNeeded();
   await expect(gate.locator('.sr-only')).toHaveText('CHART 03', { timeout: 5_000 });
   await expect(gate.locator('[aria-hidden="true"]')).toHaveText('CHART 03', { timeout: 2_000 });
