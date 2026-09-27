@@ -292,3 +292,37 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 .side-nav a[aria-current] { color: var(--amb); border-left-color: var(--amb); }
 .side-nav a:hover { color: var(--tx); }
 @media (min-width: 1280px) { .side-nav { display: block; } }
+
+/* ③·④ 그림 판(설계 2026-09-25 §3.3·§3.4, 2026-09-27 개정): 판은 화면에 고정(sticky)되고 글 카드가 그 위로 지나간다.
+   판이 고정된 동안에만 HTML 이름표와 3D 점이 정확히 겹치므로(three/chartTargets.ts) 판 높이는 화면 높이와 같다.
+   판은 본문 폭을 다 쓰고 화면 위쪽에 둔다 — 점 달력(40주)·구름(88일)이 가로로 길어서다 */
+.chart-block { position: relative; padding-bottom: 50vh; }
+.chart-stage { position: sticky; top: 0; height: 100vh; pointer-events: none; }
+.chart-plot { position: absolute; left: 0; right: 0; top: 11vh; height: 46vh; }
+.chart-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* 3D가 켜졌거나 판정 중이면 2D 그림은 숨긴다(점은 배경 캔버스가 그린다) */
+html:not([data-3d="off"]) .chart-canvas { visibility: hidden; }
+.chart-labels { position: absolute; inset: 0; }
+.chart-label { position: absolute; transform: translate(-50%, -50%); font: 500 11px var(--font-mono); color: var(--mute); white-space: nowrap; }
+.chart-label.align-start { transform: translate(0, -50%); }
+.chart-label.align-end { transform: translate(-100%, -50%); }
+.chart-label.axis, .chart-label.month { color: var(--tx); letter-spacing: 0.04em; }
+.chart-label.holiday { color: var(--amb); }
+.chart-group { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px;
+  max-width: 180px; text-align: center; pointer-events: auto; }
+.chart-group-pct { font: 600 1.25rem var(--font-mono); }
+.chart-group.is-holiday .chart-group-pct { color: var(--amb); }
+.chart-group-name { font-weight: 600; font-size: 0.85rem; }
+.chart-group-count { font-size: 0.75rem; color: var(--mute); }
+/* 피처 이름은 마우스를 올리면(휴대폰은 누르면 :hover가 걸린다) 보인다(설계 §3.3) */
+.chart-group-features { display: none; font: 0.7rem var(--font-mono); color: var(--mute); }
+.chart-group:hover .chart-group-features { display: block; }
+.chart-error { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mute); }
+.chart-copy { position: relative; z-index: 1; margin-top: -40vh; max-width: 560px; padding: 24px; border-radius: 16px;
+  background: rgba(7, 11, 22, 0.82); }
+@media (max-width: 767px) {
+  .chart-plot { top: 9vh; height: 42vh; }
+  .chart-copy { margin-top: -46vh; max-width: none; }
+  .chart-label { font-size: 9px; }
+  .chart-group-pct { font-size: 1rem; }
+}

@@ -1,0 +1,96 @@
+'use client';
+// 차트 그림 판(설계 2026-09-25 §3.3·§3.4·§4, 2026-09-27 개정). 판은 화면에 고정(sticky)되고 글 카드가 그 위로
+// 지나간다. 판이 화면 가까이 오면 데이터와 배치 코드를 불러와(import()) 배치를 만들고,
+// - 배치와 판의 고정 위치를 저장소(registry)에 올린다 → 3D가 켜져 있으면 배경 점이 그 자리로 모인다,
+// - 3D가 꺼져 있으면(data-3d="off") 같은 배치를 2D 캔버스에 그린다.
+// 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 판 전체가 aria-hidden이고, 같은 내용은 글 카드의 요약 문단이 준다.
+import { useEffect, useRef, useState } from 'react';
+import type { ChartStrings } from '@/charts/build';
+import { publishChart } from '@/charts/registry';
+import type { ChartKey, ChartLabel } from '@/charts/types';
+
+type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string };
+
+// 판이 화면 아래 800px 안으로 들어오면 미리 불러온다(스크롤해 도착했을 때 이미 그려져 있도록)
+const LOAD_MARGIN = '800px 0px';
+
+export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props) {
+  const stage = useRef<HTMLDivElement>(null);
+  const plot = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [labels, setLabels] = useState<ChartLabel[]>([]);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const st = stage.current, pl = plot.current, cv = canvas.current;
+    if (!st || !pl || !cv) return;
+    let alive = true;
+    let redraw = () => {};
+    const io = new IntersectionObserver(async (entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      try {
+        const mod = await import('@/charts/build');
+        const loaded = await mod.loadFor(chartKey, dataVersion);
+        if (!alive) return;
+        redraw = () => {
+          const r = pl.getBoundingClientRect(), s = st.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) return;
+          const layout = mod.buildLayout(chartKey, loaded, { w: r.width, h: r.height }, strings);
+          // 판은 sticky(top: 0)라 고정된 동안 판 윗변 = 화면 맨 위다. 지금 스크롤 위치와 상관없이
+          // "고정됐을 때의 화면 위치"를 넘기려고 판 안에서의 거리(r.top - s.top)를 쓴다
+          publishChart(chartKey, {
+            layout,
+            rect: { left: r.left, top: r.top - s.top, width: r.width, height: r.height, vw: document.documentElement.clientWidth, vh: window.innerHeight },
+          });
+          setLabels(layout.labels);
+          if (document.documentElement.getAttribute('data-3d') !== 'off') return;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          cv.width = Math.round(r.width * dpr);
+          cv.height = Math.round(r.height * dpr);
+          const ctx = cv.getContext('2d');
+          if (!ctx) return;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          mod.drawLayout(ctx, layout, r.width, r.height);
+        };
+        redraw();
+      } catch (e) {
+        console.warn('차트를 불러오지 못했다', e);
+        if (alive) setFailed(true);
+      }
+    }, { rootMargin: LOAD_MARGIN });
+    io.observe(st);
+    // 판 크기가 바뀌면(창 조절·회전) 다시 배치한다 — 저장소를 거쳐 3D도 새 배치로 다시 쓴다
+    const ro = new ResizeObserver(() => redraw());
+    ro.observe(pl);
+    // 3D가 도중에 꺼지면(저프레임 전환) 그 자리에서 2D로 그린다
+    const mo = new MutationObserver(() => redraw());
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-3d'] });
+    return () => { alive = false; io.disconnect(); ro.disconnect(); mo.disconnect(); };
+  }, [chartKey, dataVersion, strings]);
+
+  return (
+    <div ref={stage} className="chart-stage" aria-hidden="true">
+      <div ref={plot} className="chart-plot" data-plot>
+        <canvas ref={canvas} className="chart-canvas" />
+        <div className="chart-labels">
+          {labels.map((l, i) => {
+            const style = { left: `${l.x * 100}%`, top: `${l.y * 100}%` };
+            if (l.type === 'group') {
+              return (
+                <div key={l.id} className={`chart-group${l.holiday ? ' is-holiday' : ''}`} style={style}>
+                  <span className="chart-group-pct">{l.pct}</span>
+                  <span className="chart-group-name">{l.name}</span>
+                  <span className="chart-group-count">{l.count}</span>
+                  <span className="chart-group-features">{l.features.join(' · ')}</span>
+                </div>
+              );
+            }
+            return <span key={i} className={`chart-label ${l.cls} align-${l.align}`} style={style}>{l.text}</span>;
+          })}
+        </div>
+        {failed && <p className="chart-error">{errorText}</p>}
+      </div>
+    </div>
+  );
+}
