@@ -1,7 +1,7 @@
 // ③ 와플·④ 차트의 점 배치(설계 2026-09-25 §3.3·§3.4, 2026-09-27 개정). 데이터와 판 크기(px)를 받아
 // 판 안 정규화 좌표의 점 목록과 HTML 이름표 목록을 돌려주는 순수 함수들이다. 2D 대체 그림과 3D 점이 같은 결과를 쓴다.
 // 점 개수는 데이터 행 수가 아니라 차트마다 정한 고정 개수다(설계 §4 점 개수 원칙).
-import type { ChartsData } from './data';
+import type { ChartsData, CloudData } from './data';
 import { TONE, type ChartLabel, type ChartLayout } from './types';
 
 export type PlotSize = { w: number; h: number };
@@ -109,4 +109,156 @@ export function calendarLayout(d: ChartsData, size: PlotSize, s: { weekday(i: nu
     labels.push({ type: 'text', x: cx(pos[i].col) / size.w, y: (base + (k % 2) * 14) / size.h, text: s.holiday(l.code), align: 'center', cls: 'holiday' });
   });
   return p.done(labels);
+}
+
+// ④ 차트 2 구간별 분포 벌떼: 출발이 지난 편의 관측 하나 = 점 하나. 구간 8개를 왼쪽(D-61~90)에서
+// 오른쪽(D-1~3)으로 놓고, 구간 안에서 같은 높이의 점은 좌우로 번갈아 비켜 쌓는다. 구간 평균을 이은 밝은 선이 U자.
+// 가장 싼 구간(D-22~60 = 번호 4·5·6)의 점은 호박색. ±22% 밖은 그리지 않는다(몇 개가 축을 늘려 모양을 뭉개지 않게).
+export const SWARM = { dot: 3, gap: 0.4, clip: 22, linePts: 20, cheap: [4, 5, 6], marginLeft: 0.08, marginTop: 0.08, marginBottom: 0.12 } as const;
+
+export function swarmLayout(c: ChartsData['curve'], size: PlotSize, s: { bin(lo: number, hi: number): string; pct(v: number): string; axis: string }): ChartLayout {
+  const nb = c.bins.length;
+  const left = size.w * SWARM.marginLeft, top = size.h * SWARM.marginTop;
+  const innerW = size.w - left, innerH = size.h * (1 - SWARM.marginTop - SWARM.marginBottom);
+  const colW = innerW / nb;
+  const cx = (b: number) => left + (nb - 1 - b + 0.5) * colW; // 번호가 클수록(먼 출발일) 왼쪽
+  const y = (v: number) => top + innerH * (1 - (v + SWARM.clip) / (2 * SWARM.clip));
+  const step = SWARM.dot + SWARM.gap;
+  const p = new Pts();
+
+  const byBin: number[][] = Array.from({ length: nb }, () => []);
+  c.sample.bin.forEach((b, i) => {
+    const v = c.sample.pct[i] / 10;
+    if (b >= 0 && b < nb && Math.abs(v) <= SWARM.clip) byBin[b].push(v);
+  });
+  byBin.forEach((vals, b) => {
+    const cheap = (SWARM.cheap as readonly number[]).includes(b);
+    const used = new Map<number, number>();
+    for (const v of vals) {
+      // 높이를 점 간격 단위 줄로 맞추고, 같은 줄의 k번째 점은 가운데에서 좌우로 번갈아 비킨다 → 겹치지 않는다
+      const row = Math.round(y(v) / step);
+      const k = used.get(row) ?? 0;
+      used.set(row, k + 1);
+      const off = Math.min(colW * 0.45, Math.ceil(k / 2) * step) * (k % 2 ? 1 : -1);
+      p.add((cx(b) + off) / size.w, (row * step) / size.h, SWARM.dot, 0.55, cheap ? TONE.amber : TONE.dot);
+    }
+  });
+
+  const nodes = c.mean
+    .map((m, b) => [cx(b), y(Math.max(-SWARM.clip, Math.min(SWARM.clip, m / 10)))] as const)
+    .sort((a, z) => a[0] - z[0]);
+  for (let i = 0; i + 1 < nodes.length; i++) {
+    for (let k = 1; k < SWARM.linePts; k++) {
+      const t = k / SWARM.linePts;
+      p.add((nodes[i][0] + (nodes[i + 1][0] - nodes[i][0]) * t) / size.w, (nodes[i][1] + (nodes[i + 1][1] - nodes[i][1]) * t) / size.h, 2.2, 0.9, TONE.text);
+    }
+  }
+  for (const [nx, ny] of nodes) p.add(nx / size.w, ny / size.h, 6, 1, TONE.text);
+
+  const labels: ChartLabel[] = [];
+  c.bins.forEach(([lo, hi], b) => labels.push({ type: 'text', x: cx(b) / size.w, y: (top + innerH + 14) / size.h, text: s.bin(lo, hi), align: 'center', cls: 'tick' }));
+  for (const v of [20, 0, -20]) labels.push({ type: 'text', x: (left - 6) / size.w, y: y(v) / size.h, text: s.pct(v), align: 'end', cls: 'tick' });
+  labels.push({ type: 'text', x: left / size.w, y: (top * 0.4) / size.h, text: s.axis, align: 'start', cls: 'axis' });
+  return p.done(labels);
+}
+
+// 표준정규분포의 분위수 함수(Acklam 근사, 오차 약 1e-9). 구름 점을 q10~q90 안에 뿌릴 때 쓴다
+const IA = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.38357751867269e2, -3.066479806614716e1, 2.506628277459239];
+const IB = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1];
+const IC = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+const ID = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416];
+
+export function invNorm(p: number): number {
+  const tail = (q: number) => (((((IC[0] * q + IC[1]) * q + IC[2]) * q + IC[3]) * q + IC[4]) * q + IC[5]) / ((((ID[0] * q + ID[1]) * q + ID[2]) * q + ID[3]) * q + 1);
+  if (p < 0.02425) return tail(Math.sqrt(-2 * Math.log(p)));
+  if (p > 1 - 0.02425) return -tail(Math.sqrt(-2 * Math.log(1 - p)));
+  const q = p - 0.5, r = q * q;
+  return ((((((IA[0] * r + IA[1]) * r + IA[2]) * r + IA[3]) * r + IA[4]) * r + IA[5]) * q) / (((((IB[0] * r + IB[1]) * r + IB[2]) * r + IB[3]) * r + IB[4]) * r + 1);
+}
+
+// ④ 차트 4 예측 불확실성 구름: 출발일마다 q10~q90 사이에 점을 뿌리되, 분위(0.1~0.9)를 고르게 나눠 표준정규
+// 분위수로 바꾸므로 예측가 근처는 빽빽하고 가장자리는 성기다. 예측가 아래·위는 폭이 달라 두 쪽을 따로 늘린다
+// (q10·예측가·q90에 맞춘 두 쪽 정규분포 근사 — 점 위치는 표현용이고, 차트 글에 그렇게 밝힌다).
+export const CLOUD = { perDate: 24, z90: 1.2815515655446004, marginLeft: 0.1, marginTop: 0.12, marginBottom: 0.12 } as const;
+
+const valid = (cd: CloudData) => cd.dates.map((_, i) => i).filter((i) => cd.price[i] !== null && cd.lo[i] !== null && cd.hi[i] !== null);
+
+export function cloudScale(cd: CloudData, size: PlotSize): { x(i: number): number; y(v: number): number } {
+  const idx = valid(cd);
+  const min = Math.min(...idx.map((i) => cd.lo[i]!)), max = Math.max(...idx.map((i) => cd.hi[i]!));
+  const pad = (max - min) * 0.05 || 1;
+  const dlo = min - pad, dhi = max + pad;
+  const left = size.w * CLOUD.marginLeft, top = size.h * CLOUD.marginTop;
+  const innerW = size.w - left, innerH = size.h * (1 - CLOUD.marginTop - CLOUD.marginBottom);
+  const n = cd.dates.length;
+  return {
+    x: (i) => left + innerW * (n === 1 ? 0.5 : (i + 0.5) / n),
+    y: (v) => top + innerH * (1 - (v - dlo) / (dhi - dlo)),
+  };
+}
+
+export function cloudLayout(cd: CloudData, size: PlotSize, s: { money(v: number): string; dday(n: number): string; holiday(code: string): string; axis: string }): ChartLayout {
+  const idx = valid(cd);
+  const sc = cloudScale(cd, size);
+  const colW = (size.w * (1 - CLOUD.marginLeft)) / cd.dates.length;
+  const p = new Pts();
+  for (const i of idx) {
+    const price = cd.price[i]!, lo = cd.lo[i]!, hi = cd.hi[i]!;
+    const hol = cd.holidays[cd.dates[i]] !== undefined;
+    const rand = mulberry32(i + 1);
+    for (let k = 0; k < CLOUD.perDate; k++) {
+      const z = invNorm(0.1 + (0.8 * (k + 0.5)) / CLOUD.perDate);
+      const v = z < 0 ? price + (z / CLOUD.z90) * (price - lo) : price + (z / CLOUD.z90) * (hi - price);
+      const alpha = 0.16 + 0.34 * (1 - Math.abs(z) / CLOUD.z90);
+      p.add((sc.x(i) + (rand() - 0.5) * colW * 0.7) / size.w, sc.y(v) / size.h, 2.2, alpha, hol ? TONE.amber : TONE.dot);
+    }
+    p.add(sc.x(i) / size.w, sc.y(price) / size.h, 4.2, 0.95, hol ? TONE.amber : TONE.text);
+  }
+
+  const labels: ChartLabel[] = [];
+  const lo = Math.min(...idx.map((i) => cd.lo[i]!)), hi = Math.max(...idx.map((i) => cd.hi[i]!));
+  const stepV = niceStep(hi - lo, 3);
+  for (let v = Math.ceil(lo / stepV) * stepV; v <= hi; v += stepV) {
+    labels.push({ type: 'text', x: (size.w * CLOUD.marginLeft - 6) / size.w, y: sc.y(v) / size.h, text: s.money(v), align: 'end', cls: 'tick' });
+  }
+  const n = cd.dates.length;
+  for (const i of [...new Set([0, Math.floor((n - 1) / 2), n - 1])]) {
+    const days = Math.round((utc(cd.dates[i]) - utc(cd.asOf)) / DAY);
+    labels.push({ type: 'text', x: sc.x(i) / size.w, y: (size.h * (1 - CLOUD.marginBottom * 0.4)) / size.h, text: s.dday(days), align: 'center', cls: 'tick' });
+  }
+  // 공휴일 이름표: 이어진 공휴일 출발일 묶음 중 예측가가 가장 높은 두 묶음만(이름이 겹쳐 읽히지 않는 것을 막는다)
+  const clusters: { at: number; top: number; code: string }[] = [];
+  let cur: { at: number; top: number; code: string } | null = null;
+  cd.dates.forEach((d, i) => {
+    const code = cd.holidays[d];
+    if (code === undefined) { cur = null; return; }
+    const price = cd.price[i];
+    if (!cur) { cur = { at: i, top: price ?? -Infinity, code }; clusters.push(cur); }
+    else if (price !== null && price > cur.top) { cur.at = i; cur.top = price; cur.code = code; }
+  });
+  clusters.filter((c) => c.top > -Infinity).sort((a, b) => b.top - a.top).slice(0, 2).forEach((c) => {
+    labels.push({ type: 'text', x: sc.x(c.at) / size.w, y: (size.h * CLOUD.marginTop * 0.45) / size.h, text: s.holiday(c.code), align: 'center', cls: 'holiday' });
+  });
+  labels.push({ type: 'text', x: (size.w * CLOUD.marginLeft) / size.w, y: 0.02, text: s.axis, align: 'start', cls: 'axis' });
+  return p.done(labels);
+}
+
+// 눈금 간격: 1·2·5 × 10^k 중에서 대략 n칸이 되는 값
+function niceStep(span: number, n: number): number {
+  const raw = span / n;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const f = raw / mag;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * mag;
+}
+
+// 작고 빠른 시드 난수(점 좌우 흔들림이 매번 같게)
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }

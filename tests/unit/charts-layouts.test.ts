@@ -1,7 +1,7 @@
 // 배치 함수 검사: 점 개수, 판 안(0..1), 강조 색, 크기 순서, 이름표. 좁은 휴대폰 판에서도 깨지지 않는지.
 import { describe, expect, it } from 'vitest';
-import type { ChartsData } from '@/charts/data';
-import { calendarLayout, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
+import type { ChartsData, CloudData } from '@/charts/data';
+import { calendarLayout, cloudLayout, cloudScale, invNorm, swarmLayout, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
 import { TONE, type ChartLayout } from '@/charts/types';
 
 const inside = (L: ChartLayout) => {
@@ -94,4 +94,98 @@ describe('calendarLayout', () => {
     expect(text.some((l) => l.type === 'text' && l.cls === 'month')).toBe(true);
   });
   it('좁은 휴대폰 판(340×380)에서도 모든 점이 판 안, 지름 1.6px 이상', () => inside(calendarLayout(charts, { w: 340, h: 380 }, calS)));
+});
+
+describe('swarmLayout', () => {
+  // 구간 평균(%×10)은 실측 U자와 같은 모양, 표본은 구간마다 40개
+  const mean = [111, 44, 9, -24, -37, -50, -43, 21];
+  const bin: number[] = [], pct: number[] = [];
+  mean.forEach((m, b) => { for (let k = 0; k < 40; k++) { bin.push(b); pct.push(m + (k - 20) * 5); } });
+  pct.push(300); bin.push(0); // ±22% 밖 → 그리지 않는다
+  const curve: ChartsData['curve'] = { ...charts.curve, mean, sample: { bin, pct } };
+  const W = 1080, H = 414;
+  const L = swarmLayout(curve, { w: W, h: H }, { bin: (lo, hi) => `D-${lo}~${hi}`, pct: (v) => `${v}%`, axis: 'A' });
+  const isSample = (i: number) => L.size[i] === 3;
+  const nodes = () => Array.from({ length: L.n }, (_, i) => i).filter((i) => L.size[i] === 6);
+
+  it('범위 밖 표본은 빼고 320개, 평균선 점과 구간 마디 8개', () => {
+    expect(Array.from({ length: L.n }, (_, i) => i).filter(isSample)).toHaveLength(320);
+    expect(nodes()).toHaveLength(8);
+  });
+  it('가장 싼 세 구간(D-22~60)만 호박색', () => {
+    // 표본은 구간 순서대로 들어가 있다(0번 구간부터 40개씩)
+    for (let i = 0; i < 320; i++) expect(L.tone[i] === TONE.amber, `표본 ${i}`).toBe([4, 5, 6].includes(Math.floor(i / 40)));
+  });
+  it('왼쪽이 먼 출발일, 평균이 가장 낮은 구간의 마디가 가장 아래', () => {
+    const ns = nodes().sort((a, b) => L.x[a] - L.x[b]);
+    const ys = ns.map((i) => L.y[i]);
+    // 왼쪽부터 D-61~90(평균 +2.1%) … D-1~3(+11.1%): 가장 아래(y 최대)는 D-31~45(-5.0%) = 왼쪽에서 세 번째
+    expect(ys.indexOf(Math.max(...ys))).toBe(2);
+  });
+  it('같은 구간의 표본 점끼리 겹치지 않는다', () => {
+    for (let b = 0; b < 8; b++) {
+      const idx = Array.from({ length: 40 }, (_, k) => b * 40 + k);
+      for (let a = 0; a < idx.length; a++) for (let c = a + 1; c < idx.length; c++) {
+        const dx = (L.x[idx[a]] - L.x[idx[c]]) * W, dy = (L.y[idx[a]] - L.y[idx[c]]) * H;
+        expect(Math.hypot(dx, dy)).toBeGreaterThanOrEqual(2.99);
+      }
+    }
+  });
+  it('이름표: 구간 8개 + y 눈금 3개(tick), 축 이름 1개', () => {
+    expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'tick')).toHaveLength(11);
+    expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'axis')).toHaveLength(1);
+  });
+});
+
+describe('invNorm', () => {
+  it('표준정규 분위수', () => {
+    expect(invNorm(0.5)).toBeCloseTo(0, 6);
+    expect(invNorm(0.9)).toBeCloseTo(1.28155, 3);
+    expect(invNorm(0.1)).toBeCloseTo(-1.28155, 3);
+    expect(invNorm(0.01)).toBeCloseTo(-2.32635, 3);
+  });
+});
+
+describe('cloudLayout', () => {
+  const cd: CloudData = {
+    asOf: '2026-09-22',
+    dates: ['2026-09-25', '2026-09-26', '2026-09-27'],
+    price: [200_000, null, 300_000],
+    lo: [150_000, null, 250_000],
+    hi: [260_000, null, 380_000],
+    holidays: { '2026-09-27': 'kr_midautumn_festival' },
+  };
+  const size = { w: 1080, h: 414 };
+  const s = { money: (v: number) => `${v}`, dday: (n: number) => `D+${n}`, holiday: (c: string) => `h:${c}`, axis: 'A' };
+  const L = cloudLayout(cd, size, s);
+  const sc = cloudScale(cd, size);
+  it('예측 없는 날은 건너뛰고, 출발일마다 구름 24개 + 예측가 1개', () => expect(L.n).toBe(2 * 25));
+  it('구름 점은 모두 그날 q10~q90 안, 예측가 점은 예측가 자리', () => {
+    for (const [j, i] of [[0, 0], [1, 2]]) {
+      for (let k = 0; k < 24; k++) {
+        const py = L.y[j * 25 + k] * size.h;
+        expect(py).toBeGreaterThanOrEqual(sc.y(cd.hi[i]!) - 1e-6);
+        expect(py).toBeLessThanOrEqual(sc.y(cd.lo[i]!) + 1e-6);
+      }
+      expect(L.y[j * 25 + 24] * size.h).toBeCloseTo(sc.y(cd.price[i]!), 3);
+    }
+  });
+  it('예측가 가까이가 가장자리보다 빽빽하다', () => {
+    const band = (sc.y(cd.lo[0]!) - sc.y(cd.hi[0]!)) / 4;
+    const mid = sc.y(cd.price[0]!);
+    const near = Array.from({ length: 24 }, (_, k) => L.y[k] * size.h).filter((py) => Math.abs(py - mid) < band).length;
+    expect(near).toBeGreaterThan(12);
+  });
+  it('공휴일 출발일은 호박색(구름과 예측가 모두), 아니면 예측가만 글자색', () => {
+    for (let k = 0; k < 25; k++) expect(L.tone[25 + k]).toBe(TONE.amber);
+    expect(L.tone[24]).toBe(TONE.text);
+    expect(L.tone[0]).toBe(TONE.dot);
+  });
+  it('이름표: y 눈금(tick) 2개 이상, D+ 날짜, 공휴일 이름, 축 이름', () => {
+    const texts = L.labels.filter((l) => l.type === 'text').map((l) => (l as { text: string }).text);
+    expect(texts).toContain('D+3');
+    expect(texts).toContain('D+5');
+    expect(texts).toContain('h:kr_midautumn_festival');
+    expect(texts).toContain('A');
+  });
 });
