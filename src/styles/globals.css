@@ -148,16 +148,17 @@ html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: 
    지적된 "3D 켜진 상태에서 판 밖으로 삐져나오는 문제"가 없다 */
 /* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 판(.text-scrim)은
    큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 판은 글 크기만큼만 커진다 */
-html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .board-housing, .collect-line, .feature-groups, .text-scrim) { max-width: 560px; }
-/* 각 섹션도 다른 챕터와 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제) */
-html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) {
+html[data-3d="on"] :is(.chapter, #project, #data, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .board-housing, .collect-line, .text-scrim) { max-width: 560px; }
+/* 각 섹션도 다른 챕터와 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제).
+   그림 판 블록은 .chart-copy가 자기 판을 갖는다 */
+html[data-3d="on"] :is(.chapter, #project, #data, #demo, #contact) {
   background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
 }
-/* 위 판은 600px까지만 불투명하고 760px에서 완전히 투명해지는데, 수집 라인·피처 목록은 훨씬 넓게 펼쳐져 있어
+/* 위 판은 600px까지만 불투명하고 760px에서 완전히 투명해지는데, 수집 라인은 훨씬 넓게 펼쳐져 있어
    (자동 맞춤 그리드) 오른쪽 칸들이 판 밖 맨 지형·지도 점 위에 바로 뜬다(최종 리뷰 #1, 1440px 스크린샷으로 확인).
-   칸(li)마다 따로 판을 깐다 — 두 목록 모두 칸 패딩이 3D 여부와 무관하게 이미 같으므로 배경만 켜면 되고
+   칸(li)마다 따로 판을 깐다 — 칸 패딩이 3D 여부와 무관하게 이미 같으므로 배경만 켜면 되고
    (칸 크기가 안 바뀌니 3D가 켜지는 순간 글이 밀리는 CLS도 없다) */
-html[data-3d="on"] .collect-line li, html[data-3d="on"] .feature-groups li {
+html[data-3d="on"] .collect-line li {
   background: rgba(7, 11, 22, 0.82); border-radius: 8px;
 }
 /* 첫 화면 글과 사례 연구 제목: 챕터처럼 긴 카드를 두면 첫 화면 지형이 가려지므로, 글 덩어리 크기만 한
@@ -173,7 +174,7 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 @media (max-width: 767px) {
   /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
   html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
-  html[data-3d="on"] :is(.chapter, #project, #data, #features, #demo, #contact) {
+  html[data-3d="on"] :is(.chapter, #project, #data, #demo, #contact) {
     background: linear-gradient(0deg, rgba(7, 11, 22, 0.92) 55%, rgba(7, 11, 22, 0) 100%);
   }
 }
@@ -272,14 +273,6 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 @media (min-width: 1024px) and (max-width: 1279px) {
   .board-housing { --flap-w: 26px; --flap-h: 39px; --flap-f: 25px; }
 }
-
-/* ③ FEATURES(설계 2026-09-25 §3.3): 이번 계획에서는 그룹 목록. 공휴일만 호박색(④ 공휴일 봉우리와 같은 색) */
-.feature-groups { list-style: none; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-block: 28px; }
-.feature-groups li { display: grid; gap: 4px; border-top: 2px solid var(--line); padding-top: 12px; }
-.feature-groups li.is-holiday { border-color: var(--amb); }
-.feature-gain { font-size: 1.75rem; font-weight: 700; }
-.feature-groups li.is-holiday .feature-gain { color: var(--amb); }
-.feature-names { font-size: 0.75rem; color: var(--mute); word-break: break-word; }
 
 /* 연락처 아래 개인 소개(옛 소개 섹션) */
 .contact-about { margin-top: 48px; max-width: 640px; }
