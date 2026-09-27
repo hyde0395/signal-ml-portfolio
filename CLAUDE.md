@@ -20,8 +20,9 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 4-1 성능·공유 | 초기 JS 분리, 용량 검사, OG 이미지, Web Analytics, 첫 화면 CLS 0 | `2026-09-24-plan-4-1-performance.md` | ✅ PR #2·#3 |
 | 4-2 연출·성능 | 3D 판정 대기(LCP), 로딩 화면, 플립 글자판, 제목 리빌, Lenis | `2026-09-24-plan-4-2-motion.md` | ✅ PR #4 |
 | 5-1 구조 개편 | 섹션 목록, ①~④ 새 섹션, 플립 보드, 옆 목차, 개인 소개 이동 | `2026-09-25-plan-5-1-structure.md` | ✅ PR #5 (2026-09-27 병합·배포) |
+| 5-2 차트 | ② 두 화면·판 없는 보드, ③ 점 와플, ④ 점 달력·구간별 벌떼·불확실성 구름, 배경 점 → 차트 | `2026-09-27-plan-5-2-charts.md` | ✅ (PR 대기) |
 
-계획 5-2(점 → 차트·피처 와플, ②·③ 디자인 수정)와 5-3(인터랙션)이 남았다. 설계: `docs/superpowers/specs/2026-09-25-page-restructure-design.md`
+계획 5-3(인터랙션)이 남았다. 설계: `docs/superpowers/specs/2026-09-25-page-restructure-design.md`
 
 **5-1 마무리 검사 (2026-09-25, `npm run size`)**: 초기 JS gzip 139.5KB/150KB(ko·en·ja 동일), 3D 청크 239.7KB/250KB, `terrain.json` 53.1KB/300KB, `demo.json` 21.7KB/500KB, `band.json` 0.6KB/50KB. 단위 테스트 201개·e2e 120개·pytest 42개 모두 통과.
 
@@ -29,15 +30,8 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 다음 세션에서 할 일 (순서대로)
 
-0. **★ 다음: 계획 5-2 계획서 작성 (설계 2026-09-27 개정 반영)**
-   - 5-1은 PR #5로 main 병합·운영 배포 완료(2026-09-27)
-   - 5-1 배포 후 사용자 검토로 설계를 고쳤다(설계 문서 맨 위 "2026-09-27 개정", 시안 `docs/superpowers/mockups/2026-09-27/`):
-     - ② 두 화면: 화면 1 = 글·수집 4단계 왼쪽 + 지도 오른쪽(`problem`), 화면 2 = 판 없는 플립 보드 + 멀리 물러나 흐려진 지도(새 장면 `dataBoard`). 5-1에선 보드가 지도를 가렸다
-     - 보드 테두리: 금속 틀·나사·판 없음(칸만 그림자와 함께), 작은 글자엔 글자 그림자
-     - ③ 점 와플(그룹마다 점 100개 중 gain만큼 켜짐, 공휴일만 호박색, 호박색 윗선 제거). 3D가 켜지면 배경 점이 같은 와플 모양으로 모임. 누르면 **SHAP 벌떼**로 펼침(SHAP 값을 못 뽑으면 피처별 작은 덩어리)
-     - ④ 차트 = **점 달력(출발일) → 구간별 분포 벌떼(U자) → R² 거품(유지) → 예측 불확실성 구름**. 차트 수는 그대로 4개
-     - 점 개수는 데이터 행 수에 비례시키지 않는다(차트마다 고정 개수, 재추출 때 새로 뽑음)
-   - 다음: **superpowers:writing-plans**로 계획 5-2(②·③ HTML 수정 + 배경 점 → 와플·차트 4개 + SHAP·charts.json 추출), 이어서 5-3(점 마우스 반응·와플 펼치기·차트 만지기). 범위는 설계 §3.2~3.4·§4·§4.1·§5. 실행 방식은 사용자가 고른다(지금까지는 subagent-driven-development)
+0. **★ 다음: 계획 5-3 계획서 작성** — 점 마우스 반응, 와플 눌러 SHAP 벌떼로 펼치기(초점·Enter·Esc, SHAP 값 추출 포함 — 항공권 저장소 `shap_analysis.py`의 pkl + `pred_contribs` 방식), 차트 직접 만지기(설계 §4.1). 계획 5-2는 브랜치 `plan-5-2`에서 구현·검사 완료(PR 대기)
+   - 별도 계획으로 뗀 것: **차트 3을 예측 대 실제 산점도로** 바꾸기. TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성의 예측값이 필요해 NeuralProphet를 폴드마다 다시 학습해야 한다(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
 1. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
    - 이력서 PDF 3개: `public/resume/{ko,en,ja}.pdf` (내려받을 때 `CHOI_HALIM_resume_<언어>.pdf`). 파일이 생기면 헤더·연락처의 "준비 중"이 자동으로 링크가 된다
    - 문구 검토: 한국어는 사용자, 영어는 사용자, 일본어는 사용자가 섭외한 검수자(학과 일본어명 포함). 데모 문구(`content/*.json`의 `demo`)도 포함
@@ -49,7 +43,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 성능 ko·ja 90: 남은 몫은 TBT(3D·연출 코드의 메인 스레드 점유)와 ja의 렌더 지연. `experimental.inlineCss`는 시험 후 되돌림(HTML이 커져 ko·ja 악화, 스펙 §8.2). 다음 후보: 3D 시작을 더 늦추기(첫 입력·스크롤 뒤), 지형 점 구름 만들기를 Web Worker로
    - 휴대폰 3-5 예측 구간 띠: 지형 출발일과 맞는 날만 세우고 점을 키웠지만 세로 화면에서 흩어진 흰 점으로 보인다. 사용자가 2026-09-24 "이대로" 승인 — 다시 손볼지는 사용자에게 묻는다
    - 계획 4-2 최종 검토의 작은 지적(`flip.ts`는 글자를 코드 포인트 단위로 나눔, 리빌은 제목 안쪽 마크업을 지움 — 지금 제목은 모두 글자만이라 문제없음)
-4. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
+4. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
 
 **작업 방식**: 새 기능은 `superpowers:brainstorming`(필요하면) → `superpowers:writing-plans` → 사용자가 고른 실행 방식(지금까지는 subagent-driven-development). 브랜치 → PR → CI 통과 → 사용자 확인 → main에 fast-forward 병합 → 운영 확인. 이미 정해진 결정은 다시 묻지 않는다.
 
@@ -59,7 +53,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 2. **커밋 이메일을 이 저장소에 설정** (clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
 3. **push는 SSH 원격으로** 한다(`git remote -v`가 `git@github.com:…`인지 확인, 아니면 `git remote set-url origin git@github.com:hyde0395/signal-ml-portfolio.git`). HTTPS(gh 토큰)는 `workflow` 권한이 없어 `.github/workflows/`를 바꾸는 push가 거절된다(`gh auth refresh -s workflow`로 권한을 더하는 방법도 있다)
 4. Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test` · `npm run build` · `npm run size` · `npm run e2e`
-5. 데이터 스크립트(`npm run facts|terrain|map|demo|pytest`)만 항공권 저장소가 필요하다. 사이트 빌드·테스트에는 필요 없다(JSON은 커밋되어 있음)
+5. 데이터 스크립트(`npm run facts|terrain|map|demo|charts|pytest`)만 항공권 저장소가 필요하다. 사이트 빌드·테스트에는 필요 없다(JSON은 커밋되어 있음)
    - 항공권 저장소 `~/Documents/airfare-forecasting-ml`는 iCloud로 동기화되지만 `.venv`는 기기마다 깨진다. **그 `.venv`를 지우거나 다시 만들지 않는다**(삭제가 다른 기기로 동기화된다)
    - 대신 기기마다 iCloud 밖에 `~/.venvs/airfare-py311`을 만든다: `brew install python@3.11` → `"$(brew --prefix python@3.11)/bin/python3.11" -m venv ~/.venvs/airfare-py311` → `~/.venvs/airfare-py311/bin/pip install -r ~/Documents/airfare-forecasting-ml/requirements.txt pytest`. `scripts/py.sh`가 AIRFARE_PYTHON → `~/.venvs/airfare-py311` → 항공권 저장소 `.venv` 순서로 고른다(맥북에는 2026-09-24에 만들어 둠)
    - 모델을 돌리기 전에 그쪽 CLAUDE.md의 iCloud 워밍 절차를 따른다
@@ -111,6 +105,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
   - `export_terrain.py`: 원본 CSV + 항공권 저장소의 필터 함수(`src/processing/features.py`를 import해 재사용) → `terrain.json`
   - `export_demo.py`: `v2_predictor.pkl` + `recommend_action()` → `demo.json`
   - `export_facts.py`: 사이트에 나오는 모든 수치를 한 곳에 → `facts.json` (항공권 저장소 CLAUDE.md 기준)
+  - `export_charts.py`: 출발일별 %·공휴일 이름표·예약 곡선 8구간·관측 표본 4,000개 → `charts.json`(④ 점 달력·구간별 벌떼. 불확실성 구름은 `demo.json`을 그대로 쓴다)
 - **지형 (2026-09-23 실제 데이터로 수정, 스펙 §5.2·5.2.1)**
   - 높이 = **노선·등급 평균 대비 %** (같은 편 기준은 공휴일 봉우리를 지워서 바꿈)
   - **신호 + 잡음 두 겹**: 칸 평균 약 2,070개(밝은 점) + 칸×노선×등급 약 24,500개(흐린 점). 데이터는 대각선 띠 모양

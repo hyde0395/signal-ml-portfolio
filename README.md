@@ -45,6 +45,7 @@ npm run facts      # 모델 저장소에서 수치 갱신 (AIRFARE_ROOT 필요)
 npm run terrain    # 지형 데이터 추출 (export_terrain.py)
 npm run map        # 지도 데이터 추출 (export_map.py)
 npm run demo       # 데모 예측·예측 구간 띠 추출 (export_demo.py, 모델을 돌려 몇 분)
+npm run charts     # 차트 데이터 추출 (export_charts.py, 출발일별 %·공휴일 이름표·예약 곡선 8구간·SHAP 표본)
 npm run pytest     # 데이터 스크립트 테스트
 npm run fallbacks  # 대체 WebP 캡처 (capture-fallbacks.mjs, npm run build 이후)
 npm run size       # 빌드 산출물 gzip 용량 검사(초기 JS ≤150KB 등, CI에서도 실행)
@@ -52,6 +53,6 @@ npm run og         # 언어별 링크 미리보기 이미지 캡처(public/og, n
 npm run lighthouse # Lighthouse 측정(기록용, CI 밖)
 ```
 
-**재학습 후 업데이트 순서:** `npm run facts` → `npm run terrain` → `npm run demo` → `npm run build` → `npm run fallbacks` → `npm run og` → commit (데이터 스크립트의 파이썬은 `scripts/py.sh`가 고른다)
+**재학습 후 업데이트 순서:** `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → commit (데이터 스크립트의 파이썬은 `scripts/py.sh`가 고른다)
 
 Next.js (App Router, static export) · TypeScript · zod · Vitest · Playwright · GitHub Actions · Vercel
