@@ -236,8 +236,12 @@ export function cloudLayout(cd: CloudData, size: PlotSize, s: { money(v: number)
     if (!cur) { cur = { at: i, top: price ?? -Infinity, code }; clusters.push(cur); }
     else if (price !== null && price > cur.top) { cur.at = i; cur.top = price; cur.code = code; }
   });
+  const left = size.w * CLOUD.marginLeft;
   clusters.filter((c) => c.top > -Infinity).sort((a, b) => b.top - a.top).slice(0, 2).forEach((c) => {
-    labels.push({ type: 'text', x: sc.x(c.at) / size.w, y: (size.h * CLOUD.marginTop * 0.45) / size.h, text: s.holiday(c.code), align: 'center', cls: 'holiday' });
+    // 왼쪽 가장자리 근처(축 이름표 "예측가(원)"이 있는 자리) 공휴일 이름표는 한 줄 아래로 내려 글자가 겹치지 않게 한다
+    const nearAxis = Math.abs(sc.x(c.at) - left) < 140;
+    const y = size.h * CLOUD.marginTop * 0.45 + (nearAxis ? 14 : 0);
+    labels.push({ type: 'text', x: sc.x(c.at) / size.w, y: y / size.h, text: s.holiday(c.code), align: 'center', cls: 'holiday' });
   });
   labels.push({ type: 'text', x: (size.w * CLOUD.marginLeft) / size.w, y: 0.02, text: s.axis, align: 'start', cls: 'axis' });
   return p.done(labels);

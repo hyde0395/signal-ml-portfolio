@@ -188,4 +188,21 @@ describe('cloudLayout', () => {
     expect(texts).toContain('h:kr_midautumn_festival');
     expect(texts).toContain('A');
   });
+
+  // 첫 출발일(왼쪽 가장자리, 축 이름표 "A"가 있는 자리)에 공휴일이 있으면 이름표가 겹치지 않고 한 줄 아래로 내려가야 한다
+  it('첫 출발일이 공휴일이면 공휴일 이름표가 축 이름표와 세로로 12px 이상 떨어진다', () => {
+    const cd2: CloudData = {
+      asOf: '2026-09-22',
+      dates: ['2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29'],
+      price: [400_000, 200_000, 210_000, 220_000, 230_000],
+      lo: [300_000, 150_000, 160_000, 170_000, 180_000],
+      hi: [500_000, 260_000, 270_000, 280_000, 290_000],
+      holidays: { '2026-09-25': 'kr_test_holiday' },
+    };
+    const size2 = { w: 800, h: 300 };
+    const L2 = cloudLayout(cd2, size2, s);
+    const axisY = L2.labels.find((l) => l.type === 'text' && l.cls === 'axis')!.y * size2.h;
+    const holidayY = L2.labels.find((l) => l.type === 'text' && l.cls === 'holiday')!.y * size2.h;
+    expect(Math.abs(holidayY - axisY)).toBeGreaterThanOrEqual(12);
+  });
 });

@@ -181,7 +181,7 @@
   },
   "charts": {
     "depart": {
-      "body1": "What moves prices more is when you fly, not when you buy. Each dot is one departure date; the bigger it is, the pricier it is than the route-and-class average. Dates around holidays (amber) and the weekend rows swell the most.",
+      "body1": "What moves prices more is when you fly, not when you buy. Each dot is one departure date; the bigger it is, the pricier it is than the route-and-class average. Dates around holidays (amber) and Sunday departures swell the most.",
       "heading": "Price by departure date",
       "alt": "Departure-date calendar: weeks across, weekdays down; bigger dots are pricier dates. Dates around holidays are the largest."
     },
