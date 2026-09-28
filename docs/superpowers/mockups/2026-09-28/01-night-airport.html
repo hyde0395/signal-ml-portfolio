@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIGNAL 시안 v3 — 밤의 공항</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root { --gut: max(7vw, calc((100vw - 1280px) / 2)); --tx:#EEF3FF; --amb:#FFB547; --mute:rgba(238,243,255,.62); --line:rgba(238,243,255,.14); }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: #010206; color: var(--tx); font-family: Pretendard, system-ui, sans-serif; overflow: hidden; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  .top { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 26px var(--gut); font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .22em; color: var(--mute); z-index: 3; transition: opacity .5s; }
+  .top b { color: var(--tx); font-weight: 500; }
+  .top .r { display: flex; gap: 22px; }
+  .hero { position: fixed; left: var(--gut); bottom: 14vh; z-index: 3; transition: opacity .5s; }
+  .hero .pre { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .3em; color: var(--amb); display: flex; align-items: center; gap: 14px; }
+  .hero .pre::after { content: ''; width: 48px; height: 1px; background: var(--amb); opacity: .6; }
+  .hero h1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: -0.035em; line-height: .88; font-size: clamp(3.4rem, 9.5vw, 8.6rem); margin-top: 18px; }
+  .hero .kr { margin-top: 14px; font-size: .95rem; color: var(--mute); }
+  .hero .kw { margin-top: 26px; display: flex; flex-wrap: wrap; font: 400 12px 'IBM Plex Mono', monospace; letter-spacing: .06em; color: rgba(238,243,255,.8); }
+  .hero .kw span { padding: 0 16px; border-left: 1px solid var(--line); }
+  .hero .kw span:first-child { padding-left: 0; border-left: 0; }
+  .meta { position: fixed; right: var(--gut); bottom: 14vh; z-index: 3; text-align: right; font: 400 10.5px 'IBM Plex Mono', monospace; letter-spacing: .18em; color: rgba(238,243,255,.42); line-height: 2; transition: opacity .5s; }
+  .scroll { position: fixed; left: 50%; bottom: 4.5vh; transform: translateX(-50%); z-index: 3; font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .3em; color: rgba(238,243,255,.4); display: flex; flex-direction: column; align-items: center; gap: 10px; transition: opacity .5s; }
+  .scroll i { width: 1px; height: 34px; background: linear-gradient(rgba(238,243,255,.5), transparent); animation: drip 2.4s cubic-bezier(.16,1,.3,1) infinite; transform-origin: top; }
+  @keyframes drip { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); opacity: 1; } 100% { opacity: 0; } }
+  .loading { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4; display: grid; justify-items: center; gap: 14px; transition: opacity .6s; pointer-events: none; }
+  .loading .lb { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .4em; color: var(--amb); padding-left: .4em; }
+  .loading .num { font: 500 clamp(2.6rem, 6vw, 4.4rem) 'IBM Plex Mono', monospace; letter-spacing: -.02em; color: var(--tx); font-variant-numeric: tabular-nums; line-height: 1; }
+  .loading .bar { width: min(260px, 60vw); height: 1px; background: rgba(238,243,255,.14); position: relative; overflow: hidden; }
+  .loading .bar i { position: absolute; inset: 0; background: var(--amb); transform-origin: left; transform: scaleX(0); }
+  .caption { position: fixed; left: var(--gut); bottom: 10vh; z-index: 3; max-width: 520px; opacity: 0; transition: opacity .5s; pointer-events: none; }
+  .caption .pre { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .3em; color: var(--amb); }
+  .caption h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 2rem; letter-spacing: -0.03em; margin: 12px 0 8px; }
+  .caption p { color: var(--mute); font-size: .95rem; line-height: 1.7; }
+  .panel { position: fixed; top: 64px; right: 16px; z-index: 5; display: grid; gap: 9px; padding: 14px 16px; width: 270px; border: 1px solid rgba(238,243,255,.1); border-radius: 12px; background: rgba(2,4,10,.78); backdrop-filter: blur(10px); font-size: 12px; color: var(--mute); }
+  .panel .t { font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .2em; color: rgba(238,243,255,.45); }
+  .panel label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .panel input[type=checkbox] { accent-color: var(--amb); }
+  .panel input[type=range] { width: 100%; accent-color: var(--amb); }
+  .panel .row { display: flex; justify-content: space-between; }
+  .panel button { font: inherit; color: var(--tx); background: transparent; border: 1px solid rgba(238,243,255,.14); padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .tabs button.on { border-color: var(--amb); color: var(--amb); }
+  .panel hr { border: 0; border-top: 1px solid rgba(238,243,255,.08); }
+  .panel .hide { font-size: 11px; text-align: right; cursor: pointer; color: rgba(238,243,255,.4); }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="top" id="top"><b>SIGNAL</b><div class="r"><span>KO · EN · JA</span><span>이력서 ↓</span></div></div>
+<div class="loading" id="loading"><div class="lb">NOW BOARDING</div><div class="num" id="rows">0</div><div class="bar"><i id="lbar"></i></div><div class="lb">ROWS</div></div>
+<div class="hero" id="hero">
+  <div class="pre">ML ENGINEER</div>
+  <h1>Choi<br>Halim</h1>
+  <div class="kr">최하림</div>
+  <div class="kw"><span>시계열 예측</span><span>모델 검증</span><span>데이터 파이프라인</span></div>
+</div>
+<div class="meta" id="meta">ICN · 37.46°N 126.44°E<br>ICN ⇄ NRT · KIX · HND</div>
+<div class="scroll" id="scroll">SCROLL<i></i></div>
+<div class="caption" id="caption">
+  <div class="pre">01 — PROJECT</div>
+  <h2>불빛이 곧 데이터</h2>
+  <p>활주로 불빛이 그대로 모여 가격 지형이 된다. 가로 = 출발까지 남은 날, 깊이 = 출발일, 높이 = 평균 대비 가격. 호박색 줄은 공휴일.</p>
+</div>
+
+<div class="panel" id="panel">
+  <div class="t">시안 조작판 · v7</div>
+  <div class="tabs"><button id="vR" class="on" style="grid-column: span 2">A로 시작 → 내려앉은 뒤 지형 (추천 흐름)</button><button id="vA">A만</button><button id="vB">B만</button></div>
+  <label><input type="checkbox" data-o="wave" checked> 신호 물결(제 아이디어)</label>
+  <label><input type="checkbox" data-o="build" checked> 건물 불빛</label>
+  <label><input type="checkbox" data-o="stars" checked> 별</label>
+  <label><input type="checkbox" data-o="surface" checked> 바닥 빛 · 활주로 표시</label>
+  <label><input type="checkbox" data-o="moving" checked> 지나가는 비행기</label>
+  <label><input type="checkbox" data-o="wet" checked> 젖은 노면 반사</label>
+  <hr>
+  <div><div class="row"><span>스크롤 진행</span><span class="mono" id="mv">활주로</span></div><input type="range" id="morph" min="0" max="1000" value="0"></div>
+  <button id="replay">▶ 처음부터 다시(로딩 → 불 켜짐)</button>
+  <div class="hide" id="hide">조작판 숨기기 (H)</div>
+</div>
+
+<script>
+// ───── 기본 ─────
+const cv = document.getElementById('scene'), ctx = cv.getContext('2d');
+let W, H, DPR;
+function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
+addEventListener('resize', resize); resize();
+const lerp = (a, b, t) => a + (b - a) * t, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = t => 1 - Math.pow(1 - t, 4);
+let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+const RGB = { white: [238, 243, 255], warm: [255, 222, 176], blue: [120, 165, 255], amb: [255, 181, 71], red: [255, 70, 70], green: [110, 255, 180], sign: [255, 196, 60] };
+const rgba = (k, a) => { const [r, g, b] = RGB[k]; return `rgba(${r},${g},${b},${a})`; };
+const O = { surface: true, build: true, stars: true, moving: true, wet: true, wave: true };
+
+const halo = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.15, 'rgba(255,255,255,.35)'); gr.addColorStop(.45, 'rgba(255,255,255,.06)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return c; })();
+const soft = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.5, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return c; })();
+const tinted = {};
+function tint(src, k, tag) { const id = k + tag; if (tinted[id]) return tinted[id]; const [r, g, b] = RGB[k]; const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = `rgb(${r},${g},${b})`; x.fillRect(0, 0, 128, 128); return (tinted[id] = c); }
+const grain = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); const d = g.createImageData(256, 256);
+  for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } g.putImageData(d, 0, 0); return c; })();
+const grainPat = ctx.createPattern(grain, 'repeat');
+
+// ───── 카메라 ─────
+function project(x, y, z, c) {
+  x -= c.x; y -= c.y; z -= c.z;
+  const cy = Math.cos(c.yaw), sy = Math.sin(c.yaw);
+  const x1 = x * cy - z * sy, z1 = x * sy + z * cy;
+  const cp = Math.cos(c.pitch), sp = Math.sin(c.pitch);
+  const y2 = y * cp + z1 * sp, z2 = -y * sp + z1 * cp;
+  if (z2 < 2) return null;
+  const f = c.fov * H;
+  return { x: W * c.cx + (x1 / z2) * f, y: H * c.cy - (y2 / z2) * f, d: z2, s: f / z2 };
+}
+const CA = { x: -120, y: 42, z: -160, yaw: 0.2, pitch: 0.085, fov: 1.2, cx: 0.5, cy: 0.5 };
+const CB = { x: -120, y: 12, z: -160, yaw: 0.2, pitch: -0.03, fov: 1.2, cx: 0.5, cy: 0.33 }; // 땅 가까이서 살짝 올려다봄
+const CT = { x: 71, y: 560, z: -121, yaw: 0.2, pitch: 0.36, fov: 1.2, cx: 0.55, cy: 0.42 };
+
+// ───── 세계 ─────
+const RA = 0.62, RD = [Math.sin(RA), Math.cos(RA)], RN = [RD[1], -RD[0]];
+const R0 = [-60, 180], RLEN = 3200, RHALF = 30, TO = -190;
+const at = (s, o) => [R0[0] + RD[0] * s + RN[0] * o, R0[1] + RD[1] * s + RN[1] * o];
+const L = [];
+function add(p, y, c, k, sz, ord) { L.push({ x: p[0], y, z: p[1], c, k, sz, ord, ph: rnd() * 6.28 }); }
+for (let s = 0; s <= RLEN; s += 60) { add(at(s, -RHALF), .5, 'white', 'edge', 1, s / RLEN); add(at(s, RHALF), .5, 'white', 'edge', 1, s / RLEN); }
+for (let s = 30; s < RLEN; s += 18) add(at(s, 0), .2, s > RLEN - 900 ? 'warm' : 'white', 'center', .45, s / RLEN);
+for (let o = -RHALF; o <= RHALF; o += 6) { add(at(0, o), .5, 'white', 'thr', .6, 0); add(at(RLEN, o), .5, 'warm', 'end', .6, 1); }
+for (let s = -200; s <= RLEN; s += 34) { add(at(s, TO - 11), .3, 'blue', 'taxi', .6, (s + 200) / RLEN); add(at(s, TO + 11), .3, 'blue', 'taxi', .6, (s + 200) / RLEN); }
+const CONNECT = [500, 1300, 2200];
+CONNECT.forEach(s0 => { for (let t = 0; t <= 1.001; t += 1 / 9) { const o = lerp(TO + 11, -RHALF - 10, t), s = s0 + Math.sin(t * Math.PI / 2) * 160;
+  add(at(s, o - 8), .3, 'blue', 'taxi', .55, s / RLEN); add(at(s, o + 8), .3, 'blue', 'taxi', .55, s / RLEN); } });
+const APRON = [[-40, 150], [160, 110], [360, 60], [-260, 260]];
+APRON.forEach(p => add(p, 26, 'amb', 'apron', 2.2, -0.05));
+for (let i = 0; i < 160; i++) { const a = -0.9 + rnd() * 1.9, r = 9000 + rnd() * 6000; add([Math.sin(a) * r, Math.cos(a) * r], rnd() * 40, rnd() < .7 ? 'warm' : 'white', 'city', 1.3, 1.1); }
+const APPROACH = []; for (let i = 1; i <= 14; i++) APPROACH.push(at(RLEN + i * 30, 0));
+
+// 건물(활주로 건너편·먼 쪽): 앞면 사각형 + 불 켜진 창 줄 + 지붕 경고등
+const BUILD = [];
+[[300, 520, 260, 26], [650, 560, 180, 34], [1000, 620, 420, 22], [1600, 600, 300, 30], [2100, 700, 520, 18], [2700, 650, 240, 28], [3000, 800, 380, 20],
+ [1300, -1900, 520, 40], [2300, -2000, 380, 55], [3100, -2100, 600, 34]].forEach(([s, o, w, h]) => {
+  const win = []; const rows = Math.max(1, Math.floor(h / 9));
+  for (let r = 0; r < rows; r++) for (let i = 0; i < Math.floor(w / 14); i++) if (rnd() < .45) win.push([(i + .5) / Math.floor(w / 14), (r + .5) / rows, rnd() < .2 ? 'white' : 'warm']);
+  BUILD.push({ s, o, w, h, win });
+});
+BUILD.forEach(b => { const a = at(b.s - b.w / 2, b.o), e = at(b.s + b.w / 2, b.o);
+  b.win.forEach(([u, v, k]) => L.push({ x: lerp(a[0], e[0], u), y: b.h * v, z: lerp(a[1], e[1], u), c: k, k: 'win', sz: .8, ord: 1.05, ph: rnd() * 6.28 })); });
+const TW = at(1500, -520);
+
+// 유도로 표지판(노란 바탕 검은 글자 / 빨간 바탕 흰 글자)
+const SIGNS = [
+  { p: at(470, TO + 26), txt: 'B1 →', k: 'sign' }, { p: at(430, -RHALF - 34), txt: '33L-15R', k: 'red' },
+  { p: at(1270, TO + 26), txt: 'B2 →', k: 'sign' }, { p: at(1230, -RHALF - 34), txt: '33L-15R', k: 'red' },
+  { p: at(-150, TO + 24), txt: '← B', k: 'sign' },
+];
+
+// 앞쪽에 세워 둔 비행기(카메라 오른쪽 아래). 지역 좌표(u: 동체 방향, v: 옆, y: 높이)
+const PO = [-30, -20], PA = [Math.cos(.62), -Math.sin(.62)], PS = [-PA[1], PA[0]];
+const PP = (u, v, y) => [PO[0] + PA[0] * u + PS[0] * v, y, PO[1] + PA[1] * u + PS[1] * v];
+
+// ───── 가격 지형 자리 ─────
+const KN = [[0, 11], [5, 4.4], [11, .9], [18, -2.4], [26, -3.7], [38, -5], [53, -4.3], [75, 2.1], [90, 2.1]];
+const curve = d => { for (let i = 1; i < KN.length; i++) if (d <= KN[i][0]) { const [a, va] = KN[i - 1], [b, vb] = KN[i]; return va + (vb - va) * (d - a) / (b - a); } return 2.1; };
+const fixed = L; // 도시·건물 불빛까지 모두 지형으로 모인다(사라지는 불빛 없음)
+const COLS = 46, ROWS = Math.ceil(fixed.length / COLS), cells = [];
+for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  const d = (1 - c / (COLS - 1)) * 90, hol = r === 4 || r === 13 || r === ROWS - 3;
+  const pct = curve(d) + (hol ? 14 * Math.exp(-Math.pow((c - COLS * .5) / 14, 2)) + 5 : 0) + Math.sin(r * 1.3 + c * .21) * .9;
+  cells.push({ x: -500 + c * 36, z: 600 + r * 70, y: 20 + pct * 11, c: hol ? 'amb' : 'blue' });
+}
+const kf = p => p.z * 10 + p.x * .001;
+const fs = [...fixed].sort((a, b) => kf(a) - kf(b)), cs = cells.slice(0, fixed.length).sort((a, b) => kf(a) - kf(b));
+fs.forEach((l, i) => { const t = cs[i]; l.tx = t.x; l.ty = t.y; l.tz = t.z; l.tc = t.c; });
+
+// ───── 상태 ─────
+let view = 'R', viewFrom = 'A', viewT = 1, morph = 0, mShown = 0, mx = 0, my = 0, smx = 0, smy = 0, t0 = performance.now(), intro = 0;
+addEventListener('pointermove', e => { mx = e.clientX / W - .5; my = e.clientY / H - .5; });
+const STARS = Array.from({ length: 90 }, () => ({ x: rnd(), y: rnd() * .75, a: .05 + rnd() * .22, ph: rnd() * 6 }));
+const MIST = Array.from({ length: 5 }, (_, i) => ({ x: rnd(), w: .35 + rnd() * .4, dy: 4 + i * 9, v: (rnd() - .5) * .006, a: .03 + rnd() * .03 }));
+const mixCache = {};
+function mixKey(a, b, t) { if (t <= 0) return a; if (t >= 1) return b; const q = Math.round(t * 8), k = a + '>' + b + q; if (!RGB[k]) RGB[k] = RGB[a].map((v, i) => Math.round(lerp(v, RGB[b][i], q / 8))); return k; }
+
+function point(p, k, a, size, flare) {
+  if (!p || a < .01) return;
+  const core = clamp(p.s * size * .55, .6, 2.6), hr = core * (size > 1.5 ? 16 : 9);
+  ctx.globalAlpha = clamp(a * .55, 0, 1); ctx.drawImage(tint(halo, k, 'h'), p.x - hr, p.y - hr, hr * 2, hr * 2);
+  ctx.globalAlpha = clamp(a, 0, 1); ctx.fillStyle = rgba(k, 1); ctx.beginPath(); ctx.arc(p.x, p.y, core, 0, 6.283); ctx.fill();
+  if (flare) { const g = ctx.createLinearGradient(p.x - flare, 0, p.x + flare, 0);
+    g.addColorStop(0, rgba(k, 0)); g.addColorStop(.5, rgba(k, .5 * a)); g.addColorStop(1, rgba(k, 0));
+    ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(p.x - flare, p.y - .6, flare * 2, 1.2); }
+}
+// 바닥에 떨어진 빛: 원근에 맞춰 납작한 타원
+function pool(x, z, k, a, rad, c) {
+  const p = project(x, 0, z, c); if (!p || a < .005) return;
+  const r = clamp(p.s * rad, 2, 420), flat = clamp(c.y / p.d * 1.3, .04, .9);
+  ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1, flat); ctx.globalAlpha = clamp(a, 0, 1);
+  ctx.drawImage(tint(soft, k, 's'), -r, -r, r * 2, r * 2); ctx.restore();
+}
+function poly(pts, c) { const q = pts.map(p => project(p[0], p[1], p[2], c)); if (q.some(v => !v)) return false;
+  ctx.beginPath(); q.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); return true; }
+const g3 = (p2, y = 0) => [p2[0], y, p2[1]];
+
+function frame(now) {
+  const t = (now - t0) / 1000, since = t - intro;
+  smx += (mx - smx) * .04; smy += (my - smy) * .04;
+  mShown += (morph - mShown) * .08;
+  // R: 스크롤 앞 45%는 카메라만 A → B(낮은 시점)로 내려앉고, 뒤 55%에서 불빛이 떠올라 지형으로 모인다
+  const rise = view === 'R' ? ease(clamp(mShown / .45, 0, 1)) : 0;
+  const m = view === 'R' ? ease(clamp((mShown - .45) / .55, 0, 1)) : ease(mShown), fade = 1 - clamp(m * 2.5, 0, 1);
+  viewT = Math.min(1, viewT + .01);
+  const camOf = k => k === 'A' ? CA : CB, vk = ease(viewT);
+  const c = {}; for (const f in CA) { const to = view === 'R' ? lerp(CA[f], CB[f], rise) : camOf(view)[f]; c[f] = lerp(lerp(camOf(viewFrom)[f], to, vk), CT[f], m); }
+  c.yaw += Math.sin(t * .05) * .012 + smx * .035; c.pitch += smy * .012; c.x += Math.sin(t * .07) * 6;
+  const lit = clamp((since - 1.3) / 1.4, 0, 1); // 불이 다 켜진 정도(바닥 빛·창문에 쓴다)
+
+  // 하늘: 거의 검은 남색, 지평선에만 가는 빛 띠
+  const hz = project(c.x + Math.sin(c.yaw) * 1e6, c.y, c.z + Math.cos(c.yaw) * 1e6, c);
+  const hy = hz ? clamp(hz.y, -H, H * 2) : -H;
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  const sky = ctx.createLinearGradient(0, 0, 0, Math.max(1, hy));
+  sky.addColorStop(0, '#010206'); sky.addColorStop(.7, '#02050c'); sky.addColorStop(.94, '#060b18'); sky.addColorStop(1, '#0c1426');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, Math.max(0, hy));
+  const band = ctx.createRadialGradient(W * .66, hy, 0, W * .66, hy, W * .45);
+  band.addColorStop(0, 'rgba(255,196,140,.06)'); band.addColorStop(1, 'rgba(255,196,140,0)');
+  ctx.save(); ctx.translate(0, hy); ctx.scale(1, .12); ctx.translate(0, -hy); ctx.fillStyle = band; ctx.fillRect(0, hy - W * .5, W, W); ctx.restore();
+  ctx.fillStyle = '#02040a'; ctx.fillRect(0, hy, W, H - hy);
+  if (O.stars && fade > 0) STARS.forEach(s => { if (s.y * H > hy - 30) return; ctx.globalAlpha = s.a * fade * (.7 + .3 * Math.sin(t * .8 + s.ph)); ctx.fillStyle = '#dfe7ff'; ctx.fillRect(s.x * W, s.y * H, 1, 1); });
+  ctx.globalAlpha = 1;
+
+  // 바닥면: 활주로·유도로 아스팔트(풀밭보다 아주 조금 밝다) + 표시선
+  if (O.surface && fade > 0) {
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = '#070a12';
+    if (poly([g3(at(-30, -RHALF - 4)), g3(at(RLEN + 30, -RHALF - 4)), g3(at(RLEN + 30, RHALF + 4)), g3(at(-30, RHALF + 4))], c)) ctx.fill();
+    ctx.fillStyle = '#05080f';
+    if (poly([g3(at(-260, TO - 13)), g3(at(RLEN, TO - 13)), g3(at(RLEN, TO + 13)), g3(at(-260, TO + 13))], c)) ctx.fill();
+    CONNECT.forEach(s0 => { if (poly([g3(at(s0 - 10, TO + 12)), g3(at(s0 + 150, -RHALF)), g3(at(s0 + 175, -RHALF)), g3(at(s0 + 16, TO + 12))], c)) ctx.fill(); });
+    // 표시선: 활주로 끝 줄무늬(피아노 건반), 착지 구역 막대, 중앙 점선 — 불빛에 비친 만큼만 희미하게
+    ctx.globalCompositeOperation = 'lighter';
+    const mark = (s1, s2, o1, o2) => { const q = [g3(at(s1, o1), .05), g3(at(s2, o1), .05), g3(at(s2, o2), .05), g3(at(s1, o2), .05)];
+      const p = project(...q[0], c); if (!p) return; ctx.globalAlpha = fade * lit * clamp(.22 / (1 + p.d / 700), 0, .2); ctx.fillStyle = '#c9d4ee'; if (poly(q, c)) ctx.fill(); };
+    [RLEN - 40, 10].forEach(s => { for (let o = -26; o <= 26; o += 4.2) if (Math.abs(o) > 3) mark(s, s + 30, o - 1, o + .8); });
+    [150, 300, 450, RLEN - 480, RLEN - 330, RLEN - 180].forEach(s => { mark(s, s + 22, -14, -9); mark(s, s + 22, 9, 14); });
+    for (let s = 60; s < RLEN - 60; s += 50) mark(s, s + 30, -.5, .5);
+    // 불빛이 바닥을 비춘다
+    for (const l of L) {
+      if (l.k === 'city' || l.ord * 1.2 > since - 1.3) continue;
+      if (l.k === 'edge') pool(l.x, l.z, 'white', .09 * fade, 22, c);
+      else if (l.k === 'taxi') pool(l.x, l.z, 'blue', .07 * fade, 14, c);
+      else if (l.k === 'apron') pool(l.x, l.z, 'amb', .13 * fade, 60, c);
+      else if (l.k === 'thr' || l.k === 'end') pool(l.x, l.z, l.c, .05 * fade, 10, c);
+    }
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
+
+  // 깜빡이는 빨간 불 하나(화면에서 유일한 빨간색). 창문 불빛은 아래 불빛 목록에서 그린다
+  if (O.build && fade > 0) {
+    ctx.globalCompositeOperation = 'lighter';
+    const bc = project(TW[0], 60, TW[1], c); point(bc, 'red', fade * lit * ((t % 1.6) < .5 ? 1 : .06), 1.1);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
+
+  // 불빛(데이터 점이 될 것들)
+  ctx.globalCompositeOperation = 'lighter';
+  for (const l of L) {
+    if (l.k === 'win' && !O.build) continue;
+    const on = clamp((since - 1.3 - l.ord * 1.2) / .18, 0, 1); if (on <= 0) continue;
+    const mm = l.tx !== undefined ? m : 0;
+    const x = lerp(l.x, l.tx ?? l.x, mm), y = lerp(l.y, l.ty ?? l.y, mm), z = lerp(l.z, l.tz ?? l.z, mm);
+    const p = project(x, y, z, c); if (!p) continue;
+    let a = on / (1 + p.d / 5200) * (.88 + .12 * Math.sin(t * 2.3 + l.ph));
+    if (l.tx === undefined) a *= fade;
+    if (l.k === 'center') a *= .7;
+    let wv = 0;
+    if (O.wave && fade > 0 && (l.k === 'edge' || l.k === 'center') && since > 3) { const sw = ((t - intro - 3) * 700) % (RLEN + 2600); wv = Math.exp(-Math.pow((l.ord * RLEN - sw) / 90, 2)) * fade; a *= 1 + wv * 2.2; }
+    const k = mm > 0 ? mixKey(l.c, l.tc, mm) : l.c;
+    if (l.k === 'apron' && mm < .5) { const g0 = project(l.x, 0, l.z, c); if (g0) { ctx.globalAlpha = .16 * a * fade; ctx.strokeStyle = rgba('amb', 1); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x, p.y + 2); ctx.lineTo(g0.x, g0.y); ctx.stroke(); } }
+    if (l.k === 'win' && mm < .35) { ctx.globalAlpha = clamp(a * .75, 0, 1); ctx.fillStyle = rgba(k, 1); ctx.fillRect(p.x - Math.max(.8, p.s * 3), p.y - .5, Math.max(1.6, p.s * 6), Math.max(1, p.s * 1.4)); }
+    else point(p, k, a, lerp(l.sz, 1, mm), 0);
+    if (O.wet && fade > 0 && l.y < 1 && l.k !== 'city') { const hr = clamp(p.s * .55, .6, 2.6) * 7; ctx.globalAlpha = a * .1 * fade;
+      ctx.drawImage(tint(soft, k, 's'), p.x - hr * .3, p.y + 1, hr * .6, hr * 3.2); }
+  }
+
+  // 진입등 섬광
+  ctx.globalCompositeOperation = 'lighter';
+  if (fade > 0 && since > 2.6) { const step = Math.floor((t * 16) % 22);
+    APPROACH.forEach((q, i) => { const p = project(q[0], 1, q[1], c); if (!p) return; point(p, 'white', .25 * fade, .6); if (APPROACH.length - 1 - i === step) point(p, 'white', fade, 3.2, 26); }); }
+
+  // 착륙하는 비행기(하늘)
+  if (fade > 0 && since > 3) { const cyc = ((t - intro) % 20) / 20;
+    if (cyc < .8) { const u = cyc / .8, s = u < .6 ? lerp(RLEN + 5200, RLEN - 250, u / .6) : lerp(RLEN - 250, 900, ease((u - .6) / .4));
+      const pos = at(s, 0), alt = Math.max(3, (s - (RLEN - 250)) * .052), p = project(pos[0], alt, pos[1], c), k = Math.min(1, u * 10) * fade;
+      if (p) { point(p, 'white', k, 5, 170 * clamp(p.s * .02, .3, 1.4));
+        const q = project(pos[0] + RN[0] * 17, alt + 1, pos[1] + RN[1] * 17, c), r = project(pos[0] - RN[0] * 17, alt + 1, pos[1] - RN[1] * 17, c);
+        point(q, 'white', k * .45, .7); point(r, 'white', k * .45, .7); if (Math.sin(t * 7) > .9) { point(q, 'white', k, 1.2); point(r, 'white', k, 1.2); } } } }
+
+  // 유도로를 천천히 지나가는 비행기
+  if (O.moving && fade > 0 && since > 3) {
+    const s = 2800 - ((t * 22) % 3000), pos = at(s, TO), fw = at(s - 30, TO);
+    const p = project(pos[0], 4, pos[1], c);
+    if (p) { point(p, 'white', fade * .9, 1.6, 40 * clamp(p.s * .03, .3, 1));
+      const l1 = at(s + 6, TO - 17), l2 = at(s + 6, TO + 17);
+      point(project(l1[0], 4, l1[1], c), 'white', fade * .5, .6); point(project(l2[0], 4, l2[1], c), 'white', fade * .5, .6);
+      if (O.surface) pool(fw[0], fw[1], 'white', .12 * fade, 40, c); }
+  }
+
+  // 비네트 + 글 쪽 어둡게 + 필름 입자
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  const v = ctx.createRadialGradient(W * .5, H * .5, Math.min(W, H) * .35, W * .5, H * .5, Math.max(W, H) * .78);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.62)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  const tg = ctx.createRadialGradient(W * .12, H * .78, 0, W * .12, H * .78, W * .42); tg.addColorStop(0, 'rgba(1,2,6,.6)'); tg.addColorStop(1, 'rgba(1,2,6,0)');
+  ctx.fillStyle = tg; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalAlpha = .03; ctx.translate(-Math.random() * 256, -Math.random() * 256); ctx.fillStyle = grainPat; ctx.fillRect(0, 0, W + 256, H + 256); ctx.restore();
+
+  const lp = ease(clamp(since / 1.2, 0, 1));
+  document.getElementById('rows').textContent = Math.round(lp * 242874).toLocaleString('en-US');
+  document.getElementById('lbar').style.transform = `scaleX(${lp})`;
+  document.getElementById('loading').style.opacity = since < 1.4 ? 1 : 0;
+  const heroA = clamp((since - 1.8) / .6, 0, 1) * (1 - clamp(mShown * (view === 'R' ? 3 : 2.2), 0, 1));
+  ['hero', 'meta', 'scroll', 'top'].forEach(id => document.getElementById(id).style.opacity = heroA);
+  document.getElementById('caption').style.opacity = clamp((m - .7) / .3, 0, 1);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ───── 조작판 ─────
+['A', 'B', 'R'].forEach(k => document.getElementById('v' + k).onclick = () => { if (view === k) return; viewFrom = view === 'R' ? 'A' : view; view = k; viewT = 0;
+  ['A', 'B', 'R'].forEach(q => document.getElementById('v' + q).classList.toggle('on', q === k)); });
+document.querySelectorAll('[data-o]').forEach(el => el.onchange = () => { O[el.dataset.o] = el.checked; });
+const mEl = document.getElementById('morph'), mv = document.getElementById('mv');
+mEl.oninput = () => { morph = mEl.value / 1000; mv.textContent = view === 'R' && morph < .45 ? (morph < .08 ? '활주로(A)' : '내려앉는 중') : morph < .15 ? '활주로' : morph > .85 ? '가격 지형' : '모이는 중'; };
+addEventListener('wheel', e => { morph = clamp(morph + e.deltaY * .0008, 0, 1); mEl.value = morph * 1000; mEl.oninput(); }, { passive: true });
+document.getElementById('replay').onclick = () => { intro = (performance.now() - t0) / 1000; morph = 0; mShown = 0; mEl.value = 0; mEl.oninput(); };
+const panel = document.getElementById('panel');
+const toggleP = () => { panel.style.display = panel.style.display === 'none' ? '' : 'none'; };
+document.getElementById('hide').onclick = toggleP;
+addEventListener('keydown', e => { if (e.key === 'h' || e.key === 'H') toggleP(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIGNAL 시안 — 밤의 공항</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root { --bg:#070B16; --bg2:#13203A; --dot:#8FB8FF; --tx:#EEF3FF; --amb:#FFB547; --mute:rgba(238,243,255,.72); --line:rgba(143,184,255,.18); }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--tx); font-family: Pretendard, system-ui, sans-serif; line-height: 1.6; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .display { font-family: 'Space Grotesk', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: -0.03em; line-height: .95; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 32px 20px 80px; }
+  h2 { font-size: 1.4rem; margin: 48px 0 6px; }
+  .sub { color: var(--mute); margin-bottom: 16px; font-size: .95rem; }
+  .eyebrow { font: 500 .75rem 'IBM Plex Mono', monospace; letter-spacing: .16em; color: var(--amb); }
+
+  /* ── 장면 ── */
+  .scene-wrap { position: relative; height: min(78vh, 720px); border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #03060d; }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .window { position: absolute; inset: 0; pointer-events: none; transition: opacity .6s; }
+  .window .mull { position: absolute; top: 0; bottom: 0; width: 18px; background: linear-gradient(90deg, #010207, #0b1222 45%, #010207); box-shadow: 0 0 24px rgba(0,0,0,.8); }
+  .window .transom { position: absolute; left: 0; right: 0; height: 14px; background: linear-gradient(#0b1222, #010207); }
+  .window .sill { position: absolute; left: 0; right: 0; bottom: 0; height: 9%; background: linear-gradient(#0a101d, #010207); border-top: 1px solid rgba(143,184,255,.12); }
+  .window .glass { position: absolute; inset: 0; background:
+      linear-gradient(115deg, transparent 30%, rgba(238,243,255,.035) 42%, transparent 48%, transparent 70%, rgba(238,243,255,.025) 76%, transparent 80%); }
+  /* 유리에 비친 실내 천장 조명 */
+  .window .refl { position: absolute; top: 5%; left: 0; right: 0; height: 30px; display: flex; justify-content: space-around; opacity: .12; }
+  .window .refl i { width: 90px; height: 6px; border-radius: 6px; background: #EEF3FF; filter: blur(4px); }
+  .hero-text { position: absolute; left: 6%; bottom: 16%; z-index: 2; max-width: 520px; transition: opacity .4s; }
+  .hero-text .name { font-size: clamp(2.8rem, 7vw, 5.6rem); text-shadow: 0 0 30px rgba(3,6,13,.9); }
+  .hero-text .kr { color: var(--mute); margin-top: 8px; }
+  .hero-text .kw { margin-top: 14px; font-size: .9rem; color: var(--tx); text-shadow: 0 0 12px #000; }
+  .hero-text .kw b { color: var(--amb); font-weight: 500; }
+  .flap-top { position: absolute; top: 5%; right: 4%; z-index: 2; display: flex; gap: 3px; }
+  .flap-top span { font: 500 13px 'IBM Plex Mono', monospace; background: #0d1426; border: 1px solid #1a2744; padding: 3px 5px; border-radius: 3px; color: var(--amb); min-width: 18px; text-align: center; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-top: 14px; font-size: .88rem; color: var(--mute); }
+  .controls button { font: inherit; color: var(--tx); background: #0f1830; border: 1px solid var(--line); padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+  .controls button:hover { border-color: var(--amb); }
+  .controls label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .controls input[type=range] { width: 220px; accent-color: var(--amb); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; font-size: .85rem; color: var(--mute); }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; box-shadow: 0 0 8px currentColor; }
+  .note { margin-top: 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; font-size: .92rem; color: var(--mute); }
+  .note b { color: var(--tx); }
+
+  /* ── 개선안 미니 시안 ── */
+  .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .opt { border: 1px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; background: #0a1020; transition: border-color .2s; }
+  .opt:hover { border-color: rgba(255,181,71,.5); }
+  .opt.selected { border-color: var(--amb); box-shadow: 0 0 0 1px var(--amb); }
+  .opt h3 { font-size: 1rem; margin: 10px 0 4px; }
+  .opt p { font-size: .84rem; color: var(--mute); }
+  .opt .tag { font: 500 .7rem 'IBM Plex Mono', monospace; color: var(--amb); letter-spacing: .12em; }
+  .opt.bad { cursor: default; opacity: .85; }
+  .mini { position: relative; aspect-ratio: 16/10; border-radius: 8px; overflow: hidden; background: radial-gradient(ellipse at 60% 40%, #13203A, #070B16 70%); }
+  .dots { position: absolute; background-image: radial-gradient(circle, rgba(143,184,255,.85) 1.3px, transparent 1.6px); background-size: 9px 9px; }
+  .dots.faint { background-image: radial-gradient(circle, rgba(143,184,255,.3) 1px, transparent 1.4px); background-size: 11px 11px; }
+  .card { position: absolute; padding: 8px 10px; border-radius: 6px; }
+  .card i { display: block; height: 5px; border-radius: 3px; background: rgba(238,243,255,.75); margin-top: 5px; }
+  .card i.h { height: 8px; width: 70%; background: var(--tx); margin-top: 0; }
+  .card i.s { width: 60%; }
+  .card .ey { width: 30%; height: 4px; background: var(--amb); margin: 0 0 6px; }
+  .mask-hole { position: absolute; background: radial-gradient(ellipse at center, #070B16 45%, transparent 72%); }
+  .arrow { position: absolute; font: 500 10px 'IBM Plex Mono', monospace; color: var(--amb); }
+  .waffles { position: absolute; left: 6%; right: 6%; top: 14%; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6%; }
+  .waffles div { aspect-ratio: 1; background-image: radial-gradient(circle, rgba(143,184,255,.9) 1.2px, transparent 1.5px); background-size: 6px 6px; }
+  .waffles div.dim { opacity: .25; }
+  .waffles div.on { background-image: radial-gradient(circle, #FFB547 1.3px, transparent 1.6px); }
+  .wlabels { position: absolute; left: 6%; right: 6%; top: 40%; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6%; font: 500 7px 'IBM Plex Mono', monospace; color: var(--mute); text-align: center; }
+  .overlap { color: var(--tx); font-size: 6.5px; line-height: 1.25; }
+  .detail { position: absolute; left: 6%; right: 6%; top: 50%; padding: 6px 8px; border-top: 1px solid rgba(255,181,71,.5); font: 500 7.5px 'IBM Plex Mono', monospace; color: var(--tx); }
+  .detail b { color: var(--amb); }
+  .todo { display: grid; gap: 10px; }
+  .todo div { display: grid; grid-template-columns: 90px 1fr; gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: .9rem; }
+  .todo div span:first-child { font: 500 .75rem 'IBM Plex Mono', monospace; color: var(--amb); letter-spacing: .1em; padding-top: 2px; }
+  .todo small { color: var(--mute); }
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="eyebrow">SIGNAL · 시안 2026-09-28</p>
+  <h2 style="margin-top:8px">1. 첫 화면 — 밤의 공항 창가</h2>
+  <p class="sub">터미널 창문으로 밤 활주로를 보는 느낌. 불빛은 모두 지금 사이트의 점(Points)과 같은 방식으로 그린다. 아래 슬라이더를 끌면 <b>불빛이 가격 지형으로 모이는</b> 전환을 볼 수 있다.</p>
+
+  <div class="scene-wrap" id="wrap">
+    <canvas id="scene"></canvas>
+    <div class="window" id="window">
+      <div class="glass"></div>
+      <div class="refl"><i></i><i></i><i></i><i></i></div>
+      <div class="mull" style="left:-6px"></div>
+      <div class="mull" style="left:31%"></div>
+      <div class="mull" style="left:67%"></div>
+      <div class="mull" style="right:-6px"></div>
+      <div class="transom" style="top:22%"></div>
+      <div class="sill"></div>
+    </div>
+    <div class="flap-top" id="flap" aria-hidden="true"></div>
+    <div class="hero-text" id="heroText">
+      <div class="display name">CHOI HALIM</div>
+      <div class="kr">최하림</div>
+      <div class="kw mono"><b>ML ENGINEER</b> · 시계열 예측 · 모델 검증 · 데이터 파이프라인</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="replay">▶ 불 켜지는 순간 다시 보기</button>
+    <label>스크롤 진행 <input type="range" id="morph" min="0" max="1000" value="0"> <span class="mono" id="morphVal">활주로</span></label>
+    <label><input type="checkbox" id="optWindow" checked> 창문 틀</label>
+    <label><input type="checkbox" id="optWet"> 젖은 활주로(반사)</label>
+    <label><input type="checkbox" id="optPlane" checked> 착륙하는 비행기</label>
+  </div>
+  <div class="legend">
+    <span><i style="color:#EEF3FF;background:#EEF3FF"></i>활주로 가장자리(흰색)</span>
+    <span><i style="color:#8FB8FF;background:#8FB8FF"></i>유도로(파란색 = 사이트 데이터 점 색)</span>
+    <span><i style="color:#FFB547;background:#FFB547"></i>관제탑·계류장 조명(호박색 = 강조색)</span>
+    <span><i style="color:#ff4a4a;background:#ff4a4a"></i>경고등(아주 조금만)</span>
+  </div>
+
+  <div class="note">
+    <b>제 생각:</b> 콘셉트와 아주 잘 맞습니다. 항공권 데이터 → 공항, 플립 글자판 → 출발 안내판, 그리고 사이트 색(남색 배경·파란 점·호박색 강조)이 실제 밤 공항 불빛 색(파란 유도로등·흰 활주로등·주황 나트륨등)과 거의 같습니다.
+    핵심은 <b>"불빛 = 데이터 점"</b>으로 묶는 것입니다. 첫 화면의 불빛이 스크롤하면 그대로 가격 지형으로 모이면, 예쁜 배경이 아니라 이야기의 시작이 됩니다.
+    로딩 화면(<span class="mono">LOADING 242,874 ROWS</span>)도 "활주로 불이 앞에서 뒤로 차례로 켜지는" 연출로 바꿀 수 있습니다(위 ▶ 버튼).<br><br>
+    <b>조심할 점:</b> ① 이름·직무가 1초 안에 읽혀야 하므로 불빛은 글자 뒤쪽 아래에만 둔다 ② 점 개수는 지금 지형과 같은 버퍼를 다시 쓰므로 3D 용량(240/250KB)은 거의 안 늘지만, 비행기·깜빡임은 셰이더에 조금 더해진다 ③ 대체 이미지(reduced-motion)도 이 장면으로 다시 찍어야 한다.
+  </div>
+
+  <h2>2. 글 뒤 검은 판 + 스크롤하면 글이 차트와 겹치는 문제</h2>
+  <p class="sub">두 문제는 원인이 같습니다 — <b>글과 차트가 같은 자리를 나눠 쓰기 때문</b>에 판이 필요하고, 스크롤하면 겹칩니다. 자리를 나누면 판도 필요 없어집니다. 마음에 드는 것을 눌러 주세요.</p>
+  <div class="opts" data-group="text">
+    <div class="opt bad">
+      <div class="mini">
+        <div class="dots" style="left:8%;right:8%;top:10%;height:48%"></div>
+        <div class="card" style="left:6%;top:38%;width:52%;background:rgba(7,11,22,.82)"><i class="ey"></i><i class="h"></i><i></i><i></i><i class="s"></i></div>
+        <span class="arrow" style="left:60%;top:70%">↑ 글이 올라가며 점을 덮음</span>
+      </div>
+      <p class="tag" style="margin-top:10px">지금</p>
+      <h3>반투명 검은 판이 차트 위로 지나감</h3>
+      <p>판이 점을 가리고, 판 가장자리에서 점이 잘려 지저분해 보인다.</p>
+    </div>
+    <div class="opt" data-choice="caption" onclick="pick(this)">
+      <div class="mini">
+        <div class="dots" style="left:8%;right:8%;top:8%;height:50%"></div>
+        <div class="card" style="left:8%;top:64%;width:84%"><i class="ey"></i><i class="h" style="width:40%"></i><i style="width:90%"></i><i class="s"></i></div>
+        <span class="arrow" style="right:6%;top:62%">글은 제자리에서 바뀜</span>
+      </div>
+      <p class="tag" style="margin-top:10px">A · 추천</p>
+      <h3>자막 방식: 차트는 위, 글은 아래 고정</h3>
+      <p>차트가 화면 위 60%, 글은 아래 띠에 고정되고 스크롤하면 글이 <b>제자리에서</b> 바뀐다(흐려졌다 나타남). 겹칠 일이 없어 판이 필요 없다. 넓은 차트(점 달력 40주)도 폭을 그대로 쓴다. 휴대폰도 같은 구조.</p>
+    </div>
+    <div class="opt" data-choice="split" onclick="pick(this)">
+      <div class="mini">
+        <div class="card" style="left:5%;top:22%;width:36%"><i class="ey"></i><i class="h"></i><i></i><i></i><i class="s"></i></div>
+        <div class="dots" style="left:46%;right:5%;top:14%;height:70%"></div>
+      </div>
+      <p class="tag" style="margin-top:10px">B</p>
+      <h3>좌우 나눔: 글 왼쪽, 차트 오른쪽</h3>
+      <p>데스크톱에서는 가장 흔하고 읽기 편하다. 대신 차트 폭이 절반 가까이 줄어 점 달력·구름이 빽빽해지고, 휴대폰에서는 결국 A처럼 위아래가 된다.</p>
+    </div>
+    <div class="opt" data-choice="avoid" onclick="pick(this)">
+      <div class="mini">
+        <div class="dots" style="left:8%;right:8%;top:10%;height:70%"></div>
+        <div class="mask-hole" style="left:-4%;top:30%;width:66%;height:60%"></div>
+        <div class="card" style="left:6%;top:44%;width:48%"><i class="ey"></i><i class="h"></i><i></i><i></i><i class="s"></i></div>
+      </div>
+      <p class="tag" style="margin-top:10px">C</p>
+      <h3>판 없이, 점이 글을 피해 흐려짐</h3>
+      <p>검은 판 대신 글 주변의 점만 부드럽게 어두워진다. 가장 "몰입감" 있지만, 글이 지나가는 동안 차트 일부가 계속 흐려져 차트를 읽기 어렵다.</p>
+    </div>
+  </div>
+
+  <h2>3. 피처 와플 — 마우스를 올리면 피처 이름이 겹치는 문제</h2>
+  <p class="sub">지금은 각 와플 아래에 이름 목록이 펼쳐져 옆 칸·글 카드와 겹칩니다. 한 줄 설명 칸을 따로 두는 방식을 제안합니다(5-3의 "눌러서 펼치기"와 키보드 초점에도 그대로 쓸 수 있음).</p>
+  <div class="opts">
+    <div class="opt bad">
+      <div class="mini">
+        <div class="waffles"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+        <div class="wlabels"><span>34%</span><span class="overlap">21%<br>lag_1 · lag_7<br>roll_mean_14<br>price_diff…</span><span class="overlap">18%<br>holiday_kr<br>holiday_jp…</span><span>11%</span><span>9%</span><span>7%</span></div>
+      </div>
+      <p class="tag" style="margin-top:10px">지금</p>
+      <h3>칸마다 아래로 목록이 펼쳐짐</h3>
+      <p>목록이 길어 옆 칸 목록·글과 부딪힌다.</p>
+    </div>
+    <div class="opt" data-choice="detailrow" onclick="pick(this)">
+      <div class="mini">
+        <div class="waffles"><div class="dim"></div><div class="on"></div><div class="dim"></div><div class="dim"></div><div class="dim"></div><div class="dim"></div></div>
+        <div class="wlabels"><span>34%</span><span style="color:#FFB547">21%</span><span>18%</span><span>11%</span><span>9%</span><span>7%</span></div>
+        <div class="detail"><b>가격 이력 · 21% · 7개</b><br>lag_1 · lag_7 · roll_mean_14 · price_diff · …</div>
+      </div>
+      <p class="tag" style="margin-top:10px">제안</p>
+      <h3>고른 칸만 밝게 + 아래 공통 설명 한 줄</h3>
+      <p>올린(또는 누른) 그룹만 호박색, 나머지는 흐리게. 피처 이름은 와플 줄 아래 한 곳에만 나온다. 절대 겹치지 않는다.</p>
+    </div>
+  </div>
+  <p class="sub" style="margin-top:8px">※ 그룹 이름·피처 이름은 시안용 예시입니다. 실제는 <span class="mono">facts.json</span> 값을 씁니다.</p>
+
+  <h2>4. 완성까지 남은 공정</h2>
+  <div class="todo">
+    <div><span>① 수정</span><span>지금 본 문제 고치기 — 글·차트 자리 나누기(검은 판 제거), 와플 이름 겹침 <small>· 반나절~하루</small></span></div>
+    <div><span>② 5-3</span><span>인터랙션 — 점이 마우스에 반응, 와플 눌러 SHAP 벌떼로 펼치기(SHAP 값 추출 포함), 차트 직접 만지기(가까운 날짜 강조·슬라이더·키보드) <small>· 계획 한 개 분량</small></span></div>
+    <div><span>③ 공항</span><span>(하기로 하면) 밤의 공항 첫 화면 — 설계 → 계획 → 구현. 로딩 화면·대체 이미지·OG 이미지도 같이 바뀜 <small>· 계획 한 개 분량</small></span></div>
+    <div><span>④ 차트 3</span><span>예측 대 실제 산점도 — 모델을 폴드마다 다시 돌려 예측값을 뽑아야 함(몇십 분) <small>· 별도 계획</small></span></div>
+    <div><span>⑤ 성능</span><span>Lighthouse 모바일 ko·ja 90 넘기기 (지금 ko 87, ja 84~89) <small>· 급하지 않음</small></span></div>
+    <div><span>⑥ 사용자</span><span>이력서 PDF 3개, 문구 검토(한·영·일, 일본어는 검수자), LinkedIn, 공개용 항공권 저장소, Vercel Analytics 켜기</span></div>
+    <div><span>⑦ 공개</span><span><span class="mono">LAUNCHED = true</span> — 검색 노출 켜기. 목표: 2027년 초 이전</span></div>
+  </div>
+</div>
+
+<script>
+// ── 선택 기록(비주얼 컴패니언) ──
+function pick(el) {
+  const group = el.parentElement;
+  group.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.toggleSelect) { try { toggleSelect(el); } catch (e) {} }
+}
+
+// ── 밤의 공항 장면 ──
+const cv = document.getElementById('scene'), ctx = cv.getContext('2d');
+let W = 0, H = 0;
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+// 빛 번짐 스프라이트(색마다 한 장 만들어 두고 크기만 바꿔 그린다)
+const sprites = {};
+function sprite(color) {
+  if (sprites[color]) return sprites[color];
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, '#fff'); gr.addColorStop(0.08, color); gr.addColorStop(0.3, color + '55'); gr.addColorStop(1, color + '00');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  return (sprites[color] = c);
+}
+const C = { white: '#EEF3FF', blue: '#8FB8FF', amb: '#FFB547', red: '#ff4a4a', green: '#7dffb0' };
+
+// 카메라: 터미널 창가 높이에서 +z(활주로 쪽)를 본다
+const cam = { y: 14, f: 0 };
+function project(x, y, z, camY, horizon) {
+  if (z <= 1) return null;
+  return { x: W * 0.5 + (x / z) * cam.f, y: horizon - ((y - camY) / z) * cam.f, s: cam.f / z };
+}
+
+// 고정 불빛 목록(각각 활주로 자리와 지형 자리를 가진다)
+const lights = [];
+function add(x, y, z, color, size, kind) { lights.push({ x, y, z, color, size, kind, ph: Math.random() * 6.28 }); }
+const RWX = 30, RWHALF = 24;
+for (let z = 220; z <= 1500; z += 36) { add(RWX - RWHALF, 0.4, z, C.white, 1, 'edge'); add(RWX + RWHALF, 0.4, z, C.white, 1, 'edge'); }
+for (let z = 240; z <= 1500; z += 22) add(RWX, 0.1, z, C.white, 0.55, 'center');
+for (let x = RWX - RWHALF; x <= RWX + RWHALF; x += 5) { add(x, 0.4, 1500, C.red, 0.8, 'end'); add(x, 0.4, 216, C.green, 0.5, 'thr'); }
+// 유도로: 왼쪽 앞에서 휘어져 활주로로 합류하는 곡선(파란 가장자리 등)
+function bez(t, p0, p1, p2) { const u = 1 - t; return [u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]]; }
+const T0 = [-120, 22], T1 = [-10, 60], T2 = [RWX - RWHALF - 6, 420];
+for (let i = 0; i <= 34; i++) {
+  const t = i / 34, p = bez(t, T0, T1, T2), q = bez(Math.min(1, t + 0.01), T0, T1, T2);
+  const dx = q[0] - p[0], dz = q[1] - p[1], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l;
+  add(p[0] + nx * 9, 0.3, p[1] + nz * 9, C.blue, 0.75, 'taxi'); add(p[0] - nx * 9, 0.3, p[1] - nz * 9, C.blue, 0.75, 'taxi');
+}
+// 평행 유도로(멀리)
+for (let z = 200; z <= 1400; z += 40) add(RWX + RWHALF + 70, 0.3, z, C.blue, 0.7, 'taxi');
+// 계류장 조명(나트륨등, 높은 기둥)
+[[-70, 60], [-110, 110], [-40, 150], [-150, 190], [-90, 240]].forEach(([x, z]) => add(x, 22, z, C.amb, 2.2, 'apron'));
+// 멀리 도시 불빛
+for (let i = 0; i < 90; i++) add((Math.random() - 0.5) * 9000, Math.random() * 30, 4200 + Math.random() * 1500, Math.random() < 0.6 ? C.amb : C.white, 1.1, 'city');
+// 관제탑 창과 경고등
+const tower = { x: -230, z: 700, h: 70 };
+for (let i = 0; i < 7; i++) add(tower.x - 9 + i * 3, tower.h - 4, tower.z, C.amb, 0.9, 'tower');
+add(tower.x, tower.h + 9, tower.z, C.red, 1.6, 'beacon');
+
+// 지형 자리: 불빛을 격자로 다시 놓고 높이 = 예약 곡선(U자) + 공휴일 봉우리
+const N = lights.length, cols = 40, rows = Math.ceil(N / cols);
+const curve = d => { // D-일수 → 평균 대비 %(실측 구간값을 부드럽게 이은 모양)
+  const k = [[0, 11], [5, 4.4], [11, 0.9], [18, -2.4], [26, -3.7], [38, -5], [53, -4.3], [75, 2.1], [90, 2.1]];
+  for (let i = 1; i < k.length; i++) if (d <= k[i][0]) { const [a, va] = k[i - 1], [b, vb] = k[i]; return va + (vb - va) * (d - a) / (b - a); }
+  return 2.1;
+};
+lights.forEach((L, i) => {
+  const c = i % cols, r = Math.floor(i / cols), d = (c / (cols - 1)) * 90;
+  const holiday = r === 3 || r === Math.floor(rows * 0.7);
+  const pct = curve(d) + (holiday ? 16 : 0) + Math.sin(r * 1.7 + c * 0.3) * 1.2;
+  L.tx = -170 + c * 9.5; L.tz = 170 + r * (560 / rows); L.ty = 6 + pct * 2.4;
+  L.tcolor = holiday ? C.amb : C.blue;
+});
+
+let morph = 0, wet = false, planeOn = true, lightOn = 1, lightStart = 0;
+const hexToRgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mixCol = (a, b, t) => { const A = hexToRgb(a), B = hexToRgb(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+const ease = t => 1 - Math.pow(1 - t, 4);
+
+function drawSky(horizon) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#03060d'); g.addColorStop(horizon / H * 0.9, '#0d1830'); g.addColorStop(horizon / H, '#13203A'); g.addColorStop(horizon / H + 0.02, '#060a14'); g.addColorStop(1, '#03050b');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // 지평선의 도시 빛 번짐
+  const h = ctx.createRadialGradient(W * 0.55, horizon, 0, W * 0.55, horizon, W * 0.6);
+  h.addColorStop(0, 'rgba(255,181,71,.10)'); h.addColorStop(1, 'rgba(255,181,71,0)');
+  ctx.fillStyle = h; ctx.fillRect(0, horizon - W * 0.3, W, W * 0.35);
+}
+
+function drawTower(horizon, camY, a) {
+  if (a <= 0) return;
+  const p = (x, y) => project(x, y, tower.z, camY, horizon);
+  const b1 = p(tower.x - 4, 0), b2 = p(tower.x + 4, 0), s1 = p(tower.x - 3, tower.h - 8), s2 = p(tower.x + 3, tower.h - 8);
+  const c1 = p(tower.x - 11, tower.h - 8), c2 = p(tower.x + 11, tower.h - 8), c3 = p(tower.x + 9, tower.h + 4), c4 = p(tower.x - 9, tower.h + 4);
+  ctx.globalAlpha = a; ctx.fillStyle = '#02040a';
+  ctx.beginPath(); ctx.moveTo(b1.x, b1.y); ctx.lineTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y); ctx.lineTo(b2.x, b2.y); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(c1.x, c1.y); ctx.lineTo(c2.x, c2.y); ctx.lineTo(c3.x, c3.y); ctx.lineTo(c4.x, c4.y); ctx.fill();
+  const w1 = p(tower.x - 10, tower.h - 6), w2 = p(tower.x + 10, tower.h - 1);
+  ctx.fillStyle = 'rgba(255,181,71,.22)'; ctx.fillRect(w1.x, w2.y, w2.x - w1.x, w1.y - w2.y);
+  ctx.globalAlpha = 1;
+}
+
+function glow(x, y, r, color, alpha) {
+  if (alpha <= 0.01 || r <= 0) return;
+  ctx.globalAlpha = Math.min(1, alpha);
+  const s = sprite(color); ctx.drawImage(s, x - r, y - r, r * 2, r * 2);
+}
+
+function frame(ms) {
+  const t = ms / 1000;
+  cam.f = Math.max(W, H * 1.4) * 0.9;
+  const m = ease(morph);
+  const camY = cam.y + m * 70, horizon = H * (0.56 - m * 0.06);
+  drawSky(horizon);
+  drawTower(horizon, camY, 1 - m * 1.6);
+  ctx.globalCompositeOperation = 'lighter';
+  // 불 켜기: 앞에서 뒤로 차례로(로딩 화면 대체 아이디어)
+  const since = (ms - lightStart) / 1000;
+  for (const L of lights) {
+    let on = 1;
+    if (lightOn < 1) {
+      const order = L.kind === 'city' ? 1.2 : L.kind === 'apron' || L.kind === 'tower' || L.kind === 'beacon' ? 0.1 : Math.min(1, L.z / 1500) * 1.1;
+      on = Math.max(0, Math.min(1, (since - order) / 0.12));
+    }
+    const fadeOut = (L.kind === 'city' || L.kind === 'tower' || L.kind === 'beacon') ? 1 - Math.min(1, m * 2) : 1;
+    const x = L.x + (L.tx - L.x) * m, y = L.y + (L.ty - L.y) * m, z = L.z + (L.tz - L.z) * m;
+    const p = project(x, y, z, camY, horizon); if (!p) continue;
+    let a = on * fadeOut;
+    // 공기 흔들림으로 아주 조금 반짝임 + 경고등 깜빡임
+    a *= 0.85 + 0.15 * Math.sin(t * 3 + L.ph);
+    if (L.kind === 'beacon') a *= Math.sin(t * 3.2) > 0.2 ? 1 : 0.08;
+    const color = m > 0 ? mixCol(L.color, L.tcolor, m) : L.color;
+    const r = Math.max(1.6, Math.min(26, p.s * L.size * 2.4)) * (1 + m * 0.3);
+    glow(p.x, p.y, r, color, a);
+    if (wet && m < 0.5 && L.y < 1 && L.kind !== 'city') { // 젖은 바닥 반사: 아래로 늘어진 희미한 빛
+      ctx.globalAlpha = a * 0.18 * (1 - m * 2); const s = sprite(color);
+      ctx.drawImage(s, p.x - r * 0.5, p.y, r, r * 5);
+    }
+  }
+  // 진입등 "토끼": 활주로 끝 너머에서 활주로 쪽으로 달리는 섬광
+  if (m < 0.5) {
+    const k = 12, step = Math.floor((t * 14) % (k + 6));
+    for (let i = 0; i < k; i++) {
+      const z = 1500 + (k - i) * 30, p = project(RWX, 1, z, camY, horizon); if (!p) continue;
+      glow(p.x, p.y, Math.max(1.5, p.s * 1.1), C.white, 0.35 * (1 - m * 2) * lightOn);
+      if (i === step) glow(p.x, p.y, Math.max(6, p.s * 6), C.white, 0.95 * (1 - m * 2) * lightOn);
+    }
+  }
+  // 착륙하는 비행기(착륙등 두 개 + 항행등)
+  if (planeOn && m < 0.6) {
+    const cyc = (t % 16) / 16;
+    if (cyc < 0.85) {
+      const u = cyc / 0.85;
+      const z = u < 0.7 ? 5200 - u / 0.7 * 3900 : 1300 - (u - 0.7) / 0.3 * 700; // 진입 → 접지 후 감속
+      const y = Math.max(1.5, (z - 1350) * 0.055);
+      const x = RWX + (u < 0.7 ? (1 - u / 0.7) * 60 : 0);
+      const p = project(x, y, z, camY, horizon);
+      if (p) {
+        const a = (1 - m / 0.6) * Math.min(1, u * 8), sp = Math.max(2, p.s * 5);
+        glow(p.x - sp * 0.6, p.y, Math.min(34, Math.max(6, p.s * 40)), C.white, a * 0.85);
+        glow(p.x + sp * 0.6, p.y, Math.min(34, Math.max(6, p.s * 40)), C.white, a * 0.85);
+        glow(p.x - sp * 4, p.y - sp * 0.3, 3, C.red, a); glow(p.x + sp * 4, p.y - sp * 0.3, 3, C.green, a);
+        if (Math.sin(t * 9) > 0.93) glow(p.x, p.y - sp, 7, C.white, a);
+      }
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  if (lightOn < 1 && since > 2) lightOn = 1;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// 플립 글자판(오른쪽 위): 시각 흉내
+const flap = document.getElementById('flap');
+const flapText = 'SIGNAL  ICN→NRT  BOARDING';
+flapText.split('').forEach(ch => { const s = document.createElement('span'); s.textContent = ch === ' ' ? ' ' : ch; flap.appendChild(s); });
+
+// 조작
+const morphEl = document.getElementById('morph'), morphVal = document.getElementById('morphVal'), heroText = document.getElementById('heroText');
+morphEl.addEventListener('input', () => {
+  morph = morphEl.value / 1000;
+  morphVal.textContent = morph < 0.15 ? '활주로' : morph > 0.85 ? '가격 지형' : '모이는 중';
+  heroText.style.opacity = String(1 - Math.min(1, morph * 2.2)); flap.style.opacity = heroText.style.opacity;
+  document.getElementById('window').style.opacity = String(document.getElementById('optWindow').checked ? 1 - Math.min(1, morph * 2) : 0);
+});
+document.getElementById('replay').addEventListener('click', () => { lightOn = 0; lightStart = performance.now(); });
+document.getElementById('optWindow').addEventListener('change', e => { document.getElementById('window').style.opacity = e.target.checked ? String(1 - Math.min(1, morph * 2)) : '0'; });
+document.getElementById('optWet').addEventListener('change', e => { wet = e.target.checked; });
+document.getElementById('optPlane').addEventListener('change', e => { planeOn = e.target.checked; });
+// 처음 열면 불 켜기부터
+lightOn = 0; lightStart = performance.now() + 300;
+</script>
+</body>
+</html>
