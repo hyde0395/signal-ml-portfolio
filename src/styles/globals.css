@@ -80,9 +80,12 @@ html.no-loader .loader { display: none; }
 .hero-meta { position: absolute; right: 0; bottom: 12vh; text-align: right; font-size: 0.66rem; letter-spacing: 0.18em;
   line-height: 2; color: rgba(238, 243, 255, 0.42); }
 @media (max-width: 767px) { .hero-meta { display: none; } }
-/* 3D가 켜졌을 때만 첫 화면 뒤에 60vh를 둔다 — 스크롤하는 동안 카메라가 땅 가까이 내려앉을 거리(설계 §4.2).
-   첫 화면(88vh) 아래라 3D가 켜지는 순간 보이는 글은 움직이지 않는다(CLS 0) */
-html[data-3d="on"] .hero-stage { padding-bottom: 60vh; }
+/* 3D가 맨 위에서 처음 켜졌을 때만 첫 화면 뒤에 60vh를 둔다 — 스크롤하는 동안 카메라가 땅 가까이
+   내려앉을 거리(설계 §4.2). 첫 화면(88vh) 아래라 3D가 켜지는 순간 보이는 글은 움직이지 않는다(CLS 0).
+   data-3d="on"이 아니라 html.hero-runway에 매단 이유(Backdrop.tsx setMode 참고): data-3d를 그대로 쓰면
+   나중에 3D가 off로 바뀔 때(fps 하락·컨텍스트 끊김) 여백이 함께 사라져 콘텐츠가 60vh 튄다. 한 번 켜지면
+   다시 지우지 않는 붙박이 클래스라 이런 흔들림이 없다 */
+html.hero-runway .hero-stage { padding-bottom: 60vh; }
 .skills { list-style: none; display: grid; gap: 8px; }
 .skills li { border-left: 2px solid var(--dot); padding-left: 12px; }
 .chapter { padding-block: 48px; border-top: 1px solid var(--line); }

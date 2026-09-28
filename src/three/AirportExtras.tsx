@@ -3,7 +3,7 @@
 // 하늘의 별, 움직이는 불빛(착륙 비행기·진입등 섬광·유도로 비행기), 빨간 경고등 하나. 모두 첫 화면에서만 보이고
 // ①로 넘어가며 사라진다(공항 장면 비율 airport를 TerrainPoints와 같은 속도로 따라간다).
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { buildAirport, landingPlane, runwayPoint, RUNWAY, taxiPlane, toWorld } from './airport';
 import type { SceneState } from './scenes';
@@ -11,6 +11,10 @@ import type { SceneState } from './scenes';
 type Props = { target: React.RefObject<SceneState>; instant: boolean; portrait: boolean };
 
 const DAMP = 2.2; // TerrainPoints와 같게 — 점과 곁가지가 함께 사라진다
+// useFrame마다 새로 만들지 않게 미리 둔다(리뷰 2026-09-28): movers 속성 갱신 키 목록,
+// set()이 색을 채울 때 쓰는 임시 버퍼(매 호출마다 배열을 새로 만들지 않고 재사용한다)
+const ATTR_KEYS = ['position', 'color', 'size', 'alpha'] as const;
+const colorScratch = new Float32Array(3);
 
 // 둥근 빛 점 셰이더(곁가지 전용): 위치·색·크기(px)·알파를 받아 가산 합성으로 그린다
 const glowVert = /* glsl */ `
@@ -54,6 +58,7 @@ const C = { white: new THREE.Color('#EEF3FF'), warm: new THREE.Color('#FFE2B8'),
 
 export function AirportExtras({ target, instant, portrait }: Props) {
   const fade = useRef(target.current?.airport ?? 0);
+  const root = useRef<THREE.Group>(null);
   const air = useMemo(() => buildAirport({ stride: portrait ? 2 : 1 }), [portrait]);
 
   // 고정: 별 + 빛 웅덩이(계류장 조명·활주로 가장자리 아래 바닥)
@@ -114,16 +119,36 @@ export function AirportExtras({ target, instant, portrait }: Props) {
     return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: false });
   }, []);
 
+  // GPU 자원 정리: portrait가 바뀌어(휴대폰 회전 등) 의존 memo가 새로 만들어지거나 컴포넌트가
+  // 사라질 때 옛 geometry·material·텍스처가 GPU에 남지 않게 각각의 memo와 같은 키로 지운다
+  useEffect(() => () => statics.dispose(), [statics]);
+  useEffect(() => () => { ground.surface.dispose(); ground.marks.dispose(); }, [ground]);
+  useEffect(() => () => surfaceMat.dispose(), [surfaceMat]);
+  useEffect(() => () => markMat.dispose(), [markMat]);
+  useEffect(() => () => movers.dispose(), [movers]);
+  useEffect(() => () => staticMat.dispose(), [staticMat]);
+  useEffect(() => () => moverMat.dispose(), [moverMat]);
+  useEffect(() => () => { flareMat.map?.dispose(); flareMat.dispose(); }, [flareMat]);
+
+  // useFrame마다 새 배열을 만들지 않도록 재질 목록을 한 번만 묶어 둔다
+  const glowMats = useMemo(() => [staticMat, moverMat], [staticMat, moverMat]);
+
   useFrame((state, delta) => {
     const goal = target.current?.airport ?? 0;
     fade.current = instant ? goal : THREE.MathUtils.damp(fade.current, goal, DAMP, delta);
     const f = fade.current, t = instant ? 6 : state.clock.elapsedTime, dpr = state.viewport.dpr;
-    for (const m of [staticMat, moverMat]) { m.uniforms.uFade.value = f; m.uniforms.uDpr.value = dpr; m.uniforms.uTime.value = t; }
+    // 히어로를 벗어나 fade가 거의 0이면 그룹을 통째로 안 그린다 — 알파만 0으로 두면 GPU는 여전히
+    // 픽셀마다 래스터화를 시도한다(점 구름의 "숨은 점" 최적화와 같은 이유, shaders.ts 주석 참고)
+    if (root.current) root.current.visible = f > 0.002;
+    for (const m of glowMats) { m.uniforms.uFade.value = f; m.uniforms.uDpr.value = dpr; m.uniforms.uTime.value = t; }
     surfaceMat.opacity = 0.9 * f; markMat.opacity = 0.08 * f; flareMat.opacity = f;
     const P = movers.attributes.position.array as Float32Array, Cc = movers.attributes.color.array as Float32Array;
     const S = movers.attributes.size.array as Float32Array, A = movers.attributes.alpha.array as Float32Array;
     const set = (i: number, p: [number, number, number] | null, c: THREE.Color, s: number, a: number) => {
-      if (p) P.set(p, i * 3); Cc.set([c.r, c.g, c.b], i * 3); S[i] = s; A[i] = p ? a : 0;
+      if (p) P.set(p, i * 3);
+      colorScratch[0] = c.r; colorScratch[1] = c.g; colorScratch[2] = c.b;
+      Cc.set(colorScratch, i * 3);
+      S[i] = s; A[i] = p ? a : 0;
     };
     // 진입등: 활주로 쪽으로 달리는 섬광 하나(초당 16칸, 22칸 주기)
     const step = Math.floor((t * 16) % 22);
@@ -138,13 +163,14 @@ export function AirportExtras({ target, instant, portrait }: Props) {
     // 유도로 비행기
     const tp = taxiPlane(t);
     set(17, tp, C.white, 8, 0.9); set(18, [tp[0] + 0.1, tp[1], tp[2]], C.white, 3, 0.5); set(19, [tp[0] - 0.1, tp[1], tp[2]], C.white, 3, 0.5);
-    // 경고등: 1.6초마다 0.5초 켜짐 — 화면에서 유일한 빨강
-    set(20, air.beacon, C.red, 7, (t % 1.6) < 0.5 ? 1 : 0.06);
-    for (const k of ['position', 'color', 'size', 'alpha'] as const) movers.attributes[k].needsUpdate = true;
+    // 경고등: 1.6초마다 0.5초 켜짐 — 화면에서 유일한 빨강. 캡처(대체 이미지)에서는 깜빡임 중 꺼진
+    // 순간이 찍히지 않게 늘 켜진 것으로 고정한다(리뷰 2026-09-28)
+    set(20, air.beacon, C.red, 7, instant ? 1 : (t % 1.6) < 0.5 ? 1 : 0.06);
+    for (const k of ATTR_KEYS) movers.attributes[k].needsUpdate = true;
   });
 
   return (
-    <group>
+    <group ref={root}>
       <mesh geometry={ground.surface} material={surfaceMat} renderOrder={-2} />
       <mesh geometry={ground.marks} material={markMat} renderOrder={-1} />
       <points geometry={statics} material={staticMat} frustumCulled={false} />

@@ -8,7 +8,8 @@ export function Hero({ locale }: { locale: Locale }) {
   const t = getT(locale);
   const sub = t('hero.nameSub');
   return (
-    // 감싸개가 장면 이름을 가진다 — 3D가 켜지면 아래 여백(globals.css)까지 첫 화면 장면이라 그동안 카메라가 내려앉는다
+    // 감싸개가 장면 이름을 가진다 — 3D가 맨 위에서 켜지면 아래 여백(globals.css의 html.hero-runway,
+    // Backdrop.tsx setMode가 붙인다)까지 첫 화면 장면이라 그동안 카메라가 내려앉는다
     <div className="hero-stage" data-scene="hero">
       <section id="hero" className="hero wrap">
         <div className="hero-copy">

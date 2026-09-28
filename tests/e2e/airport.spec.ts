@@ -17,6 +17,27 @@ test.describe('3D 켜짐', () => {
     await page.locator('#project-h').evaluate((n) => n.scrollIntoView({ block: 'center' }));
     await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'about', { timeout: 10_000 });
   });
+
+  // 맨 위에서 3D가 켜지면 html.hero-runway가 붙어 히어로 아래 60vh 여백이 붙박이로 남는다(Backdrop.tsx
+  // setMode 참고). data-3d가 나중에 off로 바뀌어도(fps 하락·컨텍스트 끊김을 흉내) 그 클래스는 안 지워지므로
+  // 여백이 사라지지 않고, #project 같은 뒤 콘텐츠 위치가 튀지 않아야 한다
+  test('3D가 나중에 꺼져도(hero-runway 유지) #project 위치가 그대로다', async ({ page }) => {
+    await expect(page.locator('html')).toHaveClass(/hero-runway/);
+    const before = await page.locator('#project').boundingBox();
+    await page.evaluate(() => document.documentElement.setAttribute('data-3d', 'off'));
+    const after = await page.locator('#project').boundingBox();
+    expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1);
+  });
+});
+
+// 느린 회선 등으로 3D가 늦게 켜질 때 이미 #project까지 스크롤해 내려온 상태라면(맨 위가 아니면)
+// html.hero-runway를 붙이지 않는다 — 이미 지나온 화면 중간에 여백이 새로 끼어들어 내용이 튀는 것을 막는다
+test('#project로 바로 들어오면(이미 스크롤된 채 3D 켜짐) 여백 클래스가 안 붙는다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#project');
+  await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
+  test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 꺼진 환경');
+  await expect(page.locator('html')).not.toHaveClass(/hero-runway/);
 });
 
 test('3D가 켜져도 첫 화면 이름 위치가 그대로다(여백은 화면 밖)', async ({ page }) => {

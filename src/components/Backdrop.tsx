@@ -67,5 +67,13 @@ class SceneBoundary extends Component<{ onFail: (reason: string) => void; childr
 }
 
 function setMode(mode: 'on' | 'off') {
-  document.documentElement.setAttribute('data-3d', mode);
+  const d = document.documentElement;
+  d.setAttribute('data-3d', mode);
+  // 히어로 아래 60vh 여백(.hero-stage, globals.css)은 원래 data-3d="on"에 그대로 매달아 뒀는데,
+  // 그러면 나중에 fps 하락·GL 컨텍스트 끊김으로 3D가 off로 바뀔 때 여백이 함께 사라져 뒤 콘텐츠가
+  // 화면에서 60vh만큼 위로 튄다(Safari는 스크롤 위치를 보정해 주지 않는다). 반대로 느린 회선이라
+  // 사용자가 이미 스크롤해 내려간 뒤에 3D가 켜지면, 이미 지나온 화면 중간에 여백이 새로 끼어들어도
+  // 내용이 튄다. 그래서 "3D가 맨 위(스크롤 10px 미만)에서 처음 켜질 때만" 여백을 붙박이 클래스로
+  // 켜고(html.hero-runway), 이후에는 data-3d가 off로 바뀌어도 절대 지우지 않는다
+  if (mode === 'on' && window.scrollY < 10) d.classList.add('hero-runway');
 }

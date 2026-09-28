@@ -56,8 +56,9 @@ describe('sceneFor', () => {
   // 세로 화면은 글이 아래라 옆으로 밀지 않는다. hero는 밤의 공항 전용 구도라 빠진다(설계 2026-09-28 §4.2)
   const TEXT_SIDE: SceneKey[] = ['about', 'bubble', 'validation', 'limits', 'demo', 'contact'];
   it('글 쪽 장면은 데스크톱에서 목표점이 왼쪽(x −5 이하), 세로 화면에서는 가운데', () => {
-    // hero는 Step 7 대비 화소 검사 실패로 −6.5까지 더 옮겼다(scenes.ts 주석 참고) — 정확히 −5가 아니라
-    // "−5보다 더 왼쪽"으로 검사해 그 조정을 반영한다
+    // 지금은 이 목록의 모든 장면이 정확히 −5다(hero는 밤의 공항 전용 구도라 빠져 있다, 위 주석·scenes.ts
+    // AIRPORT_CAM 참고). "−5 이하"로 느슨하게 검사해 두는 이유는, 나중에 화소 대비 검사 실패 등으로
+    // 어느 장면을 −5보다 더 왼쪽으로 옮겨야 해도 이 값을 다시 정확히 맞출 필요가 없게 하기 위해서다
     for (const k of TEXT_SIDE) {
       expect(sceneFor(k, 0, false).target[0], k).toBeLessThanOrEqual(-5);
       expect(sceneFor(k, 0, true).target[0], k).toBe(0);

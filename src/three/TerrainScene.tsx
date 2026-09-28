@@ -37,19 +37,21 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     loadSceneData(dataVersion).then(setData).catch((e) => onFail(`data: ${e.message}`));
   }, [dataVersion, onFail]);
 
+  // 세로 화면(대개 휴대폰) 판정 — 점 구름·공항 불빛·곁가지(AirportExtras)가 모두 같은 값을 써야
+  // stride(성긴 정도)가 어긋나지 않는다. data가 바뀔 때만 다시 재는 값이라 cloud와 같은 의존성으로 둔다
+  const isPortrait = useMemo(() => typeof window !== 'undefined' && window.innerHeight > window.innerWidth, [data]);
+
   const cloud = useMemo(() => {
     if (!data) return null;
-    // 세로 화면(대개 휴대폰)은 잡음 점을 절반만 그린다
-    const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
+    // 세로 화면은 잡음 점을 절반만 그린다
     return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7 });
-  }, [data]);
+  }, [data, isPortrait]);
 
   // 공항 불빛 배정: 세로 화면(대개 휴대폰)은 불빛 절반(설계 §4.5)
   const airport = useMemo(() => {
     if (!cloud) return null;
-    const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
     return assignAirport(buildAirport({ stride: isPortrait ? 2 : 1 }).lights, cloud.kind);
-  }, [cloud]);
+  }, [cloud, isPortrait]);
 
   // 스크롤·크기 변화 → 활성 장면 → 목표 상태(차트 장면이면 그림 판 배치도). 캡처 모드에서는 고정.
   useEffect(() => {
@@ -144,7 +146,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
           state.gl.domElement.addEventListener('webglcontextlost', () => onFail('context'));
         }}
       >
-        <AirportExtras target={target} instant={!!capture} portrait={portrait.current} />
+        <AirportExtras target={target} instant={!!capture} portrait={isPortrait} />
         <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} airport={airport} />
         <CameraRig target={target} instant={!!capture} parallax={parallax} />
         <FrameWatch
