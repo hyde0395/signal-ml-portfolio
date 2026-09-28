@@ -89,6 +89,29 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     });
   });
 
+  // 2026-09-28 회고: 이름표 칸 높이(labelPx)를 재실측한 뒤에도 가로가 짧은 휴대폰(가로 모드)과 영어(이름
+  // 길이가 달라 줄바꿈이 다르다)에서 설명 줄이 이름표와 겹치지 않는지 확인한다
+  for (const [label, path, w, h] of [
+    ['가로 모드 휴대폰', '/', 844, 390],
+    ['영어', '/en/', 1440, 900],
+  ] as const) {
+    test(`와플 설명 줄이 이름표와 겹치지 않는다 — ${label}(${w}×${h})`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto(path);
+      await center(page, '[data-scene="features"]');
+      const stage = page.locator('[data-scene="features"]');
+      const groups = stage.locator('.chart-group');
+      await expect(groups).toHaveCount(6, { timeout: 10_000 });
+      await groups.nth(0).hover();
+      const detail = stage.locator('.chart-detail');
+      await expect(detail).not.toBeEmpty();
+      const d = (await detail.boundingBox())!, plot = (await stage.locator('[data-plot]').boundingBox())!;
+      const groupBoxes = await groups.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().bottom));
+      for (const bottom of groupBoxes) expect(d.y).toBeGreaterThanOrEqual(bottom - 1);
+      expect(d.y + d.height).toBeLessThanOrEqual(plot.y + plot.height + 2);
+    });
+  }
+
   test('차트 데이터를 못 받으면 안내가 뜨고 글 카드는 그대로다', async ({ page }) => {
     await page.route('**/data/charts.*.json', (r) => r.abort());
     await page.goto('/');

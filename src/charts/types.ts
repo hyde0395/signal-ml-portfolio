@@ -6,9 +6,14 @@ export type ChartKey = 'features' | 'chartDepart' | 'chartCurve' | 'chartCloud';
 // 색 번호: 셰이더(three/shaders.ts toneColor)와 2D 그리기(draw2d.ts)가 같은 번호를 쓴다
 export const TONE = { dot: 1, amber: 2, text: 3 } as const;
 
+// ③ 강조(설계 2026-09-28 §3): 강조 그룹은 호박색, 다른 와플 그룹은 알파 × FOCUS_DIM. 2D 그리기(draw2d.ts)와
+// 3D 셰이더(three/shaders.ts, 문자열에 값을 그대로 박아 넣는다)가 이 숫자 하나를 같이 쓴다
+export const FOCUS_DIM = 0.25;
+
 export type ChartLabel =
   | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end'; cls: 'tick' | 'axis' | 'month' | 'holiday' }
-  | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean }
+  // compact: 좁은 판(휴대폰)에서는 개수를 빼고 pct·이름 두 줄만 보여준다 — 개수는 설명 줄에도 있다(2026-09-28 실측)
+  | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean; compact: boolean }
   // ③ 와플 설명 줄의 자리(왼쪽 위 기준). 내용은 그림 판이 강조 그룹에 따라 채운다(설계 2026-09-28 §3)
   | { type: 'detail'; x: number; y: number };
 

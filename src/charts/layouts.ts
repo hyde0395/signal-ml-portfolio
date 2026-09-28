@@ -31,20 +31,26 @@ export class Pts {
 // ③ 점 와플: 그룹마다 10×10 = 점 100개, 중요도(gain %)를 반올림한 수만큼 켠다.
 // 판 폭이 좁으면(휴대폰) 3×2로 두 줄. 이름표는 와플 바로 아래.
 // 설명 줄(detailPx)은 판 맨 아래에 따로 둔다 — 피처 이름을 그룹마다 펼치면 옆 칸·글과 겹쳤다(설계 2026-09-28 §3).
-// 이름표 칸(labelPx)은 와플 바로 아래 pct·이름·개수 세 줄이 들어갈 고정 높이다 — 줄 높이의 비율(옛 58%)로 정하면
-// 두 줄(휴대폰) 배치에서 칸이 실제 글자 높이보다 좁아져 설명 줄과 겹쳤다(2026-09-28 e2e로 확인). 설명 줄 높이도
-// 좁은 화면에서 피처 이름이 여러 줄로 접혀 더 필요해 폭에 따라 다르게 잡는다
-export const WAFFLE = { side: 10, wideMinPx: 560, labelPx: 64, detailPx: { wide: 64, narrow: 120 } } as const;
+// 이름표 칸(labelPx)은 와플 바로 아래 이름표 한 칸이 차지할 고정 높이 — 틈(labelGap) + 실제 글자 높이를
+// 재서 정한 값이다(줄 높이의 비율로 정하면 두 줄(휴대폰) 배치에서 칸이 실제 글자 높이보다 좁아져 옆 줄
+// 와플·설명 줄과 겹쳤다, 2026-09-28 e2e로 두 번 확인). 넓은 판(pct 1.25rem, 세 줄: pct·이름·개수)은
+// 1440×900 실측 72.5px + 틈 2px ≈ 74.5px → 여유를 두고 76. 좁은 판은 개수를 빼고 두 줄만 쓰는 compact
+// 이름표라 더 낮다 — 390×844 ko·en 실측 45.1px(모든 그룹 동일, 이름이 한 줄에 들어간다) + 4 → 올림해 50.
+// detailPx.wide(설명 줄 자리)도 64에서 76으로: 가로가 짧은 휴대폰(844×390, 가로 모드)은 폭은 wideMinPx를
+// 넘어도 줄 높이가 모자라 와플이 줄 높이에 걸리고(sq = rowH - labelPx), 이때 설명 줄 자리(usableH + 6)가
+// 곧 판 바닥에 바짝 붙는다 — 13개 피처(lookup) 설명 줄 실측 높이가 64px이라 옛 64는 여유가 0이었다(844×390 e2e로 확인)
+export const WAFFLE = { side: 10, wideMinPx: 560, labelGap: 2, labelPx: { wide: 76, narrow: 50 }, detailPx: { wide: 76, narrow: 120 } } as const;
 
 export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: { pct(v: number): string; count(n: number): string }): ChartLayout {
   const wide = size.w >= WAFFLE.wideMinPx;
   const cols = wide ? groups.length : Math.ceil(groups.length / 2);
   const rows = Math.ceil(groups.length / cols);
+  const labelPx = wide ? WAFFLE.labelPx.wide : WAFFLE.labelPx.narrow;
   const detailPx = wide ? WAFFLE.detailPx.wide : WAFFLE.detailPx.narrow;
   const usableH = Math.max(0, size.h - detailPx);
   const colW = size.w / cols, rowH = usableH / rows;
   // 와플은 칸 폭의 78%, 줄 높이에서 이름표 칸(labelPx)을 뺀 나머지를 넘지 않게
-  const sq = Math.max(0, Math.min(colW * 0.78, rowH - WAFFLE.labelPx));
+  const sq = Math.max(0, Math.min(colW * 0.78, rowH - labelPx));
   const cell = sq / WAFFLE.side;
   const p = new Pts();
   const labels: ChartLabel[] = [];
@@ -59,23 +65,19 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
       const cy = y0 + (Math.floor(k / WAFFLE.side) + 0.5) * cell;
       p.add(cx / size.w, cy / size.h, Math.max(1.6, cell * 0.72), on ? 0.95 : 0.13, on && holiday ? TONE.amber : TONE.dot, -1, gi);
     }
-    // 와플과 이름표 사이 틈은 2px만 둔다 — 좁은 판(휴대폰, pct 폰트가 커지는 미디어 쿼리)에서 실제 이름표
-    // 세 줄 높이가 약 67.5px로 labelPx(64)보다 살짝 크다(2026-09-28 e2e 실측). 틈을 8px로 두면 그만큼
-    // 설명 줄과 겹쳐, labelPx는 그대로 두고 이 틈을 줄여 마지막 줄 이름표가 설명 줄 앞에서 끝나게 한다
+    // compact: 좁은 판은 개수 줄을 빼서(설명 줄에 이미 있다) 이름표를 두 줄로 낮춘다(labelPx.narrow가 그 높이다)
     labels.push({
-      type: 'group', x: (x0 + sq / 2) / size.w, y: (y0 + sq + 2) / size.h, id: g.id,
-      pct: fmt.pct(g.gain), name: g.name, count: fmt.count(g.features.length), features: g.features, holiday,
+      type: 'group', x: (x0 + sq / 2) / size.w, y: (y0 + sq + WAFFLE.labelGap) / size.h, id: g.id,
+      pct: fmt.pct(g.gain), name: g.name, count: fmt.count(g.features.length), features: g.features, holiday, compact: !wide,
     });
   });
-  // 설명 줄: 첫 와플의 왼쪽 끝에 맞춰, 마지막 줄 이름표 바로 아래에서 시작한다. 데스크톱처럼 와플이
+  // 설명 줄: 첫 와플의 왼쪽 끝에 맞춰, 마지막 줄 이름표 바로 아래에서 시작한다(틈 6px). 데스크톱처럼 와플이
   // 칸 폭에 걸려(가로로 좁아) 줄 높이를 다 못 쓰면(sq < rowH - labelPx) 이름표 밑에 빈 칸이 크게 남는데,
-  // 그 빈 칸 대신 이름표 바로 아래로 당겨 설명 줄이 붕 떠 보이지 않게 한다. 틈은 14px — 넓은 판은 pct
-  // 글자가 커서(1.25rem) 이름표 실제 높이가 약 72.5px로 labelPx(64)보다 8.5px 크다(2026-09-28 e2e 실측),
-  // 거기에 와플-이름표 틈(2px)까지 더해 10.5px 이상이 필요하다. 다만 화면이 세로로 좁아(휴대폰) 이름표
-  // 칸이 줄 높이를 꽉 채우는 경우(sq = rowH - labelPx)에는 옛 자리(usableH + 8)보다 아래로 내려가면
-  // 안 되므로 둘 중 더 위(작은 값)를 쓴다(2026-09-28 조정)
+  // 그 빈 칸 대신 이름표 바로 아래로 당겨 설명 줄이 붕 떠 보이지 않게 한다. labelPx가 이제 실측 글자
+  // 높이를 담고 있어(옛 고정 64와 달리) 세로로 좁은 판(사각형이 줄 높이를 꽉 채우는 경우, sq = rowH - labelPx)도
+  // 이 자리(yLast + sq + labelPx + 6 = usableH + 6)가 그대로 안전하다 — 옛 자리(usableH + 8)로 따로 막을 필요가 없다
   const yLast = (rows - 1) * rowH;
-  const detailY = Math.min(yLast + sq + WAFFLE.labelPx + 14, usableH + 8);
+  const detailY = yLast + sq + labelPx + 6;
   labels.push({ type: 'detail', x: ((colW - sq) / 2) / size.w, y: detailY / size.h });
   return p.done(labels);
 }

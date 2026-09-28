@@ -320,7 +320,8 @@ html:not([data-3d="off"]) .chart-canvas { visibility: hidden; }
 .chart-label.holiday { color: var(--amb); }
 .chart-group { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px;
   max-width: 180px; text-align: center; pointer-events: auto;
-  cursor: pointer; /* iOS Safari는 cursor: pointer가 있는 요소에만 누르기로 :hover를 건다(features.hint "휴대폰은 누르기") */ }
+  cursor: pointer; /* iOS Safari는 cursor: pointer 같은 "누를 수 있어 보이는" 단서가 있어야 탭에서 click을
+    보내준다 — 누르기로 여닫는 설명 줄 토글(ChartStage groupHandlers onClick)이 이 click에 걸린다 */ }
 .chart-group-pct { font: 600 1.25rem var(--font-mono); }
 .chart-group.is-holiday .chart-group-pct { color: var(--amb); }
 .chart-group-name { font-weight: 600; font-size: 0.85rem; }

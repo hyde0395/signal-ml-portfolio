@@ -123,7 +123,8 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
                   <div key={l.id} className={cls} style={style} {...groupHandlers(gi)}>
                     <span className="chart-group-pct">{l.pct}</span>
                     <span className="chart-group-name">{l.name}</span>
-                    <span className="chart-group-count">{l.count}</span>
+                    {/* compact(좁은 판): 개수 줄은 뺀다 — 설명 줄에 이미 있다(2026-09-28 §3 실측) */}
+                    {!l.compact && <span className="chart-group-count">{l.count}</span>}
                   </div>
                 );
               }

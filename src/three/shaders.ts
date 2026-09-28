@@ -1,6 +1,8 @@
 // 점 셰이더: 점마다 흩어짐·지형·지도 세 목표 좌표와, 차트 배치 두 벌(A/B)의 좌표·모양을 받아 uniform 비율로 섞는다.
 // 모든 움직임을 GPU에서 계산하므로 2만8천 개 점도 매 프레임 JS 작업 없이 움직인다.
 // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
+import { FOCUS_DIM } from '@/charts/types';
+
 export const vertexShader = /* glsl */ `
   attribute vec3 aTerrain;
   attribute vec3 aMap;
@@ -59,9 +61,9 @@ export const vertexShader = /* glsl */ `
     vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(aHoliday * (1.0 - uMap), aRoute * uMap));
     float chartA = mix(aStyleA.x, aStyleB.x, uSlot);
     vec3 chartCol = mix(toneColor(aStyleA.y), toneColor(aStyleB.y), uSlot);
-    // 강조 규칙(설계 2026-09-28 §3) — 2D 그리기(charts/draw2d.ts)와 같다
+    // 강조 규칙(설계 2026-09-28 §3) — 2D 그리기(charts/draw2d.ts)와 같은 숫자(charts/types.ts FOCUS_DIM)를 문자열에 박아 넣는다
     if (uFocus > -0.5 && aWaffle > -0.5) {
-      if (abs(aWaffle - uFocus) < 0.5) chartCol = uAmber; else chartA *= 0.25;
+      if (abs(aWaffle - uFocus) < 0.5) chartCol = uAmber; else chartA *= ${FOCUS_DIM.toFixed(2)};
     }
     vAlpha = mix(a * uDim, chartA, uChart);
     vColor = mix(terrainCol, chartCol, uChart);

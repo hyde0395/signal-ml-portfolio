@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ChartsData, CloudData } from '@/charts/data';
 import { calendarLayout, cloudLayout, cloudScale, invNorm, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
-import { TONE, type ChartLayout } from '@/charts/types';
+import { TONE, type ChartLabel, type ChartLayout } from '@/charts/types';
 
 const inside = (L: ChartLayout) => {
   for (let i = 0; i < L.n; i++) {
@@ -65,29 +65,33 @@ describe('waffleLayout', () => {
       expect(d.y).toBeLessThan(1);
     }
   });
-  // 2026-09-28 e2e에서 발견: 옛 58% 비율은 두 줄(휴대폰) 배치에서 이름표 칸이 실제 글자 높이보다 좁아
-  // 설명 줄과 겹쳤다. labelPx·detailPx를 고정 값으로 바꾼 뒤 이 두 조건으로 겹침이 없는지 지킨다
-  it('이름표 칸은 설명 줄 위에서 끝나고, 설명 줄은 판 안에 들어간다(넓은 판·좁은 판 모두)', () => {
-    for (const [size, boxH] of [[{ w: 1080, h: 414 }, 56], [{ w: 340, h: 380 }, 112]] as const) {
+  // 2026-09-28 e2e로 두 번 확인: 옛 58% 비율(→ 고정 64px 한 값)은 두 줄(휴대폰) 배치에서 이름표 칸이
+  // 실제 글자 높이보다 좁아 옆 줄 와플·설명 줄과 겹쳤다. labelPx를 넓은/좁은 판 실측 높이로 나눈 뒤
+  // "이름표 끝(gap을 뺀 y*h + labelPx, 즉 그 줄에 예약된 칸의 맨 아래)"이 다음 줄 와플·설명 줄보다
+  // 위인지를 모든 판 크기에서 지킨다. 짧고 넓은 판(820×180)은 와플이 폭 대신 높이에 걸리는 경우다
+  it('이름표 칸은 다음 줄 와플·설명 줄과 겹치지 않고, 설명 줄은 판 안에 들어간다(넓은·좁은·짧고 넓은 판)', () => {
+    for (const size of [{ w: 1080, h: 414 }, { w: 340, h: 380 }, { w: 820, h: 180 }] as const) {
+      const wide = size.w >= WAFFLE.wideMinPx;
+      const cols = wide ? groups.length : Math.ceil(groups.length / 2);
+      const rows = Math.ceil(groups.length / cols);
+      const labelPx = wide ? WAFFLE.labelPx.wide : WAFFLE.labelPx.narrow;
+      const detailPx = wide ? WAFFLE.detailPx.wide : WAFFLE.detailPx.narrow;
+      const rowH = Math.max(0, size.h - detailPx) / rows;
       const L2 = waffleLayout(groups, size, fmt);
+      const groupLabels = L2.labels.filter((l): l is Extract<ChartLabel, { type: 'group' }> => l.type === 'group');
       const detail = L2.labels[L2.labels.length - 1];
-      expect(detail.type).toBe('detail');
-      for (const l of L2.labels) {
-        if (l.type !== 'group') continue;
-        expect(l.y * size.h + WAFFLE.labelPx, `그룹 ${l.id}`).toBeLessThanOrEqual(detail.y * size.h);
-      }
-      expect(detail.y * size.h + boxH).toBeLessThanOrEqual(size.h + 1);
+      expect(detail.type, `${size.w}×${size.h}`).toBe('detail');
+      const detailEnd = detail.y * size.h;
+      groupLabels.forEach((l, gi) => {
+        const row = Math.floor(gi / cols);
+        // gap을 뺀 자리 = 그 줄에 예약된 칸(labelPx)의 실제 끝 — 시작점(y*h)에 낀 gap과 무관하게 항상 성립
+        const end = l.y * size.h - WAFFLE.labelGap + labelPx;
+        const tag = `${size.w}×${size.h} 그룹 ${l.id}`;
+        if (row < rows - 1) expect(end, `${tag} vs 다음 줄`).toBeLessThanOrEqual((row + 1) * rowH + 1);
+        expect(end, `${tag} vs 설명 줄`).toBeLessThanOrEqual(detailEnd + 1);
+      });
+      expect(detailEnd + (detailPx - 8), `${size.w}×${size.h} 설명 줄이 판 안`).toBeLessThanOrEqual(size.h + 1);
     }
-  });
-  // 2026-09-28 조정: 넓은 판(데스크톱)은 와플이 칸 폭에 걸려(가로로 좁아) 줄 높이를 다 못 쓰므로, 설명 줄을
-  // 판 맨 아래(usableH) 대신 마지막 줄 이름표 바로 아래에 둔다 — 이름표와 설명 줄 사이에 빈 칸이 크게
-  // 남아 "붕 떠 보이는" 것을 막는다
-  it('넓은 판에서는 설명 줄이 마지막 줄 이름표 바로 아래(16px 이내)에 붙는다', () => {
-    const size = { w: 1080, h: 414 };
-    const L2 = waffleLayout(groups, size, fmt);
-    const detail = L2.labels[L2.labels.length - 1];
-    const maxLabelEnd = Math.max(...L2.labels.filter((l) => l.type === 'group').map((l) => l.y * size.h + WAFFLE.labelPx));
-    expect(detail.y * size.h - maxLabelEnd).toBeLessThanOrEqual(16);
   });
 });
 

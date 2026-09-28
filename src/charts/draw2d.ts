@@ -1,11 +1,8 @@
 // 3D가 꺼졌을 때(움직임 줄이기·WebGL 없음·저사양·저프레임) 같은 배치를 2D 캔버스에 그린다. 3D 점과 같은
 // 색·크기라 대체 화면에서도 차트가 똑같이 읽힌다(설계 §7 — 차트는 캡처 이미지 대신 이 그림을 쓴다).
-import { TONE, type ChartLayout } from './types';
+import { FOCUS_DIM, TONE, type ChartLayout } from './types';
 
 export const TONE_COLOR: Record<number, string> = { [TONE.dot]: '#8FB8FF', [TONE.amber]: '#FFB547', [TONE.text]: '#EEF3FF' };
-
-// 강조 규칙(설계 2026-09-28 §3) — 3D 셰이더(three/shaders.ts)와 같다: 강조 그룹은 호박색, 다른 와플 그룹은 알파 × 0.25
-export const FOCUS_DIM = 0.25;
 
 // ctx는 호출 측이 기기 픽셀 비율로 미리 늘려 둔다(w·h는 CSS px). focus: 강조할 와플 그룹 번호, 없으면 -1
 export function drawLayout(ctx: CanvasRenderingContext2D, layout: ChartLayout, w: number, h: number, focus = -1): void {
