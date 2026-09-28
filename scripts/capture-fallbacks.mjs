@@ -44,7 +44,7 @@ try {
     // 캔버스는 투명 배경이라, 사이트 배경색을 깔고 정확히 1280×720으로 맞춘 뒤 WebP로 줄인다
     await sharp(png)
       .resize(1280, 720)
-      .flatten({ background: '#070B16' })
+      .flatten({ background: '#02040A' })
       .webp({ quality: 72 })
       .toFile(`public/fallback/${key}.webp`);
     console.log(`fallback/${key}.webp`);

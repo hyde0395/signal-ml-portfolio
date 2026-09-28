@@ -1,7 +1,8 @@
 /* 전역 스타일: 색·글꼴 변수(global-constraints 기준)와 섹션 레이아웃, 헤더, 탑승권 카드 등. */
 :root {
-  --bg: #070B16; --bg2: #13203A; --dot: #8FB8FF; --tx: #EEF3FF; --amb: #FFB547;
-  --mute: rgba(238, 243, 255, 0.72); /* #070B16 위에서 대비 ≥ 4.5:1 */
+  /* 바탕(2026-09-28 계획 6-3): 첫 화면 하늘의 땅 색과 같게 해, 하늘이 사라져도 색이 바뀌지 않게 한다 */
+  --bg: #02040A; --bg2: #0B1426; --dot: #8FB8FF; --tx: #EEF3FF; --amb: #FFB547;
+  --mute: rgba(238, 243, 255, 0.72); /* #02040A 위에서 대비 ≥ 4.5:1 */
   --line: rgba(143, 184, 255, 0.18);
   --ease: cubic-bezier(.16, 1, .3, 1);
   --font-text: 'Pretendard Variable', system-ui, sans-serif;
@@ -55,7 +56,7 @@ html.no-loader .loader { display: none; }
 @media (prefers-reduced-motion: reduce) { .loader-bar i { animation: none; transform: scaleX(1); } }
 
 .site-header { position: sticky; top: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center;
-  gap: 12px; padding: 12px 16px; background: rgba(7, 11, 22, 0.8); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  gap: 12px; padding: 12px 16px; background: rgba(2, 4, 10, 0.8); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .brand { font-size: 1rem; letter-spacing: 0.1em; }
 .header-actions { display: flex; gap: 8px; align-items: center; }
 .pill { font: 600 0.8rem var(--font-mono); color: var(--tx); background: none; border: 1px solid var(--line); border-radius: 999px;
@@ -155,14 +156,14 @@ html[data-active-scene="hero"] .backdrop::before { opacity: 1; }
 /* 대비 화소 검사 실패(Step 7)로 시작 45%→38%, 끝 알파 0.7→0.8로 더 짙게 조정했다 */
 .backdrop::after { content: ''; position: absolute; inset: 0; pointer-events: none; transition: opacity 0.6s var(--ease);
   z-index: 2;
-  background: radial-gradient(120% 95% at 72% 40%, rgba(7, 11, 22, 0) 38%, rgba(7, 11, 22, 0.8) 100%); }
+  background: radial-gradient(120% 95% at 72% 40%, rgba(2, 4, 10, 0) 38%, rgba(2, 4, 10, 0.8) 100%); }
 html[data-chart] .backdrop::after { opacity: 0; }
 @media (max-width: 767px) {
   /* 휴대폰은 어둠 대신 구도로 자리를 나눈다(코드 리뷰 2026-09-28): 글은 화면 아래쪽에 정렬하고(.chapter·
      #project 모두), 지형은 세로 화면 카메라가 위쪽 절반에 오게 옮겼다(three/scenes.ts PORTRAIT_OVERRIDE).
      그래서 비네트는 아래쪽만 살짝 어둡게 하는 가벼운 한 겹으로 충분하다 — 전체를 짙게 덮어 점을 안 보이게
      하면 판을 되살린 것과 같아진다 */
-  .backdrop::after { background: linear-gradient(0deg, rgba(7, 11, 22, 0.85) 0, rgba(7, 11, 22, 0) 50%); }
+  .backdrop::after { background: linear-gradient(0deg, rgba(2, 4, 10, 0.85) 0, rgba(2, 4, 10, 0) 50%); }
 }
 
 /* 대체 이미지: 기본은 보이고, 3D가 켜지면 숨긴다(JS가 없거나 3D가 불가능해도 장면을 볼 수 있게) */
@@ -178,7 +179,7 @@ html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
   /* 이미지는 .wrap 폭까지라 좌우 끝이 선처럼 보인다. 가장자리를 흐려 배경에 녹인다 */
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
 .hero .scene-figure::after { content: ''; position: absolute; inset: 0;
-  background: radial-gradient(120% 95% at 72% 40%, rgba(7, 11, 22, 0) 40%, rgba(7, 11, 22, 0.75) 100%); }
+  background: radial-gradient(120% 95% at 72% 40%, rgba(2, 4, 10, 0) 40%, rgba(2, 4, 10, 0.75) 100%); }
 
 /* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 챕터마다 새 구도로 움직일 시간을 준다. 글 뒤 판은 없고,
    대비는 장면 구도(점을 글 반대쪽에 둠)와 비네트가 지킨다(설계 2026-09-28 §2.1) */
@@ -232,14 +233,14 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 .data-intro > :is(p, h2, ol) { max-width: 420px; }
 .collect-steps { list-style: none; display: grid; gap: 10px; margin-block: 24px; }
 .collect-steps li { display: grid; grid-template-columns: 104px 1fr; gap: 12px; align-items: baseline;
-  padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(7, 11, 22, 0.72); }
+  padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(2, 4, 10, 0.72); }
 .collect-steps strong { color: var(--amb); letter-spacing: 0.14em; font-size: 0.8rem; }
 /* ② 화면 2: 보드만. 3D가 켜지면 화면 높이만큼 두어 카메라가 물러날 시간을 준다 */
 html[data-3d="on"] .data-board { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
 .data-board > :is(p, a) { max-width: 560px; }
 /* 판이 없으므로 작은 글자(머리줄·열 이름·아래 글)가 흐려진 지도 점 위에서도 AA 대비를 지키게 글자 그림자를 깐다 */
 html[data-3d="on"] .data-board :is(.board-head, .board-table thead),
-html[data-3d="on"] .data-board > :is(p, a) { text-shadow: 0 0 6px #070B16, 0 0 2px #070B16; }
+html[data-3d="on"] .data-board > :is(p, a) { text-shadow: 0 0 6px #02040A, 0 0 2px #02040A; }
 .data-tools { font-size: 0.8rem; }
 /* 칸 크기는 화면 너비별로 다르다(axe scrollable-region-focusable 수정, 2026-09-25). .wrap이 1080px에서
    막히므로 칸 25개(노선·목적지·건수·상태 글자 합)를 44px 그대로 다 펴면 항상 가로 스크롤이 생긴다.
