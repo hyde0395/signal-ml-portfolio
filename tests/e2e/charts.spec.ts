@@ -223,7 +223,9 @@ test('3D가 도중에 꺼지면 이미 불러온 판이 그 자리에서 2D로 �
   await center(page, '[data-scene="chartCloud"]');
   await expect(page.locator('[data-scene="chartCloud"] .chart-label').first()).toBeAttached({ timeout: 10_000 });
   await page.evaluate(() => document.documentElement.setAttribute('data-3d', 'off'));
-  await expect.poll(() => painted(page, 'chartCloud'), { timeout: 5_000 }).toBe(true);
+  // 판은 곧바로 그려지지만, 소프트웨어 렌더러(CI swiftshader)에서는 검사의 getImageData(GPU 캔버스 읽기) 한 번이
+  // 몇 초씩 걸린다(CPU 4배 느리게 해서 0.8~4.3초 측정, 2026-09-28). 5초로는 CI에서 가끔 모자라 넉넉히 둔다
+  await expect.poll(() => painted(page, 'chartCloud'), { timeout: 15_000 }).toBe(true);
 });
 
 test.describe('3D 켜짐', () => {
