@@ -43,3 +43,26 @@ test('숨은 동안에도 Tab 초점이 오면 나타난다', async ({ page }) =
   await header(page).getByRole('link', { name: 'EN', exact: true }).focus();
   await expect(header(page)).toHaveCSS('opacity', '1');
 });
+
+test('첫 화면 가운데 아래 SCROLL 표시: 맨 위에서 보이고 내리면 사라진다', async ({ page }) => {
+  await page.goto('/');
+  const hint = page.locator('.scroll-hint');
+  await expect(hint).toBeVisible();
+  await expect(hint).toHaveAttribute('aria-hidden', 'true');
+  const box = (await hint.boundingBox())!;
+  const vw = page.viewportSize()!.width;
+  expect(Math.abs(box.x + box.width / 2 - vw / 2)).toBeLessThan(4);
+  await scrollTo(page, 200);
+  await expect(page.locator('html')).toHaveAttribute('data-hint', 'off');
+  await expect(hint).toBeHidden();
+  await scrollTo(page, 0);
+  await expect(hint).toBeVisible();
+});
+
+test.describe('움직임 줄이기', () => {
+  test.use({ reducedMotion: 'reduce' });
+  test('SCROLL 표시의 선이 멈춰 있다', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.scroll-hint i')).toHaveCSS('animation-name', 'none');
+  });
+});

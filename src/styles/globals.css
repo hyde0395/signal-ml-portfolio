@@ -100,6 +100,16 @@ html[data-header] .site-header:focus-within { opacity: 1; transform: none; point
 .hero-meta { position: absolute; right: 0; bottom: 12vh; text-align: right; font-size: 0.66rem; letter-spacing: 0.18em;
   line-height: 2; color: rgba(238, 243, 255, 0.42); }
 @media (max-width: 767px) { .hero-meta { display: none; } }
+/* 스크롤 표시(설계 2026-09-28 첫 화면 다듬기 §4, 공항 시안 .scroll): 화면 가운데 아래에 고정, 내리면 사라진다.
+   로딩 화면(z 90, 불투명)이 떠 있는 동안에는 그 아래에 가려 있다가 로딩이 걷히면 드러난다 */
+.scroll-hint { position: fixed; left: 50%; bottom: 4.5vh; z-index: 5; transform: translateX(-50%); display: flex; flex-direction: column;
+  align-items: center; gap: 10px; font-size: 10px; font-weight: 500; letter-spacing: 0.3em; padding-left: 0.3em;
+  color: rgba(238, 243, 255, 0.45); pointer-events: none; transition: opacity 0.5s var(--ease), visibility 0.5s; }
+.scroll-hint i { width: 1px; height: 34px; background: linear-gradient(rgba(238, 243, 255, 0.55), transparent);
+  transform-origin: top; animation: scroll-drip 2.4s var(--ease) infinite; }
+@keyframes scroll-drip { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); opacity: 1; } 100% { opacity: 0; } }
+html[data-hint="off"] .scroll-hint { opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .scroll-hint i { animation: none; } }
 /* 3D가 맨 위에서 처음 켜졌을 때만 첫 화면 뒤에 60vh를 둔다 — 스크롤하는 동안 카메라가 땅 가까이
    내려앉을 거리(설계 §4.2). 첫 화면(88vh) 아래라 3D가 켜지는 순간 보이는 글은 움직이지 않는다(CLS 0).
    data-3d="on"이 아니라 html.hero-runway에 매단 이유(Backdrop.tsx setMode 참고): data-3d를 그대로 쓰면

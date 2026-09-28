@@ -23,6 +23,8 @@ export function Hero({ locale }: { locale: Locale }) {
           {facts.site.airport.code} · {facts.site.airport.lat.toFixed(2)}°N {facts.site.airport.lon.toFixed(2)}°E<br />
           {facts.site.airport.code} ⇄ {[...new Set(facts.data.byRoute.map((r) => r.pair.split('_')[1]))].join(' · ')}
         </p>
+        {/* 스크롤 표시(설계 2026-09-28 첫 화면 다듬기 §4): 장식이라 낭독하지 않는다. 보임·숨김은 html[data-hint](ScrollState) */}
+        <div className="scroll-hint mono" aria-hidden="true">SCROLL<i /></div>
         <ChapterFigure locale={locale} sceneKey="hero" />
       </section>
     </div>
