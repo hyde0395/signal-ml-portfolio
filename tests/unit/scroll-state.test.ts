@@ -24,6 +24,9 @@ describe('nextScroll', () => {
   it('올리는 양은 누적된다', () => {
     expect(run(300, 600, 596, 592).header).toBe('peek');
   });
+  it('peek 뒤 계속 위로 올리면 peek 유지', () => {
+    expect(run(300, 600, 580, 560).header).toBe('peek');
+  });
   it('peek 뒤 다시 내리면 hidden, 누적은 처음부터', () => {
     const s = run(300, 600, 580, 590);
     expect(s.header).toBe('hidden');

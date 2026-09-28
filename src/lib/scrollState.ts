@@ -17,6 +17,7 @@ export function nextScroll(prev: ScrollSnapshot, y: number): ScrollSnapshot {
   const dy = y - prev.lastY;
   if (dy > 0) return { header: 'hidden', hint, lastY: y, upAcc: 0 };
   const upAcc = prev.upAcc - dy;
-  const header = upAcc >= PEEK_UP ? 'peek' : prev.header === 'top' ? 'hidden' : prev.header;
+  // 여기 오면 prev.header는 'hidden' 아니면 'peek'뿐이다 — 'top'이면 prev.lastY < 80이라 dy > 0이 되어 위에서 이미 'hidden'으로 반환됐다
+  const header = upAcc >= PEEK_UP ? 'peek' : prev.header;
   return { header, hint, lastY: y, upAcc };
 }
