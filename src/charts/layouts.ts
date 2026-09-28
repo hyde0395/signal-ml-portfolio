@@ -67,8 +67,16 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
       pct: fmt.pct(g.gain), name: g.name, count: fmt.count(g.features.length), features: g.features, holiday,
     });
   });
-  // 설명 줄: 첫 와플의 왼쪽 끝에 맞춰 판 맨 아래 띠의 위쪽에서 시작
-  labels.push({ type: 'detail', x: ((colW - sq) / 2) / size.w, y: (usableH + 8) / size.h });
+  // 설명 줄: 첫 와플의 왼쪽 끝에 맞춰, 마지막 줄 이름표 바로 아래에서 시작한다. 데스크톱처럼 와플이
+  // 칸 폭에 걸려(가로로 좁아) 줄 높이를 다 못 쓰면(sq < rowH - labelPx) 이름표 밑에 빈 칸이 크게 남는데,
+  // 그 빈 칸 대신 이름표 바로 아래로 당겨 설명 줄이 붕 떠 보이지 않게 한다. 틈은 14px — 넓은 판은 pct
+  // 글자가 커서(1.25rem) 이름표 실제 높이가 약 72.5px로 labelPx(64)보다 8.5px 크다(2026-09-28 e2e 실측),
+  // 거기에 와플-이름표 틈(2px)까지 더해 10.5px 이상이 필요하다. 다만 화면이 세로로 좁아(휴대폰) 이름표
+  // 칸이 줄 높이를 꽉 채우는 경우(sq = rowH - labelPx)에는 옛 자리(usableH + 8)보다 아래로 내려가면
+  // 안 되므로 둘 중 더 위(작은 값)를 쓴다(2026-09-28 조정)
+  const yLast = (rows - 1) * rowH;
+  const detailY = Math.min(yLast + sq + WAFFLE.labelPx + 14, usableH + 8);
+  labels.push({ type: 'detail', x: ((colW - sq) / 2) / size.w, y: detailY / size.h });
   return p.done(labels);
 }
 

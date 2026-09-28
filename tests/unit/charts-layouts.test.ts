@@ -79,6 +79,16 @@ describe('waffleLayout', () => {
       expect(detail.y * size.h + boxH).toBeLessThanOrEqual(size.h + 1);
     }
   });
+  // 2026-09-28 조정: 넓은 판(데스크톱)은 와플이 칸 폭에 걸려(가로로 좁아) 줄 높이를 다 못 쓰므로, 설명 줄을
+  // 판 맨 아래(usableH) 대신 마지막 줄 이름표 바로 아래에 둔다 — 이름표와 설명 줄 사이에 빈 칸이 크게
+  // 남아 "붕 떠 보이는" 것을 막는다
+  it('넓은 판에서는 설명 줄이 마지막 줄 이름표 바로 아래(16px 이내)에 붙는다', () => {
+    const size = { w: 1080, h: 414 };
+    const L2 = waffleLayout(groups, size, fmt);
+    const detail = L2.labels[L2.labels.length - 1];
+    const maxLabelEnd = Math.max(...L2.labels.filter((l) => l.type === 'group').map((l) => l.y * size.h + WAFFLE.labelPx));
+    expect(detail.y * size.h - maxLabelEnd).toBeLessThanOrEqual(16);
+  });
 });
 
 // 2026-10-05(월)부터 14일, 하루는 공휴일, 값이 날마다 다르다
