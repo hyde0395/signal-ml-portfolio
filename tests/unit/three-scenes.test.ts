@@ -67,4 +67,15 @@ describe('sceneFor', () => {
     expect(SCENES.demo.dim).toBeLessThanOrEqual(0.5);
     expect(SCENES.contact.dim).toBeLessThanOrEqual(0.5);
   });
+
+  // 세로 화면은 지형이 위쪽 절반에서 보이도록 카메라·목표점의 y를 내리지만(코드 리뷰 2026-09-28),
+  // 카메라−목표점 벡터(구도)는 데스크톱과 같아야 한다 — 그래야 세로 화면 1.6배 확대만 다르고 각도는 그대로다
+  it('글 쪽 장면은 세로 화면의 카메라−목표점 벡터가 데스크톱의 1.6배다(구도는 그대로, 거리만 다르다)', () => {
+    for (const k of TEXT_SIDE) {
+      const land = sceneFor(k, 0, false), port = sceneFor(k, 0, true);
+      const landDelta = land.camera.map((v, i) => v - land.target[i]);
+      const portDelta = port.camera.map((v, i) => v - port.target[i]);
+      portDelta.forEach((d, i) => expect(d, `${k}[${i}]`).toBeCloseTo(landDelta[i] * 1.6, 5));
+    }
+  });
 });

@@ -136,10 +136,10 @@ main { position: relative; z-index: 1; }
   background: radial-gradient(120% 95% at 72% 40%, rgba(7, 11, 22, 0) 38%, rgba(7, 11, 22, 0.8) 100%); }
 html[data-chart] .backdrop::after { opacity: 0; }
 @media (max-width: 767px) {
-  /* 휴대폰은 판 대신 구도로 지킨다(코드 리뷰 2026-09-28): 글은 화면 아래 카드(.chapter·#project 모두 아래
-     정렬), 지형은 세로 화면 카메라가 위쪽 절반에 오게 옮겼다(three/scenes.ts PORTRAIT_OVERRIDE). 그래서
-     비네트는 아래쪽만 살짝 어둡게 하는 가벼운 한 겹으로 충분하다 — 전체를 짙게 덮으면 점이 안 보여
-     판을 되살린 것과 같아진다 */
+  /* 휴대폰은 어둠 대신 구도로 자리를 나눈다(코드 리뷰 2026-09-28): 글은 화면 아래쪽에 정렬하고(.chapter·
+     #project 모두), 지형은 세로 화면 카메라가 위쪽 절반에 오게 옮겼다(three/scenes.ts PORTRAIT_OVERRIDE).
+     그래서 비네트는 아래쪽만 살짝 어둡게 하는 가벼운 한 겹으로 충분하다 — 전체를 짙게 덮어 점을 안 보이게
+     하면 판을 되살린 것과 같아진다 */
   .backdrop::after { background: linear-gradient(0deg, rgba(7, 11, 22, 0.85) 0, rgba(7, 11, 22, 0) 50%); }
 }
 
@@ -157,13 +157,15 @@ html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
 .hero .scene-figure::after { content: ''; position: absolute; inset: 0;
   background: radial-gradient(120% 95% at 72% 40%, rgba(7, 11, 22, 0) 40%, rgba(7, 11, 22, 0.75) 100%); }
 
-/* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 움직일 시간을 주고, 글은 반투명 카드에 담아 대비를 지킨다 */
+/* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 챕터마다 새 구도로 움직일 시간을 준다. 글 뒤 판은 없고,
+   대비는 장면 구도(점을 글 반대쪽에 둠)와 비네트가 지킨다(설계 2026-09-28 §2.1) */
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
-/* .pass(탑승권 카드)는 자기 배경이 있는 640px 카드라 560px 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제).
-   .contact-about(옛 소개, 640px)은 자기 배경이 없어 여기서 빼지 않는다 — 560px로 같이 줄어야 최종 리뷰 #4에서
-   지적된 "3D 켜진 상태에서 판 밖으로 삐져나오는 문제"가 없다 */
+/* 560px는 판 크기가 아니라 그냥 읽기 좋은 줄 너비다(긴 줄은 눈이 따라가기 어렵다). .pass(탑승권 카드)는
+   자기 배경이 있는 640px 카드라 이 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제).
+   .contact-about(옛 소개, 640px)은 자기 배경이 없어 여기서 빼지 않는다 — 560px로 같이 줄어야 상자
+   크기(padding 없음)가 3D on/off에서 늘 같아 글이 밀리지 않는다(최종 리뷰 #4, CLS) */
 /* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 상자(.project-copy)는
-   큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 판은 글 크기만큼만 커진다 */
+   큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 상자는 글 크기만큼만 커진다 */
 /* .data-intro는 여기서 빼야 한다 — :is() 안에 #project가 있어 이 규칙의 명시도가 (1,2,2)로,
    화면 1 전용 420px 규칙(.data-intro > …, 1,2,1)보다 세다. 빼지 않으면 이 560px가 항상 이긴다 */
 html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .project-copy) { max-width: 560px; }
@@ -175,7 +177,7 @@ html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #demo, #contact) > :
 html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 
 @media (max-width: 767px) {
-  /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
+  /* 세로 화면: 지형은 위, 글은 아래(스펙 §5.3) — 판 없이 자리만 나눈다 */
   html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
   /* #project(①)는 .chapter 클래스가 아니라(자기만의 .project 레이아웃) 위 규칙을 못 받는다. .chapter와
      같은 방식으로 아래 정렬해야 지형이 위쪽 절반에서 보인다(코드 리뷰 2026-09-28) */

@@ -136,6 +136,9 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     // 판 없는 보드: 머리줄과 열 이름(--mute·#8a96b3 글자라 0.72로 엄격하게)이 흐려진 지도 위에서도 읽혀야 한다
     ['.data-board .board-head', 0.72],
     ['.data-board .board-table thead', 0.72],
+    // 차트 3(bubble)·LIMITS(limits): 글 뒤 판이 없어진 카드형 챕터의 첫 본문 문단(코드 리뷰 2026-09-28)
+    ['[data-scene="bubble"] > p:not(.eyebrow)', 1],
+    ['[data-scene="limits"] > p:not(.eyebrow)', 1],
   ];
   for (const [sel, alpha] of cases) {
     const { mean, p99 } = await backgroundContrast(page, sel, alpha);
