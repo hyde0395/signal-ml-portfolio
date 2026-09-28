@@ -2,6 +2,7 @@
 // 모든 움직임을 GPU에서 계산하므로 2만8천 개 점도 매 프레임 JS 작업 없이 움직인다.
 // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
 import { FOCUS_DIM } from '@/charts/types';
+import { PUSH, RIPPLE } from './pointerField';
 import { DEPTH_FADE, POINT, glslFloat as f } from './pointStyle';
 
 // 아래 두 GLSL 문자열 안에는 // 주석을 두지 않는다 — 문자열이라 빌드 때 안 지워지고 그대로 gzip에 실려
@@ -24,6 +25,11 @@ import { DEPTH_FADE, POINT, glslFloat as f } from './pointStyle';
 // - uWave: 신호 물결의 지금 위치(활주로 거리 m)
 // - uWarm: 따뜻한 흰색(공항 전용)
 // - uFocusDist: 카메라~장면 목표점 거리(거리 흐림 기준, TerrainPoints가 넣는다)
+// - uPointer: 포인터 위치(NDC). TerrainPoints가 부드럽게 따라가게 넣는다 — 점마다 상태가 없어서, 포인터가 움직이면
+//   밀린 자리가 함께 옮겨 가며 지나간 자리의 점이 제자리로 돌아온다
+// - uPointerOn: 밀기 세기 0..1. 마우스가 창 안에서 움직이면 1, 창을 나가거나 터치·캡처면 0(부드럽게)
+// - uAspect: 화면 가로/세로 — 밀기 영역을 원으로 만든다(pointerField.ts의 "정사각 화면 단위")
+// - uRipple: 휴대폰 물결 (x, y = 누른 곳 NDC, z = 누른 뒤 흐른 초, 없으면 음수)
 // - vAir: 이 점이 지금 공항 불빛으로 그려지는 정도(조각 셰이더가 모양을 바꾼다)
 //
 // toneColor: 색 번호 1 점 파랑, 2 호박, 3 글자색(src/charts/types.ts TONE과 같은 순서)
@@ -39,6 +45,10 @@ import { DEPTH_FADE, POINT, glslFloat as f } from './pointStyle';
 // - if (aKind > 1.5) p.y -= ...: 제거 레이어(kind 2)만 가속하며 떨어진다
 // - isAir / p = mix(p, aAirport.xyz, ...): 공항은 불빛으로 배정된 점만 공항 자리로. uAirport가 1→0으로 줄면
 //   자기 지형 자리로 옮겨 간다
+// - 포인터 밀기·물결(설계 2026-09-25 §4.1, 계획 5-3a, gl_Position 바로 뒤): 장면 평면에 투영하지 않고 화면 공간(NDC)에서 민다.
+//   지형(xz)·지도·차트(z=0)·공항처럼 장면마다 평면이 달라도 식 하나로 되고, 셰이더가 짧다(3D 청크 여유).
+//   식·상수는 pointerField.ts와 같다(단위 테스트). 차트 장면은 uChart만큼 PUSH.chartScale로 줄인다.
+//   이동은 w를 곱해 클립 좌표에 더한다 — 원근 나눗셈 뒤 화면에서 정확히 그만큼 옮겨진다
 // - terrainPx: 지형은 거리에 따라 작아지고(20.0: 계획 3에서 점이 1~2px로 너무 작아 키운 값), 차트는 판 px 그대로다
 // - corePx: 공항 불빛은 작고 선명한 점 + 옅은 번짐(시안 core = clamp(5.5·size/거리, 0.6, 2.6)px, 번짐 반경 = core × 6).
 //   스프라이트 지름 = 번짐 지름이고, 조각 셰이더가 가운데 core만 또렷하게 칠한다
@@ -94,6 +104,10 @@ export const vertexShader = /* glsl */ `
   uniform float uWave;
   uniform vec3 uWarm;
   uniform float uFocusDist;
+  uniform vec2 uPointer;
+  uniform float uPointerOn;
+  uniform float uAspect;
+  uniform vec3 uRipple;
   varying float vAlpha;
   varying vec3 vColor;
   varying float vEdge;
@@ -118,6 +132,19 @@ export const vertexShader = /* glsl */ `
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
+    vec2 ndc = gl_Position.xy / gl_Position.w;
+    vec2 dv = (ndc - uPointer) * vec2(uAspect, 1.0);
+    float dp = length(dv);
+    float kp = 1.0 - smoothstep(0.0, ${f(PUSH.radius)}, dp);
+    float push = ${f(PUSH.strength)} * kp * kp * uPointerOn * mix(1.0, ${f(PUSH.chartScale)}, uChart);
+    vec2 dr = (ndc - uRipple.xy) * vec2(uAspect, 1.0);
+    float drl = length(dr);
+    float rip = 0.0;
+    if (uRipple.z >= 0.0 && uRipple.z < ${f(RIPPLE.life)}) {
+      rip = ${f(RIPPLE.amp)} * (1.0 - smoothstep(0.0, ${f(RIPPLE.width)}, abs(drl - ${f(RIPPLE.speed)} * uRipple.z))) * (1.0 - uRipple.z / ${f(RIPPLE.life)});
+    }
+    vec2 off = (dp > 1e-4 ? dv / dp * push : vec2(0.0)) + (drl > 1e-4 ? dr / drl * rip : vec2(0.0));
+    gl_Position.xy += off / vec2(uAspect, 1.0) * gl_Position.w;
     float size = aKind < 0.5 ? ${f(POINT.signalSize)} : (aKind < 1.5 ? ${f(POINT.noiseSize)} : 1.1);
     float terrainPx = uSize * size * (20.0 / -mv.z);
     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;

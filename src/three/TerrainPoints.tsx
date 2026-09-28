@@ -89,6 +89,11 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     uWarm: { value: new THREE.Color('#FFE2B8') },
     // 거리 흐림의 기준(카메라~장면 목표점 거리). 첫 프레임부터 맞는 값이어야 점이 번쩍이지 않는다
     uFocusDist: { value: target.current ? focusDist(target.current) : 20 },
+    // 포인터 밀기·물결(계획 5-3a). 처음엔 꺼짐(uPointerOn 0), 물결 없음(음수)
+    uPointer: { value: new THREE.Vector2(0, 0) },
+    uPointerOn: { value: 0 },
+    uAspect: { value: 1 },
+    uRipple: { value: new THREE.Vector3(0, 0, -1) },
   }), [instant]);
 
   useFrame((state, delta) => {
