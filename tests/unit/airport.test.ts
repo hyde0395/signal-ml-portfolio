@@ -30,12 +30,28 @@ describe('buildAirport', () => {
   });
   it('휴대폰(stride 2)은 약 절반', () => {
     const half = buildAirport({ stride: 2 }).lights.length;
-    expect(half).toBeGreaterThanOrEqual(Math.floor(A.lights.length / 2) - 1);
-    expect(half).toBeLessThanOrEqual(Math.ceil(A.lights.length / 2) + 1);
+    // 계류장 4개는 솎지 않고(아래 '양쪽이 남는다' 검사) 몇몇 무리는 홀수 걸음 수라 반올림돼 정확히 절반은 아니다
+    expect(half).toBeGreaterThanOrEqual(Math.floor(A.lights.length / 2) - 8);
+    expect(half).toBeLessThanOrEqual(Math.ceil(A.lights.length / 2) + 8);
   });
   it('경고등은 불빛 목록 밖 한 개, 진입등 14개', () => {
     expect(A.beacon).toHaveLength(3);
     expect(A.approach).toHaveLength(14);
+  });
+  it('휴대폰(stride 2)에서도 활주로 양쪽·시작줄/끝줄이 통째로 사라지지 않는다', () => {
+    // 예전 버그: 전역 인덱스로 솎아서 쌍(좌우 가장자리, 시작줄/끝줄)이 한쪽만 남았다.
+    // 이제는 걸음 수로 솎아 쌍이 함께 남거나 함께 빠져야 한다.
+    const B = buildAirport({ stride: 2 });
+    const edges = B.lights.filter((l) => l.kind === 'edge');
+    expect(edges.length).toBe(54);
+    const byOrd = new Map<number, number>();
+    for (const l of edges) byOrd.set(l.ord, (byOrd.get(l.ord) ?? 0) + 1);
+    for (const n of byOrd.values()) expect(n).toBe(2); // 같은 ord(같은 s)에 좌우 두 점이 함께 있다
+    expect(B.lights.filter((l) => l.kind === 'thr').length).toBeGreaterThan(0);
+    expect(B.lights.filter((l) => l.kind === 'end').length).toBeGreaterThan(0);
+    expect(B.lights.filter((l) => l.kind === 'apron').length).toBe(4);
+    expect(B.lights.length).toBeGreaterThanOrEqual(A.lights.length * 0.45);
+    expect(B.lights.length).toBeLessThanOrEqual(A.lights.length * 0.55);
   });
 });
 
