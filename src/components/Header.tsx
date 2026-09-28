@@ -1,4 +1,4 @@
-// 상단 바(로고 + 이력서 링크 + 언어 전환)와, Contact 섹션에서도 재사용하는 ResumeLink를 정의한다.
+// 상단 바(로고 + 언어 전환 + 이력서 링크)와, Contact 섹션에서도 재사용하는 ResumeLink를 정의한다.
 import { LangSwitch } from './LangSwitch';
 import { getT } from '@/lib/content';
 import type { Locale } from '@/lib/i18n';
@@ -18,11 +18,12 @@ export function Header({ locale }: { locale: Locale }) {
   const t = getT(locale);
   const resume = resumeHref(locale);
   return (
-    <header className="site-header">
-      <span className="brand display">SIGNAL</span>
+    // 판 없는 글자 줄(설계 2026-09-28 첫 화면 다듬기 §3). 보임·숨김은 <html data-header>(ScrollState)에 따라 CSS가 정한다
+    <header className="site-header mono">
+      <span className="brand">SIGNAL</span>
       <div className="header-actions">
-        <ResumeLink href={resume} label={t('nav.resume')} pendingLabel={t('nav.resumePending')} locale={locale} />
         <LangSwitch current={locale} label={t('nav.language')} />
+        <ResumeLink href={resume} label={t('nav.resume')} pendingLabel={t('nav.resumePending')} locale={locale} className="header-resume" />
       </div>
     </header>
   );

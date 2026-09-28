@@ -121,7 +121,7 @@ for (const bad of ['/nope/', '/en/xyz/']) {
 }
 
 // 375px 폭에서 헤더가 한 줄(72px 미만)에 들어가는지, 그리고 언어 전환 링크(KO/EN/JA)와
-// 이력서 요소(.header-actions 안의 .pill — 링크든 "준비 중" span이든)가 실제로 보이고
+// 이력서 요소(.header-actions 안의 .header-resume — 링크든 "준비 중" span이든. 상단 바 이력서는 계획 6-3부터 pill이 아니라 header-resume)가 실제로 보이고
 // 화면 밖(375px)으로 밀려나지 않는지 확인한다. 버튼 개수를 세는 방식은 lang-hint의 닫기
 // 버튼과 우연히 같아져 항상 통과하는 동어반복이라 자리·가시성 기준으로 바꿨다.
 for (const path of ['/', '/en/', '/ja/']) {
@@ -135,7 +135,7 @@ for (const path of ['/', '/en/', '/ja/']) {
       page.getByRole('link', { name: 'KO', exact: true }),
       page.getByRole('link', { name: 'EN', exact: true }),
       page.getByRole('link', { name: 'JA', exact: true }),
-      page.locator('.header-actions .pill'),
+      page.locator('.header-actions .header-resume'),
     ];
     for (const locator of targets) {
       await expect(locator).toBeVisible();

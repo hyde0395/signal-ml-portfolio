@@ -10,8 +10,8 @@
 :root:lang(ja) { --font-text: var(--font-jp), 'Pretendard Variable', system-ui, sans-serif; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-/* 고정(sticky) 헤더 높이만큼 스크롤 여백을 둬서, #id로 앵커 이동할 때 헤더가 제목을 가리지 않게 한다. */
-html { background: var(--bg); color-scheme: dark; scroll-padding-top: 72px; }
+/* 상단 바는 화면 위에 겹쳐 뜨고 내리면 숨는다(계획 6-3) — 앵커 이동 때 제목이 너무 아래 오지 않을 만큼만 여백을 둔다 */
+html { background: var(--bg); color-scheme: dark; scroll-padding-top: 24px; }
 body {
   min-height: 100vh; color: var(--tx); font-family: var(--font-text); line-height: 1.7;
   background: radial-gradient(120% 80% at 70% 0%, var(--bg2), var(--bg) 60%) fixed;
@@ -55,23 +55,36 @@ section p + p { margin-top: 12px; }
 html.no-loader .loader { display: none; }
 @media (prefers-reduced-motion: reduce) { .loader-bar i { animation: none; transform: scaleX(1); } }
 
-.site-header { position: sticky; top: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center;
-  gap: 12px; padding: 12px 16px; background: rgba(2, 4, 10, 0.8); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
-.brand { font-size: 1rem; letter-spacing: 0.1em; }
-.header-actions { display: flex; gap: 8px; align-items: center; }
+/* 상단 바(설계 2026-09-28 첫 화면 다듬기 §3, 시안 03-header-de.html E): 판·선 없는 작은 고정폭 글자 줄.
+   좌우 끝은 본문 .wrap(최대 1080px) 줄에 맞춘다 — 왼쪽 끝이 첫 화면 이름과 같은 선 */
+.site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; padding: 26px max(16px, calc((100% - 1080px) / 2)); font-size: 11px; font-weight: 500; letter-spacing: 0.22em; color: var(--mute);
+  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease); }
+.brand { color: var(--tx); font-weight: 600; transition: opacity 0.4s var(--ease); }
+.header-actions { display: flex; gap: 26px; align-items: center; }
+.site-header .lang-switch { gap: 0; font-size: inherit; }
+/* 언어 사이 가운뎃점은 글자가 아니라 작은 원으로 그린다 — content: '·'는 링크 이름("· EN")에 섞여 낭독·테스트가 깨진다 */
+.site-header .lang-switch a { position: relative; padding: 6px 0; border: 0; color: rgba(238, 243, 255, 0.45); }
+.site-header .lang-switch a + a { margin-left: 1.3em; }
+.site-header .lang-switch a + a::before { content: ''; position: absolute; left: -0.72em; top: 50%; width: 2px; height: 2px; border-radius: 50%; background: rgba(238, 243, 255, 0.3); }
+.site-header .lang-switch a[aria-current] { color: var(--tx); }
+.header-resume { color: var(--mute); text-decoration: none; padding: 6px 0; }
+a.header-resume::after { content: ' ↓'; }
+a.header-resume:hover, .site-header .lang-switch a:hover { color: var(--tx); }
+.header-resume.is-pending { color: rgba(238, 243, 255, 0.4); cursor: not-allowed; }
+/* 내리면 전부 숨김, 올리면 오른쪽만(ScrollState → html[data-header]). 숨김은 투명도로만 한다 —
+   visibility로 숨기면 Tab이 건너뛰어 아래 :focus-within(키보드 사용자는 늘 볼 수 있게)이 성립하지 않는다 */
+html[data-header="hidden"] .site-header { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+html[data-header="peek"] .brand { opacity: 0; }
+/* 우선순위를 위 숨김 규칙(html[data-header] .site-header)보다 높게 — 같으면 숨김이 이긴다 */
+html[data-header] .site-header:focus-within { opacity: 1; transform: none; pointer-events: auto; }
+@media (max-width: 767px) { .site-header { padding-block: 16px; } .header-actions { gap: 16px; } }
+@media (prefers-reduced-motion: reduce) { .site-header, .brand { transition: none; } }
+/* 알약 버튼 — 지금은 Contact 섹션의 이력서 링크(ResumeLink 기본값)가 쓴다 */
 .pill { font: 600 0.8rem var(--font-mono); color: var(--tx); background: none; border: 1px solid var(--line); border-radius: 999px;
   padding: 6px 14px; text-decoration: none; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
 .pill:hover { border-color: var(--dot); }
 .pill.is-pending { color: var(--mute); border-style: dashed; cursor: not-allowed; }
-/* 400px 이하의 좁은 화면(작은 휴대폰)에서는 상단 바 요소가 KO/EN/JA + 이력서 버튼까지 겹쳐
-   한 줄(72px 미만)을 넘기거나 화면 밖으로 밀려날 수 있어 여백과 글자 크기를 줄인다. */
-@media (max-width: 400px) {
-  .site-header { padding: 12px 10px; gap: 6px; }
-  .header-actions { gap: 4px; }
-  .pill { padding: 6px 8px; font-size: 0.7rem; }
-  .lang-switch { gap: 0; }
-  .lang-switch a { padding: 4px 5px; }
-}
 
 .hero { min-height: 88vh; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 12vh; }
 .hero-name { font-size: clamp(3rem, 12vw, 8.5rem); }
