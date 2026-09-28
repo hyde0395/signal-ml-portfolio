@@ -145,6 +145,14 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     expect(mean, `${sel} 평균 배경 대비 ${mean.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
     expect(p99, `${sel} 밝은 쪽 99% 화소 대비 ${p99.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
   }
+  // 상단 바의 선택 안 된 언어 링크(--mute, 11px): 맨 위(첫 화면 하늘 위)에서만 전부 보이므로 끝에 맨 위로 돌아가 잰다.
+  // 목록 맨 앞에 넣으면 그 대기(3.5초)만큼 첫 화면 비행기 빛줄기 시점이 밀려 .hero-sub 화소 검사가 흔들렸다
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.locator('html')).toHaveAttribute('data-header', 'top');
+  const langSel = '.site-header .lang-switch a:not([aria-current])';
+  const lang = await backgroundContrast(page, langSel, 0.72);
+  expect(lang.mean, `${langSel} 평균 배경 대비 ${lang.mean.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+  expect(lang.p99, `${langSel} 밝은 쪽 99% 화소 대비 ${lang.p99.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
 });
 
 for (const path of ['/', '/ja/']) {

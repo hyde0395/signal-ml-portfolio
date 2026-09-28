@@ -33,9 +33,6 @@ section h2 { font-size: clamp(1.75rem, 4vw, 2.75rem); margin: 8px 0 24px; }
 section h3 { font-size: 1.25rem; margin: 40px 0 12px; }
 section p + p { margin-top: 12px; }
 
-.lang-switch { display: flex; gap: 4px; font-size: 0.8rem; }
-.lang-switch a { color: var(--mute); text-decoration: none; padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; }
-.lang-switch a[aria-current] { color: var(--tx); border-color: var(--line); }
 .lang-hint { position: fixed; left: 16px; bottom: 16px; z-index: 50; display: flex; gap: 8px; align-items: center;
   background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
 .lang-hint button { background: none; border: 0; color: var(--mute); font-size: 1.25rem; cursor: pointer; min-width: 32px; min-height: 32px; }
@@ -62,18 +59,26 @@ html.no-loader .loader { display: none; }
   transition: opacity 0.4s var(--ease), transform 0.4s var(--ease); }
 .brand { color: var(--tx); font-weight: 600; transition: opacity 0.4s var(--ease); }
 .header-actions { display: flex; gap: 26px; align-items: center; }
-.site-header .lang-switch { gap: 0; font-size: inherit; }
-/* 언어 사이 가운뎃점은 글자가 아니라 작은 원으로 그린다 — content: '·'는 링크 이름("· EN")에 섞여 낭독·테스트가 깨진다 */
-.site-header .lang-switch a { position: relative; padding: 6px 0; border: 0; color: rgba(238, 243, 255, 0.45); }
-.site-header .lang-switch a + a { margin-left: 1.3em; }
-.site-header .lang-switch a + a::before { content: ''; position: absolute; left: -0.72em; top: 50%; width: 2px; height: 2px; border-radius: 50%; background: rgba(238, 243, 255, 0.3); }
-.site-header .lang-switch a[aria-current] { color: var(--tx); }
-.header-resume { color: var(--mute); text-decoration: none; padding: 6px 0; }
+/* 언어 전환은 상단 바에만 있어(LangSwitch) 규칙을 여기에만 둔다 */
+.site-header .lang-switch { display: flex; gap: 0; }
+/* 누르는 자리(설계 검토 2026-09-29): 글자는 11px라 패딩 없이는 폭 ~13px밖에 안 된다. 패딩 8px 6px로 24×24 이상을 만들고
+   같은 크기의 음수 여백(가로 -6px, 세로 -2px = 예전 패딩 6px과의 차이)으로 되돌려 글자 자리·상단 바 높이는 그대로 둔다.
+   이웃 링크 사이 글자 간격(1.3em ≈ 14px)이 좌우 패딩 합(12px)보다 커 누르는 자리끼리 겹치지 않는다.
+   색(대비 검토): 선택 안 된 언어도 --mute(#02040A 위 9.45:1). 예전 0.45 투명도는 4.11:1로 11px 글자의 AA 4.5:1에 못 미쳤다 */
+.site-header .lang-switch a { position: relative; padding: 8px 6px; margin: -2px -6px; border: 0; text-decoration: none; color: var(--mute); }
+.site-header .lang-switch a + a { margin-left: calc(1.3em - 6px); }
+/* 점은 앞 글자 끝과 이 글자 사이 가운데. 기준(패딩 상자 왼쪽)이 글자보다 6px 왼쪽으로 옮겨져 6px을 더해 예전 자리를 지킨다 */
+.site-header .lang-switch a + a::before { content: ''; position: absolute; left: calc(6px - 0.72em); top: 50%; width: 2px; height: 2px; border-radius: 50%; background: rgba(238, 243, 255, 0.3); }
+/* 지금 언어는 색만이 아니라 굵기(600, SIGNAL과 같음)로도 구분한다 — 선택 안 된 쪽이 --mute로 밝아져 색 차이만으로는 약하다 */
+.site-header .lang-switch a[aria-current] { color: var(--tx); font-weight: 600; }
+.header-resume { color: var(--mute); text-decoration: none; padding: 8px 6px; margin: -2px -6px; }
 a.header-resume::after { content: ' ↓'; }
 a.header-resume:hover, .site-header .lang-switch a:hover { color: var(--tx); }
-.header-resume.is-pending { color: rgba(238, 243, 255, 0.4); cursor: not-allowed; }
+/* "준비 중"(aria-disabled span)은 비활성 표시라 대비 기준 예외지만, 읽히긴 해야 하는 안내라 0.5(4.87:1)로 AA는 넘긴 채 흐리게 둔다 */
+.header-resume.is-pending { color: rgba(238, 243, 255, 0.5); cursor: not-allowed; }
 /* 내리면 전부 숨김, 올리면 오른쪽만(ScrollState → html[data-header]). 숨김은 투명도로만 한다 —
    visibility로 숨기면 Tab이 건너뛰어 아래 :focus-within(키보드 사용자는 늘 볼 수 있게)이 성립하지 않는다 */
+/* pointer-events는 전환 없이 바로 꺼진다(투명도만 0.4초에 걸쳐 사라짐) — 일부러다. 사라지는 중인 바가 그 아래 본문 클릭을 가로채지 않게 */
 html[data-header="hidden"] .site-header { opacity: 0; transform: translateY(-8px); pointer-events: none; }
 html[data-header="peek"] .brand { opacity: 0; }
 /* 우선순위를 위 숨김 규칙(html[data-header] .site-header)보다 높게 — 같으면 숨김이 이긴다 */
