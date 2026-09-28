@@ -110,6 +110,7 @@ export const vertexShader = /* glsl */ `
     float wave = aAirport.w < 0.0 ? 0.0 : exp(-pow((aAirport.w - uWave) / 90.0, 2.0));
     float airA = on * haze * (1.0 + wave * 2.2);
     vAlpha = mix(vAlpha * (1.0 - uAirport), airA, vAir); // 공항 장면에서 불빛이 아닌 점은 숨긴다
+    // 넘어가는 동안(0 < vAir < 1)은 sRGB로 되돌린 지형 색과 되돌리지 않은 공항 색이 섞인다 — 의도한 것이고 눈에 띄지 않는다(공항 색은 6-2에서 맞춘 그대로 둔다)
     vColor = mix(vColor, airTone(aAirStyle.y), vAir);
     vEdge = mix(vEdge, 0.0, vAir);
     // 화면에 안 보이는 점(알파가 거의 0)은 크기 0 + 화면 밖으로 보내 래스터화를 아예 건너뛴다(성능 검토
@@ -140,9 +141,13 @@ export const fragmentShader = /* glsl */ `
     // 뒤 화소를 줄이는 비율(= 출력 알파)만 점마다 바꾼다. 지형·지도·차트 점(vAir 0)은 알파 a → 보통 섞기
     // — 겹쳐도 하얗게 타지 않는다 —, 공항 불빛(vAir 1)은 알파 a² → 뒤 화소에 (1 − a²)만 곱해 사실상 빛 더하기다.
     // 재질 하나로 두 방식을 점마다 나누므로 공항 → 지형으로 넘어가는 동안 섞기 방식이 튀지 않는다
-    float a = vAlpha * mix(disc, air, vAir);
-    // 알파 채널: 보통 점(vAir 0)은 a, 공항 불빛(vAir 1)은 a² — 예전 빛 더하기(SRC_ALPHA, ONE)가 알파에 a²를 쌓던 것과 같다.
-    // 0으로 두면 "색 > 알파"인 화소가 생기는데, 미리 곱한 알파 캔버스에서 이 경우 합성 결과는 명세상 정해져 있지 않다(브라우저마다 다를 수 있음)
+    // 1로 자른다: 공항 불빛 알파(airA)는 신호 물결 꼭대기에서 약 3.2까지 오른다. 예전엔 섞기 전에 출력 알파가 1로
+    // 잘려 불빛 하나가 더하는 색이 vColor를 넘지 않았는데, vColor·a로 미리 곱하면 a > 1에서 따뜻한 불빛이 하얗게 타고
+    // 알파 ≥ 1이 뒤 화소를 지워 번짐이 더해지지 않고 덮어쓴다. 자르면 예전 출력(색 c·min(a,1), 알파 min(a,1)²)과 같다
+    float a = min(vAlpha * mix(disc, air, vAir), 1.0);
+    // 알파 채널: 보통 점(vAir 0)은 a, 공항 불빛(vAir 1)은 a² — 예전 빛 더하기(SRC_ALPHA, ONE)가 알파에 a²를 쌓던 것을
+    // 그대로 옮겨, 페이지 위 합성이 예전과 같게(실제로는 C + 배경·(1 − A), 즉 빛 더하기 번짐) 보이고 toDataURL 대체
+    // 캡처에도 불빛이 남게 한다. 불빛 화소는 예전과 마찬가지로 명세상 "색 > 알파"(결과가 정해지지 않은) 경우에 남는다
     gl_FragColor = vec4(vColor * a, a * mix(1.0, a, vAir));
   }
 `;
