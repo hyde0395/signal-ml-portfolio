@@ -50,6 +50,14 @@ export const vertexShader = /* glsl */ `
   vec3 toneColor(float t) { return t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot); }
   // 공항 색 번호(airport.ts AIR_TONE): 1 파랑, 2 호박, 3 흰색, 4 따뜻한 흰색
   vec3 airTone(float t) { return t > 3.5 ? uWarm : (t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot)); }
+  // 선형 → sRGB(정확한 sRGB 전달 함수). three는 THREE.Color('#…') uniform을 선형 값으로 바꿔 넣는데,
+  // 우리 ShaderMaterial 출력은 sRGB로 되돌려지지 않아 점이 디자인 토큰(sRGB)보다 어둡게(짙은 파랑·주황) 찍혔다
+  // — 빛 더하기 시절엔 겹쳐 쌓이며 가려졌지만 보통 섞기에선 그대로 보인다. 2D 대체 그림(draw2d.ts)도 sRGB 토큰을 쓴다.
+  // three 내장(sRGBTransferOETF 등)과 이름이 겹치지 않게 따로 이름을 붙였다. pow의 밑이 음수면 정의되지 않아 0으로 자른다
+  vec3 toSrgbTone(vec3 c) {
+    c = max(c, vec3(0.0));
+    return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+  }
 
   void main() {
     vec3 target = mix(aTerrain, aMap, uMap);
@@ -92,7 +100,8 @@ export const vertexShader = /* glsl */ `
       if (abs(aWaffle - uFocus) < 0.5) chartCol = uAmber; else chartA *= ${FOCUS_DIM.toFixed(2)};
     }
     vAlpha = mix(a * uDim * fade, chartA, uChart);
-    vColor = mix(terrainCol, chartCol, uChart);
+    // 지형·지도·차트 색만 sRGB로 되돌린다. 공항 색(airTone)은 6-2에서 지금 모습 그대로 맞춰 둔 값이라 손대지 않는다
+    vColor = toSrgbTone(mix(terrainCol, chartCol, uChart));
     // 차트 점은 가장자리를 덜 흐려 또렷한 원으로(2D 대체 그림과 같게)
     vEdge = mix(0.15, 0.38, uChart);
     // 켜지는 순서(로딩 뒤 앞에서 뒤로) + 공기 원근(멀수록 흐림) + 신호 물결
