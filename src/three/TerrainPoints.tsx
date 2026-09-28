@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { AirportBuffers } from './airportAssign';
 import type { PointCloud } from './data';
+import { toNdc } from './pointerField';
 import type { SceneState } from './scenes';
 import { fragmentShader, vertexShader } from './shaders';
 
@@ -64,6 +65,36 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
 
   // geometry가 바뀌거나(cloud 교체) 컴포넌트가 사라질 때 GPU 버퍼를 반환한다(메모리 누수 방지)
   useEffect(() => () => geometry.dispose(), [geometry]);
+
+  // 포인터(계획 5-3a): 캔버스는 pointer-events: none이라 창 전체에서 듣는다(CameraRig와 같은 이유)
+  const pointer = useRef({ x: 0, y: 0, on: 0, rippleAt: -1, rx: 0, ry: 0 });
+  useEffect(() => {
+    if (instant) return;
+    const p = pointer.current;
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return; // 터치로 계속 밀면 스크롤을 방해한다 — 물결만(설계 §4.1)
+      [p.x, p.y] = toNdc(e.clientX, e.clientY, window.innerWidth, window.innerHeight);
+      p.on = 1;
+    };
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      [p.rx, p.ry] = toNdc(e.clientX, e.clientY, window.innerWidth, window.innerHeight);
+      p.rippleAt = performance.now();
+    };
+    // 창 밖으로 나가면(relatedTarget 없음) 밀기를 끈다 — 창 가장자리에 멈춘 채 점이 계속 비켜 있지 않게
+    const onOut = (e: MouseEvent) => { if (!e.relatedTarget) p.on = 0; };
+    const onHide = () => { if (document.hidden) p.on = 0; };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('mouseout', onOut);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('mouseout', onOut);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, [instant]);
 
   const uniforms = useMemo(() => ({
     uAssemble: { value: instant ? 1 : 0 }, // 첫 화면에서 0 → 1로 모이며 등장
@@ -139,6 +170,16 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     // 신호 물결: 3초 뒤부터 초당 700m로 활주로를 따라 달리고 5,800m마다 되풀이(시안과 같은 속도)
     const wt = state.clock.elapsedTime - 3;
     u.uWave.value = instant || wt < 0 ? -1e4 : (wt * 700) % 5800;
+    // 포인터: 위치는 빠르게, 세기는 천천히 따라간다 — 점마다 상태가 없으므로 이 부드러움이 "비켰다가 제자리로"를 만든다
+    const p = pointer.current;
+    u.uAspect.value = state.size.width / Math.max(1, state.size.height);
+    const pv = u.uPointer.value as THREE.Vector2;
+    if (u.uPointerOn.value < 0.01 && p.on) pv.set(p.x, p.y); // 막 켜질 때는 그 자리에서 시작(화면을 가로질러 날아오지 않게)
+    pv.x = THREE.MathUtils.damp(pv.x, p.x, 10, delta);
+    pv.y = THREE.MathUtils.damp(pv.y, p.y, 10, delta);
+    u.uPointerOn.value = instant ? 0 : THREE.MathUtils.damp(u.uPointerOn.value, p.on, 6, delta);
+    const rv = u.uRipple.value as THREE.Vector3;
+    rv.set(p.rx, p.ry, instant || p.rippleAt < 0 ? -1 : (performance.now() - p.rippleAt) / 1000);
   });
 
   return (
