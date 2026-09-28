@@ -54,16 +54,18 @@ export const SCENES: Record<SceneKey, SceneState> = {
 const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구도를 담으려면 더 물러나야 한다
 
 // 세로 화면 전용 카메라·목표점. 데스크톱은 왼쪽 글을 피하려고 x를 옮겼지만(problem −4.5, 글 쪽 장면 −5),
-// 세로 화면은 글이 아래쪽에 있어 옆으로 밀 필요가 없고 그대로 밀면 지형·지도 절반이 잘린다
+// 세로 화면은 글이 아래쪽에 있어 옆으로 밀 필요가 없고 그대로 밀면 지형·지도 절반이 잘린다.
+// 대신(휴대폰은 글이 화면 아래쪽 카드) 글 쪽 장면은 카메라·목표점의 y를 함께 3만큼 내려 지형이 화면
+// 위쪽 절반에서 보이게 한다 — 카메라−목표점 벡터(거리·각도)는 그대로라 세로 화면 1.6배 검사에 안 걸린다
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
-  hero: { camera: [6, 9, 20], target: [0, 0.5, 0] },
-  about: { camera: [-14, 7, 16], target: [0, 0.5, 0] },
-  bubble: { camera: [7, 9, 17], target: [0, 2.5, 0] },
-  validation: { camera: [0, 22, 0.1], target: [0, 0, 0] },
-  limits: { camera: [0, 12, 26], target: [0, 0, 0] },
-  demo: { camera: [0, 16, 30], target: [0, 0, 0] },
-  contact: { camera: [0, 16, 30], target: [0, 0, 0] },
+  hero: { camera: [6, 6, 20], target: [0, -2.5, 0] },
+  about: { camera: [-14, 4, 16], target: [0, -2.5, 0] },
+  bubble: { camera: [7, 6, 17], target: [0, -0.5, 0] },
+  validation: { camera: [0, 19, 0.1], target: [0, -3, 0] },
+  limits: { camera: [0, 9, 26], target: [0, -3, 0] },
+  demo: { camera: [0, 13, 30], target: [0, -3, 0] },
+  contact: { camera: [0, 13, 30], target: [0, -3, 0] },
 };
 
 export function isChartScene(key: SceneKey): boolean {

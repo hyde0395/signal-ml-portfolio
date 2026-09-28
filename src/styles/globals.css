@@ -136,11 +136,11 @@ main { position: relative; z-index: 1; }
   background: radial-gradient(120% 95% at 72% 40%, rgba(7, 11, 22, 0) 38%, rgba(7, 11, 22, 0.8) 100%); }
 html[data-chart] .backdrop::after { opacity: 0; }
 @media (max-width: 767px) {
-  /* 대비 화소 검사 실패(Step 7)로 조정했다. 휴대폰은 ①(#project)처럼 글이 화면 가운데쯤 오는 장면도 있어
-     (§2.1 가정과 달리 .chapter 클래스가 아니라 아래 정렬 규칙을 안 받는다) 두 지점 그라데이션으로는
-     중간 지점의 알파가 항상 낮아 모자랐다. 그래서 알파 0.8→0.97을 화면 아래 72%까지 그대로 유지하다가
-     위쪽 26%에서만 걷히게(경계처럼 보이지 않을 만큼 완만하게) 세 지점 그라데이션으로 바꿨다 */
-  .backdrop::after { background: linear-gradient(0deg, rgba(7, 11, 22, 0.97) 0, rgba(7, 11, 22, 0.97) 72%, rgba(7, 11, 22, 0) 98%); }
+  /* 휴대폰은 판 대신 구도로 지킨다(코드 리뷰 2026-09-28): 글은 화면 아래 카드(.chapter·#project 모두 아래
+     정렬), 지형은 세로 화면 카메라가 위쪽 절반에 오게 옮겼다(three/scenes.ts PORTRAIT_OVERRIDE). 그래서
+     비네트는 아래쪽만 살짝 어둡게 하는 가벼운 한 겹으로 충분하다 — 전체를 짙게 덮으면 점이 안 보여
+     판을 되살린 것과 같아진다 */
+  .backdrop::after { background: linear-gradient(0deg, rgba(7, 11, 22, 0.85) 0, rgba(7, 11, 22, 0) 50%); }
 }
 
 /* 대체 이미지: 기본은 보이고, 3D가 켜지면 숨긴다(JS가 없거나 3D가 불가능해도 장면을 볼 수 있게) */
@@ -177,6 +177,9 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 @media (max-width: 767px) {
   /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
   html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
+  /* #project(①)는 .chapter 클래스가 아니라(자기만의 .project 레이아웃) 위 규칙을 못 받는다. .chapter와
+     같은 방식으로 아래 정렬해야 지형이 위쪽 절반에서 보인다(코드 리뷰 2026-09-28) */
+  html[data-3d="on"] #project { min-height: 100vh; justify-content: flex-end; padding-bottom: 12vh; }
 }
 
 /* 텍스트 리빌: 단어가 자기 줄 아래에서 떠오르도록 바깥 상자에서 잘라 낸다 */
