@@ -10,8 +10,9 @@
 :root:lang(ja) { --font-text: var(--font-jp), 'Pretendard Variable', system-ui, sans-serif; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-/* 상단 바는 화면 위에 겹쳐 뜨고 내리면 숨는다(계획 6-3) — 앵커 이동 때 제목이 너무 아래 오지 않을 만큼만 여백을 둔다 */
-html { background: var(--bg); color-scheme: dark; scroll-padding-top: 24px; }
+/* 상단 바는 겹쳐 뜨지만 옆 목차로 위쪽 섹션에 갈 때는 다시 나타난다(peek) — 제목이 그 밑에 가리지 않을 만큼 여백을 둔다.
+   24px로 줄였더니 휴대폰에서 ① 제목이 3D 점 위로 올라가 대비 검사가 실패했다(2026-09-29) */
+html { background: var(--bg); color-scheme: dark; scroll-padding-top: 72px; }
 body {
   min-height: 100vh; color: var(--tx); font-family: var(--font-text); line-height: 1.7;
   background: radial-gradient(120% 80% at 70% 0%, var(--bg2), var(--bg) 60%) fixed;
