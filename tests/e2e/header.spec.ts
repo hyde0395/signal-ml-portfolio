@@ -66,3 +66,20 @@ test.describe('움직임 줄이기', () => {
     await expect(page.locator('.scroll-hint i')).toHaveCSS('animation-name', 'none');
   });
 });
+
+// 좁은 휴대폰에서는 언어 안내 판(LangHint, 왼쪽 아래)이 뜨면 SCROLL 표시와 자리가 겹친다.
+// 브라우저 언어를 한국어로 두고 /en/에 들어가면 판이 뜬다(LangHint.tsx: 브라우저 언어 ≠ 현재 페이지)
+test.describe('좁은 휴대폰에서 언어 안내 판과 겹침', () => {
+  test.use({ viewport: { width: 390, height: 844 }, locale: 'ko-KR' });
+  test('언어 안내 판이 뜨면 SCROLL 표시가 그 위로 올라가 겹치지 않는다', async ({ page }) => {
+    await page.goto('/en/');
+    const banner = page.locator('.lang-hint');
+    await expect(banner).toBeVisible();
+    const hint = page.locator('.scroll-hint');
+    await expect(hint).toBeVisible();
+    const hintBox = (await hint.boundingBox())!;
+    const bannerBox = (await banner.boundingBox())!;
+    // 표시의 아래쪽 끝이 판의 위쪽 끝보다 위(작은 y)에 있어야 겹치지 않는다
+    expect(hintBox.y + hintBox.height).toBeLessThanOrEqual(bannerBox.y);
+  });
+});
