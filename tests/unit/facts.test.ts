@@ -41,3 +41,11 @@ describe('facts.json', () => {
     expect(codeUrl('features')).toBe('https://github.com/hyde0395/airfare-forecasting-ml/blob/main/src/processing/features.py');
   });
 });
+
+describe('site.airport(첫 화면 메타 줄)', () => {
+  it('공항 코드와 좌표가 있다', () => {
+    expect(facts.site.airport.code).toBe('ICN');
+    expect(facts.site.airport.lat).toBeGreaterThan(37);
+    expect(facts.site.airport.lon).toBeGreaterThan(126);
+  });
+});

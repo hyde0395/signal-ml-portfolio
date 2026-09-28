@@ -13,6 +13,8 @@ export const factsSchema = z.object({
   dataVersion: isoDate,
   // 데모를 처음 열 때 고를 조합(스펙 §6.1). export_demo.py가 가격 하락 예상 중 절약률이 가장 큰 조합으로 채운다
   demoDefault: z.object({ route: z.enum(ROUTES), cabin: z.enum(CABINS), date: isoDate }),
+  // 첫 화면 메타 줄(설계 2026-09-28 §4.4): 인천공항 좌표. 문구 파일에 숫자를 쓰지 않으려고 여기 둔다
+  site: z.object({ airport: z.object({ code: z.string().length(3), lat: z.number(), lon: z.number() }) }),
   profile: z.object({ graduation: z.string().regex(/^\d{4}-\d{2}$/) }),
   contact: z.object({
     emailReversed: z.string().includes('@'),

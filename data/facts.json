@@ -1,4 +1,5 @@
 {
+  "site": { "airport": { "code": "ICN", "lat": 37.46, "lon": 126.44 } },
   "profile": {
     "graduation": "2028-02"
   },

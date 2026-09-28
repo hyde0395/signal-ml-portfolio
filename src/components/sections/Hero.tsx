@@ -2,6 +2,7 @@
 import { ChapterFigure } from './ChapterFigure';
 import { getT } from '@/lib/content';
 import type { Locale } from '@/lib/i18n';
+import { facts } from '@/lib/facts';
 
 export function Hero({ locale }: { locale: Locale }) {
   const t = getT(locale);
@@ -14,6 +15,11 @@ export function Hero({ locale }: { locale: Locale }) {
         <p className="mono hero-role">{t('hero.role')}</p>
         <p className="hero-keywords">{t('hero.keywords')}</p>
       </div>
+      {/* 오른쪽 아래 메타 줄(설계 §4.4): 공항 좌표와 노선. 숫자는 facts에서 조립한다. 장식이라 낭독하지 않는다 */}
+      <p className="hero-meta mono" aria-hidden="true">
+        {facts.site.airport.code} · {facts.site.airport.lat.toFixed(2)}°N {facts.site.airport.lon.toFixed(2)}°E<br />
+        {facts.site.airport.code} ⇄ {[...new Set(facts.data.byRoute.map((r) => r.pair.split('_')[1]))].join(' · ')}
+      </p>
       <ChapterFigure locale={locale} sceneKey="hero" />
     </section>
   );

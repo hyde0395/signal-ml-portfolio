@@ -13,8 +13,12 @@ export function Loader({ rows }: { rows: string }) {
   }, [rows]);
   return (
     <div className="loader" aria-hidden="true">
+      {/* 설계 2026-09-28 §4.3: 가운데 큰 숫자 + 진행선. 숫자 플립·1.2초 고정 연출·CSS로 사라짐은 그대로 */}
+      <p className="loader-label">NOW BOARDING</p>
       {/* React는 {rows}를 한 번만 그리고 flip()이 자식을 바꿔 끼운다 — Loader가 다시 그려지지 않으므로 안전하다 */}
-      <p>LOADING <span data-count ref={count}>{rows}</span> ROWS</p>
+      <p className="loader-num"><span data-count ref={count}>{rows}</span></p>
+      <span className="loader-bar"><i /></span>
+      <p className="loader-label">ROWS</p>
     </div>
   );
 }

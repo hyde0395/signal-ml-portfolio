@@ -15,6 +15,8 @@ const rows = new Intl.NumberFormat('en-US').format(facts.data.filteredRows);
 test('로딩 화면은 1.2초 안팎에 사라지고, 같은 세션 새로고침에는 없다', async ({ page }) => {
   await page.goto('/');
   const loader = page.locator('.loader');
+  await expect(loader.locator('.loader-label').first()).toHaveText('NOW BOARDING');
+  await expect(loader.locator('.loader-bar')).toBeAttached();
   // 페이지를 받는 데 1.2초 넘게 걸리는 환경(CI)도 있어 "보인다"는 검사하지 않는다 — 처음 방문엔 생략되지 않았고, 곧 사라지는지만 본다.
   // 타임아웃은 demo.spec.ts의 슬라이더 대기(15_000)처럼 넉넉히 잡는다 — CSS 애니메이션 자체는 1.2초면 끝나지만,
   // 여러 워커가 동시에 소프트웨어 3D 렌더러(swiftshader)를 돌리는 병렬 실행에서는 브라우저 메인 스레드가 밀려
