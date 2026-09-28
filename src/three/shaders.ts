@@ -68,10 +68,12 @@ export const vertexShader = /* glsl */ `
     // 지형은 거리에 따라 작아지고(20.0: 계획 3에서 점이 1~2px로 너무 작아 키운 값), 차트는 판 px 그대로다
     float terrainPx = uSize * size * (20.0 / -mv.z);
     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;
-    // 공항 불빛: 작고 선명한 점 + 옅은 번짐(시안 core = clamp(5.5·size/거리, 0.6, 2.6)px, 번짐 반경 = core × 9).
+    // 공항 불빛: 작고 선명한 점 + 옅은 번짐(시안 core = clamp(5.5·size/거리, 0.6, 2.6)px, 번짐 반경 = core × 6).
     // 스프라이트 지름 = 번짐 지름이고, 조각 셰이더가 가운데 core만 또렷하게 칠한다
     float corePx = clamp(5.5 * aAirStyle.z / max(-mv.z, 0.01), 0.6, 2.6) * uDpr;
-    float airPx = corePx * 18.0;
+    // 번짐 반경을 12배로 줄인다(18 → 12) — 스프라이트 픽셀 수는 지름의 제곱이라 18px 스프라이트가 화면을
+    // 채우는 비용이 컸다(성능 검토 2026-09-28). 핵 반경(조각 셰이더)도 같은 비로 키워 핵 크기는 그대로 유지한다
+    float airPx = corePx * 12.0;
     float basePx = mix(terrainPx, chartPx, uChart);
     vAir = uAirport * isAir;
     gl_PointSize = mix(basePx, airPx, vAir);
@@ -97,6 +99,12 @@ export const vertexShader = /* glsl */ `
     vAlpha = mix(vAlpha * (1.0 - uAirport), airA, vAir); // 공항 장면에서 불빛이 아닌 점은 숨긴다
     vColor = mix(vColor, airTone(aAirStyle.y), vAir);
     vEdge = mix(vEdge, 0.0, vAir);
+    // 화면에 안 보이는 점(알파가 거의 0)은 크기 0 + 화면 밖으로 보내 래스터화를 아예 건너뛴다(성능 검토
+    // 2026-09-28) — 공항 장면의 배경 점 약 27,000개, 차트 장면에서 이번 배치에 안 쓰는 점이 여기 걸린다
+    if (vAlpha < 0.003) {
+      gl_PointSize = 0.0;
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+    }
   }
 `;
 
@@ -109,9 +117,10 @@ export const fragmentShader = /* glsl */ `
   void main() {
     float d = length(gl_PointCoord - 0.5);
     if (d > 0.5) discard;
-    // 공항 불빛: 가운데 또렷한 핵(반경 = 스프라이트의 1/18) + 가우스 번짐
-    float core = 1.0 - smoothstep(0.022, 0.034, d);
-    float glow = exp(-d * d * 60.0) * 0.55;
+    // 공항 불빛: 가운데 또렷한 핵(반경 = 스프라이트의 1/12, 번짐 반경 축소(18→12)에 맞춰 핵 반지름도 키워
+    // 화면 픽셀 크기는 그대로 유지한다) + 가우스 번짐
+    float core = 1.0 - smoothstep(0.033, 0.05, d);
+    float glow = exp(-d * d * 28.0) * 0.55;
     float air = max(core, glow);
     float disc = smoothstep(0.5, vEdge, d); // 이름을 dot으로 하면 GLSL 내장 함수와 겹친다
     gl_FragColor = vec4(vColor, vAlpha * mix(disc, air, vAir));
