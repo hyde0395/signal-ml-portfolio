@@ -6,6 +6,7 @@ import { Captions } from './Captions';
 import { Header } from './Header';
 import { Loader } from './Loader';
 import { Motion } from './Motion';
+import { ScrollState } from './ScrollState';
 import { SideNav } from './SideNav';
 import { Charts } from './sections/Charts';
 import { Contact } from './sections/Contact';
@@ -44,6 +45,7 @@ export function HomePage({ locale }: { locale: Locale }) {
       </main>
       <Captions />
       <Motion />
+      <ScrollState />
     </>
   );
 }
