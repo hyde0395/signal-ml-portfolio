@@ -2,6 +2,7 @@
 // 모든 움직임을 GPU에서 계산하므로 2만8천 개 점도 매 프레임 JS 작업 없이 움직인다.
 // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
 import { FOCUS_DIM } from '@/charts/types';
+import { DEPTH_FADE, POINT, glslFloat as f } from './pointStyle';
 
 export const vertexShader = /* glsl */ `
   attribute vec3 aTerrain;
@@ -39,6 +40,7 @@ export const vertexShader = /* glsl */ `
   uniform float uLightT;     // 불이 켜지기 시작한 뒤 흐른 초(앞에서 뒤로 차례로 켜짐)
   uniform float uWave;       // 신호 물결의 지금 위치(활주로 거리 m)
   uniform vec3 uWarm;        // 따뜻한 흰색(공항 전용)
+  uniform float uFocusDist;  // 카메라~장면 목표점 거리(거리 흐림 기준, TerrainPoints가 넣는다)
   varying float vAlpha;
   varying vec3 vColor;
   varying float vEdge;
@@ -64,7 +66,7 @@ export const vertexShader = /* glsl */ `
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
-    float size = aKind < 0.5 ? 1.0 : (aKind < 1.5 ? 0.7 : 1.1);
+    float size = aKind < 0.5 ? ${f(POINT.signalSize)} : (aKind < 1.5 ? ${f(POINT.noiseSize)} : 1.1);
     // 지형은 거리에 따라 작아지고(20.0: 계획 3에서 점이 1~2px로 너무 작아 키운 값), 차트는 판 px 그대로다
     float terrainPx = uSize * size * (20.0 / -mv.z);
     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;
@@ -78,7 +80,9 @@ export const vertexShader = /* glsl */ `
     vAir = uAirport * isAir;
     gl_PointSize = mix(basePx, airPx, vAir);
 
-    float a = aKind < 0.5 ? 0.95 : (aKind < 1.5 ? 0.18 * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
+    float a = aKind < 0.5 ? ${f(POINT.signalAlpha)} : (aKind < 1.5 ? ${f(POINT.noiseAlpha)} * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
+    // 거리 흐림(설계 첫 화면 다듬기 §2.2): 장면 목표점보다 먼 점일수록 흐리게 — 지형·지도에만(차트 점은 아래 mix에서 빠진다)
+    float fade = clamp(${f(DEPTH_FADE.base)} - (-mv.z - uFocusDist) / ${f(DEPTH_FADE.span)}, ${f(DEPTH_FADE.min)}, 1.0);
     // 지도 장면에서는 공휴일 색을 끈다(지도 위 호박색은 노선 전용). 제거 레이어는 글자색
     vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(aHoliday * (1.0 - uMap), aRoute * uMap));
     float chartA = mix(aStyleA.x, aStyleB.x, uSlot);
@@ -87,7 +91,7 @@ export const vertexShader = /* glsl */ `
     if (uFocus > -0.5 && aWaffle > -0.5) {
       if (abs(aWaffle - uFocus) < 0.5) chartCol = uAmber; else chartA *= ${FOCUS_DIM.toFixed(2)};
     }
-    vAlpha = mix(a * uDim, chartA, uChart);
+    vAlpha = mix(a * uDim * fade, chartA, uChart);
     vColor = mix(terrainCol, chartCol, uChart);
     // 차트 점은 가장자리를 덜 흐려 또렷한 원으로(2D 대체 그림과 같게)
     vEdge = mix(0.15, 0.38, uChart);
@@ -123,6 +127,10 @@ export const fragmentShader = /* glsl */ `
     float glow = exp(-d * d * 28.0) * 0.55;
     float air = max(core, glow);
     float disc = smoothstep(0.5, vEdge, d); // 이름을 dot으로 하면 GLSL 내장 함수와 겹친다
-    gl_FragColor = vec4(vColor, vAlpha * mix(disc, air, vAir));
+    // 미리 곱한 알파(TerrainPoints의 섞기 ONE, ONE_MINUS_SRC_ALPHA와 짝): 알파 채널에 (1 − vAir)를 곱해
+    // 지형·지도·차트 점(vAir 0)은 보통 섞기 — 겹쳐도 하얗게 타지 않는다 —, 공항 불빛(vAir 1)은 빛 더하기가 된다.
+    // 재질 하나로 두 방식을 점마다 나누므로 공항 → 지형으로 넘어가는 동안 섞기 방식이 튀지 않는다
+    float a = vAlpha * mix(disc, air, vAir);
+    gl_FragColor = vec4(vColor * a, a * (1.0 - vAir));
   }
 `;

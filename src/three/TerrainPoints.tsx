@@ -22,6 +22,9 @@ type Props = {
 };
 
 const DAMP = 2.2; // 클수록 빨리 따라간다. 스펙의 expo.out 느낌(처음 빠르고 끝이 느림)에 가깝다
+// 장면 상태의 카메라~목표점 거리. 카메라(CameraRig)도 같은 목표로 부드럽게 가므로 이 값도 부드럽게 따라가게 한다
+const focusDist = (t: SceneState) =>
+  Math.hypot(t.camera[0] - t.target[0], t.camera[1] - t.target[1], t.camera[2] - t.target[2]);
 
 export function TerrainPoints({ cloud, target, slots, instant, showNoise, airport }: Props) {
   const material = useRef<THREE.ShaderMaterial>(null);
@@ -84,6 +87,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     uLightT: { value: instant ? 99 : 0 },
     uWave: { value: -1e4 },
     uWarm: { value: new THREE.Color('#FFE2B8') },
+    // 거리 흐림의 기준(카메라~장면 목표점 거리). 첫 프레임부터 맞는 값이어야 점이 번쩍이지 않는다
+    uFocusDist: { value: target.current ? focusDist(target.current) : 20 },
   }), [instant]);
 
   useFrame((state, delta) => {
@@ -116,6 +121,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     step('uChart', t.chart);
     step('uSlot', t.slot);
     step('uAirport', t.airport);
+    step('uFocusDist', focusDist(t));
     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
     u.uChartShift.value = t.shift;
     u.uFocus.value = slots.current?.focus ?? -1; // 강조는 부드럽게 옮기지 않는다 — 2D처럼 바로 바뀐다
@@ -139,7 +145,12 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
         uniforms={uniforms}
         transparent
         depthWrite={false}
-        blending={THREE.AdditiveBlending}
+        // 미리 곱한 알파 섞기 — 조각 셰이더가 점마다 보통 섞기/빛 더하기를 정한다(shaders.ts 끝 주석)
+        blending={THREE.CustomBlending}
+        blendSrc={THREE.OneFactor}
+        blendDst={THREE.OneMinusSrcAlphaFactor}
+        blendSrcAlpha={THREE.OneFactor}
+        blendDstAlpha={THREE.OneMinusSrcAlphaFactor}
       />
     </points>
   );
