@@ -126,7 +126,10 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     ['.hero-keywords', 0.72],
     ['.hero-sub', 0.72],
     ['#charts-h', 1],
-    ['[data-scene="chartCurve"] .chart-copy > p:not(.sr-only):not(.eyebrow)', 1],
+    // .is-on을 셀렉터에 넣으면 안 된다 — scrollIntoView가 그 클래스를 붙이는 스크롤 자체이므로, 셀렉터가
+    // 미리 그 클래스를 요구하면 되돌아오지 않는다(닭이 먼저냐 요소가 먼저냐). 차트 2는 문단이 하나뿐이라
+    // 화면 안에 들어오면 항상 is-on이 된다(motion/caption.ts activeParagraph, count<=1)
+    ['[data-scene="chartCurve"] .chart-para', 1],
     ['.collect-steps li:last-child', 1],
     // 판 없는 보드: 머리줄과 열 이름(--mute·#8a96b3 글자라 0.72로 엄격하게)이 흐려진 지도 위에서도 읽혀야 한다
     ['.data-board .board-head', 0.72],

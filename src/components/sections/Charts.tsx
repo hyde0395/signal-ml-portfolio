@@ -1,6 +1,8 @@
 // ④ 차트(설계 2026-09-25 §3.4, 2026-09-27 개정). 차트 1·2·4는 그림 판(ChartStage) 블록이다 — 판이 화면에 고정되고
-// 배경 점이 점 달력·구간별 벌떼·불확실성 구름으로 모인다(3D가 꺼지면 같은 그림을 2D로). 차트 3(R² 거품)과 검증 표·
-// 한계는 지금 장면을 쓰는 글 카드(.chapter)로 둔다(차트 3의 산점도는 별도 계획).
+// 배경 점이 점 달력·구간별 벌떼·불확실성 구름으로 모인다(3D가 꺼지면 같은 그림을 2D로). 글은 판 아래 자막 띠에서
+// 문단을 차례로 보여 준다(설계 2026-09-28 §2). 차트 3(R² 거품)과 검증 표·한계는 지금 장면을 쓰는 글 카드(.chapter)로
+// 둔다(차트 3의 산점도는 별도 계획).
+import type React from 'react';
 import { ChartStage } from '../charts/ChartStage';
 import { ChapterFigure, type FigureKey } from './ChapterFigure';
 import { ValidationTable } from './ValidationTable';
@@ -32,6 +34,12 @@ export function Charts({ locale }: { locale: Locale }) {
   // 점 달력(charts.holidays)과 구름(데모 공휴일 이름)이 쓰는 공휴일 이름을 한 표로
   const holidays = { ...dict.demo.holidays, ...dict.charts.holidays } as Record<string, string>;
   const body = (b: Block) => Array.from({ length: b.paras }, (_, i) => <p key={i}>{t(`charts.${b.id}.body${i + 1}`)}</p>);
+  // 그림 판 블록은 문단마다 칸 하나 — 자막 띠에서 한 칸씩 바꿔 보여 준다(motion/caption.ts)
+  const paraCells = (b: Block) => (
+    <div className="chart-paras">
+      {Array.from({ length: b.paras }, (_, i) => <div key={i} className="chart-para"><p>{t(`charts.${b.id}.body${i + 1}`)}</p></div>)}
+    </div>
+  );
   const link = (b: Block) => (
     <a className="code-link mono" href={codeUrl(b.code)} target="_blank" rel="noopener noreferrer">{t('common.codeLink')} ↗</a>
   );
@@ -42,7 +50,8 @@ export function Charts({ locale }: { locale: Locale }) {
         <h2 id="charts-h" className="display" data-reveal>{t('charts.heading')}</h2>
       </div>
       {BLOCKS.map((b) => b.kind === 'stage' ? (
-        <article key={b.id} data-scene={b.chart} className="chart-block" aria-labelledby={`chart-${b.id}`}>
+        <article key={b.id} data-scene={b.chart} className="chart-block" aria-labelledby={`chart-${b.id}`}
+          style={{ '--paras': b.paras } as React.CSSProperties}>
           <ChartStage
             chartKey={b.chart}
             dataVersion={facts.dataVersion}
@@ -53,7 +62,7 @@ export function Charts({ locale }: { locale: Locale }) {
             <p className="eyebrow" data-flip-on-enter>{b.tag}</p>
             <h3 id={`chart-${b.id}`}>{t(`charts.${b.id}.heading`)}</h3>
             <p className="sr-only">{t(`charts.${b.id}.alt`)}</p>
-            {body(b)}
+            {paraCells(b)}
             {link(b)}
           </div>
         </article>

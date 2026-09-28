@@ -69,6 +69,45 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       return boxes.every((r) => r <= p.x + p.width + 2);
     }, { timeout: 5_000 }).toBe(true);
   });
+
+  // 설계 2026-09-28 §2: 글 상자는 그림 판 아래 띠에 고정되고, 어떤 스크롤 위치에서도 판과 겹치지 않는다
+  for (const [w, h] of [[1440, 900], [390, 844]] as const) {
+    test(`자막 띠 ${w}px: 스크롤 전 구간에서 글 상자가 그림 판 아래, 글 뒤 판 없음`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto('/');
+      for (const key of STAGES) {
+        const block = page.locator(`[data-scene="${key}"]`);
+        await block.evaluate((n) => n.scrollIntoView({ block: 'start' }));
+        const copy = block.locator('.chart-copy');
+        await expect(copy).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        const { top, height } = await block.evaluate((n) => ({ top: n.getBoundingClientRect().top + window.scrollY, height: (n as HTMLElement).offsetHeight }));
+        for (let k = 0; k <= 12; k++) {
+          await page.evaluate((y) => window.scrollTo(0, y), top - h + ((height + h) * k) / 12);
+          await page.waitForTimeout(80);
+          const r = await block.evaluate((n) => {
+            const c = n.querySelector<HTMLElement>('.chart-copy')!, p = n.querySelector('[data-plot]')!.getBoundingClientRect();
+            return { copyTop: c.getBoundingClientRect().top, opacity: Number(getComputedStyle(c).opacity), plotBottom: p.bottom };
+          });
+          if (r.opacity > 0.05) expect(r.copyTop, `${key} 단계 ${k}`).toBeGreaterThanOrEqual(r.plotBottom - 1);
+        }
+      }
+    });
+  }
+
+  test('문단이 여러 개인 블록은 한 번에 하나만, 끝까지 가면 마지막 문단', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    const block = page.locator('[data-scene="chartCloud"]');
+    const paras = block.locator('.chart-para');
+    await expect(paras).toHaveCount(3);
+    const { top, height } = await block.evaluate((n) => ({ top: n.getBoundingClientRect().top + window.scrollY, height: (n as HTMLElement).offsetHeight }));
+    await page.evaluate((y) => window.scrollTo(0, y), top + 10);
+    await expect(block.locator('.chart-para.is-on')).toHaveCount(1);
+    await expect(paras.nth(0)).toHaveClass(/is-on/);
+    await page.evaluate((y) => window.scrollTo(0, y), top + (height - 900) - 10);
+    await expect(paras.nth(2)).toHaveClass(/is-on/);
+    await expect(block.locator('.chart-para.is-on')).toHaveCount(1);
+  });
 });
 
 test('3D가 도중에 꺼지면 이미 불러온 판이 그 자리에서 2D로 그린다', async ({ page }) => {
