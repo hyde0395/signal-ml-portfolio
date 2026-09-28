@@ -174,6 +174,9 @@ html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #demo, #contact) > :
    max-width가 없는 글자(예: .hero-keywords)가 그 넓은 상자를 그대로 채워, 화소 대비 검사(terrain.spec.ts)가
    글자에서 먼 오른쪽 빈 자리의 밝은 점까지 "글자 뒤 배경"으로 재는 문제가 생긴다(Step 7에서 발견) */
 .hero-copy, .project-copy, .charts-head { width: fit-content; max-width: 100%; }
+/* 첫 화면은 큰 이름이 상자 폭을 정해서, 그 아래 짧은 줄(한글 이름·역할·키워드)이 이름 폭만큼 넓게 잡힌다 —
+   줄마다 자기 글자 폭으로 줄여 글자 오른쪽 빈 자리(점이 모이는 쪽)를 글 영역으로 치지 않게 한다 */
+.hero-copy > p { width: fit-content; max-width: 100%; }
 html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 
 @media (max-width: 767px) {
