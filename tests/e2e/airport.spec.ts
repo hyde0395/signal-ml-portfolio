@@ -27,3 +27,32 @@ test('3D가 켜져도 첫 화면 이름 위치가 그대로다(여백은 화면 
   const after = await page.locator('.hero-name').boundingBox();
   expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1);
 });
+
+test.describe('움직임 줄이기(3D 꺼짐)', () => {
+  test.use({ reducedMotion: 'reduce' });
+  test('첫 화면 대체 이미지와 이름이 보인다', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-3d', 'off');
+    await expect(page.locator('.hero .scene-figure img')).toBeVisible();
+    await expect(page.locator('.hero-name')).toBeVisible();
+  });
+});
+
+test('캡처 모드(hero)는 공항 장면을 그린다', async ({ page }) => {
+  await page.goto('/?capture=hero');
+  await page.waitForFunction(() => (window as Window & { __sceneReady?: boolean }).__sceneReady === true, null, { timeout: 30_000 });
+  // 캔버스 윗부분(하늘·지평선)보다 아래(활주로)에 밝은 화소가 더 많다 — 지형(가운데 덩어리)이 아닌 공항 구도
+  // .backdrop canvas로 좁힌다 — 캡처 모드에서도 페이지 아래 섹션의 chart-canvas(SVG 대체 등)가 함께 떠 있다
+  const ratio = await page.locator('.backdrop canvas').evaluate((c: HTMLCanvasElement) => {
+    const g = document.createElement('canvas'); g.width = c.width; g.height = c.height;
+    const x = g.getContext('2d')!; x.drawImage(c, 0, 0);
+    const d = x.getImageData(0, 0, g.width, g.height).data;
+    let top = 0, bottom = 0;
+    for (let y = 0; y < g.height; y++) for (let i = 0; i < g.width; i++) {
+      const k = (y * g.width + i) * 4; if (d[k] + d[k + 1] + d[k + 2] < 300) continue;
+      if (y < g.height * 0.35) top++; else bottom++;
+    }
+    return bottom / Math.max(1, top);
+  });
+  expect(ratio).toBeGreaterThan(3);
+});
