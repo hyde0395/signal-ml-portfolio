@@ -31,6 +31,8 @@ try {
     await page.evaluate(({ sub, role }) => {
       // 본문·헤더·언어 안내를 숨기고 캔버스만 남긴 뒤, 왼쪽 아래에 이름 카드를 얹는다(사이트 글꼴 클래스 재사용)
       for (const sel of ['main', '.site-header', '.lang-hint', '.skip']) document.querySelectorAll(sel).forEach((el) => { el.style.visibility = 'hidden'; });
+      // SCROLL 표시는 main 안에 있지만 visibility 전환(0.5초)이 걸려 있어 곧바로 찍으면 아직 보인다 — 아예 뺀다
+      document.querySelector('.scroll-hint')?.style.setProperty('display', 'none');
       const card = document.createElement('div');
       card.style.cssText = 'position:fixed;left:72px;bottom:64px;z-index:10;padding:28px 32px;border-radius:16px;background:rgba(2,4,10,.82);box-shadow:0 0 64px 32px rgba(2,4,10,.82)';
       const line = (text, cls, css) => { const p = document.createElement('p'); p.className = cls; p.textContent = text; p.style.cssText = css; card.append(p); };
