@@ -6,6 +6,19 @@ import type { ChartEntry, ChartKey } from './types';
 const entries = new Map<ChartKey, ChartEntry>();
 const listeners = new Set<() => void>();
 
+// ③ 와플에서 마우스를 올린(누른) 그룹. 그림 판이 정하고 3D 장면이 읽는다(설계 2026-09-28 §3)
+const focus = new Map<ChartKey, number>();
+
+export function setFocus(key: ChartKey, group: number): void {
+  if ((focus.get(key) ?? -1) === group) return;
+  focus.set(key, group);
+  listeners.forEach((l) => l());
+}
+
+export function getFocus(key: ChartKey): number {
+  return focus.get(key) ?? -1;
+}
+
 export function publishChart(key: ChartKey, entry: ChartEntry): void {
   entries.set(key, entry);
   listeners.forEach((l) => l());
@@ -24,4 +37,5 @@ export function onChartsChange(fn: () => void): () => void {
 export function resetCharts(): void {
   entries.clear();
   listeners.clear();
+  focus.clear();
 }

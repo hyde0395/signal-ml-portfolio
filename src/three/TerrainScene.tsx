@@ -3,7 +3,7 @@
 // 프레임이 떨어지면 단계적으로 낮추다가 대체 화면으로 넘긴다(스펙 §8.3). 캡처 모드도 여기서 처리한다.
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getChart, onChartsChange } from '@/charts/registry';
+import { getChart, getFocus, onChartsChange } from '@/charts/registry';
 import type { ChartEntry, ChartKey } from '@/charts/types';
 import { pickActive, readCandidates } from './activeScene';
 import { CameraRig } from './CameraRig';
@@ -25,7 +25,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   const portrait = useRef(false);
   const target = useRef<SceneState>(sceneFor(capture ?? 'hero', 0, false));
   const parallax = useRef(true);
-  const slots = useRef<ChartSlots>({ pending: null });
+  const slots = useRef<ChartSlots>({ pending: null, focus: -1 });
   // 지금 슬롯에 써 넣은 차트와 그 슬롯. 차트에서 차트로 넘어갈 때만 다른 슬롯에 써서 점이 두 배치 사이를 옮겨 간다
   const shiftKey = useRef<ChartKey | null>(null); // 점 이동량(shift)을 잴 판의 차트 — 차트를 벗어나도 마지막 것을 유지
   const chartState = useRef<{ key: ChartKey | null; entry: ChartEntry | null; slot: 0 | 1 }>({ key: null, entry: null, slot: 0 });
@@ -70,8 +70,8 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         // 같은 차트가 다시 배치되면(창 크기 변경) 지금 슬롯에 바로 쓴다
         const slot: 0 | 1 = cs.key !== null && cs.key !== chartKey ? (cs.slot === 0 ? 1 : 0) : cs.slot;
         const assign = assignPoints(entry.layout.group, entry.layout.n, cloud.date, cloud.kind);
-        const { pos, style } = slotBuffers(entry, assign, cloud.terrain, CHART_DISTANCE, CHART_FOV);
-        slots.current.pending = { slot, pos, style };
+        const { pos, style, waffle } = slotBuffers(entry, assign, cloud.terrain, CHART_DISTANCE, CHART_FOV);
+        slots.current.pending = { slot, pos, style, waffle };
         chartState.current = { key: chartKey, entry, slot };
         document.documentElement.dataset.chart = chartKey;
       }
@@ -89,6 +89,8 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         const top = document.querySelector(`[data-scene="${shiftKey.current}"] .chart-stage`)?.getBoundingClientRect().top;
         if (top !== undefined) shift = chartShiftY(top, window.innerHeight, CHART_DISTANCE, CHART_FOV);
       }
+      // 와플 강조는 ③에 머무는 동안만 — 다른 장면에서는 끈다(마우스가 그룹 위에 남은 채 스크롤해도)
+      slots.current.focus = chartKey === 'features' ? getFocus('features') : -1;
       // 배치가 아직 없으면(데이터를 받는 중) 점을 지형에 둔다 — 빈 화면 대신 멀리 보이는 지형
       target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot, shift };
       parallax.current = active.key === 'hero';

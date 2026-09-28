@@ -1,6 +1,6 @@
 // 그림 판 → 3D 저장소 검사: 올린 배치를 꺼낼 수 있고, 올릴 때마다 구독자에게 알린다.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getChart, onChartsChange, publishChart, resetCharts } from '@/charts/registry';
+import { getChart, getFocus, onChartsChange, publishChart, resetCharts, setFocus } from '@/charts/registry';
 import type { ChartEntry } from '@/charts/types';
 
 const entry = (w: number): ChartEntry => ({
@@ -24,5 +24,23 @@ describe('차트 저장소', () => {
     publishChart('features', entry(3));
     expect(fn).toHaveBeenCalledTimes(2);
     expect(getChart('features')?.rect.width).toBe(3);
+  });
+});
+
+describe('강조 그룹', () => {
+  beforeEach(() => resetCharts());
+  it('기본은 -1, 바꾸면 알림, 같은 값이면 알리지 않는다', () => {
+    const calls: number[] = [];
+    onChartsChange(() => calls.push(getFocus('features')));
+    expect(getFocus('features')).toBe(-1);
+    setFocus('features', 2);
+    setFocus('features', 2);
+    setFocus('features', -1);
+    expect(calls).toEqual([2, -1]);
+  });
+  it('resetCharts가 강조도 비운다', () => {
+    setFocus('features', 4);
+    resetCharts();
+    expect(getFocus('features')).toBe(-1);
   });
 });

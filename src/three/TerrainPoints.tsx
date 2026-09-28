@@ -8,8 +8,8 @@ import type { PointCloud } from './data';
 import type { SceneState } from './scenes';
 import { fragmentShader, vertexShader } from './shaders';
 
-export type ChartSlotWrite = { slot: 0 | 1; pos: Float32Array; style: Float32Array };
-export type ChartSlots = { pending: ChartSlotWrite | null };
+export type ChartSlotWrite = { slot: 0 | 1; pos: Float32Array; style: Float32Array; waffle: Float32Array };
+export type ChartSlots = { pending: ChartSlotWrite | null; focus: number };
 
 type Props = {
   cloud: PointCloud;
@@ -38,6 +38,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     for (const name of ['aChartA', 'aChartB', 'aStyleA', 'aStyleB']) {
       g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(cloud.count * 3), 3).setUsage(THREE.DynamicDrawUsage));
     }
+    // 와플 그룹 번호: 두 슬롯이 같이 쓰는 한 벌(chartTargets.ts slotBuffers)
+    g.setAttribute('aWaffle', new THREE.BufferAttribute(new Float32Array(cloud.count).fill(-1), 1).setUsage(THREE.DynamicDrawUsage));
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 30); // 흩어짐 반경까지 포함 → 잘림 방지
     return g;
   }, [cloud]);
@@ -57,6 +59,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     uChart: { value: 0 },
     uSlot: { value: 0 },
     uChartShift: { value: 0 },
+    uFocus: { value: -1 },
     uDpr: { value: 1 },
     uDot: { value: new THREE.Color('#8FB8FF') },
     uAmber: { value: new THREE.Color('#FFB547') },
@@ -75,6 +78,9 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
       (style.array as Float32Array).set(w.style);
       pos.needsUpdate = true;
       style.needsUpdate = true;
+      const waffle = geometry.getAttribute('aWaffle') as THREE.BufferAttribute;
+      (waffle.array as Float32Array).set(w.waffle);
+      waffle.needsUpdate = true;
       slots.current!.pending = null;
     }
     const u = m.uniforms;
@@ -91,6 +97,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     step('uSlot', t.slot);
     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
     u.uChartShift.value = t.shift;
+    u.uFocus.value = slots.current?.focus ?? -1; // 강조는 부드럽게 옮기지 않는다 — 2D처럼 바로 바뀐다
     // 캡처 모드에서는 uTime을 0으로 고정한다. 매번 같은 시각에 찍어야 대체 이미지가 항상 똑같이 나온다
     u.uTime.value = instant ? 0 : state.clock.elapsedTime;
     u.uSize.value = 8 * state.viewport.dpr;

@@ -12,6 +12,7 @@ export const vertexShader = /* glsl */ `
   attribute vec3 aChartB;
   attribute vec3 aStyleA;    // 차트 배치 A에서의 (알파, 색 번호, 지름 px). 알파 0 = 이 차트에 안 쓰는 점
   attribute vec3 aStyleB;
+  attribute float aWaffle;   // ③ 와플 그룹 번호(강조용), 아니면 -1
   uniform float uAssemble;
   uniform float uMap;
   uniform float uNoise;
@@ -23,6 +24,7 @@ export const vertexShader = /* glsl */ `
   uniform float uChart;      // 0 = 지형·지도, 1 = 차트 배치
   uniform float uSlot;       // 0 = A, 1 = B
   uniform float uChartShift; // 차트 배치의 세계 y 이동(판이 고정되기 전·풀린 뒤 이름표를 따라가게)
+  uniform float uFocus;     // 강조할 와플 그룹, 없으면 -1
   uniform float uDpr;
   uniform vec3 uDot;
   uniform vec3 uAmber;
@@ -57,6 +59,10 @@ export const vertexShader = /* glsl */ `
     vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(aHoliday * (1.0 - uMap), aRoute * uMap));
     float chartA = mix(aStyleA.x, aStyleB.x, uSlot);
     vec3 chartCol = mix(toneColor(aStyleA.y), toneColor(aStyleB.y), uSlot);
+    // 강조 규칙(설계 2026-09-28 §3) — 2D 그리기(charts/draw2d.ts)와 같다
+    if (uFocus > -0.5 && aWaffle > -0.5) {
+      if (abs(aWaffle - uFocus) < 0.5) chartCol = uAmber; else chartA *= 0.25;
+    }
     vAlpha = mix(a * uDim, chartA, uChart);
     vColor = mix(terrainCol, chartCol, uChart);
     // 차트 점은 가장자리를 덜 흐려 또렷한 원으로(2D 대체 그림과 같게)
