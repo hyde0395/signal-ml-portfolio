@@ -8,7 +8,9 @@ export const TONE = { dot: 1, amber: 2, text: 3 } as const;
 
 export type ChartLabel =
   | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end'; cls: 'tick' | 'axis' | 'month' | 'holiday' }
-  | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean };
+  | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean }
+  // ③ 와플 설명 줄의 자리(왼쪽 위 기준). 내용은 그림 판이 강조 그룹에 따라 채운다(설계 2026-09-28 §3)
+  | { type: 'detail'; x: number; y: number };
 
 export type ChartLayout = {
   n: number;
@@ -18,6 +20,7 @@ export type ChartLayout = {
   alpha: Float32Array; // 0..1
   tone: Uint8Array;    // TONE
   group: Int16Array;   // 3D에서 이 점을 어느 지형 출발일(번호)의 점으로 채울지. -1 = 아무 점
+  waffle: Int16Array;  // ③ 와플 그룹 번호(강조용, featureGroups 순서). 와플이 아닌 차트는 -1
   labels: ChartLabel[];
 };
 

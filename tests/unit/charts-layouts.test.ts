@@ -38,17 +38,32 @@ describe('waffleLayout', () => {
       expect(L.tone[i] === TONE.amber).toBe(holidayLit);
     }
   });
-  it('넓은 판은 한 줄(이름표 y가 모두 같다), 좁은 판은 두 줄', () => {
-    expect(new Set(L.labels.map((l) => l.y)).size).toBe(1);
+  it('넓은 판은 한 줄(그룹 이름표 y가 모두 같다), 좁은 판은 두 줄', () => {
+    const ys = (L2: ChartLayout) => new Set(L2.labels.filter((l) => l.type === 'group').map((l) => l.y));
+    expect(ys(L).size).toBe(1);
     const narrow = waffleLayout(groups, { w: 340, h: 380 }, fmt);
-    expect(new Set(narrow.labels.map((l) => l.y)).size).toBe(2);
+    expect(ys(narrow).size).toBe(2);
     inside(narrow);
   });
-  it('이름표는 그룹 여섯 개, 값·이름·개수·피처 목록', () => {
-    expect(L.labels).toHaveLength(6);
+  it('이름표는 그룹 여섯 개 + 설명 줄 하나, 값·이름·개수·피처 목록', () => {
+    expect(L.labels).toHaveLength(7);
     const h = L.labels[2];
     expect(h).toMatchObject({ type: 'group', id: 'holiday', pct: '11.4%', name: 'H', count: '4개', holiday: true });
     inside(L);
+  });
+  it('점마다 와플 그룹 번호(0~5), 그룹 순서대로 100개씩', () => {
+    for (let i = 0; i < L.n; i++) expect(L.waffle[i]).toBe(Math.floor(i / 100));
+  });
+  it('설명 줄은 마지막 이름표이고, 모든 와플·그룹 이름표보다 아래(좁은 판에서도)', () => {
+    for (const L2 of [L, waffleLayout(groups, { w: 340, h: 380 }, fmt)]) {
+      const d = L2.labels[L2.labels.length - 1];
+      expect(d.type).toBe('detail');
+      const maxDot = Math.max(...Array.from(L2.y));
+      const maxGroup = Math.max(...L2.labels.filter((l) => l.type === 'group').map((l) => l.y));
+      expect(d.y).toBeGreaterThan(maxDot);
+      expect(d.y).toBeGreaterThan(maxGroup);
+      expect(d.y).toBeLessThan(1);
+    }
   });
 });
 
@@ -66,6 +81,9 @@ const calS = { weekday: (i: number) => `w${i}`, month: (iso: string) => `m${iso.
 describe('calendarLayout', () => {
   const L = calendarLayout(charts, { w: 1080, h: 414 }, calS);
   const PER = L.n / dates.length;
+  it('와플이 아닌 차트는 와플 그룹 번호가 모두 −1', () => {
+    expect(Array.from(L.waffle).every((v) => v === -1)).toBe(true);
+  });
   it('출발일마다 같은 수의 점, group = 출발일 번호', () => {
     expect(Number.isInteger(PER)).toBe(true);
     for (let i = 0; i < L.n; i++) expect(L.group[i]).toBe(Math.floor(i / PER));

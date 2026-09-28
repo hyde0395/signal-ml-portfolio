@@ -4,7 +4,7 @@ import { getChart, onChartsChange, publishChart, resetCharts } from '@/charts/re
 import type { ChartEntry } from '@/charts/types';
 
 const entry = (w: number): ChartEntry => ({
-  layout: { n: 0, x: new Float32Array(), y: new Float32Array(), size: new Float32Array(), alpha: new Float32Array(), tone: new Uint8Array(), group: new Int16Array(), labels: [] },
+  layout: { n: 0, x: new Float32Array(), y: new Float32Array(), size: new Float32Array(), alpha: new Float32Array(), tone: new Uint8Array(), group: new Int16Array(), waffle: new Int16Array(), labels: [] },
   rect: { left: 0, top: 0, width: w, height: 100, vw: 1000, vh: 800 },
 });
 

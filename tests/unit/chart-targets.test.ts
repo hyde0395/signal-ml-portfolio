@@ -37,7 +37,7 @@ describe('slotBuffers', () => {
   const entry: ChartEntry = {
     layout: {
       n: 1, x: Float32Array.from([0.5]), y: Float32Array.from([0.5]), size: Float32Array.from([4]),
-      alpha: Float32Array.from([0.8]), tone: Uint8Array.from([2]), group: Int16Array.from([-1]), labels: [],
+      alpha: Float32Array.from([0.8]), tone: Uint8Array.from([2]), group: Int16Array.from([-1]), waffle: Int16Array.from([-1]), labels: [],
     },
     rect: { left: 250, top: 200, width: 500, height: 400, vw: 1000, vh: 800 },
   };

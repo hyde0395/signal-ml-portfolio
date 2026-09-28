@@ -96,6 +96,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
                 </div>
               );
             }
+            if (l.type === 'detail') return null; // 설명 줄 내용은 계획 6-1 Task 8에서 채운다
             return <span key={i} className={`chart-label ${l.cls} align-${l.align}`} style={style}>{l.text}</span>;
           })}
         </div>

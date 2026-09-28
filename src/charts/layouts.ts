@@ -14,28 +14,30 @@ const GOLDEN_ANGLE = 2.399963229728653; // 해바라기 배치: 원 안에 점�
 
 // 점을 하나씩 쌓아 두었다가 타입 배열로 바꾼다
 export class Pts {
-  private a = { x: [] as number[], y: [] as number[], size: [] as number[], alpha: [] as number[], tone: [] as number[], group: [] as number[] };
-  add(x: number, y: number, size: number, alpha: number, tone: number, group = -1): void {
-    this.a.x.push(x); this.a.y.push(y); this.a.size.push(size); this.a.alpha.push(alpha); this.a.tone.push(tone); this.a.group.push(group);
+  private a = { x: [] as number[], y: [] as number[], size: [] as number[], alpha: [] as number[], tone: [] as number[], group: [] as number[], waffle: [] as number[] };
+  add(x: number, y: number, size: number, alpha: number, tone: number, group = -1, waffle = -1): void {
+    this.a.x.push(x); this.a.y.push(y); this.a.size.push(size); this.a.alpha.push(alpha); this.a.tone.push(tone); this.a.group.push(group); this.a.waffle.push(waffle);
   }
   done(labels: ChartLabel[]): ChartLayout {
     const a = this.a;
     return {
       n: a.x.length,
       x: Float32Array.from(a.x), y: Float32Array.from(a.y), size: Float32Array.from(a.size), alpha: Float32Array.from(a.alpha),
-      tone: Uint8Array.from(a.tone), group: Int16Array.from(a.group), labels,
+      tone: Uint8Array.from(a.tone), group: Int16Array.from(a.group), waffle: Int16Array.from(a.waffle), labels,
     };
   }
 }
 
 // ③ 점 와플: 그룹마다 10×10 = 점 100개, 중요도(gain %)를 반올림한 수만큼 켠다.
 // 판 폭이 좁으면(휴대폰) 3×2로 두 줄. 이름표는 와플 바로 아래.
-export const WAFFLE = { side: 10, wideMinPx: 560 } as const;
+// 설명 줄(detailPx)은 판 맨 아래에 따로 둔다 — 피처 이름을 그룹마다 펼치면 옆 칸·글과 겹쳤다(설계 2026-09-28 §3)
+export const WAFFLE = { side: 10, wideMinPx: 560, detailPx: 48 } as const;
 
 export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: { pct(v: number): string; count(n: number): string }): ChartLayout {
   const cols = size.w >= WAFFLE.wideMinPx ? groups.length : Math.ceil(groups.length / 2);
   const rows = Math.ceil(groups.length / cols);
-  const colW = size.w / cols, rowH = size.h / rows;
+  const usableH = Math.max(0, size.h - WAFFLE.detailPx);
+  const colW = size.w / cols, rowH = usableH / rows;
   // 와플은 칸 폭의 78%, 줄 높이의 58%를 넘지 않게(아래 42%는 이름표 자리)
   const sq = Math.min(colW * 0.78, rowH * 0.58);
   const cell = sq / WAFFLE.side;
@@ -50,13 +52,15 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
       const on = k < lit;
       const cx = x0 + ((k % WAFFLE.side) + 0.5) * cell;
       const cy = y0 + (Math.floor(k / WAFFLE.side) + 0.5) * cell;
-      p.add(cx / size.w, cy / size.h, Math.max(1.6, cell * 0.72), on ? 0.95 : 0.13, on && holiday ? TONE.amber : TONE.dot);
+      p.add(cx / size.w, cy / size.h, Math.max(1.6, cell * 0.72), on ? 0.95 : 0.13, on && holiday ? TONE.amber : TONE.dot, -1, gi);
     }
     labels.push({
       type: 'group', x: (x0 + sq / 2) / size.w, y: (y0 + sq + 10) / size.h, id: g.id,
       pct: fmt.pct(g.gain), name: g.name, count: fmt.count(g.features.length), features: g.features, holiday,
     });
   });
+  // 설명 줄: 첫 와플의 왼쪽 끝에 맞춰 판 맨 아래 띠의 위쪽에서 시작
+  labels.push({ type: 'detail', x: ((colW - sq) / 2) / size.w, y: (usableH + 8) / size.h });
   return p.done(labels);
 }
 

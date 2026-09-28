@@ -21,7 +21,7 @@ describe('drawLayout', () => {
   it('점마다 원 하나, 판 px 좌표, 반지름 = 지름/2, 색 번호별 색', () => {
     const L: ChartLayout = {
       n: 2, x: Float32Array.from([0.5, 1]), y: Float32Array.from([0, 0.5]), size: Float32Array.from([4, 6]),
-      alpha: Float32Array.from([0.5, 1]), tone: Uint8Array.from([TONE.dot, TONE.amber]), group: Int16Array.from([-1, -1]), labels: [],
+      alpha: Float32Array.from([0.5, 1]), tone: Uint8Array.from([TONE.dot, TONE.amber]), group: Int16Array.from([-1, -1]), waffle: Int16Array.from([-1, -1]), labels: [],
     };
     const { ctx, calls } = fakeCtx();
     drawLayout(ctx, L, 200, 100);
