@@ -172,6 +172,49 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     await expect(paras.nth(2)).toHaveClass(/is-on/);
     await expect(block.locator('.chart-para.is-on')).toHaveCount(1);
   });
+
+  // 설계 2026-09-28 §2 후속 수정: 화면이 낮으면 글 상자가 CSS 고정 위치(61vh/55vh)보다 커서 아래로 넘친다 —
+  // 그러면 motion/caption.ts가 상자를 위로 올려(stickTopFor) 다 붙었을 때(opacity ~1) 마지막 줄과
+  // "코드 보기" 링크까지 화면 안에 들어오는지 확인한다(1440×900·390×844에서는 글이 다 들어가므로 위의
+  // 겹침 검사가 그대로 통과해야 한다 — 이 검사와는 다른 크기에서만 상자가 올라간다)
+  for (const [label, path, w, h] of [
+    ['짧은 화면', '/', 844, 390],
+    ['영어 좁은 화면', '/en/', 375, 667],
+  ] as const) {
+    test(`자막이 붙으면 글 전체와 코드 보기 링크가 화면 안에 들어온다 — ${label}(${w}×${h})`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto(path);
+      for (const key of STAGES) {
+        const block = page.locator(`[data-scene="${key}"]`);
+        const { top, height } = await block.evaluate((n) => ({ top: n.getBoundingClientRect().top + window.scrollY, height: (n as HTMLElement).offsetHeight }));
+        // 한 번에 목표 위치로 건너뛰면(큰 폭의 scrollTo) 헤드리스 브라우저가 이따금 scroll 이벤트를
+        // 아예 안 보낼 때가 있어(자막 스크립트가 갱신될 기회를 못 얻는다) 위의 겹침 검사처럼 잘게 나눠
+        // 스크롤한다(실제 스크롤도 이렇게 여러 단계로 일어난다). scroll 이벤트도 직접 한 번 더 보내
+        // (실제 스크롤은 항상 이 이벤트를 내보낸다) 자막 스크립트가 이번 스크롤 위치로 확실히 다시
+        // 계산하게 한다. 고정 구간의 중간을 지나며 다 붙는(opacity ~1) 순간마다 검사한다
+        const copy = block.locator('.chart-copy');
+        const link = block.locator('a.code-link');
+        let checked = false;
+        for (let k = 0; k <= 12; k++) {
+          await page.evaluate((y) => {
+            window.scrollTo(0, y);
+            window.dispatchEvent(new Event('scroll'));
+          }, top - h + ((height + h) * k) / 12);
+          await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+          await page.waitForTimeout(80);
+          const opacity = await copy.evaluate((c) => Number(getComputedStyle(c).opacity));
+          if (opacity < 0.99) continue; // 다 붙지 않았으면(들고 나는 중) 건너뛴다
+          checked = true;
+          const copyBox = (await copy.boundingBox())!;
+          expect(copyBox.y + copyBox.height, `${key} 단계 ${k} 글 상자 아래`).toBeLessThanOrEqual(h + 1);
+          const linkBox = (await link.boundingBox())!;
+          expect(linkBox.y, `${key} 단계 ${k} 링크 위`).toBeGreaterThanOrEqual(-1);
+          expect(linkBox.y + linkBox.height, `${key} 단계 ${k} 링크 아래`).toBeLessThanOrEqual(h + 1);
+        }
+        expect(checked, `${key}: 고정된 채 다 붙는 구간을 한 번도 못 만났다`).toBe(true);
+      }
+    });
+  }
 });
 
 test('3D가 도중에 꺼지면 이미 불러온 판이 그 자리에서 2D로 그린다', async ({ page }) => {

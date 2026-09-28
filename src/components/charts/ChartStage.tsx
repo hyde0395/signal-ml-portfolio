@@ -4,7 +4,7 @@
 // 판이 화면 가까이 오면 데이터와 배치 코드를 불러와(import()) 배치를 만들고,
 // - 배치와 판의 고정 위치를 저장소(registry)에 올린다 → 3D가 켜져 있으면 배경 점이 그 자리로 모인다,
 // - 3D가 꺼져 있으면(data-3d="off") 같은 배치를 2D 캔버스에 그린다.
-// 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 판 전체가 aria-hidden이고, 같은 내용은 글 카드의 요약 문단이 준다.
+// 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 판 전체가 aria-hidden이고, 같은 내용은 자막 띠(.chart-copy)의 요약 문단이 준다.
 // ③ 와플은 마우스를 올린 그룹을 저장소로 3D에 알리고 2D도 다시 그린다(설계 2026-09-28 §3).
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';

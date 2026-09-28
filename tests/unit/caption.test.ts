@@ -1,7 +1,7 @@
 // 자막 띠 계산 검사: 글 상자가 띠로 들어오며 밝아지고, 고정되면 1, 떠나며 빨리 흐려진다.
 // 문단 번호는 판이 고정된 구간을 문단 수로 나눠 정하고, 끝까지 가면 마지막 문단이다.
 import { describe, expect, it } from 'vitest';
-import { activeParagraph, captionOpacity } from '@/motion/caption';
+import { activeParagraph, captionOpacity, stickTopFor } from '@/motion/caption';
 
 describe('captionOpacity', () => {
   const vh = 1000, stick = 610;
@@ -18,6 +18,21 @@ describe('captionOpacity', () => {
     expect(captionOpacity(610 - 75, vh, stick)).toBeCloseTo(0.5, 5);
     expect(captionOpacity(610 - 150, vh, stick)).toBe(0);
     expect(captionOpacity(-400, vh, stick)).toBe(0);
+  });
+});
+
+// 짧은 화면 보정: 글 상자가 CSS 고정 위치 아래로 넘치면 화면 안에 다 들어오도록 위로 올린다
+describe('stickTopFor', () => {
+  it('화면 안에 다 들어오면 CSS 고정 위치를 그대로 쓴다', () => {
+    expect(stickTopFor(610, 300, 1000)).toBe(610); // 610 + 300 = 910 <= 1000 - 8
+    expect(stickTopFor(610, 382, 1000)).toBe(610); // 딱 맞는 경계(610 + 382 = 992 = 1000 - 8)
+  });
+  it('CSS 고정 위치로는 너무 커서 넘치면 아래 여백 8px만 남기고 올린다', () => {
+    expect(stickTopFor(610, 500, 1000)).toBe(492); // 1000 - 500 - 8
+    expect(stickTopFor(464, 600, 844)).toBe(236); // 844 - 600 - 8
+  });
+  it('글 상자가 화면보다도 크면 위쪽 여백 8px만 남긴다', () => {
+    expect(stickTopFor(200, 1200, 1000)).toBe(8); // 1000 - 1200 - 8 = -208 → 8로 바닥
   });
 });
 

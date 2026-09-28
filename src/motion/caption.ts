@@ -15,6 +15,15 @@ export function captionOpacity(copyTop: number, vh: number, stickTop: number): n
   return clamp01(1 - (stickTop - copyTop) / (vh * LEAVE_FRACTION));
 }
 
+// 짧은 화면(예: 844×390)에서는 글 상자가 CSS 고정 위치(cssTop)보다 커서 화면 아래로 넘칠 수 있다 —
+// 그러면 마지막 줄과 "코드 보기" 링크가 한 번도 화면에 들어오지 못한 채 자막이 흐려진다. 이때는 상자를
+// 위로 올려 전체가 화면 안에 들어오게 한다(판의 아래쪽과 겹칠 수 있지만, 판이 덜 가려지는 것보다 글을
+// 끝까지 읽을 수 있는 쪽이 낫다). 화면보다도 큰 극단적인 경우엔 위쪽 여백 8px만 남긴다
+export function stickTopFor(cssTop: number, copyH: number, vh: number): number {
+  if (copyH <= vh - cssTop - 8) return cssTop;
+  return Math.max(8, vh - copyH - 8);
+}
+
 // 판이 고정된 스크롤 구간(블록 높이 − 화면 높이)을 문단 수로 나눠 지금 문단을 고른다
 export function activeParagraph(blockTop: number, blockHeight: number, vh: number, count: number): number {
   if (count <= 1) return 0;
@@ -38,7 +47,12 @@ export function startCaptions(doc: Document): () => void {
       if (!copy) continue;
       const r = block.getBoundingClientRect();
       if (r.bottom < -vh || r.top > 2 * vh) continue; // 멀리 있는 블록은 건너뛴다
-      const stickTop = parseFloat(getComputedStyle(copy).top) || 0;
+      // 인라인 top을 먼저 지워야 CSS 고정값(cssTop)을 다시 읽을 수 있다(지난 프레임 값이 남아 있으면
+      // getComputedStyle이 그 인라인 값을 돌려준다)
+      copy.style.removeProperty('top');
+      const cssTop = parseFloat(getComputedStyle(copy).top) || 0;
+      const stickTop = stickTopFor(cssTop, copy.offsetHeight, vh);
+      if (stickTop !== cssTop) copy.style.top = `${stickTop}px`;
       copy.style.opacity = String(captionOpacity(copy.getBoundingClientRect().top, vh, stickTop));
       const paras = copy.querySelectorAll<HTMLElement>('.chart-para');
       const on = activeParagraph(r.top, r.height, vh, paras.length);
@@ -55,7 +69,9 @@ export function startCaptions(doc: Document): () => void {
     if (raf) cancelAnimationFrame(raf);
     root.classList.remove('has-captions');
     for (const block of blocks) {
-      block.querySelector<HTMLElement>('.chart-copy')?.style.removeProperty('opacity');
+      const copy = block.querySelector<HTMLElement>('.chart-copy');
+      copy?.style.removeProperty('opacity');
+      copy?.style.removeProperty('top');
       block.querySelectorAll('.chart-para').forEach((p) => p.classList.remove('is-on'));
     }
   };

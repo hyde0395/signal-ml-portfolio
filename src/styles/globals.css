@@ -347,6 +347,8 @@ html:not([data-3d="off"]) .chart-canvas { visibility: hidden; }
 html.has-captions .chart-paras { display: grid; }
 html.has-captions .chart-para { grid-area: 1 / 1; opacity: 0; transition: opacity 0.5s var(--ease); }
 html.has-captions .chart-para.is-on { opacity: 1; }
+/* 숨은 칸은 화면 낭독기를 위해 그대로 두되, 겹쳐 쌓여 있어 누르기·길게 누르기에 걸리지 않게 한다 */
+html.has-captions .chart-para:not(.is-on) { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { html.has-captions .chart-para { transition: none; } }
 @media (max-width: 767px) {
   .chart-plot { top: 9vh; height: 42vh; }
