@@ -37,15 +37,56 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     }
   });
 
-  test('와플 이름표에 마우스를 올리면 피처 이름이 보인다', async ({ page }) => {
+  test('와플 그룹에 마우스를 올리면 설명 줄에 그 그룹, 다른 그룹은 흐려진다', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await center(page, '[data-scene="features"]');
-    const g = page.locator('[data-scene="features"] .chart-group').first();
-    await expect(g).toBeVisible({ timeout: 10_000 });
-    await expect(g.locator('.chart-group-features')).toBeHidden();
-    await g.hover();
-    await expect(g.locator('.chart-group-features')).toBeVisible();
+    const stage = page.locator('[data-scene="features"]');
+    const groups = stage.locator('.chart-group');
+    await expect(groups).toHaveCount(6, { timeout: 10_000 });
+    const detail = stage.locator('.chart-detail');
+    await expect(detail).toBeEmpty();
+    const name = (await groups.nth(2).locator('.chart-group-name').textContent())!;
+    await groups.nth(2).hover();
+    await expect(detail).toContainText(name);
+    await expect(groups.nth(2)).toHaveClass(/is-focus/);
+    await expect(groups.nth(0)).toHaveClass(/is-dim/);
+    await expect(stage.locator('.chart-group-features')).toHaveCount(0); // 그룹마다 펼치던 목록은 없다
+    await page.mouse.move(5, 5);
+    await expect(detail).toBeEmpty();
+    // 설명 줄은 그림 판 안, 와플 이름표보다 아래
+    const d = (await detail.boundingBox())!, g = (await groups.nth(2).boundingBox())!, plot = (await stage.locator('[data-plot]').boundingBox())!;
+    await groups.nth(2).hover();
+    const d2 = (await detail.boundingBox())!;
+    expect(d2.y).toBeGreaterThan(g.y + g.height - 1);
+    expect(d2.y + d2.height).toBeLessThanOrEqual(plot.y + plot.height + 2);
+    expect(d.x).toBeGreaterThanOrEqual(plot.x - 1);
+  });
+
+  test.describe('휴대폰 누르기', () => {
+    test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+    test('누르면 켜지고, 손을 떼도 남고, 다시 누르면 꺼진다', async ({ page }) => {
+      await page.goto('/');
+      await center(page, '[data-scene="features"]');
+      const stage = page.locator('[data-scene="features"]');
+      const groups = stage.locator('.chart-group');
+      // 피처 개수가 가장 많은 그룹(lookup, facts.json 기준 첫 번째 그룹)을 눌러 — 설명 줄 글자가 가장
+      // 길어 여러 줄로 접히는 경우에도 판 안에, 다른 이름표와 겹치지 않는지 함께 확인한다
+      const g = groups.nth(0);
+      await expect(g).toBeVisible({ timeout: 10_000 });
+      const name = (await g.locator('.chart-group-name').textContent())!;
+      await g.tap();
+      const detail = stage.locator('.chart-detail');
+      await expect(detail).toContainText(name);
+      await page.waitForTimeout(300);
+      await expect(detail).toContainText(name);
+      const d = (await detail.boundingBox())!, plot = (await stage.locator('[data-plot]').boundingBox())!;
+      const groupBoxes = await groups.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().bottom));
+      for (const bottom of groupBoxes) expect(d.y).toBeGreaterThanOrEqual(bottom - 1);
+      expect(d.y + d.height).toBeLessThanOrEqual(plot.y + plot.height + 2);
+      await g.tap();
+      await expect(detail).toBeEmpty();
+    });
   });
 
   test('차트 데이터를 못 받으면 안내가 뜨고 글 카드는 그대로다', async ({ page }) => {

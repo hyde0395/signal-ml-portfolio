@@ -30,16 +30,21 @@ export class Pts {
 
 // ③ 점 와플: 그룹마다 10×10 = 점 100개, 중요도(gain %)를 반올림한 수만큼 켠다.
 // 판 폭이 좁으면(휴대폰) 3×2로 두 줄. 이름표는 와플 바로 아래.
-// 설명 줄(detailPx)은 판 맨 아래에 따로 둔다 — 피처 이름을 그룹마다 펼치면 옆 칸·글과 겹쳤다(설계 2026-09-28 §3)
-export const WAFFLE = { side: 10, wideMinPx: 560, detailPx: 48 } as const;
+// 설명 줄(detailPx)은 판 맨 아래에 따로 둔다 — 피처 이름을 그룹마다 펼치면 옆 칸·글과 겹쳤다(설계 2026-09-28 §3).
+// 이름표 칸(labelPx)은 와플 바로 아래 pct·이름·개수 세 줄이 들어갈 고정 높이다 — 줄 높이의 비율(옛 58%)로 정하면
+// 두 줄(휴대폰) 배치에서 칸이 실제 글자 높이보다 좁아져 설명 줄과 겹쳤다(2026-09-28 e2e로 확인). 설명 줄 높이도
+// 좁은 화면에서 피처 이름이 여러 줄로 접혀 더 필요해 폭에 따라 다르게 잡는다
+export const WAFFLE = { side: 10, wideMinPx: 560, labelPx: 64, detailPx: { wide: 64, narrow: 120 } } as const;
 
 export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: { pct(v: number): string; count(n: number): string }): ChartLayout {
-  const cols = size.w >= WAFFLE.wideMinPx ? groups.length : Math.ceil(groups.length / 2);
+  const wide = size.w >= WAFFLE.wideMinPx;
+  const cols = wide ? groups.length : Math.ceil(groups.length / 2);
   const rows = Math.ceil(groups.length / cols);
-  const usableH = Math.max(0, size.h - WAFFLE.detailPx);
+  const detailPx = wide ? WAFFLE.detailPx.wide : WAFFLE.detailPx.narrow;
+  const usableH = Math.max(0, size.h - detailPx);
   const colW = size.w / cols, rowH = usableH / rows;
-  // 와플은 칸 폭의 78%, 줄 높이의 58%를 넘지 않게(아래 42%는 이름표 자리)
-  const sq = Math.min(colW * 0.78, rowH * 0.58);
+  // 와플은 칸 폭의 78%, 줄 높이에서 이름표 칸(labelPx)을 뺀 나머지를 넘지 않게
+  const sq = Math.max(0, Math.min(colW * 0.78, rowH - WAFFLE.labelPx));
   const cell = sq / WAFFLE.side;
   const p = new Pts();
   const labels: ChartLabel[] = [];
@@ -54,8 +59,11 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
       const cy = y0 + (Math.floor(k / WAFFLE.side) + 0.5) * cell;
       p.add(cx / size.w, cy / size.h, Math.max(1.6, cell * 0.72), on ? 0.95 : 0.13, on && holiday ? TONE.amber : TONE.dot, -1, gi);
     }
+    // 와플과 이름표 사이 틈은 2px만 둔다 — 좁은 판(휴대폰, pct 폰트가 커지는 미디어 쿼리)에서 실제 이름표
+    // 세 줄 높이가 약 67.5px로 labelPx(64)보다 살짝 크다(2026-09-28 e2e 실측). 틈을 8px로 두면 그만큼
+    // 설명 줄과 겹쳐, labelPx는 그대로 두고 이 틈을 줄여 마지막 줄 이름표가 설명 줄 앞에서 끝나게 한다
     labels.push({
-      type: 'group', x: (x0 + sq / 2) / size.w, y: (y0 + sq + 10) / size.h, id: g.id,
+      type: 'group', x: (x0 + sq / 2) / size.w, y: (y0 + sq + 2) / size.h, id: g.id,
       pct: fmt.pct(g.gain), name: g.name, count: fmt.count(g.features.length), features: g.features, holiday,
     });
   });

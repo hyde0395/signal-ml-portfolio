@@ -1,7 +1,7 @@
 // 배치 함수 검사: 점 개수, 판 안(0..1), 강조 색, 크기 순서, 이름표. 좁은 휴대폰 판에서도 깨지지 않는지.
 import { describe, expect, it } from 'vitest';
 import type { ChartsData, CloudData } from '@/charts/data';
-import { calendarLayout, cloudLayout, cloudScale, invNorm, swarmLayout, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
+import { calendarLayout, cloudLayout, cloudScale, invNorm, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
 import { TONE, type ChartLayout } from '@/charts/types';
 
 const inside = (L: ChartLayout) => {
@@ -63,6 +63,20 @@ describe('waffleLayout', () => {
       expect(d.y).toBeGreaterThan(maxDot);
       expect(d.y).toBeGreaterThan(maxGroup);
       expect(d.y).toBeLessThan(1);
+    }
+  });
+  // 2026-09-28 e2e에서 발견: 옛 58% 비율은 두 줄(휴대폰) 배치에서 이름표 칸이 실제 글자 높이보다 좁아
+  // 설명 줄과 겹쳤다. labelPx·detailPx를 고정 값으로 바꾼 뒤 이 두 조건으로 겹침이 없는지 지킨다
+  it('이름표 칸은 설명 줄 위에서 끝나고, 설명 줄은 판 안에 들어간다(넓은 판·좁은 판 모두)', () => {
+    for (const [size, boxH] of [[{ w: 1080, h: 414 }, 56], [{ w: 340, h: 380 }, 112]] as const) {
+      const L2 = waffleLayout(groups, size, fmt);
+      const detail = L2.labels[L2.labels.length - 1];
+      expect(detail.type).toBe('detail');
+      for (const l of L2.labels) {
+        if (l.type !== 'group') continue;
+        expect(l.y * size.h + WAFFLE.labelPx, `그룹 ${l.id}`).toBeLessThanOrEqual(detail.y * size.h);
+      }
+      expect(detail.y * size.h + boxH).toBeLessThanOrEqual(size.h + 1);
     }
   });
 });

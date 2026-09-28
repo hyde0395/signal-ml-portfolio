@@ -325,9 +325,15 @@ html:not([data-3d="off"]) .chart-canvas { visibility: hidden; }
 .chart-group.is-holiday .chart-group-pct { color: var(--amb); }
 .chart-group-name { font-weight: 600; font-size: 0.85rem; }
 .chart-group-count { font-size: 0.75rem; color: var(--mute); }
-/* 피처 이름은 마우스를 올리면(휴대폰은 누르면 :hover가 걸린다) 보인다(설계 §3.3) */
-.chart-group-features { display: none; font: 0.7rem var(--font-mono); color: var(--mute); }
-.chart-group:hover .chart-group-features { display: block; }
+/* ③ 강조(설계 2026-09-28 §3): 올린 그룹만 호박색, 나머지는 흐리게. 피처 이름은 아래 설명 줄 한 곳에만 */
+.chart-group { transition: opacity 0.3s var(--ease); }
+.chart-group.is-dim { opacity: 0.35; }
+.chart-group.is-focus .chart-group-pct, .chart-group.is-focus .chart-group-name { color: var(--amb); }
+.chart-detail { position: absolute; right: 0; display: grid; gap: 4px; margin: 0; padding-top: 8px;
+  border-top: 1px solid rgba(255, 181, 71, 0.4); font: 0.8rem var(--font-mono); color: var(--mute); }
+.chart-detail:empty { border-top-color: transparent; }
+.chart-detail b { color: var(--amb); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .chart-group { transition: none; } }
 .chart-error { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mute); }
 /* 자막 띠(설계 2026-09-28 §2): 글 상자는 그림 판 아래(판 바닥 + 4vh)에 고정되고 판과 겹치지 않는다. 글 뒤 판은 없다 —
    이 띠에는 점이 오지 않는다. top 값은 motion/caption.ts가 getComputedStyle로 읽어 쓴다(숫자를 한 곳에만) */

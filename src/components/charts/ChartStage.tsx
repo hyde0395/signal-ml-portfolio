@@ -5,10 +5,12 @@
 // - 배치와 판의 고정 위치를 저장소(registry)에 올린다 → 3D가 켜져 있으면 배경 점이 그 자리로 모인다,
 // - 3D가 꺼져 있으면(data-3d="off") 같은 배치를 2D 캔버스에 그린다.
 // 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 판 전체가 aria-hidden이고, 같은 내용은 글 카드의 요약 문단이 준다.
+// ③ 와플은 마우스를 올린 그룹을 저장소로 3D에 알리고 2D도 다시 그린다(설계 2026-09-28 §3).
+import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { ChartStrings } from '@/charts/build';
-import { publishChart } from '@/charts/registry';
-import type { ChartKey, ChartLabel } from '@/charts/types';
+import { publishChart, setFocus as publishFocus } from '@/charts/registry';
+import type { ChartKey, ChartLabel, ChartLayout } from '@/charts/types';
 
 type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string };
 
@@ -21,6 +23,12 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
   const canvas = useRef<HTMLCanvasElement>(null);
   const [labels, setLabels] = useState<ChartLabel[]>([]);
   const [failed, setFailed] = useState(false);
+  // ③ 와플 강조(설계 2026-09-28 §3): 마우스를 올린(휴대폰은 누른) 그룹 번호, 없으면 -1
+  const [focus, setFocusState] = useState(-1);
+  const lastLayout = useRef<ChartLayout | null>(null);
+  const paint = useRef<(f: number) => void>(() => {});
+  const lastPointer = useRef('mouse');
+  const focusRef = useRef(-1);
 
   useEffect(() => {
     const st = stage.current, pl = plot.current, cv = canvas.current;
@@ -45,14 +53,21 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
             rect: { left: r.left, top: r.top - s.top, width: r.width, height: r.height, vw: document.documentElement.clientWidth, vh: window.innerHeight },
           });
           setLabels(layout.labels);
-          if (document.documentElement.getAttribute('data-3d') !== 'off') return;
+          lastLayout.current = layout;
+          paint.current(focusRef.current);
+        };
+        // 2D 그리기만 따로 둔다 — 강조가 바뀔 때 배치를 다시 만들거나 3D에 다시 올리지 않고 2D만 다시 그린다
+        paint.current = (f: number) => {
+          const layout = lastLayout.current;
+          if (!layout || document.documentElement.getAttribute('data-3d') !== 'off') return;
+          const r = pl.getBoundingClientRect();
           const dpr = Math.min(window.devicePixelRatio || 1, 2);
           cv.width = Math.round(r.width * dpr);
           cv.height = Math.round(r.height * dpr);
           const ctx = cv.getContext('2d');
           if (!ctx) return;
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          mod.drawLayout(ctx, layout, r.width, r.height);
+          mod.drawLayout(ctx, layout, r.width, r.height, f);
         };
         redraw();
       } catch (e) {
@@ -79,26 +94,50 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
     };
   }, [chartKey, dataVersion, strings]);
 
+  useEffect(() => {
+    focusRef.current = focus;
+    if (chartKey === 'features') publishFocus('features', focus);
+    paint.current(focus);
+  }, [focus, chartKey]);
+
+  // 마우스·펜은 올리고 내리기, 손가락은 누를 때마다 켜고 끄기(손가락은 떼는 순간 pointerleave가 와서 바로 꺼지므로 무시한다)
+  const groupHandlers = (gi: number) => ({
+    onPointerEnter: (e: React.PointerEvent) => { lastPointer.current = e.pointerType; if (e.pointerType !== 'touch') setFocusState(gi); },
+    onPointerLeave: (e: React.PointerEvent) => { if (e.pointerType !== 'touch') setFocusState(-1); },
+    onClick: () => { if (lastPointer.current === 'touch') setFocusState((f) => (f === gi ? -1 : gi)); },
+  });
+
   return (
     <div ref={stage} className="chart-stage" aria-hidden="true">
       <div ref={plot} className="chart-plot" data-plot>
         <canvas ref={canvas} className="chart-canvas" />
         <div className="chart-labels">
-          {labels.map((l, i) => {
-            const style = { left: `${l.x * 100}%`, top: `${l.y * 100}%` };
-            if (l.type === 'group') {
-              return (
-                <div key={l.id} className={`chart-group${l.holiday ? ' is-holiday' : ''}`} style={style}>
-                  <span className="chart-group-pct">{l.pct}</span>
-                  <span className="chart-group-name">{l.name}</span>
-                  <span className="chart-group-count">{l.count}</span>
-                  <span className="chart-group-features">{l.features.join(' · ')}</span>
-                </div>
-              );
-            }
-            if (l.type === 'detail') return null; // 설명 줄 내용은 계획 6-1 Task 8에서 채운다
-            return <span key={i} className={`chart-label ${l.cls} align-${l.align}`} style={style}>{l.text}</span>;
-          })}
+          {(() => {
+            const groups = labels.filter((l): l is Extract<ChartLabel, { type: 'group' }> => l.type === 'group');
+            return labels.map((l, i) => {
+              const style = { left: `${l.x * 100}%`, top: `${l.y * 100}%` };
+              if (l.type === 'group') {
+                const gi = groups.indexOf(l);
+                const cls = `chart-group${l.holiday ? ' is-holiday' : ''}${focus === gi ? ' is-focus' : focus >= 0 ? ' is-dim' : ''}`;
+                return (
+                  <div key={l.id} className={cls} style={style} {...groupHandlers(gi)}>
+                    <span className="chart-group-pct">{l.pct}</span>
+                    <span className="chart-group-name">{l.name}</span>
+                    <span className="chart-group-count">{l.count}</span>
+                  </div>
+                );
+              }
+              if (l.type === 'detail') {
+                const g = focus >= 0 ? groups[focus] : undefined;
+                return (
+                  <p key="detail" className="chart-detail" style={style}>
+                    {g && <><b>{g.name} · {g.pct} · {g.count}</b><span>{g.features.join(' · ')}</span></>}
+                  </p>
+                );
+              }
+              return <span key={i} className={`chart-label ${l.cls} align-${l.align}`} style={style}>{l.text}</span>;
+            });
+          })()}
         </div>
         {failed && <p className="chart-error">{errorText}</p>}
       </div>
