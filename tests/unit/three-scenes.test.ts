@@ -96,4 +96,8 @@ describe('밤의 공항 첫 화면(설계 2026-09-28 §4.2)', () => {
   it('첫 화면 마우스 시차는 공항 크기에 맞게 작다', () => {
     expect(SCENES.hero.sway).toBeLessThanOrEqual(0.1);
   });
+  it('세로 화면은 목표점을 오른쪽으로 밀어 활주로 소실점을 화면 안에 둔다(Task 9 스크린샷으로 맞춤)', () => {
+    const landscape = sceneFor('hero', 0, false), portrait = sceneFor('hero', 0, true);
+    expect(portrait.target[0]).toBeGreaterThan(landscape.target[0]);
+  });
 });

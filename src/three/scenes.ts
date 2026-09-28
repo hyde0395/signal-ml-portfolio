@@ -34,6 +34,10 @@ export const AIRPORT_CAM = {
   b: { camera: [-1.2, 0.12, 1.6] as SceneState['camera'], target: [0.777, -0.85, -8.154] as SceneState['target'] },
 };
 
+// 세로 화면 전용(Task 9 스크린샷으로 맞춘 값): 가로 시야가 좁아 활주로 소실점이 화면 오른쪽 밖으로 나간다.
+// 목표점 x를 오른쪽으로 밀어 카메라가 같은 자리에서 소실점 쪽으로 살짝 돌아보게 한다(이름 쪽 불빛은 그대로 낮게 유지)
+const PORTRAIT_HERO_TARGET_DX = 3.2;
+
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 밤의 공항. 진행도(내려앉기)는 sceneFor가 A→B로 보간(설계 2026-09-28 §4.2)
   hero: { ...base, camera: AIRPORT_CAM.a.camera, target: AIRPORT_CAM.a.target, airport: 1, sway: 0.06, noise: 0 },
@@ -92,8 +96,11 @@ export function sceneFor(key: SceneKey, progress: number, portrait: boolean): Sc
     const e = smooth(p);
     const lerp3 = (u: number[], v: number[]) => u.map((x, i) => x + (v[i] - x) * e) as [number, number, number];
     let camera = lerp3(AIRPORT_CAM.a.camera, AIRPORT_CAM.b.camera);
-    const target = lerp3(AIRPORT_CAM.a.target, AIRPORT_CAM.b.target);
-    if (portrait) camera = camera.map((v, i) => target[i] + (v - target[i]) * 1.25) as [number, number, number];
+    let target = lerp3(AIRPORT_CAM.a.target, AIRPORT_CAM.b.target);
+    if (portrait) {
+      target = target.map((v, i) => (i === 0 ? v + PORTRAIT_HERO_TARGET_DX : v)) as [number, number, number];
+      camera = camera.map((v, i) => target[i] + (v - target[i]) * 1.25) as [number, number, number];
+    }
     return { ...s, camera, target, drop: 0 };
   }
   const drop = key === 'bubble' ? smooth(clamp01((p - 0.2) / 0.6)) : 0; // 블록 20~80% 구간에서 떨어진다
