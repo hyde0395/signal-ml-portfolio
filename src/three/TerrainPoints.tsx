@@ -4,6 +4,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import type { AirportBuffers } from './airportAssign';
 import type { PointCloud } from './data';
 import type { SceneState } from './scenes';
 import { fragmentShader, vertexShader } from './shaders';
@@ -17,11 +18,12 @@ type Props = {
   slots: React.RefObject<ChartSlots>;
   instant: boolean;
   showNoise: boolean;
+  airport: AirportBuffers | null;
 };
 
 const DAMP = 2.2; // 클수록 빨리 따라간다. 스펙의 expo.out 느낌(처음 빠르고 끝이 느림)에 가깝다
 
-export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Props) {
+export function TerrainPoints({ cloud, target, slots, instant, showNoise, airport }: Props) {
   const material = useRef<THREE.ShaderMaterial>(null);
 
   const geometry = useMemo(() => {
@@ -40,9 +42,22 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     }
     // 와플 그룹 번호: 두 슬롯이 같이 쓰는 한 벌(chartTargets.ts slotBuffers)
     g.setAttribute('aWaffle', new THREE.BufferAttribute(new Float32Array(cloud.count).fill(-1), 1).setUsage(THREE.DynamicDrawUsage));
+    // 공항 불빛(설계 2026-09-28 §4.5): 배정이 없으면(캡처 등) 모두 0 → 공항 장면에서 점이 안 보인다
+    const air = airport ?? { pos: new Float32Array(cloud.count * 3), style: new Float32Array(cloud.count * 4), runS: new Float32Array(cloud.count).fill(-1) };
+    // aAirport는 (xyz=자리, w=runS) vec4 하나로 합친다 — float 속성을 따로 두면 정점 속성이
+    // WebGL 공통 한계(16개, position·normal·uv 포함)를 넘어 셰이더 링크가 실패한다
+    const airportVec4 = new Float32Array(cloud.count * 4);
+    for (let i = 0; i < cloud.count; i++) {
+      airportVec4[i * 4] = air.pos[i * 3];
+      airportVec4[i * 4 + 1] = air.pos[i * 3 + 1];
+      airportVec4[i * 4 + 2] = air.pos[i * 3 + 2];
+      airportVec4[i * 4 + 3] = air.runS[i];
+    }
+    g.setAttribute('aAirport', new THREE.BufferAttribute(airportVec4, 4));
+    g.setAttribute('aAirStyle', new THREE.BufferAttribute(air.style, 4));
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 30); // 흩어짐 반경까지 포함 → 잘림 방지
     return g;
-  }, [cloud]);
+  }, [cloud, airport]);
 
   // geometry가 바뀌거나(cloud 교체) 컴포넌트가 사라질 때 GPU 버퍼를 반환한다(메모리 누수 방지)
   useEffect(() => () => geometry.dispose(), [geometry]);
@@ -64,6 +79,11 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     uDot: { value: new THREE.Color('#8FB8FF') },
     uAmber: { value: new THREE.Color('#FFB547') },
     uText: { value: new THREE.Color('#EEF3FF') },
+    // 초기값이 목표와 같아야 첫 프레임에 지형이 번쩍 보이지 않는다(공항 장면으로 시작하면 1)
+    uAirport: { value: target.current?.airport ?? 0 },
+    uLightT: { value: instant ? 99 : 0 },
+    uWave: { value: -1e4 },
+    uWarm: { value: new THREE.Color('#FFE2B8') },
   }), [instant]);
 
   useFrame((state, delta) => {
@@ -95,6 +115,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     step('uDim', t.dim);
     step('uChart', t.chart);
     step('uSlot', t.slot);
+    step('uAirport', t.airport);
     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
     u.uChartShift.value = t.shift;
     u.uFocus.value = slots.current?.focus ?? -1; // 강조는 부드럽게 옮기지 않는다 — 2D처럼 바로 바뀐다
@@ -102,6 +123,11 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise }: Prop
     u.uTime.value = instant ? 0 : state.clock.elapsedTime;
     u.uSize.value = 8 * state.viewport.dpr;
     u.uDpr.value = state.viewport.dpr;
+    // 불 켜짐은 3D가 뜬 순간부터 센다(로딩 화면은 그 전에 끝난다). 캡처 모드는 다 켜진 상태로 고정
+    u.uLightT.value = instant ? 99 : state.clock.elapsedTime;
+    // 신호 물결: 3초 뒤부터 초당 700m로 활주로를 따라 달리고 5,800m마다 되풀이(시안과 같은 속도)
+    const wt = state.clock.elapsedTime - 3;
+    u.uWave.value = instant || wt < 0 ? -1e4 : (wt * 700) % 5800;
   });
 
   return (

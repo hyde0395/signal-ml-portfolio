@@ -24,7 +24,7 @@ export function CameraRig({ target, instant, parallax }: Props) {
   useFrame((_, delta) => {
     const t = target.current;
     if (!t) return;
-    const sway = parallax.current ? 1.2 : 0;
+    const sway = parallax.current ? t.sway : 0;
     const goal = new THREE.Vector3(t.camera[0] + mouse.current.x * sway, t.camera[1] - mouse.current.y * sway, t.camera[2]);
     const goalLook = new THREE.Vector3(...t.target);
     if (instant) {

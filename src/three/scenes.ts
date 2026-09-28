@@ -15,6 +15,8 @@ export type SceneState = {
   slot: number;     // 차트 배치 두 벌(A=0, B=1) 중 보일 쪽. 장면 표에서는 0이고 TerrainScene이 정한다
   dim: number;      // 모든 지형·지도 점의 알파 배율
   shift: number;    // 차트 배치 전체의 세계 y 이동량. 장면 표에서는 0이고 TerrainScene이 판 위치로 정한다(chartShiftY)
+  airport: number;  // 1 = 밤의 공항(첫 화면), 0 = 그 밖
+  sway: number;     // 첫 화면 마우스 시차 크기(월드 단위)
 };
 
 // 차트 장면 카메라: 원점을 정면(z축)에서 본다. 그림 판의 화면 px ↔ z=0 평면 좌표가 이 두 값으로 정해지므로
@@ -23,14 +25,14 @@ export const CHART_DISTANCE = 24;
 export const CHART_FOV = 40;
 const CHART = { camera: [0, 0, CHART_DISTANCE] as SceneState['camera'], target: [0, 0, 0] as SceneState['target'], chart: 1, noise: 0 };
 
-const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0 };
+const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0 };
 
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 비스듬히 내려다본 전경. 처음엔 assemble이 0에서 시작해 신호가 떠오른다(TerrainPoints 초기값).
   // 글 쪽 장면(설계 2026-09-28 §2.1)은 카메라·목표점을 함께 x −5로 옮겨 점을 오른쪽에 둔다 — 글 뒤 판을 없앴다
   // 대비 화소 검사 실패(Step 7)로 hero만 x −6.5까지 더 옮겼다 — 첫 화면은 대체 이미지 위 비네트도 같이 받는
   // 유일한 장면이라 다른 글 쪽 장면보다 점이 더 멀리 있어야 글자가 배경 점과 안 겹친다
-  hero: { ...base, camera: [-0.5, 9, 20], target: [-6.5, 0.5, 0] },
+  hero: { ...base, camera: [-0.5, 9, 20], target: [-6.5, 0.5, 0], sway: 1.2 }, // sway는 임시값(Task 5에서 공항 값으로 바뀐다)
   about: { ...base, camera: [-19, 7, 16], target: [-5, 0.5, 0], noise: 0.6 },
   // ② 화면 1: 위에서 내려다본 한·일 지도와 노선 궤적. 데스크톱은 왼쪽에 글 카드가 얹히므로
   // 카메라·목표점을 함께 x=-4.5로 옮겨(같은 방향을 보되 옆으로 이동) 지도 전체가 카드 오른쪽에 오게 한다

@@ -15,6 +15,10 @@ export const vertexShader = /* glsl */ `
   attribute vec3 aStyleA;    // 차트 배치 A에서의 (알파, 색 번호, 지름 px). 알파 0 = 이 차트에 안 쓰는 점
   attribute vec3 aStyleB;
   attribute float aWaffle;   // ③ 와플 그룹 번호(강조용), 아니면 -1
+  // xyz = 공항 불빛 자리, w = 활주로 위 거리(m, 신호 물결. 아니면 -1) — 지형용 float 속성 하나(aRunS)를 따로
+  // 두면 정점 속성이 16개(WebGL 공통 한계, position·normal·uv 3개 포함)를 넘어 셰이더 링크가 실패한다
+  attribute vec4 aAirport;
+  attribute vec4 aAirStyle;  // (공항 불빛이면 1, 색 번호, 크기 배율, 켜지는 순서)
   uniform float uAssemble;
   uniform float uMap;
   uniform float uNoise;
@@ -31,12 +35,19 @@ export const vertexShader = /* glsl */ `
   uniform vec3 uDot;
   uniform vec3 uAmber;
   uniform vec3 uText;
+  uniform float uAirport;    // 1 = 공항 장면, 0 = 지형·지도·차트
+  uniform float uLightT;     // 불이 켜지기 시작한 뒤 흐른 초(앞에서 뒤로 차례로 켜짐)
+  uniform float uWave;       // 신호 물결의 지금 위치(활주로 거리 m)
+  uniform vec3 uWarm;        // 따뜻한 흰색(공항 전용)
   varying float vAlpha;
   varying vec3 vColor;
   varying float vEdge;
+  varying float vAir;        // 이 점이 지금 공항 불빛으로 그려지는 정도(조각 셰이더가 모양을 바꾼다)
 
   // 색 번호: 1 점 파랑, 2 호박, 3 글자색(src/charts/types.ts TONE과 같은 순서)
   vec3 toneColor(float t) { return t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot); }
+  // 공항 색 번호(airport.ts AIR_TONE): 1 파랑, 2 호박, 3 흰색, 4 따뜻한 흰색
+  vec3 airTone(float t) { return t > 3.5 ? uWarm : (t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot)); }
 
   void main() {
     vec3 target = mix(aTerrain, aMap, uMap);
@@ -46,6 +57,9 @@ export const vertexShader = /* glsl */ `
     // 덜 모인 점일수록 천천히 떠다닌다
     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
     if (aKind > 1.5) p.y -= uDrop * uDrop * 14.0; // 제거 레이어(kind 2)만 가속하며 떨어진다
+    // 공항: 불빛으로 배정된 점만 공항 자리로. uAirport가 1→0으로 줄면 자기 지형 자리로 옮겨 간다
+    float isAir = aAirStyle.x;
+    p = mix(p, aAirport.xyz, uAirport * isAir);
     p = mix(p, mix(aChartA, aChartB, uSlot) + vec3(0.0, uChartShift, 0.0), uChart);
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
@@ -54,7 +68,13 @@ export const vertexShader = /* glsl */ `
     // 지형은 거리에 따라 작아지고(20.0: 계획 3에서 점이 1~2px로 너무 작아 키운 값), 차트는 판 px 그대로다
     float terrainPx = uSize * size * (20.0 / -mv.z);
     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;
-    gl_PointSize = mix(terrainPx, chartPx, uChart);
+    // 공항 불빛: 작고 선명한 점 + 옅은 번짐(시안 core = clamp(5.5·size/거리, 0.6, 2.6)px, 번짐 반경 = core × 9).
+    // 스프라이트 지름 = 번짐 지름이고, 조각 셰이더가 가운데 core만 또렷하게 칠한다
+    float corePx = clamp(5.5 * aAirStyle.z / max(-mv.z, 0.01), 0.6, 2.6) * uDpr;
+    float airPx = corePx * 18.0;
+    float basePx = mix(terrainPx, chartPx, uChart);
+    vAir = uAirport * isAir;
+    gl_PointSize = mix(basePx, airPx, vAir);
 
     float a = aKind < 0.5 ? 0.95 : (aKind < 1.5 ? 0.18 * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
     // 지도 장면에서는 공휴일 색을 끈다(지도 위 호박색은 노선 전용). 제거 레이어는 글자색
@@ -69,6 +89,14 @@ export const vertexShader = /* glsl */ `
     vColor = mix(terrainCol, chartCol, uChart);
     // 차트 점은 가장자리를 덜 흐려 또렷한 원으로(2D 대체 그림과 같게)
     vEdge = mix(0.15, 0.38, uChart);
+    // 켜지는 순서(로딩 뒤 앞에서 뒤로) + 공기 원근(멀수록 흐림) + 신호 물결
+    float on = clamp((uLightT - aAirStyle.w * 1.2) / 0.18, 0.0, 1.0);
+    float haze = 1.0 / (1.0 + (-mv.z) / 52.0);
+    float wave = aAirport.w < 0.0 ? 0.0 : exp(-pow((aAirport.w - uWave) / 90.0, 2.0));
+    float airA = on * haze * (1.0 + wave * 2.2);
+    vAlpha = mix(vAlpha * (1.0 - uAirport), airA, vAir); // 공항 장면에서 불빛이 아닌 점은 숨긴다
+    vColor = mix(vColor, airTone(aAirStyle.y), vAir);
+    vEdge = mix(vEdge, 0.0, vAir);
   }
 `;
 
@@ -76,10 +104,16 @@ export const fragmentShader = /* glsl */ `
   varying float vAlpha;
   varying vec3 vColor;
   varying float vEdge;
+  varying float vAir;
 
   void main() {
     float d = length(gl_PointCoord - 0.5);
     if (d > 0.5) discard;
-    gl_FragColor = vec4(vColor, vAlpha * smoothstep(0.5, vEdge, d));
+    // 공항 불빛: 가운데 또렷한 핵(반경 = 스프라이트의 1/18) + 가우스 번짐
+    float core = 1.0 - smoothstep(0.022, 0.034, d);
+    float glow = exp(-d * d * 60.0) * 0.55;
+    float air = max(core, glow);
+    float disc = smoothstep(0.5, vEdge, d); // 이름을 dot으로 하면 GLSL 내장 함수와 겹친다
+    gl_FragColor = vec4(vColor, vAlpha * mix(disc, air, vAir));
   }
 `;

@@ -6,6 +6,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getChart, getFocus, onChartsChange } from '@/charts/registry';
 import type { ChartEntry, ChartKey } from '@/charts/types';
 import { pickActive, readCandidates } from './activeScene';
+import { buildAirport } from './airport';
+import { assignAirport } from './airportAssign';
 import { CameraRig } from './CameraRig';
 import { assignPoints, chartShiftY, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
@@ -40,6 +42,13 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
     return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7 });
   }, [data]);
+
+  // 공항 불빛 배정: 세로 화면(대개 휴대폰)은 불빛 절반(설계 §4.5)
+  const airport = useMemo(() => {
+    if (!cloud) return null;
+    const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
+    return assignAirport(buildAirport({ stride: isPortrait ? 2 : 1 }).lights, cloud.kind);
+  }, [cloud]);
 
   // 스크롤·크기 변화 → 활성 장면 → 목표 상태(차트 장면이면 그림 판 배치도). 캡처 모드에서는 고정.
   useEffect(() => {
@@ -132,7 +141,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
           state.gl.domElement.addEventListener('webglcontextlost', () => onFail('context'));
         }}
       >
-        <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} />
+        <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} airport={airport} />
         <CameraRig target={target} instant={!!capture} parallax={parallax} />
         <FrameWatch
           enabled={!capture}
