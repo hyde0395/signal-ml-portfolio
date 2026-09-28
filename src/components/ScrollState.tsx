@@ -1,6 +1,7 @@
 'use client';
 // 스크롤을 듣고 <html data-header data-hint>만 바꾼다. 상단 바·스크롤 표시의 모양은 CSS가 맡는다
-// (설계 2026-09-28 첫 화면 다듬기 §3·§4). 속성이 없으면(JS 전·없음) CSS는 맨 위 상태로 보여 준다.
+// (설계 2026-09-28 첫 화면 다듬기 §3·§4). data-header 속성이 없으면(JS 전·없음) CSS는 맨 위 상태로 보여 준다.
+// data-hint는 반대다 — JS가 맨 위임을 확인해야("on") 보이므로 속성이 없으면 숨는다(globals.css 참고).
 import { useEffect } from 'react';
 import { INITIAL_SCROLL, nextScroll } from '@/lib/scrollState';
 

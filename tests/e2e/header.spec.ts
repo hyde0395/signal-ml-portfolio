@@ -16,6 +16,8 @@ test('맨 위: 판 없이 SIGNAL·언어·이력서가 모두 보인다', async 
   await expect(header(page)).toHaveCSS('position', 'fixed');
   await expect(header(page)).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(header(page).locator('.brand')).toHaveCSS('opacity', '1');
+  // 빈 칸(로고 왼쪽·글자 사이)은 클릭을 그대로 통과시킨다 — 실제 누르는 자리는 .header-actions뿐
+  await expect(header(page)).toHaveCSS('pointer-events', 'none');
 });
 
 test('내리면 숨고, 위로 올리면 오른쪽만 다시 보인다', async ({ page }) => {
@@ -24,7 +26,7 @@ test('내리면 숨고, 위로 올리면 오른쪽만 다시 보인다', async (
   await scrollTo(page, 1400);
   await expect(page.locator('html')).toHaveAttribute('data-header', 'hidden');
   await expect(header(page)).toHaveCSS('opacity', '0');
-  await expect(header(page)).toHaveCSS('pointer-events', 'none');
+  await expect(header(page).locator('.header-actions')).toHaveCSS('pointer-events', 'none');
   await scrollTo(page, 1300);
   await expect(page.locator('html')).toHaveAttribute('data-header', 'peek');
   await expect(header(page)).toHaveCSS('opacity', '1');
@@ -59,8 +61,8 @@ test('첫 화면 가운데 아래 SCROLL 표시: 맨 위에서 보이고 내리�
   await expect(hint).toBeVisible();
 });
 
+// 파일 맨 위(test.use)에서 이미 reducedMotion: 'reduce'를 켠다 — 여기서 다시 켤 필요 없다
 test.describe('움직임 줄이기', () => {
-  test.use({ reducedMotion: 'reduce' });
   test('SCROLL 표시의 선이 멈춰 있다', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.scroll-hint i')).toHaveCSS('animation-name', 'none');

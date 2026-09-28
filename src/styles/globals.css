@@ -55,11 +55,14 @@ html.no-loader .loader { display: none; }
 
 /* 상단 바(설계 2026-09-28 첫 화면 다듬기 §3, 시안 03-header-de.html E): 판·선 없는 작은 고정폭 글자 줄.
    좌우 끝은 본문 .wrap(최대 1080px) 줄에 맞춘다 — 왼쪽 끝이 첫 화면 이름과 같은 선 */
+/* 상단 바 전체는 클릭을 그냥 통과시킨다(pointer-events: none) — 판이 없어 글자 사이 빈 칸이 넓고,
+   peek 상태에서는 왼쪽(SIGNAL) 자리 전체가 투명한 채 비어 있어 그 아래 본문을 가릴 수 있다.
+   실제로 누를 자리(.header-actions: 언어 전환·이력서)만 되살린다 — 자식의 auto는 부모의 none을 무시하고 그대로 눌린다 */
 .site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; display: flex; justify-content: space-between; align-items: center;
   gap: 12px; padding: 26px max(16px, calc((100% - 1080px) / 2)); font-size: 11px; font-weight: 500; letter-spacing: 0.22em; color: var(--mute);
-  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease); }
+  pointer-events: none; transition: opacity 0.4s var(--ease), transform 0.4s var(--ease); }
 .brand { color: var(--tx); font-weight: 600; transition: opacity 0.4s var(--ease); }
-.header-actions { display: flex; gap: 26px; align-items: center; }
+.header-actions { display: flex; gap: 26px; align-items: center; pointer-events: auto; }
 /* 언어 전환은 상단 바에만 있어(LangSwitch) 규칙을 여기에만 둔다 */
 .site-header .lang-switch { display: flex; gap: 0; }
 /* 누르는 자리(설계 검토 2026-09-29): 글자는 11px라 패딩 없이는 폭 ~13px밖에 안 된다. 패딩 8px 6px로 24×24 이상을 만들고
@@ -79,11 +82,14 @@ a.header-resume:hover, .site-header .lang-switch a:hover { color: var(--tx); }
 .header-resume.is-pending { color: rgba(238, 243, 255, 0.5); cursor: not-allowed; }
 /* 내리면 전부 숨김, 올리면 오른쪽만(ScrollState → html[data-header]). 숨김은 투명도로만 한다 —
    visibility로 숨기면 Tab이 건너뛰어 아래 :focus-within(키보드 사용자는 늘 볼 수 있게)이 성립하지 않는다 */
-/* pointer-events는 전환 없이 바로 꺼진다(투명도만 0.4초에 걸쳐 사라짐) — 일부러다. 사라지는 중인 바가 그 아래 본문 클릭을 가로채지 않게 */
-html[data-header="hidden"] .site-header { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+/* .header-actions의 pointer-events는 전환 없이 바로 꺼진다(투명도만 0.4초에 걸쳐 사라짐) — 일부러다.
+   사라지는 중인 바가 그 아래 본문 클릭을 가로채지 않게. .site-header 자체는 이미 늘 none이라 여기서 건드릴 게 없다 */
+html[data-header="hidden"] .site-header { opacity: 0; transform: translateY(-8px); }
+html[data-header="hidden"] .header-actions { pointer-events: none; }
 html[data-header="peek"] .brand { opacity: 0; }
-/* 우선순위를 위 숨김 규칙(html[data-header] .site-header)보다 높게 — 같으면 숨김이 이긴다 */
-html[data-header] .site-header:focus-within { opacity: 1; transform: none; pointer-events: auto; }
+/* 우선순위를 위 숨김 규칙(html[data-header] .header-actions)보다 높게 — 같으면 숨김이 이긴다 */
+html[data-header] .site-header:focus-within { opacity: 1; transform: none; }
+html[data-header] .site-header:focus-within .header-actions { pointer-events: auto; }
 @media (max-width: 767px) { .site-header { padding-block: 16px; } .header-actions { gap: 16px; } }
 @media (prefers-reduced-motion: reduce) { .site-header, .brand { transition: none; } }
 /* 알약 버튼 — 지금은 Contact 섹션의 이력서 링크(ResumeLink 기본값)가 쓴다 */
@@ -101,16 +107,18 @@ html[data-header] .site-header:focus-within { opacity: 1; transform: none; point
   line-height: 2; color: rgba(238, 243, 255, 0.42); }
 @media (max-width: 767px) { .hero-meta { display: none; } }
 /* 스크롤 표시(설계 2026-09-28 첫 화면 다듬기 §4, 공항 시안 .scroll): 화면 가운데 아래에 고정, 내리면 사라진다.
-   로딩 화면(z 90, 불투명)이 떠 있는 동안에는 그 아래에 가려 있다가 로딩이 걷히면 드러난다.
-   JS가 없으면(data-hint 속성 자체가 없음) 상단 바와 같은 기본값으로 계속 보인다 — 장식(옅은 색, pointer-events 없음)이라 방해되지 않는다 */
+   로딩 화면(z 90, 불투명)이 떠 있는 동안에는 그 아래에 가려 있다가 로딩이 걷히면 드러난다. JS 없을 때의 동작은
+   아래 data-hint 규칙 주석 참고 */
 .scroll-hint { position: fixed; left: 50%; bottom: 4.5vh; z-index: 5; transform: translateX(-50%); display: flex; flex-direction: column;
   align-items: center; gap: 10px; font-size: 10px; font-weight: 500; letter-spacing: 0.3em; padding-left: 0.3em;
   color: rgba(238, 243, 255, 0.45); pointer-events: none; transition: opacity 0.5s var(--ease), visibility 0.5s; }
 .scroll-hint i { width: 1px; height: 34px; background: linear-gradient(rgba(238, 243, 255, 0.55), transparent);
   transform-origin: top; animation: scroll-drip 2.4s var(--ease) infinite; }
 @keyframes scroll-drip { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); opacity: 1; } 100% { opacity: 0; } }
-html[data-hint="off"] .scroll-hint { opacity: 0; visibility: hidden; }
-@media (prefers-reduced-motion: reduce) { .scroll-hint i { animation: none; } }
+/* JS 없이는 data-hint 속성 자체가 안 생기므로 숨김 규칙이 안 걸려 표시가 페이지 내내 떠 있게 된다 —
+   JS가 맨 위임을 확인했을 때만(data-hint="on") 보이게 뒤집는다. 로딩 화면이 처음 순간은 어차피 가려 준다 */
+html:not([data-hint="on"]) .scroll-hint { opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .scroll-hint i { animation: none; } .scroll-hint { transition: none; } }
 /* 좁은 휴대폰에서 언어 안내 판(LangHint, left 16px/bottom 16px, z 50, 약 50px 높이 — 글 한 줄 + 닫기 버튼)이 뜨면
    SCROLL 표시와 겹친다. 판은 뜨지 않을 때 DOM에서 아예 빠지므로(LangHint.tsx가 null을 반환) body:has()로 있을 때만 올린다.
    지원 브라우저 기준(Chromium/Safari/Firefox 최신)이라 :has()를 그대로 쓴다 */
