@@ -7,6 +7,7 @@ import { getChart, getFocus, onChartsChange } from '@/charts/registry';
 import type { ChartEntry, ChartKey } from '@/charts/types';
 import { pickActive, readCandidates } from './activeScene';
 import { buildAirport } from './airport';
+import { AirportExtras } from './AirportExtras';
 import { assignAirport } from './airportAssign';
 import { CameraRig } from './CameraRig';
 import { assignPoints, chartShiftY, slotBuffers } from './chartTargets';
@@ -143,6 +144,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
           state.gl.domElement.addEventListener('webglcontextlost', () => onFail('context'));
         }}
       >
+        <AirportExtras target={target} instant={!!capture} portrait={portrait.current} />
         <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} airport={airport} />
         <CameraRig target={target} instant={!!capture} parallax={parallax} />
         <FrameWatch
