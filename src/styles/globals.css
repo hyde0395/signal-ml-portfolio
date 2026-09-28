@@ -129,6 +129,20 @@ select.demo-slot option { background: var(--bg2); color: var(--tx); }
 .backdrop canvas { display: block; }
 main { position: relative; z-index: 1; }
 
+/* 글 뒤 판 대신(설계 2026-09-28 §2.1): 3D 화면 가장자리를 경계 없이 어둡게 해 왼쪽 글(휴대폰은 아래 글)의 대비를 돕는다.
+   차트 장면에서는 점이 판 전체에 퍼져 가장자리 점까지 읽혀야 하므로 끈다 */
+/* 대비 화소 검사 실패(Step 7)로 시작 45%→38%, 끝 알파 0.7→0.8로 더 짙게 조정했다 */
+.backdrop::after { content: ''; position: absolute; inset: 0; pointer-events: none; transition: opacity 0.6s var(--ease);
+  background: radial-gradient(120% 95% at 72% 40%, rgba(7, 11, 22, 0) 38%, rgba(7, 11, 22, 0.8) 100%); }
+html[data-chart] .backdrop::after { opacity: 0; }
+@media (max-width: 767px) {
+  /* 대비 화소 검사 실패(Step 7)로 조정했다. 휴대폰은 ①(#project)처럼 글이 화면 가운데쯤 오는 장면도 있어
+     (§2.1 가정과 달리 .chapter 클래스가 아니라 아래 정렬 규칙을 안 받는다) 두 지점 그라데이션으로는
+     중간 지점의 알파가 항상 낮아 모자랐다. 그래서 알파 0.8→0.97을 화면 아래 72%까지 그대로 유지하다가
+     위쪽 26%에서만 걷히게(경계처럼 보이지 않을 만큼 완만하게) 세 지점 그라데이션으로 바꿨다 */
+  .backdrop::after { background: linear-gradient(0deg, rgba(7, 11, 22, 0.97) 0, rgba(7, 11, 22, 0.97) 72%, rgba(7, 11, 22, 0) 98%); }
+}
+
 /* 대체 이미지: 기본은 보이고, 3D가 켜지면 숨긴다(JS가 없거나 3D가 불가능해도 장면을 볼 수 있게) */
 .scene-figure { margin: 24px 0; }
 .scene-figure img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
@@ -140,38 +154,29 @@ html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
 .hero .scene-figure img { width: 100%; height: 100%; object-fit: cover; border: 0; border-radius: 0; opacity: 0.55;
   /* 이미지는 .wrap 폭까지라 좌우 끝이 선처럼 보인다. 가장자리를 흐려 배경에 녹인다 */
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.hero .scene-figure::after { content: ''; position: absolute; inset: 0;
+  background: radial-gradient(120% 95% at 72% 40%, rgba(7, 11, 22, 0) 40%, rgba(7, 11, 22, 0.75) 100%); }
 
 /* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 움직일 시간을 주고, 글은 반투명 카드에 담아 대비를 지킨다 */
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
 /* .pass(탑승권 카드)는 자기 배경이 있는 640px 카드라 560px 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제).
    .contact-about(옛 소개, 640px)은 자기 배경이 없어 여기서 빼지 않는다 — 560px로 같이 줄어야 최종 리뷰 #4에서
    지적된 "3D 켜진 상태에서 판 밖으로 삐져나오는 문제"가 없다 */
-/* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 판(.text-scrim)은
+/* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 상자(.project-copy)는
    큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 판은 글 크기만큼만 커진다 */
 /* .data-intro는 여기서 빼야 한다 — :is() 안에 #project가 있어 이 규칙의 명시도가 (1,2,2)로,
    화면 1 전용 420px 규칙(.data-intro > …, 1,2,1)보다 세다. 빼지 않으면 이 560px가 항상 이긴다 */
-html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .text-scrim) { max-width: 560px; }
-/* 각 섹션도 다른 챕터와 같은 반투명 카드 배경을 받는다(Task 6 리뷰 지적: 카드 없이 글이 캔버스 위에 바로 떠 있던 문제).
-   그림 판 블록은 .chart-copy가 자기 판을 갖는다 */
-html[data-3d="on"] :is(.chapter, #project, #demo, #contact) {
-  background: linear-gradient(90deg, rgba(7, 11, 22, 0.82) 0, rgba(7, 11, 22, 0.82) 600px, rgba(7, 11, 22, 0) 760px);
-}
-/* 첫 화면 글과 사례 연구 제목: 챕터처럼 긴 카드를 두면 첫 화면 지형이 가려지므로, 글 덩어리 크기만 한
-   어두운 판을 깐다. 상자 크기(padding·음수 margin)는 3D와 상관없이 늘 같게 둬야 3D가 켜지는 순간 글이
-   밀리지 않는다(CLS). 음수 margin은 padding만큼 되돌려 글 줄을 다른 섹션과 맞춘다(16px: 가장 좁은 화면의
-   좌우 여백과 같아 가로 스크롤이 안 생긴다). */
-.text-scrim { width: fit-content; max-width: calc(100% + 32px); margin-inline: -16px; padding: 16px; border-radius: 16px; }
-/* 첫 화면은 3D가 꺼져도 글 뒤에 대체 이미지가 깔리므로 판을 항상 깐다(글자 대비).
-   box-shadow로 가장자리를 흐려 판 모양이 이미지·캔버스 위에서 도드라지지 않게 한다 */
-#hero .text-scrim, html[data-3d="on"] .text-scrim { background: rgba(7, 11, 22, 0.86); box-shadow: 0 0 48px 24px rgba(7, 11, 22, 0.86); }
+html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .project-copy) { max-width: 560px; }
+/* 글 상자는 글 크기만큼만 커진다(옛 .text-scrim의 width: fit-content를 그대로 물려받는다). 판(배경)을
+   없앴어도 이 폭 제한은 남아야 한다 — 없으면 상자가 부모(챕터) 폭 전체로 늘어나고, 그 안의 자손 중 자기
+   max-width가 없는 글자(예: .hero-keywords)가 그 넓은 상자를 그대로 채워, 화소 대비 검사(terrain.spec.ts)가
+   글자에서 먼 오른쪽 빈 자리의 밝은 점까지 "글자 뒤 배경"으로 재는 문제가 생긴다(Step 7에서 발견) */
+.hero-copy, .project-copy, .charts-head { width: fit-content; max-width: 100%; }
 html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 
 @media (max-width: 767px) {
   /* 세로 화면: 지형은 위, 글은 아래 카드(스펙 §5.3) */
   html[data-3d="on"] .chapter { justify-content: flex-end; padding-bottom: 12vh; }
-  html[data-3d="on"] :is(.chapter, #project, #demo, #contact) {
-    background: linear-gradient(0deg, rgba(7, 11, 22, 0.92) 55%, rgba(7, 11, 22, 0) 100%);
-  }
 }
 
 /* 텍스트 리빌: 단어가 자기 줄 아래에서 떠오르도록 바깥 상자에서 잘라 낸다 */
@@ -287,12 +292,13 @@ html[data-3d="on"] .data-board > :is(p, a) { text-shadow: 0 0 6px #070B16, 0 0 2
 .side-nav a:hover { color: var(--tx); }
 @media (min-width: 1280px) { .side-nav { display: block; } }
 
-/* ③·④ 그림 판(설계 2026-09-25 §3.3·§3.4, 2026-09-27 개정): 판은 화면에 고정(sticky)되고 글 카드가 그 위로 지나간다.
+/* ③·④ 그림 판(설계 2026-09-25 §3.3·§3.4, 2026-09-27 개정, 2026-09-28 §2 자막 방식으로 개정): 판은 화면에
+   고정(sticky)되고, 글은 판 아래 자막 띠(.chart-copy)에 자리를 잡은 채 문단만 제자리에서 바뀐다.
    판이 고정된 동안에만 HTML 이름표와 3D 점이 정확히 겹치므로(three/chartTargets.ts) 판 높이는 화면 높이와 같다.
    판은 본문 폭을 다 쓰고 화면 위쪽에 둔다 — 점 달력(40주)·구름(88일)이 가로로 길어서다 */
 /* sticky 자식은 부모의 "내용 상자(content box)" 높이까지만 고정된다 — padding은 그 상자 밖이라 스크롤
    거리로 안 쳐준다. 그래서 padding-bottom 대신 의사 요소로 같은 높이의 내용을 추가해 판이 화면 높이만큼
-   더 오래(카드가 다 지나갈 때까지) 고정되게 한다 */
+   더 오래(자막 띠가 문단을 다 보여줄 때까지) 고정되게 한다 */
 .chart-block { position: relative; }
 /* 문단 하나당 50vh씩 판을 더 오래 고정한다 — 자막 띠가 문단을 한 칸씩 바꿔 보여 줄 스크롤 거리(motion/caption.ts) */
 .chart-block::after { content: ''; display: block; height: calc(50vh * var(--paras, 1)); }

@@ -45,7 +45,7 @@ export function Charts({ locale }: { locale: Locale }) {
   );
   return (
     <section id="charts" className="wrap" aria-labelledby="charts-h">
-      <div className="charts-head text-scrim">
+      <div className="charts-head">
         <p className="eyebrow" data-flip-on-enter>{eyebrow('charts')}</p>
         <h2 id="charts-h" className="display" data-reveal>{t('charts.heading')}</h2>
       </div>

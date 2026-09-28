@@ -27,8 +27,11 @@ const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slo
 
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 비스듬히 내려다본 전경. 처음엔 assemble이 0에서 시작해 신호가 떠오른다(TerrainPoints 초기값).
-  hero: { ...base, camera: [6, 9, 20], target: [0, 0.5, 0] },
-  about: { ...base, camera: [-14, 7, 16], target: [0, 0.5, 0], noise: 0.6 },
+  // 글 쪽 장면(설계 2026-09-28 §2.1)은 카메라·목표점을 함께 x −5로 옮겨 점을 오른쪽에 둔다 — 글 뒤 판을 없앴다
+  // 대비 화소 검사 실패(Step 7)로 hero만 x −6.5까지 더 옮겼다 — 첫 화면은 대체 이미지 위 비네트도 같이 받는
+  // 유일한 장면이라 다른 글 쪽 장면보다 점이 더 멀리 있어야 글자가 배경 점과 안 겹친다
+  hero: { ...base, camera: [-0.5, 9, 20], target: [-6.5, 0.5, 0] },
+  about: { ...base, camera: [-19, 7, 16], target: [-5, 0.5, 0], noise: 0.6 },
   // ② 화면 1: 위에서 내려다본 한·일 지도와 노선 궤적. 데스크톱은 왼쪽에 글 카드가 얹히므로
   // 카메라·목표점을 함께 x=-4.5로 옮겨(같은 방향을 보되 옆으로 이동) 지도 전체가 카드 오른쪽에 오게 한다
   problem: { ...base, camera: [-4.5, 16, 7], target: [-4.5, 0, 0], map: 1 },
@@ -39,21 +42,28 @@ export const SCENES: Record<SceneKey, SceneState> = {
   chartDepart: { ...base, ...CHART },
   chartCurve: { ...base, ...CHART },
   // 차트 3: 제거 레이어가 높이 떠 있다가 떨어진다(drop은 sceneFor가 진행도로 채움)
-  bubble: { ...base, camera: [7, 9, 17], target: [0, 2.5, 0], removed: 1 },
-  validation: { ...base, camera: [0, 22, 0.1], target: [0, 0, 0], noise: 0.5 },
+  bubble: { ...base, camera: [2, 9, 17], target: [-5, 2.5, 0], removed: 1 },
+  validation: { ...base, camera: [-5, 22, 0.1], target: [-5, 0, 0], noise: 0.5 },
   chartCloud: { ...base, ...CHART },
-  limits: { ...base, camera: [0, 12, 26], target: [0, 0, 0], noise: 0.7 },
-  // 데모·연락처: 조작 화면이 주인공이라 지형은 멀리 물러나 잡음을 줄인다
-  demo: { ...base, camera: [0, 16, 30], target: [0, 0, 0], noise: 0.3 },
-  contact: { ...base, camera: [0, 16, 30], target: [0, 0, 0], noise: 0.3 },
+  limits: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.7 },
+  // 데모·연락처: 조작 화면이 주인공이라 지형은 멀리 물러나 잡음을 줄이고 흐리게 둔다(글 뒤 판이 없다)
+  demo: { ...base, camera: [-5, 16, 30], target: [-5, 0, 0], noise: 0.3, dim: 0.45 },
+  contact: { ...base, camera: [-5, 16, 30], target: [-5, 0, 0], noise: 0.3, dim: 0.45 },
 };
 
 const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구도를 담으려면 더 물러나야 한다
 
-// 세로 화면 전용 카메라·목표점. problem은 데스크톱에서 왼쪽 글 카드를 피하려고 x를 -4.5로 밀었지만,
-// 세로 화면은 글 카드가 아래쪽에 있어 옆으로 밀 필요가 없고 그대로 밀면 지도 절반이 잘린다
+// 세로 화면 전용 카메라·목표점. 데스크톱은 왼쪽 글을 피하려고 x를 옮겼지만(problem −4.5, 글 쪽 장면 −5),
+// 세로 화면은 글이 아래쪽에 있어 옆으로 밀 필요가 없고 그대로 밀면 지형·지도 절반이 잘린다
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
+  hero: { camera: [6, 9, 20], target: [0, 0.5, 0] },
+  about: { camera: [-14, 7, 16], target: [0, 0.5, 0] },
+  bubble: { camera: [7, 9, 17], target: [0, 2.5, 0] },
+  validation: { camera: [0, 22, 0.1], target: [0, 0, 0] },
+  limits: { camera: [0, 12, 26], target: [0, 0, 0] },
+  demo: { camera: [0, 16, 30], target: [0, 0, 0] },
+  contact: { camera: [0, 16, 30], target: [0, 0, 0] },
 };
 
 export function isChartScene(key: SceneKey): boolean {

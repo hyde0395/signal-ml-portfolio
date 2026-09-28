@@ -22,8 +22,10 @@ describe('SCENES', () => {
       expect(SCENES[k].target).toEqual([0, 0, 0]);
     }
   });
-  it('dataBoard만 점을 흐리게(dim < 1) — 판 없는 보드가 읽히도록', () => {
-    for (const k of KEYS) expect(SCENES[k].dim < 1, k).toBe(k === 'dataBoard');
+  // 설계 2026-09-28 §2.1: 데모·연락처는 글 뒤 판이 없어 조작 화면이 읽히도록 지형을 흐리게 둔다(dataBoard와 같은 이유)
+  const DIMMED: SceneKey[] = ['dataBoard', 'demo', 'contact'];
+  it('dataBoard·데모·연락처만 점을 흐리게(dim < 1) — 판 없는 화면이 읽히도록', () => {
+    for (const k of KEYS) expect(SCENES[k].dim < 1, k).toBe(DIMMED.includes(k));
   });
   it('장면 표의 slot은 모두 0(어느 슬롯을 보일지는 TerrainScene이 정한다)', () => {
     for (const k of KEYS) expect(SCENES[k].slot).toBe(0);
@@ -48,5 +50,21 @@ describe('sceneFor', () => {
   it('problem은 세로 화면에서 목표점이 가운데로 돌아온다', () => {
     expect(sceneFor('problem', 0, true).target).toEqual([0, 0, 0]);
     expect(sceneFor('problem', 0, false).target).toEqual([-4.5, 0, 0]);
+  });
+
+  // 설계 2026-09-28 §2.1: 글 뒤 판 대신 장면 구도로 대비를 지킨다 — 데스크톱은 글이 왼쪽이라 점을 오른쪽으로,
+  // 세로 화면은 글이 아래라 옆으로 밀지 않는다
+  const TEXT_SIDE: SceneKey[] = ['hero', 'about', 'bubble', 'validation', 'limits', 'demo', 'contact'];
+  it('글 쪽 장면은 데스크톱에서 목표점이 왼쪽(x −5 이하), 세로 화면에서는 가운데', () => {
+    // hero는 Step 7 대비 화소 검사 실패로 −6.5까지 더 옮겼다(scenes.ts 주석 참고) — 정확히 −5가 아니라
+    // "−5보다 더 왼쪽"으로 검사해 그 조정을 반영한다
+    for (const k of TEXT_SIDE) {
+      expect(sceneFor(k, 0, false).target[0], k).toBeLessThanOrEqual(-5);
+      expect(sceneFor(k, 0, true).target[0], k).toBe(0);
+    }
+  });
+  it('데모·연락처는 조작 화면이 주인공이라 점을 흐리게(dim ≤ 0.5)', () => {
+    expect(SCENES.demo.dim).toBeLessThanOrEqual(0.5);
+    expect(SCENES.contact.dim).toBeLessThanOrEqual(0.5);
   });
 });

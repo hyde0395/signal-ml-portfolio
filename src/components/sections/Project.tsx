@@ -10,7 +10,7 @@ export function Project({ locale }: { locale: Locale }) {
   const t = getT(locale);
   return (
     <section id="project" data-scene="about" className="wrap project" aria-labelledby="project-h">
-      <div className="text-scrim">
+      <div className="project-copy">
         <p className="eyebrow" data-flip-on-enter>{eyebrow('project')}</p>
         <h2 id="project-h" className="display project-q" data-reveal>{t('project.heading')}</h2>
         <p className="project-lead">{t('project.body')}</p>
