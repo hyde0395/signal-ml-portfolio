@@ -66,7 +66,9 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       portrait.current = window.innerHeight > window.innerWidth;
       const active = pickActive(readCandidates(document), window.innerHeight);
       if (!active) return;
-      const s = sceneFor(active.key, active.progress, portrait.current);
+      // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
+      const progress = active.key === 'hero' ? Math.min(1, window.scrollY / (0.9 * window.innerHeight)) : active.progress;
+      const s = sceneFor(active.key, progress, portrait.current);
       // data-scene이 아니라 data-active-scene으로 적는다 — data-scene은 챕터 블록이 자기 장면 이름을 적는
       // 속성이라(activeScene.ts의 readCandidates가 [data-scene]을 찾는다), 같은 이름을 html에도 쓰면
       // html 자신이 후보가 되고 `[data-scene="X"] 자손` 셀렉터가 페이지 전체와 겹친다(e2e에서 발견)

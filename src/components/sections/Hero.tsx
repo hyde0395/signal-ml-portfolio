@@ -8,19 +8,22 @@ export function Hero({ locale }: { locale: Locale }) {
   const t = getT(locale);
   const sub = t('hero.nameSub');
   return (
-    <section id="hero" data-scene="hero" className="hero wrap">
-      <div className="hero-copy">
-        <h1 className="display hero-name">CHOI HALIM</h1>
-        {sub && <p className="hero-sub" lang={locale}>{sub}</p>}
-        <p className="mono hero-role">{t('hero.role')}</p>
-        <p className="hero-keywords">{t('hero.keywords')}</p>
-      </div>
-      {/* 오른쪽 아래 메타 줄(설계 §4.4): 공항 좌표와 노선. 숫자는 facts에서 조립한다. 장식이라 낭독하지 않는다 */}
-      <p className="hero-meta mono" aria-hidden="true">
-        {facts.site.airport.code} · {facts.site.airport.lat.toFixed(2)}°N {facts.site.airport.lon.toFixed(2)}°E<br />
-        {facts.site.airport.code} ⇄ {[...new Set(facts.data.byRoute.map((r) => r.pair.split('_')[1]))].join(' · ')}
-      </p>
-      <ChapterFigure locale={locale} sceneKey="hero" />
-    </section>
+    // 감싸개가 장면 이름을 가진다 — 3D가 켜지면 아래 여백(globals.css)까지 첫 화면 장면이라 그동안 카메라가 내려앉는다
+    <div className="hero-stage" data-scene="hero">
+      <section id="hero" className="hero wrap">
+        <div className="hero-copy">
+          <h1 className="display hero-name">CHOI HALIM</h1>
+          {sub && <p className="hero-sub" lang={locale}>{sub}</p>}
+          <p className="mono hero-role">{t('hero.role')}</p>
+          <p className="hero-keywords">{t('hero.keywords')}</p>
+        </div>
+        {/* 오른쪽 아래 메타 줄(설계 §4.4): 공항 좌표와 노선. 숫자는 facts에서 조립한다. 장식이라 낭독하지 않는다 */}
+        <p className="hero-meta mono" aria-hidden="true">
+          {facts.site.airport.code} · {facts.site.airport.lat.toFixed(2)}°N {facts.site.airport.lon.toFixed(2)}°E<br />
+          {facts.site.airport.code} ⇄ {[...new Set(facts.data.byRoute.map((r) => r.pair.split('_')[1]))].join(' · ')}
+        </p>
+        <ChapterFigure locale={locale} sceneKey="hero" />
+      </section>
+    </div>
   );
 }

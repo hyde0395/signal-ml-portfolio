@@ -40,7 +40,7 @@ describe('sceneFor', () => {
     expect(sceneFor('chartCurve', 0.9, false).drop).toBe(0);
   });
   it('세로 화면은 카메라가 목표점에서 1.6배 멀다(차트 장면 제외)', () => {
-    const land = sceneFor('hero', 0, false), port = sceneFor('hero', 0, true);
+    const land = sceneFor('about', 0, false), port = sceneFor('about', 0, true);
     const dist = (s: typeof land) => Math.hypot(...s.camera.map((v, i) => v - s.target[i]));
     expect(dist(port) / dist(land)).toBeCloseTo(1.6, 5);
   });
@@ -53,8 +53,8 @@ describe('sceneFor', () => {
   });
 
   // 설계 2026-09-28 §2.1: 글 뒤 판 대신 장면 구도로 대비를 지킨다 — 데스크톱은 글이 왼쪽이라 점을 오른쪽으로,
-  // 세로 화면은 글이 아래라 옆으로 밀지 않는다
-  const TEXT_SIDE: SceneKey[] = ['hero', 'about', 'bubble', 'validation', 'limits', 'demo', 'contact'];
+  // 세로 화면은 글이 아래라 옆으로 밀지 않는다. hero는 밤의 공항 전용 구도라 빠진다(설계 2026-09-28 §4.2)
+  const TEXT_SIDE: SceneKey[] = ['about', 'bubble', 'validation', 'limits', 'demo', 'contact'];
   it('글 쪽 장면은 데스크톱에서 목표점이 왼쪽(x −5 이하), 세로 화면에서는 가운데', () => {
     // hero는 Step 7 대비 화소 검사 실패로 −6.5까지 더 옮겼다(scenes.ts 주석 참고) — 정확히 −5가 아니라
     // "−5보다 더 왼쪽"으로 검사해 그 조정을 반영한다
@@ -77,5 +77,23 @@ describe('sceneFor', () => {
       const portDelta = port.camera.map((v, i) => v - port.target[i]);
       portDelta.forEach((d, i) => expect(d, `${k}[${i}]`).toBeCloseTo(landDelta[i] * 1.6, 5));
     }
+  });
+});
+
+describe('밤의 공항 첫 화면(설계 2026-09-28 §4.2)', () => {
+  it('hero만 공항 장면', () => {
+    for (const k of KEYS) expect(SCENES[k].airport, k).toBe(k === 'hero' ? 1 : 0);
+  });
+  it('진행도 0은 A(높은 창가), 1은 B(낮게 내려앉음) — 같은 x·z, 눈높이만 낮다', () => {
+    const a = sceneFor('hero', 0, false), b = sceneFor('hero', 1, false);
+    expect(a.camera[0]).toBeCloseTo(b.camera[0], 6);
+    expect(a.camera[2]).toBeCloseTo(b.camera[2], 6);
+    expect(b.camera[1]).toBeLessThan(a.camera[1]);
+    const m = sceneFor('hero', 0.5, false);
+    expect(m.camera[1]).toBeLessThan(a.camera[1]);
+    expect(m.camera[1]).toBeGreaterThan(b.camera[1]);
+  });
+  it('첫 화면 마우스 시차는 공항 크기에 맞게 작다', () => {
+    expect(SCENES.hero.sway).toBeLessThanOrEqual(0.1);
   });
 });

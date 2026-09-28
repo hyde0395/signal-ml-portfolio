@@ -27,12 +27,16 @@ const CHART = { camera: [0, 0, CHART_DISTANCE] as SceneState['camera'], target: 
 
 const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0 };
 
+// 밤의 공항(설계 2026-09-28 §4.2): A = 터미널 창가(눈높이 약 42m), B = 땅 가까이(약 12m). 같은 방향을 본다.
+// 값은 시안(mockups/2026-09-28/01-night-airport.html)의 카메라를 사이트 좌표(airport.ts K·z 뒤집기)와 fov 40°로 옮긴 것
+export const AIRPORT_CAM = {
+  a: { camera: [-1.2, 0.42, 1.6] as SceneState['camera'], target: [0.781, -0.321, -8.174] as SceneState['target'] },
+  b: { camera: [-1.2, 0.12, 1.6] as SceneState['camera'], target: [0.777, -0.85, -8.154] as SceneState['target'] },
+};
+
 export const SCENES: Record<SceneKey, SceneState> = {
-  // 첫 화면: 비스듬히 내려다본 전경. 처음엔 assemble이 0에서 시작해 신호가 떠오른다(TerrainPoints 초기값).
-  // 글 쪽 장면(설계 2026-09-28 §2.1)은 카메라·목표점을 함께 x −5로 옮겨 점을 오른쪽에 둔다 — 글 뒤 판을 없앴다
-  // 대비 화소 검사 실패(Step 7)로 hero만 x −6.5까지 더 옮겼다 — 첫 화면은 대체 이미지 위 비네트도 같이 받는
-  // 유일한 장면이라 다른 글 쪽 장면보다 점이 더 멀리 있어야 글자가 배경 점과 안 겹친다
-  hero: { ...base, camera: [-0.5, 9, 20], target: [-6.5, 0.5, 0], sway: 1.2 }, // sway는 임시값(Task 5에서 공항 값으로 바뀐다)
+  // 첫 화면: 밤의 공항. 진행도(내려앉기)는 sceneFor가 A→B로 보간(설계 2026-09-28 §4.2)
+  hero: { ...base, camera: AIRPORT_CAM.a.camera, target: AIRPORT_CAM.a.target, airport: 1, sway: 0.06, noise: 0 },
   about: { ...base, camera: [-19, 7, 16], target: [-5, 0.5, 0], noise: 0.6 },
   // ② 화면 1: 위에서 내려다본 한·일 지도와 노선 궤적. 데스크톱은 왼쪽에 글 카드가 얹히므로
   // 카메라·목표점을 함께 x=-4.5로 옮겨(같은 방향을 보되 옆으로 이동) 지도 전체가 카드 오른쪽에 오게 한다
@@ -63,7 +67,6 @@ const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구�
 // y를 내려도 점이 화면에서 옆으로 옮겨지지 않고 그냥 살짝 확대(약 9%)될 뿐이라 y 이동을 빼고 원래 값을 쓴다
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
-  hero: { camera: [6, 6, 20], target: [0, -2.5, 0] },
   about: { camera: [-14, 4, 16], target: [0, -2.5, 0] },
   // bubble: 목표점을 데스크톱에서 3만큼만 내리면(다른 장면과 같은 폭) −0.5에 그친다 — 데스크톱 목표점 y가
   // 이미 2.5로 높기 때문(제거 레이어가 높이 뜬 모습을 보여주려고). 그 −0.5는 화면 중앙 바로 아래라, 문단이
@@ -84,6 +87,15 @@ export function isChartScene(key: SceneKey): boolean {
 export function sceneFor(key: SceneKey, progress: number, portrait: boolean): SceneState {
   const s = SCENES[key];
   const p = Math.min(1, Math.max(0, progress));
+  if (key === 'hero') {
+    // 공항: 진행도 = 내려앉은 정도(TerrainScene이 스크롤로 계산). 세로 화면은 같은 방향에서 조금 물러나 넓게 본다
+    const e = smooth(p);
+    const lerp3 = (u: number[], v: number[]) => u.map((x, i) => x + (v[i] - x) * e) as [number, number, number];
+    let camera = lerp3(AIRPORT_CAM.a.camera, AIRPORT_CAM.b.camera);
+    const target = lerp3(AIRPORT_CAM.a.target, AIRPORT_CAM.b.target);
+    if (portrait) camera = camera.map((v, i) => target[i] + (v - target[i]) * 1.25) as [number, number, number];
+    return { ...s, camera, target, drop: 0 };
+  }
   const drop = key === 'bubble' ? smooth(clamp01((p - 0.2) / 0.6)) : 0; // 블록 20~80% 구간에서 떨어진다
   // 차트 장면은 세로 화면에서도 카메라를 옮기지 않는다 — 판 위치와 점 좌표의 대응이 카메라 거리에 묶여 있고,
   // 판 크기 자체가 세로 화면에 맞춰져 있다
