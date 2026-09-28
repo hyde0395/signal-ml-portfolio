@@ -2,6 +2,7 @@
 // 번호 섹션을 더하려면 src/lib/sections.ts에 한 줄 + 아래 SECTION_VIEWS에 부품 한 줄(빠뜨리면 타입 오류).
 import type { ReactElement } from 'react';
 import { Backdrop } from './Backdrop';
+import { Captions } from './Captions';
 import { Header } from './Header';
 import { Loader } from './Loader';
 import { Motion } from './Motion';
@@ -41,6 +42,7 @@ export function HomePage({ locale }: { locale: Locale }) {
         <Demo locale={locale} />
         <Contact locale={locale} />
       </main>
+      <Captions />
       <Motion />
     </>
   );
