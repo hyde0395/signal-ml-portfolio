@@ -4,12 +4,18 @@ import { TONE, type ChartLayout } from './types';
 
 export const TONE_COLOR: Record<number, string> = { [TONE.dot]: '#8FB8FF', [TONE.amber]: '#FFB547', [TONE.text]: '#EEF3FF' };
 
-// ctx는 호출 측이 기기 픽셀 비율로 미리 늘려 둔다(w·h는 CSS px)
-export function drawLayout(ctx: CanvasRenderingContext2D, layout: ChartLayout, w: number, h: number): void {
+// 강조 규칙(설계 2026-09-28 §3) — 3D 셰이더(three/shaders.ts)와 같다: 강조 그룹은 호박색, 다른 와플 그룹은 알파 × 0.25
+export const FOCUS_DIM = 0.25;
+
+// ctx는 호출 측이 기기 픽셀 비율로 미리 늘려 둔다(w·h는 CSS px). focus: 강조할 와플 그룹 번호, 없으면 -1
+export function drawLayout(ctx: CanvasRenderingContext2D, layout: ChartLayout, w: number, h: number, focus = -1): void {
   ctx.clearRect(0, 0, w, h);
   for (let i = 0; i < layout.n; i++) {
-    ctx.globalAlpha = layout.alpha[i];
-    ctx.fillStyle = TONE_COLOR[layout.tone[i]] ?? TONE_COLOR[TONE.dot];
+    const wg = layout.waffle[i];
+    const focused = focus >= 0 && wg === focus;
+    const dimmed = focus >= 0 && wg >= 0 && wg !== focus;
+    ctx.globalAlpha = layout.alpha[i] * (dimmed ? FOCUS_DIM : 1);
+    ctx.fillStyle = focused ? TONE_COLOR[TONE.amber] : TONE_COLOR[layout.tone[i]] ?? TONE_COLOR[TONE.dot];
     ctx.beginPath();
     ctx.arc(layout.x[i] * w, layout.y[i] * h, layout.size[i] / 2, 0, Math.PI * 2);
     ctx.fill();

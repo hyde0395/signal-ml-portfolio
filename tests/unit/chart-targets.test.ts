@@ -51,6 +51,12 @@ describe('slotBuffers', () => {
     expect(Array.from(pos.slice(0, 3))).toEqual([1, 2, 3]);
     expect(style[0]).toBe(0);
   });
+
+  it('와플 번호는 쓰는 점에만, 나머지는 -1', () => {
+    const e: ChartEntry = { ...entry, layout: { ...entry.layout, waffle: Int16Array.from([3]) } };
+    const { waffle } = slotBuffers(e, Int32Array.from([1]), terrain, 24, 40);
+    expect(Array.from(waffle)).toEqual([-1, 3]); // 점 구름 2개 중 1번 점만 배치에 쓰였다
+  });
 });
 
 describe('chartShiftY', () => {

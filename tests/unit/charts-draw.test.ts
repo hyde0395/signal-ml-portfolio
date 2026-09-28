@@ -30,6 +30,21 @@ describe('drawLayout', () => {
       { x: 200, y: 50, r: 3, color: TONE_COLOR[TONE.amber], alpha: 1 },
     ]);
   });
+
+  it('강조 그룹이 있으면 그 그룹은 호박색, 다른 와플 그룹은 알파 × 0.25, 와플 아닌 점은 그대로', () => {
+    const L: ChartLayout = {
+      n: 3, x: Float32Array.from([0, 0.5, 1]), y: Float32Array.from([0, 0, 0]), size: Float32Array.from([4, 4, 4]),
+      alpha: Float32Array.from([0.8, 0.8, 0.8]), tone: Uint8Array.from([TONE.dot, TONE.dot, TONE.dot]),
+      group: Int16Array.from([-1, -1, -1]), waffle: Int16Array.from([0, 1, -1]), labels: [],
+    };
+    const { ctx, calls } = fakeCtx();
+    drawLayout(ctx, L, 100, 100, 1);
+    // alpha는 Float32Array를 거쳐 온 값이라 그대로 비교하면 float32→float64 오차가 남는다(0.8 → 0.800000011920929) — 셋째 자리로 반올림해 비교한다
+    const rounded = calls.map((c) => ({ color: c.color, alpha: +c.alpha.toFixed(3) }));
+    expect(rounded[0]).toEqual({ color: TONE_COLOR[TONE.dot], alpha: 0.2 });
+    expect(rounded[1]).toEqual({ color: TONE_COLOR[TONE.amber], alpha: 0.8 });
+    expect(rounded[2]).toEqual({ color: TONE_COLOR[TONE.dot], alpha: 0.8 });
+  });
 });
 
 describe('buildLayout', () => {
