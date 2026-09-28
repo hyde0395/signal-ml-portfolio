@@ -127,10 +127,13 @@ export const fragmentShader = /* glsl */ `
     float glow = exp(-d * d * 28.0) * 0.55;
     float air = max(core, glow);
     float disc = smoothstep(0.5, vEdge, d); // 이름을 dot으로 하면 GLSL 내장 함수와 겹친다
-    // 미리 곱한 알파(TerrainPoints의 섞기 ONE, ONE_MINUS_SRC_ALPHA와 짝): 알파 채널에 (1 − vAir)를 곱해
-    // 지형·지도·차트 점(vAir 0)은 보통 섞기 — 겹쳐도 하얗게 타지 않는다 —, 공항 불빛(vAir 1)은 빛 더하기가 된다.
+    // 미리 곱한 알파(TerrainPoints의 섞기 ONE, ONE_MINUS_SRC_ALPHA와 짝): 색은 늘 vColor·a를 그대로 더하고,
+    // 뒤 화소를 줄이는 비율(= 출력 알파)만 점마다 바꾼다. 지형·지도·차트 점(vAir 0)은 알파 a → 보통 섞기
+    // — 겹쳐도 하얗게 타지 않는다 —, 공항 불빛(vAir 1)은 알파 a² → 뒤 화소에 (1 − a²)만 곱해 사실상 빛 더하기다.
     // 재질 하나로 두 방식을 점마다 나누므로 공항 → 지형으로 넘어가는 동안 섞기 방식이 튀지 않는다
     float a = vAlpha * mix(disc, air, vAir);
-    gl_FragColor = vec4(vColor * a, a * (1.0 - vAir));
+    // 알파 채널: 보통 점(vAir 0)은 a, 공항 불빛(vAir 1)은 a² — 예전 빛 더하기(SRC_ALPHA, ONE)가 알파에 a²를 쌓던 것과 같다.
+    // 0으로 두면 "색 > 알파"인 화소가 생기는데, 미리 곱한 알파 캔버스에서 이 경우 합성 결과는 명세상 정해져 있지 않다(브라우저마다 다를 수 있음)
+    gl_FragColor = vec4(vColor * a, a * mix(1.0, a, vAir));
   }
 `;
