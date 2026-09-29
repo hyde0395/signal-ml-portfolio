@@ -1,7 +1,7 @@
 // 장면 표 검사: 모든 키 존재, problem·dataBoard만 지도, bubble만 제거 레이어·떨어짐,
 // 차트 장면은 정면 고정 카메라이고 세로 화면에서도 카메라가 그대로다.
 import { describe, expect, it } from 'vitest';
-import { CHART_DISTANCE, isChartScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
+import { blendScenes, CHART_DISTANCE, handoffProgress, isChartScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 
 const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'features', 'chartDepart', 'chartCurve', 'bubble',
   'validation', 'chartCloud', 'limits', 'demo', 'contact'];
@@ -100,5 +100,58 @@ describe('밤의 공항 첫 화면(설계 2026-09-28 §4.2)', () => {
   it('세로 화면은 목표점을 오른쪽으로 밀어 활주로 소실점을 화면 안에 둔다(Task 9 스크린샷으로 맞춤)', () => {
     const landscape = sceneFor('hero', 0, false), portrait = sceneFor('hero', 0, true);
     expect(portrait.target[0]).toBeGreaterThan(landscape.target[0]);
+  });
+});
+
+describe('blendScenes', () => {
+  const a = SCENES.hero, b = SCENES.about;
+  it('h 0은 a, 1은 b', () => {
+    expect(blendScenes(a, b, 0)).toEqual(a);
+    expect(blendScenes(a, b, 1)).toEqual(b);
+  });
+  it('중간값은 숫자 필드를 선형으로 섞는다(카메라·목표점 성분 포함)', () => {
+    const m = blendScenes(a, b, 0.5);
+    expect(m.airport).toBeCloseTo((a.airport + b.airport) / 2, 9);
+    expect(m.noise).toBeCloseTo((a.noise + b.noise) / 2, 9);
+    expect(m.sway).toBeCloseTo((a.sway + b.sway) / 2, 9);
+    for (let i = 0; i < 3; i++) {
+      expect(m.camera[i]).toBeCloseTo((a.camera[i] + b.camera[i]) / 2, 9);
+      expect(m.target[i]).toBeCloseTo((a.target[i] + b.target[i]) / 2, 9);
+    }
+    expect(blendScenes(a, SCENES.bubble, 0.25).removed).toBeCloseTo(0.25, 9);
+  });
+  it('차트 장면이 끼면 던진다', () => {
+    expect(() => blendScenes(SCENES.features, b, 0.5)).toThrow();
+    expect(() => blendScenes(a, SCENES.chartCloud, 0.5)).toThrow();
+  });
+  it('follow는 섞기 결과에 넣지 않는다', () => {
+    expect('follow' in blendScenes(a, b, 0.5)).toBe(false);
+  });
+  it('숫자가 아닌 필드는 h >= 0.5면 b, 아니면 a', () => {
+    const x = { ...a, tag: 'x' } as typeof a, y = { ...b, tag: 'y' } as typeof b;
+    expect((blendScenes(x, y, 0.49) as unknown as { tag: string }).tag).toBe('x');
+    expect((blendScenes(x, y, 0.5) as unknown as { tag: string }).tag).toBe('y');
+  });
+  it('한쪽에만 있는 숫자 필드는 없는 쪽을 0으로 본다', () => {
+    const y = { ...b, rows: 10 } as typeof b;
+    expect((blendScenes(a, y, 0.5) as unknown as { rows: number }).rows).toBeCloseTo(5, 9);
+  });
+});
+
+describe('handoffProgress', () => {
+  it('y0 이하 0, y1 이상 1', () => {
+    expect(handoffProgress(0, 100, 300)).toBe(0);
+    expect(handoffProgress(100, 100, 300)).toBe(0);
+    expect(handoffProgress(300, 100, 300)).toBe(1);
+    expect(handoffProgress(999, 100, 300)).toBe(1);
+  });
+  it('사이는 smoothstep(중간 0.5, 단조 증가)', () => {
+    expect(handoffProgress(200, 100, 300)).toBeCloseTo(0.5, 9);
+    expect(handoffProgress(150, 100, 300)).toBeLessThan(0.25);
+    expect(handoffProgress(150, 100, 300)).toBeLessThan(handoffProgress(250, 100, 300));
+  });
+  it('y1 <= y0이면 0', () => {
+    expect(handoffProgress(500, 300, 300)).toBe(0);
+    expect(handoffProgress(500, 300, 100)).toBe(0);
   });
 });

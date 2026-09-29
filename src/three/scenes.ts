@@ -17,6 +17,7 @@ export type SceneState = {
   shift: number;    // 차트 배치 전체의 세계 y 이동량. 장면 표에서는 0이고 TerrainScene이 판 위치로 정한다(chartShiftY)
   airport: number;  // 1 = 밤의 공항(첫 화면), 0 = 그 밖
   sway: number;     // 첫 화면 마우스 시차 크기(월드 단위)
+  follow?: boolean; // 전환 구간 안 — 점·카메라가 스크롤을 바짝 따라가게 감쇠를 빠르게
 };
 
 // 차트 장면 카메라: 원점을 정면(z축)에서 본다. 그림 판의 화면 px ↔ z=0 평면 좌표가 이 두 값으로 정해지므로
@@ -118,3 +119,32 @@ export function sceneFor(key: SceneKey, progress: number, portrait: boolean): Sc
 
 function clamp01(v: number) { return Math.min(1, Math.max(0, v)); }
 function smooth(v: number) { return v * v * (3 - 2 * v); }
+
+// 두 장면 상태를 h(0~1)로 섞는다. 숫자 필드(카메라·목표점은 성분별)는 선형 보간이고, 한쪽에만 있는 숫자는 0으로 본다.
+// 숫자가 아닌 필드는 보간할 수 없어 h >= 0.5면 b, 아니면 a 값을 쓴다.
+// 차트 장면은 점 배치가 다른 경로(chartTargets)라 섞을 수 없어 던진다. follow는 호출자가 정하므로 결과에 넣지 않는다
+export function blendScenes(a: SceneState, b: SceneState, h: number): SceneState {
+  if (a.chart !== 0 || b.chart !== 0) throw new Error('blendScenes: 차트 장면은 섞을 수 없다');
+  const ra = a as unknown as Record<string, unknown>, rb = b as unknown as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of new Set([...Object.keys(ra), ...Object.keys(rb)])) {
+    if (k === 'follow') continue;
+    const x = ra[k], y = rb[k];
+    if (Array.isArray(x) && Array.isArray(y) && x.every(isNum) && y.every(isNum)) {
+      out[k] = x.map((v, i) => v * (1 - h) + y[i] * h);
+    } else if ((isNum(x) || x === undefined) && (isNum(y) || y === undefined)) {
+      out[k] = (x ?? 0) * (1 - h) + (y ?? 0) * h; // v+(w-v)*h 꼴은 h=1에서 부동소수 오차로 b와 어긋난다
+    } else {
+      out[k] = h >= 0.5 ? y : x;
+    }
+  }
+  return out as SceneState;
+}
+
+// 스크롤 y가 y0~y1 사이일 때의 전환 진행도(0~1, smoothstep). 구간이 비었거나 뒤집히면 0
+export function handoffProgress(scrollY: number, y0: number, y1: number): number {
+  if (y1 <= y0) return 0;
+  return smooth(clamp01((scrollY - y0) / (y1 - y0)));
+}
+
+function isNum(v: unknown): v is number { return typeof v === 'number'; }
