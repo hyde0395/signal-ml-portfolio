@@ -80,7 +80,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 목표: Lighthouse 모바일 성능 ko·en·ja 모두 ≥90(지금 ko 87 · en 92 · ja 84~89), TBT ≤200ms, LCP ≤2.0s, 초기 JS 여유 확보(지금 142KB/150KB로 거의 찼다)
    - 메인 스레드(TBT): 3D 시작을 첫 입력·스크롤 뒤나 `requestIdleCallback`으로 더 늦추기, 지형 점 구름 만들기를 Web Worker로, 긴 작업을 `scheduler.yield()`로 쪼개기, GSAP·Lenis 초기화를 첫 스크롤 근처로
    - 초기 JS: 번들 분석(`@next/bundle-analyzer`)으로 초기 청크 구성을 보고, 첫 화면에 안 보이는 것(차트 조작 층·보드 연출 등)을 `import()`로 옮기기
-   - 3D 청크(244.8KB/250KB): three.js에서 쓰는 것만 가져오는지 확인, 셰이더·장면 코드 중복 정리
+   - 3D 청크(246KB/280KB — 한도는 2026-09-29에 250→280KB로 올림): three.js에서 쓰는 것만 가져오는지 확인, 셰이더·장면 코드 중복 정리
    - 데이터: `terrain.json`을 이진(Float32·양자화 Uint16) 파일로 바꿔 파싱 시간·용량 줄이기, 필요한 JSON만 섹션 가까이에서 불러오기
    - 글꼴·이미지: ja의 렌더 지연(Noto Sans JP 조각 크기·preload 확인), 대체 이미지(`hero.webp`·챕터 WebP)를 AVIF + 화면 크기별로
    - GPU: 화면 밖·탭 숨김 때 렌더 멈춤 재확인, 저프레임 단계 하향 문턱 조정, DPR 상한 재검토
@@ -172,7 +172,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - **데모 화면 (B1)**: 문장형 선택 "〔노선〕 가는 〔LCC/FSC〕를 〔출발일〕에 타려면, 지금 살까요?" + 바로 아래 **출발일 막대**(D+3~90, 높이=기준일에 사면 예측가, 공휴일 주변 호박색)가 날짜 선택기 역할. 누르기·끌기·←/→(Home/End). 결과: 플립 가격 → q10~q90 띠 → 추천 배지 + 이유, 확신도는 WAIT/DROP일 때만. "미리 계산된 예측 · 2026-09-22 기준" 항상 표기. 초기 선택값은 DROP_EXPECTED가 나오는 조합(`facts.json`에서 지정). 시안: `.superpowers/brainstorm/14017-*/content/demo-layout-v2.html`
 - **데이터 접근 계층**: `ForecastSource` 인터페이스(`getStrip`, `getForecast`, `meta`). 지금은 `StaticForecastSource`(`demo.json`)만, 나중에 `ApiForecastSource`로 교체. 불러오기 실패 → 안내 + 다시 시도, 예측 없는 날짜 → 회색 점선·선택 불가
 - **배포**: `output: 'export'` → Vercel, GitHub 연결(main=운영, PR=미리보기). JSON·이력서 PDF는 커밋. JSON은 파일명에 버전(예: `demo.2026-09-22.json`). 글꼴은 `next/font`. **도메인: 우선 무료 `*.vercel.app`**, 나중에 연결
-- **성능**: 첫 화면 텍스트는 HTML에 포함 → 로딩 화면은 최대 1.2초 고정 연출(재방문 시 생략) → 3D·`terrain.json` 지연 로딩 → `demo.json`은 데모 섹션 근처에서 로딩. 목표: LCP ≤2.5s(중급 폰 4G), 초기 JS ≤150KB gzip, 3D 묶음 ≈250KB, CLS <0.1, 60/30fps, Lighthouse 모바일 ≥90. 모바일 점 절반·DPR ≤1.5, 30fps 미만 2초 지속 시 단계적 하향 → 정적 이미지. 화면 밖이면 렌더 중지. 빌드 후 용량 검사 스크립트
+- **성능**: 첫 화면 텍스트는 HTML에 포함 → 로딩 화면은 최대 1.2초 고정 연출(재방문 시 생략) → 3D·`terrain.json` 지연 로딩 → `demo.json`은 데모 섹션 근처에서 로딩. 목표: LCP ≤2.5s(중급 폰 4G), 초기 JS ≤150KB gzip, 3D 묶음 ≤280KB(처음 ≈250KB, 2026-09-29 사용자가 올림), CLS <0.1, 60/30fps, Lighthouse 모바일 ≥90. 모바일 점 절반·DPR ≤1.5, 30fps 미만 2초 지속 시 단계적 하향 → 정적 이미지. 화면 밖이면 렌더 중지. 빌드 후 용량 검사 스크립트
 - **접근성**: reduced-motion·WebGL 불가·저사양(메모리 ≤2GB)·지속 저프레임 → 챕터별 정적 WebP(실제 3D 장면 캡처 스크립트로 생성), 플립·리빌·Lenis 끔. 건너뛰기 링크, 호박색 포커스 링. 캔버스 `aria-hidden`, 플립은 완성값 낭독, 막대는 슬라이더 역할 + 날짜·가격·공휴일 낭독, 결과 변경은 조작 멈춘 뒤 한 번 알림. WCAG AA 대비, 색만으로 의미 전달 금지(공휴일 표식·이름표). axe 자동 검사 + 키보드·VoiceOver 수동 점검
 - **추가 항목**
   1. 링크 미리보기(OG 이미지: 지형 + 이름 + `ML ENGINEER`), 제목·설명·파비콘

@@ -15,6 +15,6 @@ describe('check', () => {
     expect(r.map((x: { ok: boolean }) => x.ok)).toEqual([true, false]);
   });
   it('스펙 §8.2 목표', () => {
-    expect(BUDGET).toEqual({ initialJs: 150 * 1024, threeChunk: 256_000, terrain: 300 * 1024, demo: 500 * 1024, charts: 150 * 1024 });
+    expect(BUDGET).toEqual({ initialJs: 150 * 1024, threeChunk: 280 * 1024, terrain: 300 * 1024, demo: 500 * 1024, charts: 150 * 1024 });
   });
 });
