@@ -20,7 +20,7 @@ export const terrainSchema = z.object({
 });
 export const mapSchema = z.object({
   bbox: z.array(z.number()).length(4),
-  coast: ints.min(4), // buildPointCloud에서 순환 배정하므로 최소 2 점(4개 원소) 필요
+  coast: ints.min(4), // 선분 하나라도 있어야 해안선을 다시 뽑을 수 있다(최소 2 점 = 4개 원소)
   routes: z.array(z.object({ from: z.string(), to: z.string(), pts: ints.min(4) })),
   airports: z.array(z.object({ code: z.string(), lon: z.number(), lat: z.number() })),
 });
@@ -33,10 +33,9 @@ const MAP_CENTER = { lon: 135.25, lat: 37.8 };
 const MAP_SCALE = 0.75;
 const MAP_COS = Math.cos((MAP_CENTER.lat * Math.PI) / 180);
 const ROUTE_ARC_HEIGHT = 1.5;   // 지도 장면에서 노선 궤적이 떠오르는 높이
-const ROUTE_SHARE = 5;          // 다섯 점 중 하나를 노선 궤적에 배정한다
-// 해안선 인덱스를 고를 때 쓰는 황금비(약 0.618). i가 0부터 늘어날 때 (i*GOLDEN)%1이 [0,1)을
-// 거의 균등하게(저불일치) 훑으므로, i의 "어느 연속 구간"을 뽑아도 해안선 전체에 고르게 퍼진다.
-const GOLDEN_RATIO = 0.6180339887498949;
+// 지도 가는 실선(설계 2026-09-29 §1): 해안선을 세계 좌표 step 간격으로 다시 뽑고(약 2,800점), 노선마다 routePts개 호.
+// 흔들지 않는다 — 점 수가 해안선 샘플보다 많아 흔들어 겹겹이 쌓던 것이 굵고 흐릿한 띠로 보였다(사용자 지적 2026-09-29)
+export const MAP_LINE = { step: 0.035, routePts: 170, breakDeg: 0.5 } as const;
 
 export function terrainPosition(dtd: number, dateIdx: number, pct10: number, maxDtd: number, nDates: number): [number, number, number] {
   // 왼쪽 = 먼 예약 시점, 오른쪽 = 출발 당일. 시간이 흐르는 방향을 왼쪽→오른쪽으로 읽게 한다.
@@ -57,7 +56,7 @@ export type PointCloud = {
   scatter: Float32Array;
   kind: Float32Array;    // 0 신호, 1 잡음, 2 제거
   holiday: Float32Array;
-  route: Float32Array;
+  route: Float32Array;    // 1 노선, 0 해안선, −1 지도에서 안 씀(셰이더가 지도 장면에서 숨긴다)
   date: Int16Array;      // 지형 출발일 번호(terrain.dates의 인덱스). ④ 점 달력이 출발일마다 점을 모은다
 };
 
@@ -84,8 +83,17 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     date: new Int16Array(count),
   };
 
-  const coast = pairs(m.coast);
-  const routes = m.routes.map((r) => pairs(r.pts));
+  const coastPts = resampleLines(m.coast, MAP_LINE.step);
+  const routePts: [number, number, number][] = [];
+  for (const r of m.routes) {
+    const line = pairs(r.pts);
+    for (let k = 0; k < MAP_LINE.routePts; k++) {
+      const f = k / (MAP_LINE.routePts - 1);
+      const [lon, lat] = line[Math.min(line.length - 1, Math.round(f * (line.length - 1)))];
+      const [x, zz] = mapPosition(lon, lat);
+      routePts.push([x, round(Math.sin(f * Math.PI) * ROUTE_ARC_HEIGHT), zz]);
+    }
+  }
   const rand = mulberry32(opts.seed ?? 1);
 
   rows.forEach((r, i) => {
@@ -94,22 +102,16 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     out.holiday[i] = holidays.has(r.date) ? 1 : 0;
     out.terrain.set(terrainPosition(r.dtd, r.date, r.pct, t.maxDtd, t.dates.length), i * 3);
 
-    // 지도 목표: 점 수가 해안선 샘플보다 많으므로 배정하고, 같은 자리에 겹치지 않게 살짝 흔든다.
-    // i를 그대로 coast.length로 나눈 나머지를 쓰면 신호(밝은 점)가 해안선 앞부분에만 몰려 한반도가 거의 안
-    // 보였다(계획 3 라운드 3). 황금비 저불일치 수열로 인덱스를 고르면 어느 레이어든 해안선 전체를 덮는다.
-    const jitter = () => (rand() - 0.5) * 0.06;
-    if (routes.length > 0 && i % ROUTE_SHARE === 0) {
-      const line = routes[(i / ROUTE_SHARE) % routes.length | 0];
-      const k = Math.floor(rand() * line.length);
-      const [x, zz] = mapPosition(line[k][0], line[k][1]);
-      const arc = Math.sin((k / (line.length - 1)) * Math.PI) * ROUTE_ARC_HEIGHT;
-      out.map.set([x + jitter(), arc, zz + jitter()], i * 3);
+    // 지도 자리: 앞쪽 점부터 해안선 → 노선. 남는 점은 지도 장면에서 숨긴다(route −1, 자리는 지형 그대로 — 셰이더가
+    // 알파 0으로). 신호·잡음을 가리지 않는다 — 지도에서는 모든 점을 같은 밝기로 그린다(pointStyle MAP_POINT)
+    if (i < coastPts.length) {
+      out.map.set([coastPts[i][0], 0, coastPts[i][1]], i * 3);
+    } else if (i < coastPts.length + routePts.length) {
+      out.map.set(routePts[i - coastPts.length], i * 3);
       out.route[i] = 1;
     } else {
-      const coastIdx = Math.floor(((i * GOLDEN_RATIO) % 1) * coast.length);
-      const [lon, lat] = coast[coastIdx];
-      const [x, zz] = mapPosition(lon, lat);
-      out.map.set([x + jitter(), 0, zz + jitter()], i * 3);
+      out.map.set(out.terrain.subarray(i * 3, i * 3 + 3), i * 3);
+      out.route[i] = -1;
     }
 
     // 흩어짐: 반지름 14 구 안 균일 분포(시드 고정 → 캡처 이미지가 매번 같다)
@@ -128,6 +130,24 @@ export async function loadSceneData(dataVersion: string, fetcher: typeof fetch =
   };
   const [terrain, map] = await Promise.all([get(`/data/terrain.${dataVersion}.json`), get('/data/map.v1.json')]);
   return { terrain: terrainSchema.parse(terrain), map: mapSchema.parse(map) };
+}
+
+// 평평한 [경도×100, 위도×100, …] 목록 → 이어진 선분끼리 나눠(점 사이가 breakDeg보다 멀면 새 선 — 섬·대륙이 선으로
+// 이어지지 않게) 세계 좌표(x, z)에서 step 간격으로 다시 뽑은 점들
+export function resampleLines(flat: number[], step: number): [number, number][] {
+  const pts = pairs(flat);
+  const out: [number, number][] = [];
+  let carry = 0;
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const [a, b] = [pts[i], pts[i + 1]];
+    if (Math.hypot(a[0] - b[0], a[1] - b[1]) > MAP_LINE.breakDeg) { carry = 0; continue; }
+    const [ax, az] = mapPosition(a[0], a[1]), [bx, bz] = mapPosition(b[0], b[1]);
+    const len = Math.hypot(bx - ax, bz - az);
+    let t = carry;
+    for (; t < len; t += step) out.push([round(ax + ((bx - ax) * t) / len), round(az + ((bz - az) * t) / len)]);
+    carry = t - len;
+  }
+  return out;
 }
 
 function pairs(flat: number[]): [number, number][] {
