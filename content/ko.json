@@ -186,7 +186,8 @@
       "alt": "출발일별 가격 점 그래프. 가로는 출발일, 세로는 노선·등급 평균 대비 가격이고, 요일별 평균을 함께 보여 줍니다. 성탄절·신정·설날 무렵이 가장 높이 솟고, 요일 중에는 일요일이 가장 비쌉니다.",
       "axis": "평균 대비",
       "weekdays": "요일 평균",
-      "tip": "{v.date} 출발 · 평균 대비 {v.pct}{v.holiday}"
+      "tip": "{v.date} 출발 · 평균 대비 {v.pct}{v.holiday}",
+      "tipHoliday": " · {v.name} 무렵"
     },
     "curve": {
       "body1": "출발이 지난 {model.realizedFlights}편의 가격을 날마다 추적했습니다. 출발 직전({model.bookingCurve.0.label})에는 같은 편 평균보다 {model.bookingCurve.0.pct|signed}% 비쌌고, {model.bookingCurve.5.label} 구간이 {model.bookingCurve.5.pct|signed}%로 가장 쌌습니다. 폭 약 {model.curveWidth}%p의 U자 곡선입니다.",

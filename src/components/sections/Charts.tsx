@@ -35,7 +35,7 @@ export function Charts({ locale }: { locale: Locale }) {
   const holidays = { ...dict.demo.holidays, ...dict.charts.holidays } as Record<string, string>;
   // 표시 상자 문장 틀: t()는 {v.…}를 facts에서 찾다가 throw하므로, 데모 문구(demoTexts)처럼 prefill로 facts 자리표시만
   // 채우고 {v.…}는 남긴 채 넘긴다 — 클라이언트의 배치 코드(charts/build.ts)가 짚은 항목 값으로 채운다
-  const tipOf = (id: string) => prefill((dict.charts as unknown as Record<string, { tip: string }>)[id].tip, facts, locale);
+  const tipOf = (id: string, key = 'tip') => prefill((dict.charts as unknown as Record<string, Record<string, string>>)[id][key], facts, locale);
   const body = (b: Block) => Array.from({ length: b.paras }, (_, i) => <p key={i}>{t(`charts.${b.id}.body${i + 1}`)}</p>);
   // 그림 판 블록은 문단마다 칸 하나 — 자막 띠에서 한 칸씩 바꿔 보여 준다(motion/caption.ts)
   const paraCells = (b: Block) => (
@@ -62,6 +62,7 @@ export function Charts({ locale }: { locale: Locale }) {
               locale, holidays, axis: b.axis ? t(`charts.${b.id}.axis`) : undefined,
               weekdayTitle: b.id === 'depart' ? t('charts.depart.weekdays') : undefined,
               tip: tipOf(b.id),
+              tipHoliday: b.id === 'depart' ? tipOf('depart', 'tipHoliday') : undefined,
             }}
             errorText={t('charts.error')}
           />

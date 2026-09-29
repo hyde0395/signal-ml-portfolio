@@ -73,14 +73,15 @@ describe('buildLayout', () => {
       const c = dictionaries[locale].charts;
       const holidays = c.holidays as Record<string, string>;
       const size = { w: 1080, h: 414 };
-      const dep = buildLayout('chartDepart', { charts }, size, { locale, holidays, tip: c.depart.tip }).items!;
+      const dep = buildLayout('chartDepart', { charts }, size, { locale, holidays, tip: c.depart.tip, tipHoliday: c.depart.tipHoliday }).items!;
       const cur = buildLayout('chartCurve', { charts }, size, { locale, holidays, tip: c.curve.tip }).items!;
       const clo = buildLayout('chartCloud', { cloud }, size, { locale, holidays, tip: c.band.tip }).items!;
       for (const it of [...dep, ...cur, ...clo]) expect(it.text).not.toMatch(/[{}]/);
       expect(dep[0].text).toContain('−5%');
       expect(dep[0].text).not.toContain(holidays.kr_hangul_day);
       expect(dep[1].text).toContain('+32%');
-      expect(dep[1].text).toContain(holidays.kr_hangul_day);
+      // 공휴일 조각은 tipHoliday 틀로("무렵" / "around" / "前後")
+      expect(dep[1].text).toContain(c.depart.tipHoliday.replace('{v.name}', holidays.kr_hangul_day));
       // 항목 0 = 화면 맨 왼쪽 구간(D-61~90)
       expect(cur[0].text).toContain('D-61~90');
       expect(cur[0].text).toContain('+2%');

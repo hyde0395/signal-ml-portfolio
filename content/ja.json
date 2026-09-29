@@ -186,7 +186,8 @@
       "alt": "出発日別の価格の点グラフ。横が出発日、縦が路線・クラス平均との差で、曜日ごとの平均もあわせて示しています。クリスマス・元日・ソルラル前後がいちばん高く、曜日では日曜日がいちばん高くなっています。",
       "axis": "平均比",
       "weekdays": "曜日平均",
-      "tip": "{v.date}出発 · 平均比 {v.pct}{v.holiday}"
+      "tip": "{v.date}出発 · 平均比 {v.pct}{v.holiday}",
+      "tipHoliday": " · {v.name}前後"
     },
     "curve": {
       "body1": "出発済みの{model.realizedFlights}便の価格を日次で追跡しました。出発直前（{model.bookingCurve.0.label}）は同じ便の平均より{model.bookingCurve.0.pct|signed}%高く、{model.bookingCurve.5.label}の区間が{model.bookingCurve.5.pct|signed}%で最も安くなりました。幅は約{model.curveWidth}ポイントのU字カーブです。",

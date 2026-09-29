@@ -16,6 +16,8 @@ export type ChartStrings = {
   countUnit?: string;               // "개" / " features" / "個"
   // 표시 상자 문장 틀(charts.<id>.tip, 차트 1·2·4). {v.…}가 채워지지 않은 채 서버에서 넘어온다 — 여기서 짚은 항목 값으로 채운다
   tip?: string;
+  // 출발일 표시 상자의 공휴일 조각 틀(charts.depart.tipHoliday, {v.name}). 공휴일 코드는 공휴일 ±3일을 표시하므로 "무렵"으로 쓴다
+  tipHoliday?: string;
 };
 export type Loaded = { charts?: ChartsData; cloud?: CloudData };
 
@@ -54,8 +56,11 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
         weekday: (i) => wd.format(new Date(MONDAY + i * 86_400_000)),
         month: (iso) => mo.format(new Date(`${iso}T00:00:00Z`)),
         holiday, pct: signed, axis: s.axis ?? '', weekdayTitle: s.weekdayTitle ?? '',
-        // 공휴일 이름은 앞에 구분자를 붙여 넘긴다 — 공휴일이 아닌 날은 틀의 {v.holiday}가 빈 글자로 사라지게
-        tip: (v) => tip({ date: dayOf(v.date), pct: signedInt(v.pct), holiday: v.holiday ? ` · ${v.holiday}` : '' }),
+        // 공휴일 조각(구분자 포함)은 tipHoliday 틀로 만든다 — 공휴일 무렵이 아닌 날은 빈 글자라 틀의 {v.holiday}가 사라진다
+        tip: (v) => tip({
+          date: dayOf(v.date), pct: signedInt(v.pct),
+          holiday: v.holiday && s.tipHoliday ? interpolate(s.tipHoliday, { v: { name: v.holiday } }, s.locale) : '',
+        }),
       });
     }
     case 'chartCurve':

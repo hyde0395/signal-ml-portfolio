@@ -186,7 +186,8 @@
       "alt": "Dot chart of price by departure date: departure dates across, price versus the route-and-class average up the side, with weekday averages alongside. Dates around Christmas, New Year's Day and Seollal rise the highest; among weekdays, Sunday is the most expensive.",
       "axis": "vs. average",
       "weekdays": "By weekday",
-      "tip": "Departing {v.date} · {v.pct} vs. average{v.holiday}"
+      "tip": "Departing {v.date} · {v.pct} vs. average{v.holiday}",
+      "tipHoliday": " · around {v.name}"
     },
     "curve": {
       "body1": "I tracked prices day by day for {model.realizedFlights} flights that had already departed. Right before departure ({model.bookingCurve.0.label}), prices ran {model.bookingCurve.0.pct|signed}% above the same flight's average, while the {model.bookingCurve.5.label} window was cheapest at {model.bookingCurve.5.pct|signed}%. That's a U-shaped curve about {model.curveWidth}pp wide.",

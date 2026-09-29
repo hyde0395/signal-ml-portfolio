@@ -12,7 +12,7 @@ const MAY_BE_EMPTY = new Set(['contact.nameSub']);
 const flat = Object.fromEntries(LOCALES.map((l) => [l, flatten(dictionaries[l])]));
 // 데모 문구의 {v.…}는 실행 중에 채워지므로 견본 값으로 채워 본다(src/demo/reason.ts).
 // ④ 차트 표시 상자 문구(charts.*.tip)의 {v.…}는 src/charts/build.ts가 채운다 — 데모 견본에 없는 이름만 여기서 더한다
-const CHART_TIP_SAMPLE = { pct: '+12%', bin: 'D-31~45', n: 120 };
+const CHART_TIP_SAMPLE = { pct: '+12%', bin: 'D-31~45', n: 120, name: 'Hangul Day' };
 const source = { ...facts, v: { ...SAMPLE_VALUES, ...CHART_TIP_SAMPLE } };
 
 describe('문구 파일', () => {
