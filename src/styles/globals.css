@@ -196,6 +196,11 @@ main { position: relative; z-index: 1; }
 .backdrop::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s var(--ease);
   background: linear-gradient(180deg, #010206 0%, #02050c 26%, #060b18 34%, #0c1426 38%, #03050b 38.4%, #02040a 100%); }
 html[data-active-scene="hero"] .backdrop::before { opacity: 1; }
+/* 첫 화면 → ① 전환 중(TerrainScene이 data-handoff·--sky를 적는다)에는 하늘을 스크롤에 묶는다. 머리말이 화면
+   가운데일 때 활성 장면이 hero로 남아 지평선 띠가 글 뒤에 또렷이 남던 문제, ①에서 되돌아올 때 0.8초에 걸쳐
+   뒤늦게 떠오르던 문제를 함께 없앤다. :root로 위 규칙보다 우선순위를 높이고, 전환(transition)은 끈다 —
+   켜 두면 불투명도가 스크롤보다 늦게 따라온다 */
+:root[data-handoff] .backdrop::before { opacity: var(--sky, 0); transition: none; }
 
 /* 글 뒤 판 대신(설계 2026-09-28 §2.1): 3D 화면 가장자리를 경계 없이 어둡게 해 왼쪽 글(휴대폰은 아래 글)의 대비를 돕는다.
    차트 장면에서는 점이 판 전체에 퍼져 가장자리 점까지 읽혀야 하므로 끈다 */

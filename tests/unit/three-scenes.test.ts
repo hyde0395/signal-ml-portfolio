@@ -1,7 +1,7 @@
 // 장면 표 검사: 모든 키 존재, problem·dataBoard만 지도, bubble만 제거 레이어·떨어짐,
 // 차트 장면은 정면 고정 카메라이고 세로 화면에서도 카메라가 그대로다.
 import { describe, expect, it } from 'vitest';
-import { blendScenes, CHART_DISTANCE, handoffProgress, isChartScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
+import { blendScenes, CHART_DISTANCE, followActive, handoffProgress, isChartScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 
 const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'features', 'chartDepart', 'chartCurve', 'bubble',
   'validation', 'chartCloud', 'limits', 'demo', 'contact'];
@@ -152,6 +152,10 @@ describe('blendScenes', () => {
   it('follow는 섞기 결과에 넣지 않는다', () => {
     expect('follow' in blendScenes(a, b, 0.5)).toBe(false);
   });
+  it('followUntil(시각)도 섞지 않는다 — 두 시각의 평균은 의미 없는 값이다', () => {
+    const x = { ...a, followUntil: 1000 }, y = { ...b, followUntil: 3000 };
+    expect('followUntil' in blendScenes(x, y, 0.5)).toBe(false);
+  });
   it('숫자가 아닌 필드는 h >= 0.5면 b, 아니면 a', () => {
     const x = { ...a, tag: 'x' } as typeof a, y = { ...b, tag: 'y' } as typeof b;
     expect((blendScenes(x, y, 0.49) as unknown as { tag: string }).tag).toBe('x');
@@ -178,5 +182,15 @@ describe('handoffProgress', () => {
   it('y1 <= y0이면 0', () => {
     expect(handoffProgress(500, 300, 300)).toBe(0);
     expect(handoffProgress(500, 300, 100)).toBe(0);
+  });
+});
+
+describe('followActive', () => {
+  it('follow이면 참, followUntil 전이면 참, 지나면 거짓', () => {
+    expect(followActive({ follow: true }, 0)).toBe(true);
+    expect(followActive({ followUntil: 1000 }, 999)).toBe(true);
+    expect(followActive({ followUntil: 1000 }, 1000)).toBe(false);
+    expect(followActive({}, 0)).toBe(false);
+    expect(followActive(null, 0)).toBe(false);
   });
 });

@@ -13,7 +13,7 @@ import { CameraRig } from './CameraRig';
 import { assignPoints, chartShiftY, pickSlot, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, stepFrameRate } from './frameRate';
-import { blendScenes, CHART_DISTANCE, CHART_FOV, handoffProgress, isChartScene, sceneFor, type SceneKey, type SceneState } from './scenes';
+import { blendScenes, CHART_DISTANCE, CHART_FOV, handoffProgress, sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
 type Props = { dataVersion: string; onReady: () => void; onFail: (reason: string) => void; capture: SceneKey | null };
@@ -66,6 +66,29 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       return;
     }
     let raf = 0;
+    // 마지막으로 html에 적은 전환 표시·하늘 값 — 같은 값이면 다시 쓰지 않는다(속성·변수 쓰기는 스타일 재계산을 부른다)
+    let shownHandoff: string | null = null, shownSky: string | null = null;
+    let prevH = -1;        // 직전 update의 전환 진행도(-1 = 계산 안 함)
+    let lastHandoff = -Infinity; // 전환이 마지막으로 움직인 시각(performance.now)
+    // 전환 표시(data-handoff, e2e가 읽는다)와 하늘 불투명도(--sky)를 html에 적는다. 이 함수는 update의 DOM 읽기가
+    // 끝난 뒤에만 부른다 — 먼저 쓰면 뒤따르는 .chart-stage 읽기가 스타일 재계산을 강제한다
+    const writeHandoff = (html: HTMLElement, h: number) => {
+      const hs = h >= 0 ? h.toFixed(3) : null;
+      // 하늘(globals.css .backdrop::before)을 스크롤에 묶는다: 머리말이 화면 가운데일 때는 활성 장면이 없어
+      // data-active-scene이 hero로 남으므로, 장면 이름만으로는 지평선 띠가 전환 내내 또렷이 남는다.
+      // 세제곱으로 앞쪽에서 빨리 걷어 내 공항 점이 흩어지기 시작할 무렵엔 띠가 거의 사라지게 한다
+      const ss = h >= 0 ? ((1 - h) ** 3).toFixed(3) : null;
+      if (hs !== shownHandoff) {
+        if (hs === null) delete html.dataset.handoff;
+        else html.dataset.handoff = hs;
+        shownHandoff = hs;
+      }
+      if (ss !== shownSky) {
+        if (ss === null) html.style.removeProperty('--sky');
+        else html.style.setProperty('--sky', ss);
+        shownSky = ss;
+      }
+    };
     const update = () => {
       raf = 0;
       portrait.current = window.innerHeight > window.innerWidth;
@@ -78,15 +101,22 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       // 내려앉기 여백이 없어 y0가 의미 없다. #project 위치는 방금 readCandidates가 레이아웃을 읽은 뒤
       // (사이에 DOM 쓰기 없음)라 추가 레이아웃 계산이 없고, 캐시하지 않으므로 글꼴·창 크기 변화에도 늘 맞다
       let h = -1; // -1 = 전환 계산 안 함
-      if (html.classList.contains('hero-runway') && (!active || !isChartScene(active.key))) {
-        const projectTop = document.getElementById('project')?.getBoundingClientRect().top;
-        if (projectTop !== undefined) h = handoffProgress(window.scrollY, 0.9 * vh, projectTop + window.scrollY - 0.2 * vh);
+      if (html.classList.contains('hero-runway')) {
+        // 활성 장면이 ①보다 뒤(②~)면 #project 윗변은 이미 y1을 한참 지났다 — 읽지 않고 1로 둔다
+        if (active && active.key !== 'hero' && active.key !== 'about') h = 1;
+        else {
+          const projectTop = document.getElementById('project')?.getBoundingClientRect().top;
+          if (projectTop !== undefined) h = handoffProgress(window.scrollY, 0.9 * vh, projectTop + window.scrollY - 0.2 * vh);
+        }
       }
       const handoff = h > 0 && h < 1;
-      // e2e가 전환 진행도를 읽는 작은 표시(전환이 없는 경우엔 지운다)
-      if (h >= 0) html.dataset.handoff = h.toFixed(3);
-      else delete html.dataset.handoff;
-      if (!active && !handoff) return;
+      const now = performance.now();
+      // 전환이 움직였으면(구간 안이거나, 휠 한 번에 y0·y1을 건너뛰어 0↔1로 바로 바뀐 경우도) 시각을 적어 둔다.
+      // 건너뛴 경우 follow가 곧바로 꺼져 남은 거리를 느린 감쇠로 한참 흘러가므로 600ms 동안 빠른 감쇠를 잇는다
+      if (handoff || (prevH >= 0 && h >= 0 && h !== prevH)) lastHandoff = now;
+      prevH = h;
+      const followUntil = lastHandoff + 600;
+      if (!active && !handoff) { writeHandoff(html, h); return; }
       let s: SceneState;
       if (handoff) {
         // 공항 끝(hero 진행 1)과 ① 처음(about 진행 0) 사이. follow로 점·카메라가 스크롤을 바짝 따라간다
@@ -133,7 +163,8 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       slots.current.focusTone = chartKey && entry ? entry.layout.focusTone : 2;
       slots.current.focusDim = chartKey && entry ? entry.layout.focusDim : 0.25;
       // 배치가 아직 없으면(데이터를 받는 중) 점을 지형에 둔다 — 빈 화면 대신 멀리 보이는 지형
-      target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot, shift };
+      target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot, shift, followUntil };
+      writeHandoff(html, h); // DOM 읽기(.chart-stage)가 모두 끝난 뒤에 쓴다
       // 전환 앞 절반(아직 공항에 가까울 때)만 마우스 시차를 둔다
       parallax.current = handoff ? h < 0.5 : active?.key === 'hero';
       setRunning(active?.key !== 'contact' && !document.hidden);
@@ -156,6 +187,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       delete document.documentElement.dataset.activeScene;
       delete document.documentElement.dataset.chart;
       delete document.documentElement.dataset.handoff;
+      document.documentElement.style.removeProperty('--sky');
     };
   }, [capture, cloud]);
 

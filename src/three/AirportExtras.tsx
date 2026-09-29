@@ -6,7 +6,7 @@ import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { buildAirport, landingPlane, runwayPoint, RUNWAY, taxiPlane, toWorld } from './airport';
-import type { SceneState } from './scenes';
+import { followActive, type SceneState } from './scenes';
 
 type Props = { target: React.RefObject<SceneState>; instant: boolean; portrait: boolean };
 
@@ -135,8 +135,8 @@ export function AirportExtras({ target, instant, portrait }: Props) {
 
   useFrame((state, delta) => {
     const goal = target.current?.airport ?? 0;
-    // 전환 구간(follow)에서는 점과 같은 규칙으로 4배 빠르게 — 곁가지만 늦게 사라지면 점과 따로 논다
-    const k = target.current?.follow ? DAMP * 4 : DAMP;
+    // 전환 구간(follow, 빠른 휠 직후 잠깐 포함)에서는 점과 같은 규칙으로 4배 빠르게 — 곁가지만 늦게 사라지면 점과 따로 논다
+    const k = followActive(target.current, performance.now()) ? DAMP * 4 : DAMP;
     fade.current = instant ? goal : THREE.MathUtils.damp(fade.current, goal, k, delta);
     const f = fade.current, t = instant ? 6 : state.clock.elapsedTime, dpr = state.viewport.dpr;
     // 히어로를 벗어나 fade가 거의 0이면 그룹을 통째로 안 그린다 — 알파만 0으로 두면 GPU는 여전히

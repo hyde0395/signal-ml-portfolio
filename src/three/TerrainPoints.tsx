@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import type { AirportBuffers } from './airportAssign';
 import { packMeta, type PointCloud } from './data';
 import { toNdc } from './pointerField';
-import type { SceneState } from './scenes';
+import { followActive, type SceneState } from './scenes';
 import { fragmentShader, vertexShader } from './shaders';
 
 export type ChartSlotWrite = { slot: 0 | 1; pos: Float32Array; style: Float32Array; hl: Float32Array };
@@ -169,8 +169,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
       slots.current!.pending = null;
     }
     const u = m.uniforms;
-    // 전환 구간(follow)에서는 스크롤을 바짝 따라가게 약 4배 빠르게 — 느리면 휠을 멈춘 뒤에도 한참 흘러간다
-    const k = t.follow ? DAMP * 4 : DAMP;
+    // 전환 구간(follow, 빠른 휠 직후 잠깐 포함)에서는 스크롤을 바짝 따라가게 약 4배 빠르게 — 느리면 휠을 멈춘 뒤에도 한참 흘러간다
+    const k = followActive(t, performance.now()) ? DAMP * 4 : DAMP;
     const step = (key: string, goal: number) => {
       u[key].value = instant ? goal : THREE.MathUtils.damp(u[key].value, goal, k, delta);
     };

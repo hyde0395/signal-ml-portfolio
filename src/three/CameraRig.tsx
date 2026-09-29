@@ -3,7 +3,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import type { SceneState } from './scenes';
+import { followActive, type SceneState } from './scenes';
 
 type Props = { target: React.RefObject<SceneState>; instant: boolean; parallax: React.RefObject<boolean> };
 
@@ -31,8 +31,8 @@ export function CameraRig({ target, instant, parallax }: Props) {
       camera.position.copy(goal);
       look.current.copy(goalLook);
     } else {
-      // 전환 구간(follow)에서는 점(TerrainPoints DAMP×4)과 함께 스크롤을 바짝 따라간다
-      const k = t.follow ? 7 : 1.8;
+      // 전환 구간(follow, 빠른 휠 직후 잠깐 포함)에서는 점(TerrainPoints DAMP×4)과 함께 스크롤을 바짝 따라간다
+      const k = followActive(t, performance.now()) ? 7 : 1.8;
       camera.position.x = THREE.MathUtils.damp(camera.position.x, goal.x, k, delta);
       camera.position.y = THREE.MathUtils.damp(camera.position.y, goal.y, k, delta);
       camera.position.z = THREE.MathUtils.damp(camera.position.z, goal.z, k, delta);
