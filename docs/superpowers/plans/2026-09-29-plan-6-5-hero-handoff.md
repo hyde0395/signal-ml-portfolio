@@ -55,6 +55,17 @@
 - [ ] 대비: `terrain.spec` 화소 검사(①·설명 화면) 통과. 3D 청크 ≤ 250KB.
 - [ ] 커밋 `feat(3d): wide camera and a soft wave of per-date rows for ①`.
 
+### Task 5c: 첫 화면 공항을 시안과 똑같이 (설계 §8) — Task 5b보다 먼저
+
+**Files:** `src/three/TerrainScene.tsx`(DPR 한 줄), `src/three/shaders.ts`, `src/three/AirportExtras.tsx`, `src/three/pointStyle.ts`, `src/three/scenes.ts`(화각이 장면 값이면), `src/styles/globals.css`(하늘·비네트), 테스트
+
+- [ ] 설계 §8 목록을 모두 넣는다(필름 입자 제외). 시안 코드(`01-night-airport.html`)와 비교 diff를 참고해 값은 그대로.
+- [ ] 화각 45°: 첫 화면 구도가 바뀐다 — 첫 화면 글·SCROLL 표시·메타 줄과 겹치지 않는지, 휴대폰 세로 값도 확인. 차트 장면 카메라(차트 판 px ↔ 월드 좌표)가 화각에 의존하면 차트 장면은 건드리지 않는다.
+- [ ] 대비: 하늘·비네트가 바뀌므로 `terrain.spec` 화소 검사 전체(첫 화면·머리말·①) 통과.
+- [ ] 대체 이미지 첫 화면(`hero.webp`)을 다시 찍는다(`npm run fallbacks`) — OG 이미지는 그대로.
+- [ ] 실제 GPU로 시안과 나란히 캡처(데스크톱 1440×900 레티나, 휴대폰 390×844) — 활주로 확대 포함.
+- [ ] 커밋 `feat(3d): the night airport matches the mockup (crisp cores, wet reflections, sky, DPR 2 on desktop)`.
+
 ### Task 5b: 이륙하는 점 비행기 (설계 §7, 시안 A)
 
 **Files:** `src/three/data.ts`(또는 공항 배정 `assignAirport`가 있는 곳), `src/three/shaders.ts`, `src/three/TerrainPoints.tsx`, `src/three/TerrainScene.tsx`(장면 목표 부분만, 필요하면), `src/three/AirportExtras.tsx`(착륙 비행기 끄기), 테스트

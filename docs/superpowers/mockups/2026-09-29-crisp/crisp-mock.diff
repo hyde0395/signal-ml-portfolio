@@ -1,0 +1,292 @@
+diff --git a/src/styles/globals.css b/src/styles/globals.css
+index a4625d7..81f1fc6 100644
+--- a/src/styles/globals.css
++++ b/src/styles/globals.css
+@@ -440,3 +440,14 @@ html.has-captions .chart-para:not(.is-on) { pointer-events: none; }
+   .chart-label { font-size: 9px; }
+   .chart-group-pct { font-size: 1rem; }
+ }
++
++/* 임시(?sky=mock, 비교 캡처 전용): 시안 하늘 — 지평선 39.8%(3D 지평선 위치), 시안 필름 입자의 평균 밝기(+4)를 색에 녹임,
++   지평선 위 따뜻한 띠, 시안 비네트(검정 0.62 + 글 쪽 어둡게) */
++html[data-sky="mock"] .backdrop::before {
++  background:
++    radial-gradient(45vw 5.4vw at 66% 100%, rgba(255, 196, 140, 0.06), rgba(255, 196, 140, 0)) top / 100% 39.8% no-repeat,
++    linear-gradient(180deg, #05060a 0%, #06090f 27.9%, #0a0f1c 37.4%, #161b2a 39.8%, #04060b 39.9%, #04060b 100%); }
++html[data-sky="mock"][data-active-scene="hero"] .backdrop::after {
++  background:
++    radial-gradient(circle 42vw at 12% 78%, rgba(1, 2, 6, 0.6), rgba(1, 2, 6, 0)),
++    radial-gradient(circle 78vmax at 50% 50%, rgba(0, 0, 0, 0) 28%, rgba(0, 0, 0, 0.62) 100%); }
+diff --git a/src/three/AirportExtras.tsx b/src/three/AirportExtras.tsx
+index ed3e3d5..69b1c64 100644
+--- a/src/three/AirportExtras.tsx
++++ b/src/three/AirportExtras.tsx
+@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef } from 'react';
+ import * as THREE from 'three';
+ import { buildAirport, landingPlane, runwayPoint, RUNWAY, taxiPlane, toWorld } from './airport';
+ import type { SceneState } from './scenes';
++import { CRISP } from './crispFlags';
+ 
+ type Props = { target: React.RefObject<SceneState>; instant: boolean; portrait: boolean };
+ 
+@@ -19,29 +20,40 @@ const colorScratch = new Float32Array(3);
+ // 둥근 빛 점 셰이더(곁가지 전용): 위치·색·크기(px)·알파를 받아 가산 합성으로 그린다
+ const glowVert = /* glsl */ `
+   attribute vec3 color; attribute float size; attribute float alpha;
+-  uniform float uFade; uniform float uDpr; uniform float uTime;
+-  varying vec3 vColor; varying float vAlpha;
++  uniform float uFade; uniform float uDpr; uniform float uTime; uniform float uVh;
++  varying vec3 vColor; varying float vAlpha; varying float vFlat;
++  vec3 srgb(vec3 c) { c = max(c, vec3(0.0)); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }
+   void main() {
+     vec4 mv = modelViewMatrix * vec4(position, 1.0);
+     gl_Position = projectionMatrix * mv;
+     gl_PointSize = size * uDpr;
+-    vColor = color;
++    vFlat = 1.0;
++    if (size < 0.0) {
++      float dz = max(-mv.z, 0.01);
++      gl_PointSize = min(2.0 * (-size * 0.01) * projectionMatrix[1][1] * 0.5 * uVh / dz, 840.0 * uDpr);
++      vFlat = clamp(cameraPosition.y / dz * 1.3, 0.04, 0.9);
++    }
++    vColor = ${CRISP.color ? 'srgb(color)' : 'color'};
+     // 별(크기 ≤ 1.5px)만 천천히 반짝인다
+     float tw = size <= 1.5 ? 0.7 + 0.3 * sin(uTime * 0.8 + position.x * 13.0) : 1.0;
+     vAlpha = alpha * uFade * tw;
+   }`;
+ const glowFrag = /* glsl */ `
+-  varying vec3 vColor; varying float vAlpha;
++  varying vec3 vColor; varying float vAlpha; varying float vFlat;
+   void main() {
+-    float d = length(gl_PointCoord - 0.5);
++    vec2 q = gl_PointCoord - 0.5;
++    q.y /= vFlat;
++    float d = length(q);
+     if (d > 0.5) discard;
+-    gl_FragColor = vec4(vColor, vAlpha * exp(-d * d * 14.0));
++    float r = d * 2.0;
++    float g = vFlat < 0.999 ? (r < 0.5 ? mix(1.0, 0.35, r / 0.5) : mix(0.35, 0.0, (r - 0.5) / 0.5)) : exp(-d * d * 14.0);
++    gl_FragColor = vec4(vColor, vAlpha * g);
+   }`;
+ 
+ function glowMaterial() {
+   return new THREE.ShaderMaterial({
+     vertexShader: glowVert, fragmentShader: glowFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+-    uniforms: { uFade: { value: 1 }, uDpr: { value: 1 }, uTime: { value: 0 } },
++    uniforms: { uFade: { value: 1 }, uDpr: { value: 1 }, uTime: { value: 0 }, uVh: { value: 900 } },
+   });
+ }
+ 
+@@ -70,6 +82,14 @@ export function AirportExtras({ target, instant, portrait }: Props) {
+       pts.push({ p: [Math.sin(az) * r * Math.cos(el), Math.sin(el) * r, -Math.cos(az) * r * Math.cos(el)], c: C.white, s: 1 + rnd() * 0.5, a: 0.05 + rnd() * 0.2 });
+     }
+     for (const l of air.lights) {
++      if (CRISP.core) {
++        if (l.kind === 'apron') pts.push({ p: [l.pos[0], 0.002, l.pos[2]], c: C.amber, s: -60, a: 0.13 });
++        else if (l.kind === 'edge') pts.push({ p: [l.pos[0], 0.002, l.pos[2]], c: C.white, s: -22, a: 0.09 });
++        else if (l.kind === 'taxi') pts.push({ p: [l.pos[0], 0.002, l.pos[2]], c: C.blue, s: -14, a: 0.07 });
++        else if (l.kind === 'thr') pts.push({ p: [l.pos[0], 0.002, l.pos[2]], c: C.white, s: -10, a: 0.05 });
++        else if (l.kind === 'end') pts.push({ p: [l.pos[0], 0.002, l.pos[2]], c: C.warm, s: -10, a: 0.05 });
++        continue;
++      }
+       if (l.kind === 'apron') pts.push({ p: [l.pos[0], 0.002, l.pos[2]], c: C.amber, s: 120, a: 0.16 });
+       else if (l.kind === 'edge') pts.push({ p: [l.pos[0], 0.002, l.pos[2]], c: C.white, s: 26, a: 0.07 });
+       else if (l.kind === 'taxi') pts.push({ p: [l.pos[0], 0.002, l.pos[2]], c: C.blue, s: 18, a: 0.06 });
+@@ -84,6 +104,51 @@ export function AirportExtras({ target, instant, portrait }: Props) {
+     return g;
+   }, [air]);
+ 
++  // 임시(?refl=1): 젖은 노면 반사 — 바닥 불빛 아래 세로 줄(시안 O.wet: 폭 hr·0.6, 높이 hr·3.2, hr = 핵 반경·7, 알파 a·0.1)
++  const refl = useMemo(() => {
++    if (!CRISP.refl) return null;
++    const TONE_C = [C.blue, C.blue, C.amber, C.white, C.warm];
++    const ls = air.lights.filter((l) => l.kind === 'edge' || l.kind === 'center' || l.kind === 'thr' || l.kind === 'end' || l.kind === 'taxi');
++    const g = glowGeometry(ls.length);
++    ls.forEach((l, i) => {
++      (g.attributes.position.array as Float32Array).set(l.pos, i * 3);
++      const c = TONE_C[l.tone];
++      (g.attributes.color.array as Float32Array).set([c.r, c.g, c.b], i * 3);
++      (g.attributes.size.array as Float32Array)[i] = 1;
++      (g.attributes.alpha.array as Float32Array)[i] = l.kind === 'center' ? 0.7 : 1;
++    });
++    return g;
++  }, [air]);
++  const reflMat = useMemo(() => new THREE.ShaderMaterial({
++    vertexShader: /* glsl */ `
++      attribute vec3 color; attribute float size; attribute float alpha;
++      uniform float uFade; uniform float uDpr; uniform float uVh;
++      varying vec3 vColor; varying float vAlpha;
++      vec3 srgb(vec3 c) { c = max(c, vec3(0.0)); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }
++      void main() {
++        vec4 mv = modelViewMatrix * vec4(position, 1.0);
++        gl_Position = projectionMatrix * mv;
++        float dz = max(-mv.z, 0.01);
++        float hr = clamp(5.5 / dz, 0.6, 2.6) * uDpr * 7.0;
++        float h = hr * 3.2;
++        gl_PointSize = h;
++        gl_Position.y -= (uDpr + h * 0.5) * 2.0 / uVh * gl_Position.w;
++        vAlpha = alpha * uFade * 0.1 / (1.0 + dz / ${CRISP.fadeSoft ? '120.0' : '52.0'});
++        vColor = ${CRISP.color ? 'srgb(color)' : 'color'};
++      }`,
++    fragmentShader: /* glsl */ `
++      varying vec3 vColor; varying float vAlpha;
++      void main() {
++        vec2 q = gl_PointCoord - 0.5;
++        float r = length(vec2(q.x / (0.6 / 3.2), q.y)) * 2.0;
++        if (r > 1.0) discard;
++        float g = r < 0.5 ? mix(1.0, 0.35, r / 0.5) : mix(0.35, 0.0, (r - 0.5) / 0.5);
++        gl_FragColor = vec4(vColor, vAlpha * g);
++      }`,
++    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
++    uniforms: { uFade: { value: 1 }, uDpr: { value: 1 }, uVh: { value: 900 } },
++  }), []);
++
+   // 바닥: 활주로·평행 유도로 판(풀밭보다 아주 조금 밝게) + 활주로 표시(끝 줄무늬·착지 막대·중앙 점선)
+   const ground = useMemo(() => {
+     const quads: number[] = [];
+@@ -140,7 +205,8 @@ export function AirportExtras({ target, instant, portrait }: Props) {
+     // 히어로를 벗어나 fade가 거의 0이면 그룹을 통째로 안 그린다 — 알파만 0으로 두면 GPU는 여전히
+     // 픽셀마다 래스터화를 시도한다(점 구름의 "숨은 점" 최적화와 같은 이유, shaders.ts 주석 참고)
+     if (root.current) root.current.visible = f > 0.002;
+-    for (const m of glowMats) { m.uniforms.uFade.value = f; m.uniforms.uDpr.value = dpr; m.uniforms.uTime.value = t; }
++    for (const m of glowMats) { m.uniforms.uFade.value = f; m.uniforms.uDpr.value = dpr; m.uniforms.uTime.value = t; m.uniforms.uVh.value = state.size.height * dpr; }
++    reflMat.uniforms.uFade.value = f; reflMat.uniforms.uDpr.value = dpr; reflMat.uniforms.uVh.value = state.size.height * dpr;
+     surfaceMat.opacity = 0.9 * f; markMat.opacity = 0.08 * f; flareMat.opacity = f;
+     const P = movers.attributes.position.array as Float32Array, Cc = movers.attributes.color.array as Float32Array;
+     const S = movers.attributes.size.array as Float32Array, A = movers.attributes.alpha.array as Float32Array;
+@@ -173,6 +239,7 @@ export function AirportExtras({ target, instant, portrait }: Props) {
+     <group ref={root}>
+       <mesh geometry={ground.surface} material={surfaceMat} renderOrder={-2} />
+       <mesh geometry={ground.marks} material={markMat} renderOrder={-1} />
++      {refl && <points geometry={refl} material={reflMat} frustumCulled={false} />}
+       <points geometry={statics} material={staticMat} frustumCulled={false} />
+       <points geometry={movers} material={moverMat} frustumCulled={false} />
+       <sprite ref={flare} material={flareMat} scale={[0.22, 0.003, 1]} />
+diff --git a/src/three/TerrainPoints.tsx b/src/three/TerrainPoints.tsx
+index ff4124b..bd0972a 100644
+--- a/src/three/TerrainPoints.tsx
++++ b/src/three/TerrainPoints.tsx
+@@ -8,6 +8,7 @@ import type { AirportBuffers } from './airportAssign';
+ import type { PointCloud } from './data';
+ import { toNdc } from './pointerField';
+ import type { SceneState } from './scenes';
++import { CRISP } from './crispFlags';
+ import { fragmentShader, vertexShader } from './shaders';
+ 
+ export type ChartSlotWrite = { slot: 0 | 1; pos: Float32Array; style: Float32Array; hl: Float32Array };
+@@ -196,7 +197,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
+     u.uLightT.value = instant ? 99 : state.clock.elapsedTime;
+     // 신호 물결: 3초 뒤부터 초당 700m로 활주로를 따라 달리고 5,800m마다 되풀이(시안과 같은 속도)
+     const wt = state.clock.elapsedTime - 3;
+-    u.uWave.value = instant || wt < 0 ? -1e4 : (wt * 700) % 5800;
++    u.uWave.value = instant || CRISP.still || wt < 0 ? -1e4 : (wt * 700) % 5800;
+     // 포인터: 위치는 빠르게, 세기는 천천히 따라간다 — 점마다 상태가 없으므로 이 부드러움이 "비켰다가 제자리로"를 만든다
+     const p = pointer.current;
+     u.uAspect.value = state.size.width / Math.max(1, state.size.height);
+diff --git a/src/three/TerrainScene.tsx b/src/three/TerrainScene.tsx
+index 4c08c2c..11afc5b 100644
+--- a/src/three/TerrainScene.tsx
++++ b/src/three/TerrainScene.tsx
+@@ -15,6 +15,7 @@ import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './da
+ import { initialFrameRate, stepFrameRate } from './frameRate';
+ import { CHART_DISTANCE, CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
+ import { TerrainPoints, type ChartSlots } from './TerrainPoints';
++import { CRISP } from './crispFlags';
+ 
+ type Props = { dataVersion: string; onReady: () => void; onFail: (reason: string) => void; capture: SceneKey | null };
+ 
+@@ -135,7 +136,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }:
+   }, [capture, cloud]);
+ 
+   if (!cloud) return null;
+-  const maxDpr = level > 0 ? 1 : 1.5;
++  const maxDpr = level > 0 ? 1 : CRISP.dpr2 ? 2 : 1.5;
+ 
+   return (
+     <div className="backdrop" aria-hidden="true">
+diff --git a/src/three/crispFlags.ts b/src/three/crispFlags.ts
+new file mode 100644
+index 0000000..131737c
+--- /dev/null
++++ b/src/three/crispFlags.ts
+@@ -0,0 +1,15 @@
++// 임시(비교 캡처 전용, 커밋 안 함): 주소 스위치로 첫 화면 공항 모양을 바꿔 본다.
++const q = typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search);
++const all = q.get('all') === '1';
++export const CRISP = {
++  dpr2: all || q.get('dpr') === '2',
++  fadeSoft: all || q.get('fade') === 'soft',
++  core: all || q.get('core') === 'crisp',
++  refl: all || q.get('refl') === '1',
++  sky: all || q.get('sky') === 'mock',
++  color: all || q.get('color') === 'srgb',
++  still: q.get('still') === '1', // 신호 물결 끔(캡처끼리 같은 순간이 되게)
++};
++if (typeof document !== 'undefined') {
++  if (CRISP.sky) document.documentElement.dataset.sky = 'mock';
++}
+diff --git a/src/three/shaders.ts b/src/three/shaders.ts
+index d748d39..f3b0cd8 100644
+--- a/src/three/shaders.ts
++++ b/src/three/shaders.ts
+@@ -3,6 +3,7 @@
+ // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
+ import { PUSH, RIPPLE } from './pointerField';
+ import { DEPTH_FADE, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
++import { CRISP } from './crispFlags';
+ 
+ // 아래 두 GLSL 문자열 안에는 // 주석을 두지 않는다 — 문자열이라 빌드 때 안 지워지고 그대로 gzip에 실려
+ // 3D 청크를 불필요하게 키운다(2026-09-29 최종 점검, 약 4KB 절감). 원래 줄 옆에 있던 설명을 여기로 옮긴다.
+@@ -120,6 +121,7 @@ export const vertexShader = /* glsl */ `
+   varying vec3 vColor;
+   varying float vEdge;
+   varying float vAir;
++  varying float vPx;
+ 
+   vec3 toneColor(float t) { return t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot); }
+   vec3 airTone(float t) { return t > 3.5 ? uWarm : (t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot)); }
+@@ -162,6 +164,7 @@ export const vertexShader = /* glsl */ `
+     float basePx = mix(terrainPx, chartPx, uChart);
+     vAir = uAirport * isAir;
+     gl_PointSize = mix(basePx, airPx, vAir);
++    vPx = gl_PointSize;
+ 
+     float a = aKind < 0.5 ? ${f(POINT.signalAlpha)} : (aKind < 1.5 ? ${f(POINT.noiseAlpha)} * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
+     float onMap = step(-0.5, aRoute);
+@@ -177,11 +180,11 @@ export const vertexShader = /* glsl */ `
+     vColor = toSrgbTone(mix(terrainCol, chartCol, uChart));
+     vEdge = mix(0.15, 0.38, uChart);
+     float on = clamp((uLightT - aAirStyle.w * 1.2) / 0.18, 0.0, 1.0);
+-    float haze = 1.0 / (1.0 + (-mv.z) / 52.0);
++    float haze = 1.0 / (1.0 + (-mv.z) / ${CRISP.fadeSoft ? '120.0' : '52.0'});
+     float wave = aAirport.w < 0.0 ? 0.0 : exp(-pow((aAirport.w - uWave) / 90.0, 2.0));
+     float airA = on * haze * (1.0 + wave * 2.2);
+     vAlpha = mix(vAlpha * (1.0 - uAirport), airA, vAir);
+-    vColor = mix(vColor, airTone(aAirStyle.y), vAir);
++    vColor = mix(vColor, ${CRISP.color ? 'toSrgbTone(airTone(aAirStyle.y))' : 'airTone(aAirStyle.y)'}, vAir);
+     vEdge = mix(vEdge, 0.0, vAir);
+     if (vAlpha < 0.003) {
+       gl_PointSize = 0.0;
+@@ -212,13 +215,21 @@ export const fragmentShader = /* glsl */ `
+   varying vec3 vColor;
+   varying float vEdge;
+   varying float vAir;
++  varying float vPx;
+ 
+   void main() {
+     float d = length(gl_PointCoord - 0.5);
+     if (d > 0.5) discard;
++${CRISP.core ? `
++    float rc = 1.0 / 12.0;
++    float aa = 0.5 / max(vPx, 1.0);
++    float core = 1.0 - smoothstep(rc - aa, rc + aa, d);
++    float t = d * 12.0 / 9.0;
++    float glow = (t < 0.15 ? mix(1.0, 0.35, t / 0.15) : (t < 0.45 ? mix(0.35, 0.06, (t - 0.15) / 0.3) : mix(0.06, 0.0, (t - 0.45) / 0.55))) * 0.55;
++    float air = min(core + glow, 1.0);` : `
+     float core = 1.0 - smoothstep(0.033, 0.05, d);
+     float glow = exp(-d * d * 28.0) * 0.55;
+-    float air = max(core, glow);
++    float air = max(core, glow);`}
+     float disc = smoothstep(0.5, vEdge, d);
+     float a = min(vAlpha * mix(disc, air, vAir), 1.0);
+     gl_FragColor = vec4(vColor * a, a * mix(1.0, a, vAir));
