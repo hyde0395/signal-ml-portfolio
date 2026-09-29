@@ -47,7 +47,7 @@ export const SCENES: Record<SceneKey, SceneState> = {
   problem: { ...base, camera: [-4.5, 16, 7], target: [-4.5, 0, 0], map: 1 },
   // ② 화면 2: 같은 지도를 멀리서 내려다보고 점을 흐리게 한다. 판 없는 보드의 작은 글자가 지도 점과 섞이지
   // 않게 하는 것이 이 장면의 목적이다(설계 §3.2, 2026-09-27)
-  dataBoard: { ...base, camera: [0, 30, 14], target: [0, 0, 0], map: 1, dim: 0.16 },
+  dataBoard: { ...base, camera: [0, 30, 14], target: [0, 0, 0], map: 1, dim: 0.32 }, // 0.16은 지도가 너무 흐려 보여 올림(2026-09-29 시안 B 선택)
   features: { ...base, ...CHART },
   chartDepart: { ...base, ...CHART },
   chartCurve: { ...base, ...CHART },
