@@ -94,8 +94,9 @@ export function departLayout(
 ): ChartLayout {
   const wide = size.w >= DEPART.wideMinPx;
   const W = size.w, H = size.h;
-  // 점 그래프 영역(px)
-  const gx0 = W * (wide ? 0.06 : 0.1), gx1 = W * (wide ? 0.74 : 1), gy0 = 0, gy1 = H * (wide ? 1 : 0.68);
+  // 점 그래프 영역(px). 좁은 판은 오른쪽 끝을 14px 비운다 — 마지막 봉우리(설날) 위 가운데 맞춤 이름표가
+  // 판 밖(화면 가장자리)까지 나갔다(2026-09-29 390px 눈 확인)
+  const gx0 = W * (wide ? 0.06 : 0.1), gx1 = wide ? W * 0.74 : W - 14, gy0 = 0, gy1 = H * (wide ? 1 : 0.68);
   const top = gy0 + (gy1 - gy0) * 0.08, bottom = gy1 - (gy1 - gy0) * 0.14;
   const t0 = utc(d.dates[0]), t1 = utc(d.dates[d.dates.length - 1]);
   const X = (iso: string) => gx0 + (gx1 - gx0 - 8) * ((utc(iso) - t0) / Math.max(1, t1 - t0)) + 4;
