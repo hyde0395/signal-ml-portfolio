@@ -165,7 +165,12 @@
     "tools": "Python · requests · tenacity · yfinance · workalendar"
   },
   "features": {
-    "model": "NeuralProphet · XGBoost · Optuna · 分位点回帰 · SHAP",
+    "structure": {
+      "heading": "モデルの構成",
+      "body1": "路線ごとに NeuralProphet が出発日別の平均価格の流れ（トレンドと曜日の周期）を学び、クラスごとの価格水準を掛けて基準価格を作ります。XGBoost は {model.featureCount} 個の特徴量で、実際の価格がこの基準からどれだけずれるかを対数で学び、両者を足したものが予測価格です。",
+      "body2": "XGBoost の設定は Optuna で {model.optunaTrials} 回試し、時系列順の検証で最も良いものを選びました。同じ残差に下側・上側の分位点モデルを別に学習して予測区間を出し、特徴量ごとの寄与は SHAP で分けて見ます。",
+      "flow": "基準価格（路線別 NeuralProphet × クラス水準）+ ずれ（XGBoost・対数）= 予測価格"
+    },
     "serve": "Streamlit · Plotly · pytest（テストファイル{model.testFiles}件）",
     "heading": "{model.featureCount} FEATURES",
     "lead": "一つの価格を予測するために入れたものです。数字はモデル内で各グループが占める重要度(XGBoost gain)です。",

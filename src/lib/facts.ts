@@ -6,7 +6,7 @@ import { CABINS, ROUTES } from '@/demo/types';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const score = z.object({ r2: z.number(), mae: z.number(), mape: z.number() });
-const chapters = ['problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'features'] as const;
+const chapters = ['problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'features', 'model'] as const;
 export type CodeChapter = (typeof chapters)[number];
 
 export const factsSchema = z.object({

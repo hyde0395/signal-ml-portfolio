@@ -165,7 +165,12 @@
     "tools": "Python · requests · tenacity · yfinance · workalendar"
   },
   "features": {
-    "model": "NeuralProphet · XGBoost · Optuna · quantile regression · SHAP",
+    "structure": {
+      "heading": "Model structure",
+      "body1": "For each route, NeuralProphet learns how the average fare moves across departure dates (trend and weekly cycle), and scaling it by each cabin class's price level gives a base price. XGBoost then uses {model.featureCount} features to learn how far the actual fare sits from that base on a log scale; the two added together are the prediction.",
+      "body2": "The XGBoost settings were chosen from {model.optunaTrials} Optuna trials by their score on time-ordered validation. Separate lower and upper quantile models on the same residual give the prediction interval, and SHAP splits each prediction into per-feature contributions.",
+      "flow": "Base price (NeuralProphet per route × cabin level) + deviation (XGBoost, log scale) = prediction"
+    },
     "serve": "Streamlit · Plotly · pytest ({model.testFiles} test files)",
     "heading": "{model.featureCount} FEATURES",
     "lead": "What goes into predicting a single price. Percentages are each group's share of importance in the model (XGBoost gain).",

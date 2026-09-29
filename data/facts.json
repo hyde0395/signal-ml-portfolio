@@ -17,7 +17,8 @@
       "validation": "blob/main/src/models/tscv_eval_v2.py",
       "interval": "blob/main/src/models/v2_predictor.py",
       "features": "blob/main/src/processing/features.py",
-      "limits": "blob/main/README.md"
+      "limits": "blob/main/README.md",
+      "model": "blob/main/src/models/v2_predictor.py"
     }
   },
   "dataVersion": "2026-09-22",
