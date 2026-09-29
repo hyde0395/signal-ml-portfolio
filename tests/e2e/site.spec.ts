@@ -24,7 +24,7 @@ const content = Object.fromEntries(
     lang,
     JSON.parse(readFileSync(fileURLToPath(new URL(`../../content/${lang}.json`, import.meta.url)), 'utf-8')),
   ]),
-) as Record<(typeof PAGES)[number]['lang'], { project: { heading: string }; contact: { emailFallback: string; nameSub: string; role: string }; demo: { noJs: string } }>;
+) as Record<(typeof PAGES)[number]['lang'], { project: { heading: string }; intro: { line1: string; line2: string; note: string }; contact: { emailFallback: string; nameSub: string; role: string }; demo: { noJs: string } }>;
 
 // public/resume/ja.pdf가 실제로 나중에 채워지면 "준비 중" 가정이 깨지므로, 파일 존재 여부를
 // 미리 확인해 그 경우 해당 테스트를 건너뛴다.
@@ -44,6 +44,20 @@ for (const { path, lang } of PAGES) {
     for (const id of ['project', 'data', 'features', 'charts', 'demo', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
     await expect(page.locator('#charts [data-scene]')).toHaveCount(6);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', new RegExp(`/og/${lang}\\.jpg$`));
+  });
+
+  // 머리말(설계 2026-09-29 §5): 첫 화면과 ① 사이에 있고, 번호 섹션이 아니라 옆 목차에는 없다
+  test(`${path}: 머리말이 첫 화면과 ① 사이에 있고 옆 목차에는 없다`, async ({ page }) => {
+    await page.goto(path);
+    const intro = page.locator('#intro');
+    await expect(intro.locator('#intro-h')).toContainText(content[lang].intro.line1);
+    await expect(intro.locator('#intro-h')).toContainText(content[lang].intro.line2);
+    await expect(intro.locator('.intro-note')).toHaveText(content[lang].intro.note);
+    await expect(intro).toHaveAttribute('aria-labelledby', 'intro-h');
+    expect(await intro.getAttribute('data-scene')).toBeNull();
+    const order = await page.locator('main').evaluate((m) => [...m.querySelectorAll('#hero, #intro, #project')].map((e) => e.id));
+    expect(order).toEqual(['hero', 'intro', 'project']);
+    await expect(page.locator('.side-nav a[href="#intro"]')).toHaveCount(0);
   });
 
   test(`${path}: axe 위반 없음`, async ({ page }) => {

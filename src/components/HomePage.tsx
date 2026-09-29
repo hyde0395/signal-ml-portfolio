@@ -1,4 +1,4 @@
-// 한 페이지 스크롤 홈 화면. 첫 화면 → 번호 섹션(섹션 목록 순서) → 데모 → 연락처를 로케일 하나로 조립한다.
+// 한 페이지 스크롤 홈 화면. 첫 화면 → 머리말 → 번호 섹션(섹션 목록 순서) → 데모 → 연락처를 로케일 하나로 조립한다.
 // 번호 섹션을 더하려면 src/lib/sections.ts에 한 줄 + 아래 SECTION_VIEWS에 부품 한 줄(빠뜨리면 타입 오류).
 import type { ReactElement } from 'react';
 import { Backdrop } from './Backdrop';
@@ -14,6 +14,7 @@ import { DataSection } from './sections/DataSection';
 import { Demo } from './sections/Demo';
 import { Features } from './sections/Features';
 import { Hero } from './sections/Hero';
+import { Intro } from './sections/Intro';
 import { Project } from './sections/Project';
 import { getT } from '@/lib/content';
 import { facts } from '@/lib/facts';
@@ -36,6 +37,7 @@ export function HomePage({ locale }: { locale: Locale }) {
       <SideNav label={getT(locale)('nav.sections')} />
       <main id="main" data-locale={locale}>
         <Hero locale={locale} />
+        <Intro locale={locale} />
         {SECTIONS.map(({ id }) => {
           const View = SECTION_VIEWS[id];
           return <View key={id} locale={locale} />;

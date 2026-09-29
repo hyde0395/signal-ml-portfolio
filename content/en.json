@@ -17,6 +17,11 @@
   "hero": {
     "keywords": "Time series forecasting · Model validation · Data pipelines"
   },
+  "intro": {
+    "line1": "Prices move every day.",
+    "line2": "Most of it is noise. Somewhere in it are a few signals.",
+    "note": "Each dot is one price that was actually collected."
+  },
   "demo": {
     "heading": "Buy now or wait?",
     "intro": "Pick a route, cabin, and departure date to see the predicted price if bought on the reference date, its {model.interval.level}% prediction interval, and a recommendation.",

@@ -134,13 +134,16 @@ async function backgroundContrast(page: Page, selector: string, alpha: number) {
 }
 
 test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화소 검사)', async ({ page }) => {
-  // 검사 자리 7곳마다 카메라가 옮겨 가길 3.5초씩 기다려 기본 30초를 넘긴다(CI의 소프트웨어 3D에서 실측 초과)
+  // 검사 자리마다 카메라가 옮겨 가길 3.5초씩 기다려 기본 30초를 넘긴다(CI의 소프트웨어 3D에서 실측 초과)
   test.setTimeout(90_000);
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-3d', 'on', { timeout: 20_000 });
   await page.evaluate(() => document.querySelector('.lang-hint')?.remove()); // 떠 있는 언어 안내가 영역을 가리지 않게
   const cases: [string, number][] = [
     ['.hero-keywords', 0.72],
+    // 머리말: 전환(계획 6-5) 동안 점이 글 뒤를 지나간다. 작은 줄은 --mute라 0.72로 엄격하게
+    ['#intro-h', 1],
+    ['.intro-note', 0.72],
     ['#project-h', 1],
     ['.project-lead', 0.72],
     ['#charts-h', 1],

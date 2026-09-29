@@ -261,6 +261,19 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
 .reveal-word { display: inline-block; overflow: hidden; vertical-align: top; }
 .reveal-word > span { display: inline-block; }
 
+/* 머리말(설계 2026-09-29 §5): 한 화면 높이 — 이 화면이 지나는 동안 공항 불빛이 지형으로 옮겨 간다(계획 6-5).
+   글 열은 ①과 같은 왼쪽. 글 상자는 글 크기만큼만 잡아 화소 대비 검사가 빈 자리의 점까지 재지 않게 한다 */
+.intro { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; }
+.intro-copy { width: fit-content; max-width: 100%; }
+.intro-title { font-size: clamp(1.9rem, 4.4vw, 3.5rem); line-height: 1.15; max-width: 20ch; word-break: keep-all; text-transform: none; margin: 0 0 28px; }
+/* balance: 두 번째 줄이 "몇 / 개의"처럼 끝에 한 낱말만 남기고 꺾이지 않게 줄 길이를 고르게 나눈다 */
+.intro-title > span { display: block; text-wrap: balance; }
+/* 일본어는 띄어쓰기가 없어 keep-all이면 한 줄이 끊기지 않고 휴대폰 폭을 넘친다(가로 스크롤). auto-phrase로
+   문절 단위로 끊고(Chromium), 이를 모르는 브라우저는 앞 줄의 normal(글자 사이)로 끊는다 */
+:lang(ja) .intro-title { word-break: normal; word-break: auto-phrase; }
+.intro-title > span + span { margin-top: 0.35em; }
+.intro-note { width: fit-content; max-width: 40ch; font-size: clamp(1rem, 1.6vw, 1.1rem); color: var(--mute); }
+
 /* ① PROJECT(설계 2026-09-25 §3.1): 큰 질문, 설명, 호박색 숫자 4개 */
 .project { min-height: 80vh; display: flex; flex-direction: column; justify-content: center; }
 .project-q { font-size: clamp(2.2rem, 6vw, 4.75rem); max-width: 16ch; word-break: keep-all; text-transform: none; }
