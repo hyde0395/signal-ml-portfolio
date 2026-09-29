@@ -116,3 +116,8 @@
 - 옆 목차는 5개로 늘어난다(`SideNav`는 섹션 목록에서 저절로). 휴대폰은 지금처럼 숨김.
 - 초기 JS: 섹션 부품은 서버 부품이라 문구만 늘어난다. `sections.ts`는 옆 목차(클라이언트)가 읽지만 줄 하나 더하는 정도. 3D 청크는 장면 표 한 줄.
 - 테스트가 바뀌는 곳: `tests/unit/sections.test.ts`(id·번호·머리표), `tests/unit/three-scenes.test.ts`(`KEYS`에 `model`), `tests/e2e/site.spec.ts`(`#charts` → `#findings`·`#validation`, 블록 개수 2·4, JS 없이 `#validation table`), `tests/e2e/terrain.spec.ts`(`#charts-h` → `#findings-h`·`#validation-h`, 모델 카드 문단 대비), `tests/e2e/board.spec.ts`(옆 목차 링크 이름 `03 MODEL & FEATURES`). `motion.spec.ts`의 `#features-h`는 모델 카드 `h2`로 살아 있다.
+
+## 사용자 확인 (2026-09-30)
+
+- ③ 모델 카드 한국어 초안 **그대로 확정**. 영·일은 같은 뜻·톤으로 확정해도 된다(검수는 공개 전 문구 검토 때).
+- ⑤ 안 검증 표 블록 머리표 `VALIDATION` → **`EVALUATION`**.
