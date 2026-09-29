@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ChartsData, CloudData } from '@/charts/data';
 import { cloudLayout, cloudScale, DEPART, departLayout, invNorm, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
-import { TONE, type ChartLabel, type ChartLayout } from '@/charts/types';
+import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from '@/charts/types';
 
 const inside = (L: ChartLayout) => {
   for (let i = 0; i < L.n; i++) {
@@ -51,8 +51,12 @@ describe('waffleLayout', () => {
     expect(h).toMatchObject({ type: 'group', id: 'holiday', pct: '11.4%', name: 'H', count: '4개', holiday: true });
     inside(L);
   });
-  it('점마다 와플 그룹 번호(0~5), 그룹 순서대로 100개씩', () => {
-    for (let i = 0; i < L.n; i++) expect(L.waffle[i]).toBe(Math.floor(i / 100));
+  it('점마다 강조 번호(0~5, 와플 그룹), 그룹 순서대로 100개씩', () => {
+    for (let i = 0; i < L.n; i++) expect(L.hl[i]).toBe(Math.floor(i / 100));
+  });
+  it('강조 색은 호박색, 흐림은 0.25', () => {
+    expect(L.focusTone).toBe(TONE.amber);
+    expect(L.focusDim).toBe(FOCUS_DIM);
   });
   it('설명 줄은 마지막 이름표이고, 모든 와플·그룹 이름표보다 아래(좁은 판에서도)', () => {
     for (const L2 of [L, waffleLayout(groups, { w: 340, h: 380 }, fmt)]) {
@@ -154,7 +158,11 @@ describe('departLayout', () => {
     expect(t.some((l) => l.text === 'AX')).toBe(true);
     expect(t.filter((l) => l.cls === 'month').length).toBeGreaterThan(0);
   });
-  it('와플 번호는 모두 −1', () => expect(Array.from(L.waffle).every((v) => v === -1)).toBe(true));
+  it('강조 번호는 모두 −1, 강조 색·흐림은 차트 공통값', () => {
+    expect(Array.from(L.hl).every((v) => v === -1)).toBe(true);
+    expect(L.focusTone).toBe(TONE.text);
+    expect(L.focusDim).toBe(CHART_FOCUS_DIM);
+  });
   it('판 안, 지름 1.6px 이상(넓은 판·좁은 판)', () => { inside(L); inside(departLayout(charts, { w: 340, h: 380 }, depS)); });
 });
 

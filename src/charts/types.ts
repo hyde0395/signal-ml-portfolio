@@ -6,9 +6,12 @@ export type ChartKey = 'features' | 'chartDepart' | 'chartCurve' | 'chartCloud';
 // 색 번호: 셰이더(three/shaders.ts toneColor)와 2D 그리기(draw2d.ts)가 같은 번호를 쓴다
 export const TONE = { dot: 1, amber: 2, text: 3 } as const;
 
-// ③ 강조(설계 2026-09-28 §3): 강조 그룹은 호박색, 다른 와플 그룹은 알파 × FOCUS_DIM. 2D 그리기(draw2d.ts)와
-// 3D 셰이더(three/shaders.ts, 문자열에 값을 그대로 박아 넣는다)가 이 숫자 하나를 같이 쓴다
+// ③ 와플 강조(설계 2026-09-28 §3): 강조 그룹은 호박색, 다른 와플 그룹은 알파 × FOCUS_DIM. 2D 그리기(draw2d.ts)와
+// 3D 셰이더(three/shaders.ts, 유니폼 uFocusDim)가 ChartLayout.focusDim을 통해 이 숫자를 같이 쓴다
 export const FOCUS_DIM = 0.25;
+// ④ 차트 1·2·4 강조(계획 5-3b): 와플보다 흐림 정도가 약하다 — 강조 항목이 하나가 아니라 이어진 값(점 그래프 등)이라
+// 너무 흐리면 전체 모양이 안 보인다
+export const CHART_FOCUS_DIM = 0.45;
 
 export type ChartLabel =
   | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end'; cls: 'tick' | 'axis' | 'month' | 'holiday' }
@@ -25,7 +28,11 @@ export type ChartLayout = {
   alpha: Float32Array; // 0..1
   tone: Uint8Array;    // TONE
   group: Int16Array;   // 3D에서 이 점을 어느 지형 출발일(번호)의 점으로 채울지. -1 = 아무 점
-  waffle: Int16Array;  // ③ 와플 그룹 번호(강조용, featureGroups 순서). 와플이 아닌 차트는 -1
+  // 강조 번호 — 같은 번호끼리 함께 강조된다. ③ 와플 그룹, ④ 차트 1·4 출발일 번호, 차트 2 구간 번호.
+  // −1 = 강조와 무관(늘 그대로)
+  hl: Int16Array;
+  focusTone: number; // 강조됐을 때 칠할 색(TONE)
+  focusDim: number;  // 강조 중일 때 강조 안 된 점의 알파 배율
   labels: ChartLabel[];
 };
 

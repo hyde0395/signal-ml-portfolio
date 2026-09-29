@@ -21,7 +21,8 @@ describe('drawLayout', () => {
   it('점마다 원 하나, 판 px 좌표, 반지름 = 지름/2, 색 번호별 색', () => {
     const L: ChartLayout = {
       n: 2, x: Float32Array.from([0.5, 1]), y: Float32Array.from([0, 0.5]), size: Float32Array.from([4, 6]),
-      alpha: Float32Array.from([0.5, 1]), tone: Uint8Array.from([TONE.dot, TONE.amber]), group: Int16Array.from([-1, -1]), waffle: Int16Array.from([-1, -1]), labels: [],
+      alpha: Float32Array.from([0.5, 1]), tone: Uint8Array.from([TONE.dot, TONE.amber]), group: Int16Array.from([-1, -1]), hl: Int16Array.from([-1, -1]),
+      focusTone: TONE.amber, focusDim: 0.25, labels: [],
     };
     const { ctx, calls } = fakeCtx();
     drawLayout(ctx, L, 200, 100);
@@ -31,11 +32,11 @@ describe('drawLayout', () => {
     ]);
   });
 
-  it('강조 그룹이 있으면 그 그룹은 호박색, 다른 와플 그룹은 알파 × 0.25, 와플 아닌 점은 그대로', () => {
+  it('강조 그룹이 있으면 그 그룹은 호박색, 다른 강조 대상은 알파 × 0.25, 강조와 무관한 점은 그대로', () => {
     const L: ChartLayout = {
       n: 3, x: Float32Array.from([0, 0.5, 1]), y: Float32Array.from([0, 0, 0]), size: Float32Array.from([4, 4, 4]),
       alpha: Float32Array.from([0.8, 0.8, 0.8]), tone: Uint8Array.from([TONE.dot, TONE.dot, TONE.dot]),
-      group: Int16Array.from([-1, -1, -1]), waffle: Int16Array.from([0, 1, -1]), labels: [],
+      group: Int16Array.from([-1, -1, -1]), hl: Int16Array.from([0, 1, -1]), focusTone: TONE.amber, focusDim: 0.25, labels: [],
     };
     const { ctx, calls } = fakeCtx();
     drawLayout(ctx, L, 100, 100, 1);

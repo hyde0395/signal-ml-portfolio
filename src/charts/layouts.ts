@@ -2,7 +2,7 @@
 // 판 안 정규화 좌표의 점 목록과 HTML 이름표 목록을 돌려주는 순수 함수들이다. 2D 대체 그림과 3D 점이 같은 결과를 쓴다.
 // 점 개수는 데이터 행 수가 아니라 차트마다 정한 고정 개수다(설계 §4 점 개수 원칙).
 import type { ChartsData, CloudData } from './data';
-import { TONE, type ChartLabel, type ChartLayout } from './types';
+import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './types';
 
 export type PlotSize = { w: number; h: number };
 export type FeatureGroupInput = { id: string; gain: number; features: string[]; name: string };
@@ -14,16 +14,17 @@ const GOLDEN_ANGLE = 2.399963229728653; // 해바라기 배치: 원 안에 점�
 
 // 점을 하나씩 쌓아 두었다가 타입 배열로 바꾼다
 export class Pts {
-  private a = { x: [] as number[], y: [] as number[], size: [] as number[], alpha: [] as number[], tone: [] as number[], group: [] as number[], waffle: [] as number[] };
-  add(x: number, y: number, size: number, alpha: number, tone: number, group = -1, waffle = -1): void {
-    this.a.x.push(x); this.a.y.push(y); this.a.size.push(size); this.a.alpha.push(alpha); this.a.tone.push(tone); this.a.group.push(group); this.a.waffle.push(waffle);
+  private a = { x: [] as number[], y: [] as number[], size: [] as number[], alpha: [] as number[], tone: [] as number[], group: [] as number[], hl: [] as number[] };
+  add(x: number, y: number, size: number, alpha: number, tone: number, group = -1, hl = -1): void {
+    this.a.x.push(x); this.a.y.push(y); this.a.size.push(size); this.a.alpha.push(alpha); this.a.tone.push(tone); this.a.group.push(group); this.a.hl.push(hl);
   }
-  done(labels: ChartLabel[]): ChartLayout {
+  // focusTone·focusDim: 이 배치가 강조될 때 쓸 색·흐림 정도(차트마다 다르다, types.ts ChartLayout 참고)
+  done(labels: ChartLabel[], focusTone: number, focusDim: number): ChartLayout {
     const a = this.a;
     return {
       n: a.x.length,
       x: Float32Array.from(a.x), y: Float32Array.from(a.y), size: Float32Array.from(a.size), alpha: Float32Array.from(a.alpha),
-      tone: Uint8Array.from(a.tone), group: Int16Array.from(a.group), waffle: Int16Array.from(a.waffle), labels,
+      tone: Uint8Array.from(a.tone), group: Int16Array.from(a.group), hl: Int16Array.from(a.hl), focusTone, focusDim, labels,
     };
   }
 }
@@ -79,7 +80,7 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
   const yLast = (rows - 1) * rowH;
   const detailY = yLast + sq + labelPx + 6;
   labels.push({ type: 'detail', x: ((colW - sq) / 2) / size.w, y: detailY / size.h });
-  return p.done(labels);
+  return p.done(labels, TONE.amber, FOCUS_DIM);
 }
 
 // ④ 차트 1 출발일(설계 2026-09-29 §2, 시안 3): 시간 흐름 점 그래프 + 요일 평균. 가로 = 출발일(실제 날짜 비례), 세로 = 노선·등급
@@ -179,7 +180,7 @@ export function departLayout(
       labels.push({ type: 'text', x: cx / W, y: (SY(a) - 10) / H, text: s.pct(Math.round(a)), align: 'center', cls: 'tick' });
     });
   }
-  return p.done(labels);
+  return p.done(labels, TONE.text, CHART_FOCUS_DIM);
 }
 
 // ④ 차트 2 구간별 분포 벌떼: 출발이 지난 편의 관측 하나 = 점 하나. 구간 8개를 왼쪽(D-61~90)에서
@@ -237,7 +238,7 @@ export function swarmLayout(c: ChartsData['curve'], size: PlotSize, s: { bin(lo:
   c.bins.forEach(([lo, hi], b) => labels.push({ type: 'text', x: cx(b) / size.w, y: (top + innerH + 14) / size.h, text: binText(lo, hi), align: 'center', cls: 'tick' }));
   for (const v of [20, 0, -20]) labels.push({ type: 'text', x: (left - 6) / size.w, y: y(v) / size.h, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: left / size.w, y: (top * 0.4) / size.h, text: s.axis, align: 'start', cls: 'axis' });
-  return p.done(labels);
+  return p.done(labels, TONE.text, CHART_FOCUS_DIM);
 }
 
 // 표준정규분포의 분위수 함수(Acklam 근사, 오차 약 1e-9). 구름 점을 q10~q90 안에 뿌릴 때 쓴다
@@ -322,7 +323,7 @@ export function cloudLayout(cd: CloudData, size: PlotSize, s: { money(v: number)
     labels.push({ type: 'text', x: sc.x(c.at) / size.w, y: y / size.h, text: s.holiday(c.code), align: 'center', cls: 'holiday' });
   });
   labels.push({ type: 'text', x: (size.w * CLOUD.marginLeft) / size.w, y: 0.02, text: s.axis, align: 'start', cls: 'axis' });
-  return p.done(labels);
+  return p.done(labels, TONE.text, CHART_FOCUS_DIM);
 }
 
 // 눈금 간격: 1·2·5 × 10^k 중에서 대략 n칸이 되는 값

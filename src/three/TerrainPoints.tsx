@@ -10,8 +10,9 @@ import { toNdc } from './pointerField';
 import type { SceneState } from './scenes';
 import { fragmentShader, vertexShader } from './shaders';
 
-export type ChartSlotWrite = { slot: 0 | 1; pos: Float32Array; style: Float32Array; waffle: Float32Array };
-export type ChartSlots = { pending: ChartSlotWrite | null; focus: number };
+export type ChartSlotWrite = { slot: 0 | 1; pos: Float32Array; style: Float32Array; hl: Float32Array };
+// focusTone·focusDim: 강조 색·흐림 정도(차트마다 다르다, TerrainScene이 지금 차트 배치에서 넣는다)
+export type ChartSlots = { pending: ChartSlotWrite | null; focus: number; focusTone: number; focusDim: number };
 
 type Props = {
   cloud: PointCloud;
@@ -44,8 +45,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     for (const name of ['aChartA', 'aChartB', 'aStyleA', 'aStyleB']) {
       g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(cloud.count * 3), 3).setUsage(THREE.DynamicDrawUsage));
     }
-    // 와플 그룹 번호: 두 슬롯이 같이 쓰는 한 벌(chartTargets.ts slotBuffers)
-    g.setAttribute('aWaffle', new THREE.BufferAttribute(new Float32Array(cloud.count).fill(-1), 1).setUsage(THREE.DynamicDrawUsage));
+    // 강조 번호: 두 슬롯이 같이 쓰는 한 벌(chartTargets.ts slotBuffers)
+    g.setAttribute('aHl', new THREE.BufferAttribute(new Float32Array(cloud.count).fill(-1), 1).setUsage(THREE.DynamicDrawUsage));
     // 공항 불빛(설계 2026-09-28 §4.5): 배정이 없으면(캡처 등) 모두 0 → 공항 장면에서 점이 안 보인다
     const air = airport ?? { pos: new Float32Array(cloud.count * 3), style: new Float32Array(cloud.count * 4), runS: new Float32Array(cloud.count).fill(-1) };
     // aAirport는 (xyz=자리, w=runS) vec4 하나로 합친다 — float 속성을 따로 두면 정점 속성이
@@ -128,6 +129,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     uSlot: { value: 0 },
     uChartShift: { value: 0 },
     uFocus: { value: -1 },
+    uFocusTone: { value: 2 }, // 기본은 호박색(TONE.amber) — 첫 프레임에 와플 강조가 그대로 보이게
+    uFocusDim: { value: 0.25 },
     uDpr: { value: 1 },
     uDot: { value: new THREE.Color('#8FB8FF') },
     uAmber: { value: new THREE.Color('#FFB547') },
@@ -158,9 +161,9 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
       (style.array as Float32Array).set(w.style);
       pos.needsUpdate = true;
       style.needsUpdate = true;
-      const waffle = geometry.getAttribute('aWaffle') as THREE.BufferAttribute;
-      (waffle.array as Float32Array).set(w.waffle);
-      waffle.needsUpdate = true;
+      const hl = geometry.getAttribute('aHl') as THREE.BufferAttribute;
+      (hl.array as Float32Array).set(w.hl);
+      hl.needsUpdate = true;
       slots.current!.pending = null;
     }
     const u = m.uniforms;
@@ -180,6 +183,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
     u.uChartShift.value = t.shift;
     u.uFocus.value = slots.current?.focus ?? -1; // 강조는 부드럽게 옮기지 않는다 — 2D처럼 바로 바뀐다
+    u.uFocusTone.value = slots.current?.focusTone ?? 2;
+    u.uFocusDim.value = slots.current?.focusDim ?? 0.25;
     // 캡처 모드에서는 uTime을 0으로 고정한다. 매번 같은 시각에 찍어야 대체 이미지가 항상 똑같이 나온다
     u.uTime.value = instant ? 0 : state.clock.elapsedTime;
     u.uSize.value = 8 * state.viewport.dpr;

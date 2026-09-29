@@ -51,12 +51,12 @@ export function assignPoints(group: Int16Array, n: number, cloudDate: Int16Array
 }
 
 // 한 슬롯(A 또는 B)에 써 넣을 버퍼를 점 구름 크기로 만든다. 안 쓰는 점은 지형 자리에 둔 채 알파 0으로
-// 사라진다(차트에서 차트로 넘어갈 때 다른 배치의 점과 섞이지 않는다). waffle은 두 슬롯이 같이 쓰는 한 벌이다 —
-// 강조는 ③ 와플에 머무는 동안만 켜지므로(TerrainScene) 다른 차트가 -1로 덮어써도 문제없다
-export function slotBuffers(entry: ChartEntry, assign: Int32Array, terrain: Float32Array, dist: number, fovDeg: number): { pos: Float32Array; style: Float32Array; waffle: Float32Array } {
+// 사라진다(차트에서 차트로 넘어갈 때 다른 배치의 점과 섞이지 않는다). hl(강조 번호)은 두 슬롯이 같이 쓰는 한 벌이다 —
+// 강조는 그 차트에 머무는 동안만 켜지므로(TerrainScene) 다른 차트가 -1로 덮어써도 문제없다
+export function slotBuffers(entry: ChartEntry, assign: Int32Array, terrain: Float32Array, dist: number, fovDeg: number): { pos: Float32Array; style: Float32Array; hl: Float32Array } {
   const pos = terrain.slice();
   const style = new Float32Array(terrain.length); // (알파, 색 번호, 지름 px). 0 = 안 보임
-  const waffle = new Float32Array(terrain.length / 3).fill(-1);
+  const hl = new Float32Array(terrain.length / 3).fill(-1);
   const { layout: L, rect: r } = entry;
   for (let j = 0; j < L.n; j++) {
     const i = assign[j];
@@ -64,7 +64,7 @@ export function slotBuffers(entry: ChartEntry, assign: Int32Array, terrain: Floa
     const [x, y] = screenToWorld(r.left + L.x[j] * r.width, r.top + L.y[j] * r.height, r.vw, r.vh, dist, fovDeg);
     pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = 0;
     style[i * 3] = L.alpha[j]; style[i * 3 + 1] = L.tone[j]; style[i * 3 + 2] = L.size[j];
-    waffle[i] = L.waffle[j];
+    hl[i] = L.hl[j];
   }
-  return { pos, style, waffle };
+  return { pos, style, hl };
 }

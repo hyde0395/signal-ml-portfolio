@@ -37,7 +37,7 @@ describe('slotBuffers', () => {
   const entry: ChartEntry = {
     layout: {
       n: 1, x: Float32Array.from([0.5]), y: Float32Array.from([0.5]), size: Float32Array.from([4]),
-      alpha: Float32Array.from([0.8]), tone: Uint8Array.from([2]), group: Int16Array.from([-1]), waffle: Int16Array.from([-1]), labels: [],
+      alpha: Float32Array.from([0.8]), tone: Uint8Array.from([2]), group: Int16Array.from([-1]), hl: Int16Array.from([-1]), focusTone: 2, focusDim: 0.25, labels: [],
     },
     rect: { left: 250, top: 200, width: 500, height: 400, vw: 1000, vh: 800 },
   };
@@ -52,10 +52,10 @@ describe('slotBuffers', () => {
     expect(style[0]).toBe(0);
   });
 
-  it('와플 번호는 쓰는 점에만, 나머지는 -1', () => {
-    const e: ChartEntry = { ...entry, layout: { ...entry.layout, waffle: Int16Array.from([3]) } };
-    const { waffle } = slotBuffers(e, Int32Array.from([1]), terrain, 24, 40);
-    expect(Array.from(waffle)).toEqual([-1, 3]); // 점 구름 2개 중 1번 점만 배치에 쓰였다
+  it('강조 번호는 쓰는 점에만, 나머지는 -1', () => {
+    const e: ChartEntry = { ...entry, layout: { ...entry.layout, hl: Int16Array.from([3]) } };
+    const { hl } = slotBuffers(e, Int32Array.from([1]), terrain, 24, 40);
+    expect(Array.from(hl)).toEqual([-1, 3]); // 점 구름 2개 중 1번 점만 배치에 쓰였다
   });
 });
 

@@ -1,7 +1,6 @@
 // 점 셰이더: 점마다 흩어짐·지형·지도 세 목표 좌표와, 차트 배치 두 벌(A/B)의 좌표·모양을 받아 uniform 비율로 섞는다.
 // 모든 움직임을 GPU에서 계산하므로 2만8천 개 점도 매 프레임 JS 작업 없이 움직인다.
 // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
-import { FOCUS_DIM } from '@/charts/types';
 import { PUSH, RIPPLE } from './pointerField';
 import { DEPTH_FADE, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
 
@@ -12,14 +11,16 @@ import { DEPTH_FADE, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
 // - aKind: 0 신호, 1 잡음, 2 제거
 // - aChartA: 차트 배치 A의 목표 좌표(z=0 평면)
 // - aStyleA: 차트 배치 A에서의 (알파, 색 번호, 지름 px). 알파 0 = 이 차트에 안 쓰는 점
-// - aWaffle: ③ 와플 그룹 번호(강조용), 아니면 -1
+// - aHl: 강조 번호(설계 2026-09-28 §3, 계획 5-3b로 일반화 — ③ 와플 그룹, ④ 차트 1·4 출발일, 차트 2 구간), 아니면 -1
 // - aAirport: xyz = 공항 불빛 자리, w = 활주로 위 거리(m, 신호 물결. 아니면 -1) — 지형용 float 속성 하나(aRunS)를
 //   따로 두면 정점 속성이 16개(WebGL 공통 한계, position·normal·uv 3개 포함)를 넘어 셰이더 링크가 실패한다
 // - aAirStyle: (공항 불빛이면 1, 색 번호, 크기 배율, 켜지는 순서)
 // - uChart: 0 = 지형·지도, 1 = 차트 배치
 // - uSlot: 0 = A, 1 = B
 // - uChartShift: 차트 배치의 세계 y 이동(판이 고정되기 전·풀린 뒤 이름표를 따라가게)
-// - uFocus: 강조할 와플 그룹, 없으면 -1
+// - uFocus: 강조할 번호(aHl과 비교), 없으면 -1
+// - uFocusTone: 강조됐을 때 칠할 색 번호(차트마다 다르다, charts/types.ts ChartLayout.focusTone)
+// - uFocusDim: 강조 중일 때 강조 안 된 점의 알파 배율(charts/types.ts ChartLayout.focusDim)
 // - uAirport: 1 = 공항 장면, 0 = 지형·지도·차트
 // - uLightT: 불이 켜지기 시작한 뒤 흐른 초(앞에서 뒤로 차례로 켜짐)
 // - uWave: 신호 물결의 지금 위치(활주로 거리 m)
@@ -57,8 +58,8 @@ import { DEPTH_FADE, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
 // - fade: 거리 흐림(설계 첫 화면 다듬기 §2.2): 장면 목표점보다 먼 점일수록 흐리게 — 지형·지도에만(차트 점은
 //   아래 mix에서 빠진다)
 // - terrainCol: 지도 장면에서는 공휴일 색을 끈다(지도 위 호박색은 노선 전용). 제거 레이어는 글자색
-// - uFocus 분기: 강조 규칙(설계 2026-09-28 §3) — 2D 그리기(charts/draw2d.ts)와 같은 숫자(charts/types.ts
-//   FOCUS_DIM)를 문자열에 박아 넣는다
+// - uFocus 분기: 강조 규칙(설계 2026-09-28 §3, 계획 5-3b로 일반화) — 2D 그리기(charts/draw2d.ts)와 같은
+//   규칙을 uFocusTone·uFocusDim 유니폼으로 받는다(차트마다 값이 다르다, TerrainPoints가 슬롯에서 넣는다)
 // - vColor = toSrgbTone(...): 지형·지도·차트 색만 sRGB로 되돌린다. 공항 색(airTone)은 6-2에서 지금 모습
 //   그대로 맞춰 둔 값이라 손대지 않는다
 // - vEdge = mix(0.15, 0.38, uChart): 차트 점은 가장자리를 덜 흐려 또렷한 원으로(2D 대체 그림과 같게)
@@ -85,7 +86,7 @@ export const vertexShader = /* glsl */ `
   attribute vec3 aChartB;
   attribute vec3 aStyleA;
   attribute vec3 aStyleB;
-  attribute float aWaffle;
+  attribute float aHl;
   attribute vec4 aAirport;
   attribute vec4 aAirStyle;
   uniform float uAssemble;
@@ -100,6 +101,8 @@ export const vertexShader = /* glsl */ `
   uniform float uSlot;
   uniform float uChartShift;
   uniform float uFocus;
+  uniform float uFocusTone;
+  uniform float uFocusDim;
   uniform float uDpr;
   uniform vec3 uDot;
   uniform vec3 uAmber;
@@ -167,8 +170,8 @@ export const vertexShader = /* glsl */ `
     vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(aHoliday * (1.0 - uMap), max(aRoute, 0.0) * uMap));
     float chartA = mix(aStyleA.x, aStyleB.x, uSlot);
     vec3 chartCol = mix(toneColor(aStyleA.y), toneColor(aStyleB.y), uSlot);
-    if (uFocus > -0.5 && aWaffle > -0.5) {
-      if (abs(aWaffle - uFocus) < 0.5) chartCol = uAmber; else chartA *= ${FOCUS_DIM.toFixed(2)};
+    if (uFocus > -0.5 && aHl > -0.5) {
+      if (abs(aHl - uFocus) < 0.5) chartCol = toneColor(uFocusTone); else chartA *= uFocusDim;
     }
     vAlpha = mix(a * uDim * fade, chartA, uChart);
     vColor = toSrgbTone(mix(terrainCol, chartCol, uChart));
