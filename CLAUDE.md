@@ -72,10 +72,18 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 공개용 항공권 저장소: 만들면 `facts.json`의 `codeLinks.baseUrl`만 바꾼다(그 전까지 "코드 보기" 404는 의도된 상태). 그 저장소도 커밋 이메일 noreply
    - Vercel 대시보드 → 프로젝트 → Analytics에서 Web Analytics 켜기
 5. **공개 전환**: 위가 끝나면 `src/lib/site.ts`의 `LAUNCHED = true` (noindex·`robots.txt` Disallow 해제). 사용자가 정한다
-6. **남은 개선 (급하지 않음)**
-   - 성능 ko·ja 90: 남은 몫은 TBT(3D·연출 코드의 메인 스레드 점유)와 ja의 렌더 지연. `experimental.inlineCss`는 시험 후 되돌림(HTML이 커져 ko·ja 악화, 스펙 §8.2). 다음 후보: 3D 시작을 더 늦추기(첫 입력·스크롤 뒤), 지형 점 구름 만들기를 Web Worker로
+6. **성능 최적화 계획 (맨 마지막에, effort high 이상에서만 — 2026-09-29 사용자 요청)**: 다른 기능 작업이 모두 끝난 뒤 별도 계획서(`superpowers:writing-plans`)로 한다. 원칙: 지금 연출·화질·점 개수·접근성 100·CLS 0을 그대로 두고 수치만 올린다. 바꿀 때마다 운영과 같은 조건(배포 미리보기, Lighthouse 모바일 3회 중앙값)으로 전후를 잰다
+   - 목표: Lighthouse 모바일 성능 ko·en·ja 모두 ≥90(지금 ko 87 · en 92 · ja 84~89), TBT ≤200ms, LCP ≤2.0s, 초기 JS 여유 확보(지금 142KB/150KB로 거의 찼다)
+   - 메인 스레드(TBT): 3D 시작을 첫 입력·스크롤 뒤나 `requestIdleCallback`으로 더 늦추기, 지형 점 구름 만들기를 Web Worker로, 긴 작업을 `scheduler.yield()`로 쪼개기, GSAP·Lenis 초기화를 첫 스크롤 근처로
+   - 초기 JS: 번들 분석(`@next/bundle-analyzer`)으로 초기 청크 구성을 보고, 첫 화면에 안 보이는 것(차트 조작 층·보드 연출 등)을 `import()`로 옮기기
+   - 3D 청크(244.8KB/250KB): three.js에서 쓰는 것만 가져오는지 확인, 셰이더·장면 코드 중복 정리
+   - 데이터: `terrain.json`을 이진(Float32·양자화 Uint16) 파일로 바꿔 파싱 시간·용량 줄이기, 필요한 JSON만 섹션 가까이에서 불러오기
+   - 글꼴·이미지: ja의 렌더 지연(Noto Sans JP 조각 크기·preload 확인), 대체 이미지(`hero.webp`·챕터 WebP)를 AVIF + 화면 크기별로
+   - GPU: 화면 밖·탭 숨김 때 렌더 멈춤 재확인, 저프레임 단계 하향 문턱 조정, DPR 상한 재검토
+   - 이미 시험해서 되돌린 것: `experimental.inlineCss`(HTML이 커져 ko·ja 악화, 스펙 §8.2)
+7. **남은 개선 (급하지 않음)**
    - 계획 4-2 최종 검토의 작은 지적(`flip.ts`는 글자를 코드 포인트 단위로 나눔, 리빌은 제목 안쪽 마크업을 지움 — 지금 제목은 모두 글자만이라 문제없음)
-7. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
+8. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
 
 **작업 방식**: 새 기능은 `superpowers:brainstorming`(필요하면) → `superpowers:writing-plans` → 사용자가 고른 실행 방식(지금까지는 subagent-driven-development). 브랜치 → PR → CI 통과 → 사용자 확인 → main에 fast-forward 병합 → 운영 확인. 이미 정해진 결정은 다시 묻지 않는다.
 
