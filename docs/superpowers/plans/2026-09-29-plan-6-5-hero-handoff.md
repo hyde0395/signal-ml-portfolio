@@ -55,6 +55,17 @@
 - [ ] 대비: `terrain.spec` 화소 검사(①·설명 화면) 통과. 3D 청크 ≤ 250KB.
 - [ ] 커밋 `feat(3d): wide camera and a soft wave of per-date rows for ①`.
 
+### Task 5b: 이륙하는 점 비행기 (설계 §7, 시안 A)
+
+**Files:** `src/three/data.ts`(또는 공항 배정 `assignAirport`가 있는 곳), `src/three/shaders.ts`, `src/three/TerrainPoints.tsx`, `src/three/TerrainScene.tsx`(장면 목표 부분만, 필요하면), `src/three/AirportExtras.tsx`(착륙 비행기 끄기), 테스트
+
+- [ ] 비행기 모양(점 약 230개: 동체·날개·엔진·수평·수직 꼬리) 좌표를 코드로 만드는 순수 함수 + 단위 테스트(점 수, 대칭, 크기). 시안 `takeoff.html`의 모양·크기(대형기 약 75m 상당, 사이트 좌표로 환산)를 따른다.
+- [ ] 첫 화면에서 숨은 잡음 점 중 그만큼을 비행기 점으로 배정(공항 불빛 점은 건드리지 않음), 기존 속성에 값 넣기 — 속성 수를 늘리지 않는다.
+- [ ] 이륙 경로: 스크롤 진행(첫 화면 내려앉기 + Task 4 전환 진행도)에 묶인 순수 함수 `planePose(p)` → 위치·자세(단위 테스트: 0에서 활주로 끝에 정지, 이륙 시점 뒤 고도 증가, 되돌리면 같은 자세). JS에서 매 프레임 `uPlane` 행렬, `uPlaneGo`(흩어짐). 흩어진 점은 자기 지형(물결) 자리로 간다.
+- [ ] 글과 겹치지 않음: e2e(3D 켜짐)로 설명 글·① 제목이 보이는 스크롤 위치들에서 비행기 점(흩어지기 전)의 화면 위치가 글 상자와 겹치지 않음을 확인하는 방법이 어렵다면, 실제 GPU 캡처 격자로 눈 확인하고 기록.
+- [ ] 움직임 줄이기·3D 꺼짐: 대체 이미지 첫 화면에는 서 있는 비행기만(다시 찍을지 확인 — `npm run fallbacks`).
+- [ ] 3D 청크 ≤ 280KB. 커밋 `feat(3d): a dot plane takes off as you scroll and scatters into the terrain`.
+
 ### Task 6: 검사·기록
 
 - [ ] `npm run typecheck && npm test && npm run build && npm run size && npm run e2e`. 대체 이미지는 `hero`·`problem`·`bubble`뿐 — 다시 찍을 필요 있는지 확인.

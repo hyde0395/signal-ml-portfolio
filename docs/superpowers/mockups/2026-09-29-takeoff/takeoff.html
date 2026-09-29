@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIGNAL 시안 — 이륙하는 점 비행기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  /* 이륙 시안: 첫 화면(밤의 공항) → 프롤로그 → ① 사이에 점 비행기가 이륙하는지 비교한다(A 실루엣 · B 불빛만 · C 없음) */
+  :root { --gut: max(7vw, calc((100vw - 1280px) / 2)); --bg: #02040A; --tx: #EEF3FF; --amb: #FFB547; --dot: #8FB8FF; --mute: rgba(238,243,255,.64); --line: rgba(238,243,255,.14); }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--bg); }
+  body { background: var(--bg); color: var(--tx); font-family: Pretendard, system-ui, -apple-system, sans-serif; }
+  #track { height: 720vh; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .fx { position: fixed; z-index: 3; pointer-events: none; will-change: opacity, transform; }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+
+  .top { top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 22px var(--gut); font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .22em; color: var(--mute); }
+  .top b { color: var(--tx); font-weight: 500; }
+  .top .r { display: flex; gap: 22px; }
+
+  .hero { left: var(--gut); bottom: 14vh; }
+  .hero h1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: -0.035em; line-height: .88; font-size: clamp(3.4rem, 9.5vw, 8.6rem); width: fit-content; }
+  .hero .kw { margin-top: 22px; display: flex; flex-wrap: wrap; font: 400 12px 'IBM Plex Mono', monospace; letter-spacing: .06em; color: rgba(238,243,255,.8); width: fit-content; }
+  .hero .kw span { padding: 0 14px; border-left: 1px solid var(--line); }
+  .hero .kw span:first-child { padding-left: 0; border-left: 0; }
+  .meta { right: var(--gut); bottom: 14vh; text-align: right; font: 400 10.5px 'IBM Plex Mono', monospace; letter-spacing: .18em; color: rgba(238,243,255,.42); line-height: 2; }
+  .scroll { left: 50%; bottom: 4.5vh; transform: translateX(-50%); font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .3em; color: rgba(238,243,255,.4); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .scroll i { width: 1px; height: 34px; background: linear-gradient(rgba(238,243,255,.5), transparent); animation: drip 2.4s cubic-bezier(.16,1,.3,1) infinite; transform-origin: top; }
+  @keyframes drip { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); opacity: 1; } 100% { opacity: 0; } }
+
+  /* 프롤로그: 데스크톱은 왼쪽 가운데, 휴대폰은 아래 카드 자리 */
+  .pro { left: var(--gut); top: 50%; max-width: 760px; }
+  .pro .l1, .pro .l2 { word-break: keep-all; font-weight: 600; font-size: clamp(1.45rem, 2.6vw, 2.35rem); line-height: 1.38; letter-spacing: -0.02em; width: fit-content; }
+  .pro .l2 { color: rgba(238,243,255,.78); }
+  .pro .sm { margin-top: 22px; font-size: .92rem; color: var(--mute); width: fit-content; }
+  .pro .sm::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 10px var(--dot); margin-right: 10px; vertical-align: middle; }
+
+  /* ① PROJECT */
+  .p1 { left: var(--gut); top: 50%; max-width: 560px; }
+  .p1 .pre { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .3em; color: var(--amb); width: fit-content; }
+  .p1 h2 { word-break: keep-all; font-weight: 700; font-size: clamp(2rem, 3.9vw, 3.4rem); line-height: 1.16; letter-spacing: -0.03em; margin: 16px 0 16px; width: fit-content; }
+  .p1 p { word-break: keep-all; color: var(--mute); font-size: .98rem; line-height: 1.7; width: fit-content; max-width: 470px; }
+  .p1 .nums { margin-top: 26px; display: flex; gap: 26px; flex-wrap: wrap; font: 500 12px 'IBM Plex Mono', monospace; color: rgba(238,243,255,.55); letter-spacing: .06em; width: fit-content; }
+  .p1 .nums b { display: block; font-size: 1.5rem; color: var(--tx); font-weight: 500; letter-spacing: -.01em; }
+
+  /* 시안 조작: 오른쪽 위 세 칸 토글 + 스크롤 진행 */
+  .ctl { position: fixed; top: 58px; right: 16px; z-index: 6; display: grid; gap: 6px; justify-items: end; }
+  .seg { display: flex; padding: 3px; gap: 2px; border: 1px solid rgba(238,243,255,.14); border-radius: 999px; background: rgba(2,4,10,.72); backdrop-filter: blur(8px); }
+  .seg button { font: 500 11.5px Pretendard, system-ui, sans-serif; color: rgba(238,243,255,.62); background: transparent; border: 0; border-radius: 999px; padding: 7px 11px; cursor: pointer; white-space: nowrap; transition: color .3s cubic-bezier(.16,1,.3,1), background .3s cubic-bezier(.16,1,.3,1); }
+  .seg button[aria-pressed="true"] { color: #02040A; background: var(--amb); }
+  .seg button:focus-visible { outline: 2px solid var(--amb); outline-offset: 2px; }
+  .ro { font: 500 10.5px 'IBM Plex Mono', monospace; letter-spacing: .08em; color: rgba(238,243,255,.55); padding: 4px 10px; border-radius: 999px; background: rgba(2,4,10,.6); }
+  .ro b { color: var(--tx); font-weight: 500; }
+
+  @media (max-width: 640px) {
+    .top { padding: 18px 20px; }
+    .top .r span:first-child { display: none; }
+    .hero { left: 20px; bottom: 16vh; }
+    .meta { display: none; }
+    .pro { left: 20px; right: 20px; top: auto; bottom: 13vh; max-width: none; }
+    .pro .l1, .pro .l2 { font-size: 1.32rem; }
+    .p1 { left: 20px; right: 20px; top: auto; bottom: 9vh; max-width: none; }
+    .p1 h2 { font-size: 1.95rem; }
+    .p1 p { font-size: .9rem; }
+    .p1 .nums { gap: 18px; }
+    .p1 .nums b { font-size: 1.2rem; }
+    .ctl { top: 54px; right: 10px; }
+    .seg button { padding: 6px 9px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="scene" aria-hidden="true"></canvas>
+<div id="track"></div>
+
+<div class="fx top" id="top"><b>SIGNAL</b><div class="r"><span>KO · EN · JA</span><span>이력서 ↓</span></div></div>
+<div class="fx hero" id="hero" data-text>
+  <h1>Signal</h1>
+  <div class="kw"><span>시계열 예측</span><span>모델 검증</span><span>데이터 파이프라인</span></div>
+</div>
+<div class="fx meta" id="meta" data-text>ICN · 37.46°N 126.44°E<br>ICN ⇄ NRT · KIX · HND</div>
+<div class="fx scroll" id="scrollHint">SCROLL<i></i></div>
+
+<section class="fx pro" id="pro" data-text aria-label="프롤로그">
+  <p class="l1">가격은 매일 흔들립니다.</p>
+  <p class="l2">대부분은 잡음이고, 그 안에 몇 개의 신호가 있습니다.</p>
+  <p class="sm">점 하나는 실제로 수집한 가격 하나입니다.</p>
+</section>
+
+<section class="fx p1" id="p1" data-text aria-label="01 PROJECT">
+  <div class="pre">01 — PROJECT</div>
+  <h2>한·일 항공권,<br>언제 사야 할까?</h2>
+  <p>인천과 도쿄·오사카를 잇는 6개 노선의 가격을 5개월 동안 매일 모아, 출발일마다 가격이 어떻게 움직이는지 예측했습니다.</p>
+  <div class="nums"><span><b>6</b>노선</span><span><b>5</b>수집 개월</span><span><b>33</b>피처</span><span><b>80%</b>예측 구간</span></div>
+</section>
+
+<div class="ctl" role="group" aria-label="시안 고르기">
+  <div class="seg">
+    <button data-v="A" aria-pressed="true">A 점 비행기</button>
+    <button data-v="B" aria-pressed="false">B 불빛만</button>
+    <button data-v="C" aria-pressed="false">C 없음</button>
+  </div>
+  <div class="ro" id="ro">스크롤 <b>0%</b> · 대기</div>
+</div>
+
+<script>
+// ───── 기본 ─────
+// 주소 옵션: ?v=A|B|C 시안, ?snap=1 스크롤을 부드럽게 따라가지 않고 바로(스크린숏용, 시간도 고정), ?reduced=1 모션 줄이기 미리보기
+const Q = new URLSearchParams(location.search);
+let variant = /^[ABC]$/.test(Q.get('v') || '') ? Q.get('v') : 'A';
+const SNAP = Q.has('snap');
+const REDUCED = Q.has('reduced') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cv = document.getElementById('scene'), ctx = cv.getContext('2d');
+let W, H, DPR;
+function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0); measureText(); needDraw = true; }
+const lerp = (a, b, t) => a + (b - a) * t, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = t => 1 - Math.pow(1 - t, 4);                       // 기준 시안과 같은 quart.out
+const expo = t => t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);          // expo.out(글 떠오름)
+const sstep = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+const RGB = { white: [238, 243, 255], warm: [255, 222, 176], blue: [120, 165, 255], dot: [143, 184, 255], amb: [255, 181, 71], red: [255, 70, 70], green: [110, 255, 180], sign: [255, 196, 60] };
+const rgba = (k, a) => { const [r, g, b] = RGB[k]; return `rgba(${r},${g},${b},${a})`; };
+
+const halo = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.15, 'rgba(255,255,255,.35)'); gr.addColorStop(.45, 'rgba(255,255,255,.06)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return c; })();
+const soft = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.5, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return c; })();
+const tinted = {};
+function tint(src, k, tag) { const id = k + tag; if (tinted[id]) return tinted[id]; const [r, g, b] = RGB[k]; const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = `rgb(${r},${g},${b})`; x.fillRect(0, 0, 128, 128); return (tinted[id] = c); }
+const grain = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); const d = g.createImageData(256, 256);
+  for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } g.putImageData(d, 0, 0); return c; })();
+const grainPat = ctx.createPattern(grain, 'repeat');
+
+// ───── 카메라(기준 시안과 같은 투영) ─────
+// 세로 화면은 초점 거리를 화면 폭 기준으로 줄여 가로 시야를 넓힌다(기준 시안은 휴대폰에서 활주로 소실점이 화면 밖으로 나갔다)
+function project(x, y, z, c) {
+  x -= c.x; y -= c.y; z -= c.z;
+  const cy = Math.cos(c.yaw), sy = Math.sin(c.yaw);
+  const x1 = x * cy - z * sy, z1 = x * sy + z * cy;
+  const cp = Math.cos(c.pitch), sp = Math.sin(c.pitch);
+  const y2 = y * cp + z1 * sp, z2 = -y * sp + z1 * cp;
+  if (z2 < 2) return null;
+  const f = c.fov * Math.min(H, W * 1.1);
+  return { x: W * c.cx + (x1 / z2) * f, y: H * c.cy - (y2 / z2) * f, d: z2, s: f / z2 };
+}
+const CA = { x: -120, y: 42, z: -160, yaw: 0.2, pitch: 0.085, fov: 1.2, cx: 0.5, cy: 0.5 };   // 터미널 창가
+const CB = { x: -120, y: 12, z: -160, yaw: 0.2, pitch: -0.03, fov: 1.2, cx: 0.5, cy: 0.33 };  // 활주로 가까이 내려앉음
+const CT = { x: 71, y: 560, z: -121, yaw: 0.2, pitch: 0.36, fov: 1.2, cx: 0.55, cy: 0.42 };  // 지형(프롤로그 끝)
+const CW = { x: 140, y: 700, z: -330, yaw: 0.2, pitch: 0.4, fov: 1.2, cx: 0.66, cy: 0.44 };  // ① 넓은 지형: 지형을 오른쪽으로 밀어 왼쪽 글 자리를 비운다
+const CWP = { x: 120, y: 820, z: -420, yaw: 0.2, pitch: 0.46, fov: 1.2, cx: 0.5, cy: 0.3 };  // ① 세로 화면: 지형을 위쪽에, 글은 아래 카드
+
+// ───── 세계(기준 시안의 공항 배치 그대로) ─────
+const RA = 0.62, RD = [Math.sin(RA), Math.cos(RA)], RN = [RD[1], -RD[0]];
+const R0 = [-60, 180], RLEN = 3200, RHALF = 30, TO = -190;
+const at = (s, o) => [R0[0] + RD[0] * s + RN[0] * o, R0[1] + RD[1] * s + RN[1] * o];
+const L = [];
+function add(p, y, c, k, sz, ord) { L.push({ x: p[0], y, z: p[1], c, k, sz, ord, ph: rnd() * 6.28 }); }
+for (let s = 0; s <= RLEN; s += 60) { add(at(s, -RHALF), .5, 'white', 'edge', 1, s / RLEN); add(at(s, RHALF), .5, 'white', 'edge', 1, s / RLEN); }
+for (let s = 30; s < RLEN; s += 18) add(at(s, 0), .2, s > RLEN - 900 ? 'warm' : 'white', 'center', .45, s / RLEN);
+for (let o = -RHALF; o <= RHALF; o += 6) { add(at(0, o), .5, 'white', 'thr', .6, 0); add(at(RLEN, o), .5, 'warm', 'end', .6, 1); }
+for (let s = -200; s <= RLEN; s += 34) { add(at(s, TO - 11), .3, 'blue', 'taxi', .6, (s + 200) / RLEN); add(at(s, TO + 11), .3, 'blue', 'taxi', .6, (s + 200) / RLEN); }
+const CONNECT = [500, 1300, 2200];
+CONNECT.forEach(s0 => { for (let t = 0; t <= 1.001; t += 1 / 9) { const o = lerp(TO + 11, -RHALF - 10, t), s = s0 + Math.sin(t * Math.PI / 2) * 160;
+  add(at(s, o - 8), .3, 'blue', 'taxi', .55, s / RLEN); add(at(s, o + 8), .3, 'blue', 'taxi', .55, s / RLEN); } });
+[[-40, 150], [160, 110], [360, 60], [-260, 260]].forEach(p => add(p, 26, 'amb', 'apron', 2.2, -0.05));
+for (let i = 0; i < 160; i++) { const a = -0.9 + rnd() * 1.9, r = 9000 + rnd() * 6000; add([Math.sin(a) * r, Math.cos(a) * r], rnd() * 40, rnd() < .7 ? 'warm' : 'white', 'city', 1.3, 1.1); }
+const APPROACH = []; for (let i = 1; i <= 14; i++) APPROACH.push(at(RLEN + i * 30, 0));
+[[300, 520, 260, 26], [650, 560, 180, 34], [1000, 620, 420, 22], [1600, 600, 300, 30], [2100, 700, 520, 18], [2700, 650, 240, 28], [3000, 800, 380, 20],
+ [1300, -1900, 520, 40], [2300, -2000, 380, 55], [3100, -2100, 600, 34]].forEach(([s, o, w, h]) => {
+  const n = Math.floor(w / 14), rows = Math.max(1, Math.floor(h / 9)), a = at(s - w / 2, o), e = at(s + w / 2, o);
+  for (let r = 0; r < rows; r++) for (let i = 0; i < n; i++) if (rnd() < .45) { const u = (i + .5) / n, k = rnd() < .2 ? 'white' : 'warm';
+    L.push({ x: lerp(a[0], e[0], u), y: h * (r + .5) / rows, z: lerp(a[1], e[1], u), c: k, k: 'win', sz: .8, ord: 1.05, ph: rnd() * 6.28 }); }
+});
+const TW = at(1500, -520);
+
+// ───── 점 비행기(지역 좌표: u 앞, v 오른쪽 날개, y 위, 미터) ─────
+// 협동체 비례를 1.7배로 키움(길이 약 75m, 날개폭 약 60m, 대형기 크기) — 활주로 끝 약 350m 거리에서 실루엣이 읽히게
+const PS = 1.7, PLANE = [];
+const pp = (u, v, y, c = 'dot', part = 'body') => PLANE.push({ u: u * PS, v: v * PS, y: y * PS, c, part });
+for (let u = -22; u <= 22.01; u += 1.6) {                       // 동체: 고리마다 점 4개(위·양옆·아래), 앞은 둥글게, 꼬리는 좁아지며 올라감
+  const r = u > 15 ? 2.2 * Math.sqrt(Math.max(0, 1 - ((u - 15) / 7.4) ** 2)) : u < -13 ? 2.2 * (1 - (-13 - u) / 9 * .7) : 2.2;
+  const yc = 2.8 + (u < -13 ? (-13 - u) * .16 : 0);
+  if (r < .35) { pp(u, 0, yc, 'white'); continue; }
+  pp(u, 0, yc + r); pp(u, -r, yc); pp(u, r, yc); pp(u, 0, yc - r, 'dot');
+}
+for (const sd of [-1, 1]) {
+  for (let i = 0; i <= 13; i++) { const t = i / 13; pp(lerp(4, -7, t), sd * lerp(2.2, 17.5, t), 1.9 + t * 1.4, t > .9 ? 'white' : 'dot', 'wing'); }   // 앞전
+  for (let i = 0; i <= 10; i++) { const t = i / 10; pp(lerp(-5, -9.5, t), sd * lerp(2.2, 17.5, t), 1.9 + t * 1.4, 'dot', 'wing'); }                // 뒷전
+  for (let i = 1; i <= 7; i++) { const t = i / 8; pp(lerp(-.5, -8.2, t), sd * lerp(2.2, 17.5, t), 1.95 + t * 1.4, 'dot', 'wing'); }                // 날개 가운데 줄
+  for (const du of [3.2, 1.2, -.8]) for (const a of [0, 2.1, 4.2]) pp(du, sd * 6.5 + Math.sin(a) * .9, .9 + Math.cos(a) * .9, 'dot', 'eng'); // 엔진
+  for (let i = 0; i <= 6; i++) { const t = i / 6; pp(lerp(-16.5, -20.5, t), sd * lerp(1, 7, t), 5.2, 'dot', 'tail'); }                     // 수평 꼬리날개
+  for (let i = 1; i <= 4; i++) { const t = i / 5; pp(lerp(-20, -21.8, t), sd * lerp(1, 7, t), 5.2, 'dot', 'tail'); }
+}
+for (let i = 0; i <= 7; i++) { const t = i / 7; pp(lerp(-15, -20.3, t), 0, lerp(4.9, 12.4, t), 'dot', 'fin'); }                          // 수직 꼬리날개
+for (let i = 0; i <= 5; i++) { const t = i / 5; pp(lerp(-20.5, -22.6, t), 0, lerp(5.2, 12.4, t), 'dot', 'fin'); }
+pp(-18.2, 0, 8.6, 'dot', 'fin'); pp(-20, 0, 12.4, 'white', 'fin');
+PLANE.forEach(d => { d.delay = .52 * (.55 * rnd() + .45 * clamp((d.u / PS + 23) / 46, 0, 1)); d.ph = rnd() * 6.28; }); // 코 쪽이 먼저 떨어져 나간다(날아가는 방향으로 흘러내리지 않게)
+
+// B: 비행기 불빛(지역 좌표). 착륙등 둘, 항법등(왼 빨강·오른 초록), 날개 끝 섬광(흰색 두 번 깜빡), 동체 위·아래 빨간 비콘, 꼬리 흰 불
+const PL_LIGHTS = [
+  { u: 3.5, v: -3.2, y: 1.8, c: 'white', kind: 'land' }, { u: 3.5, v: 3.2, y: 1.8, c: 'white', kind: 'land' },
+  { u: -8.5, v: -17.8, y: 3.3, c: 'red', kind: 'nav' }, { u: -8.5, v: 17.8, y: 3.3, c: 'green', kind: 'nav' },
+  { u: -8.9, v: -17.9, y: 3.3, c: 'white', kind: 'strobe' }, { u: -8.9, v: 17.9, y: 3.3, c: 'white', kind: 'strobe' },
+  { u: 0, v: 0, y: 5.2, c: 'red', kind: 'beacon' }, { u: 0, v: 0, y: .5, c: 'red', kind: 'beacon' },
+  { u: -23, v: 0, y: 6, c: 'white', kind: 'tail' },
+].map(l => ({ ...l, u: l.u * PS, v: l.v * PS, y: l.y * PS, delay: .1 + rnd() * .3 }));
+
+// ───── 가격 지형 자리(기준 시안의 출발일 줄 격자) ─────
+// 공항 불빛 + 비행기 점 수만큼 칸을 만든다. 비행기 몫 칸은 격자 전체에 고르게 흩어 두어 비행기가 지형 전체로 퍼져 들어간다.
+// B·C에서는 그 칸이 "처음부터 불빛이 아니었던 점"(실제 사이트의 숨은 신호·잡음 점)처럼 지형이 모일 때 제자리에서 나타난다
+const KN = [[0, 11], [5, 4.4], [11, .9], [18, -2.4], [26, -3.7], [38, -5], [53, -4.3], [75, 2.1], [90, 2.1]];
+const curve = d => { for (let i = 1; i < KN.length; i++) if (d <= KN[i][0]) { const [a, va] = KN[i - 1], [b, vb] = KN[i]; return va + (vb - va) * (d - a) / (b - a); } return 2.1; };
+const NT = L.length + PLANE.length, COLS = 46, ROWS = Math.ceil(NT / COLS), cells = [];
+for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  const d = (1 - c / (COLS - 1)) * 90, hol = r === 4 || r === 13 || r === ROWS - 3;
+  const pct = curve(d) + (hol ? 14 * Math.exp(-Math.pow((c - COLS * .5) / 14, 2)) + 5 : 0) + Math.sin(r * 1.3 + c * .21) * .9;
+  cells.push({ x: -500 + c * 36, z: 600 + r * 70, y: 20 + pct * 11, c: hol ? 'amb' : 'blue' });
+}
+const used = cells.slice(0, NT), stride = used.length / PLANE.length, planeCells = [], lightCells = [];
+const pick = new Set(); for (let i = 0; i < PLANE.length; i++) pick.add(Math.floor(i * stride + stride * .5));
+used.forEach((c, i) => (pick.has(i) ? planeCells : lightCells).push(c));
+const kf = p => p.z * 10 + p.x * .001;
+const fs = [...L].sort((a, b) => kf(a) - kf(b)), cs = lightCells.sort((a, b) => kf(a) - kf(b));
+fs.forEach((l, i) => { const t = cs[i]; l.tx = t.x; l.ty = t.y; l.tz = t.z; l.tc = t.c; });
+const pcs = planeCells.map(c => ({ c, r: rnd() })).sort((a, b) => a.r - b.r).map(o => o.c);   // 비행기 점 → 칸은 무작위(한 덩어리로 내려앉지 않게)
+PLANE.forEach((d, i) => { d.t = pcs[i]; });
+PL_LIGHTS.forEach((l, i) => { l.t = pcs[i * 17 % pcs.length]; });
+const extraB = new Set(PL_LIGHTS.map(l => l.t));
+
+// ───── 이륙 경로 ─────
+// kk: 이륙 진행(0 활주로 끝에 서 있음, 0.5 바퀴가 뜸(스크롤 약 19%), 1 = 스크롤 36% 지점, 1 넘어서도 계속 오른다)
+const LIFT = .5, SROLL = 800, V0 = 2 * SROLL / LIFT;
+const turnOf = s => .32 * sstep(2600, 8000, s);          // 뜬 뒤 오른쪽으로 천천히 선회 — 왼쪽 글 자리에서 더 멀어지게
+const altOf = s => { const q = Math.max(0, s - SROLL); return .17 * q * q / (q + 260); };  // 부드럽게 들리며 상승각 약 9.6°
+function planePose(kk) {
+  const s = kk <= LIFT ? SROLL * (kk / LIFT) ** 2 : SROLL + V0 * (kk - LIFT) + 3800 * (kk - LIFT) ** 2;
+  let o = 0; for (let q = 2600, n = 0; q < s && n < 80; q += 200, n++) o += Math.sin(turnOf(q + 100)) * Math.min(200, s - q);   // 선회로 생긴 옆 거리(작은 적분)
+  const h = RA + turnOf(s), pos = at(s, o), y = altOf(s);
+  const th = kk <= LIFT ? .15 * sstep(LIFT - .09, LIFT, kk) : lerp(.15, .12, sstep(LIFT, 1, kk));   // 바퀴가 뜨기 직전 기수를 든다
+  const ph = .3 * (sstep(2800, 4800, s) - sstep(6500, 9500, s));                                   // 선회하는 동안만 살짝 기운다
+  const F0 = [Math.sin(h), 0, Math.cos(h)], R0v = [Math.cos(h), 0, -Math.sin(h)];
+  const F = [F0[0] * Math.cos(th), Math.sin(th), F0[2] * Math.cos(th)], U = [-F0[0] * Math.sin(th), Math.cos(th), -F0[2] * Math.sin(th)];
+  const R = R0v.map((v, i) => v * Math.cos(ph) - U[i] * Math.sin(ph)), U2 = U.map((v, i) => v * Math.cos(ph) + R0v[i] * Math.sin(ph));
+  return { s, x: pos[0], y, z: pos[1], F, R, U: U2 };
+}
+const toWorld = (P, d) => [P.x + P.F[0] * d.u + P.R[0] * d.v + P.U[0] * d.y, P.y + P.F[1] * d.u + P.R[1] * d.v + P.U[1] * d.y, P.z + P.F[2] * d.u + P.R[2] * d.v + P.U[2] * d.y];
+
+// ───── 스크롤 → 단계 ─────
+// 0→0.30 카메라가 활주로 가까이 내려앉음 / 0.02→0.36 이륙(0.19에 바퀴가 뜸) / 0.26→0.54 비행기가 오르며 성기어지고 점이 지형으로 흘러듦
+// 0.36→0.72 공항 불빛 → 지형 / 0.76→0.96 ① 넓은 카메라. 글: 첫 화면 ~0.12까지, 프롤로그 0.40~0.70, ① 0.80~
+const PH = { take0: .02, take1: .36, disp0: .26, disp1: .54, m0: .36, m1: .72, w0: .76, w1: .96 };
+function phases(p) {
+  return {
+    rise: ease(clamp(p / .30, 0, 1)),
+    kk: Math.max(0, (p - PH.take0) / (PH.take1 - PH.take0)),
+    pd: clamp((p - PH.disp0) / (PH.disp1 - PH.disp0), 0, 1),
+    m: ease(clamp((p - PH.m0) / (PH.m1 - PH.m0), 0, 1)),
+    wide: ease(clamp((p - PH.w0) / (PH.w1 - PH.w0), 0, 1)),
+  };
+}
+const dotMix = (d, pd) => ease(clamp((pd - d.delay) / .45, 0, 1));
+
+// ───── 글(겹침 검사용 사각형과 투명도) ─────
+const TEXT = [
+  { id: 'hero', a: p => 1 - sstep(.02, .12, p), dy: p => -30 * sstep(.02, .12, p) },
+  { id: 'meta', a: p => 1 - sstep(.02, .12, p), dy: () => 0 },
+  { id: 'pro', a: p => sstep(.40, .47, p) * (1 - sstep(.66, .71, p)), dy: p => 26 * (1 - expo(clamp((p - .40) / .08, 0, 1))) - 20 * sstep(.66, .71, p) },
+  { id: 'p1', a: p => sstep(.80, .88, p), dy: p => 26 * (1 - expo(clamp((p - .80) / .09, 0, 1))) },
+];
+TEXT.forEach(t => { t.el = document.getElementById(t.id); t.rects = []; });
+// 글자 자체가 차지하는 사각형(블록 폭이 아니라 줄마다 실제 글자 폭). 위치는 투명도와 상관없이 고정이라 크기가 바뀔 때만 잰다
+function measureText() {
+  for (const t of TEXT) {
+    const prevT = t.el.style.transform; t.el.style.transform = t.id === 'pro' || t.id === 'p1' ? baseT(t.id) : 'none';
+    const r = document.createRange(); t.rects = [];
+    t.el.querySelectorAll('h1, h2, p, .pre, .kw, .nums').forEach(n => { r.selectNodeContents(n); for (const q of r.getClientRects()) if (q.width > 2) t.rects.push({ l: q.left, t: q.top, r: q.right, b: q.bottom }); });
+    if (!t.el.querySelector('h1, h2, p, .pre, .kw, .nums')) { r.selectNodeContents(t.el); for (const q of r.getClientRects()) if (q.width > 2) t.rects.push({ l: q.left, t: q.top, r: q.right, b: q.bottom }); }
+    t.el.style.transform = prevT;
+  }
+}
+const baseT = id => (innerWidth > 640 ? 'translateY(-50%)' : 'none');
+
+// ───── 상태 ─────
+let pTarget = 0, pShown = 0, last = performance.now(), needDraw = true, mx = 0, my = 0, smx = 0, smy = 0;
+const t0 = performance.now();
+function readScroll() { const max = document.documentElement.scrollHeight - innerHeight; pTarget = max > 0 ? clamp(scrollY / max, 0, 1) : 0; needDraw = true; }
+addEventListener('scroll', readScroll, { passive: true });
+addEventListener('pointermove', e => { mx = e.clientX / W - .5; my = e.clientY / H - .5; });
+addEventListener('resize', resize);
+const STARS = Array.from({ length: 90 }, () => ({ x: rnd(), y: rnd() * .75, a: .05 + rnd() * .22, ph: rnd() * 6 }));
+function mixKey(a, b, t) { if (t <= 0) return a; if (t >= 1) return b; const q = Math.round(t * 8), k = a + '>' + b + q; if (!RGB[k]) RGB[k] = RGB[a].map((v, i) => Math.round(lerp(v, RGB[b][i], q / 8))); return k; }
+
+function point(p, k, a, size, flare) {
+  if (!p || a < .01) return;
+  const core = clamp(p.s * size * .55, .6, 2.6), hr = core * (size > 1.5 ? 16 : 9);
+  ctx.globalAlpha = clamp(a * .55, 0, 1); ctx.drawImage(tint(halo, k, 'h'), p.x - hr, p.y - hr, hr * 2, hr * 2);
+  ctx.globalAlpha = clamp(a, 0, 1); ctx.fillStyle = rgba(k, 1); ctx.beginPath(); ctx.arc(p.x, p.y, core, 0, 6.283); ctx.fill();
+  if (flare) { const g = ctx.createLinearGradient(p.x - flare, 0, p.x + flare, 0);
+    g.addColorStop(0, rgba(k, 0)); g.addColorStop(.5, rgba(k, .5 * a)); g.addColorStop(1, rgba(k, 0));
+    ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(p.x - flare, p.y - .6, flare * 2, 1.2); }
+}
+// 비행기 점: 공항 불빛보다 작고 은은하게(점 여러 개가 겹쳐 한 덩어리 빛이 된다)
+function pdot(p, k, a) {
+  if (!p || a < .01) return;
+  const core = clamp(p.s * .42, .55, 1.7), hr = core * 5.5;
+  // 성능: 점 약 230개를 매 프레임 그리므로, 번짐이 작을 때(멀리 있을 때)는 번짐을 생략하고 작은 점은 원 대신 사각형으로 그린다
+  if (hr > 4) { ctx.globalAlpha = clamp(a * .35, 0, 1); ctx.drawImage(tint(halo, k, 'h'), p.x - hr, p.y - hr, hr * 2, hr * 2); }
+  ctx.globalAlpha = clamp(a, 0, 1); ctx.fillStyle = rgba(k, 1);
+  if (core < 1.1) ctx.fillRect(p.x - core, p.y - core, core * 2, core * 2); else { ctx.beginPath(); ctx.arc(p.x, p.y, core, 0, 6.283); ctx.fill(); }
+}
+function pool(x, z, k, a, rad, c) {
+  const p = project(x, 0, z, c); if (!p || a < .005) return;
+  const r = clamp(p.s * rad, 2, 420), flat = clamp(c.y / p.d * 1.3, .04, .9);
+  ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1, flat); ctx.globalAlpha = clamp(a, 0, 1);
+  ctx.drawImage(tint(soft, k, 's'), -r, -r, r * 2, r * 2); ctx.restore();
+}
+function poly(pts, c) { const q = pts.map(p => project(p[0], p[1], p[2], c)); if (q.some(v => !v)) return false;
+  ctx.beginPath(); q.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); return true; }
+const g3 = (p2, y = 0) => [p2[0], y, p2[1]];
+
+// 비행기(흩어지기 전 점)의 화면 사각형 — 글 사각형과 겹치는지 매 프레임 확인한다(window.__takeoff)
+let box = null;
+const boxAdd = p => { if (!p) return; if (!box) box = { l: p.x, t: p.y, r: p.x, b: p.y, n: 0 }; box.l = Math.min(box.l, p.x); box.r = Math.max(box.r, p.x); box.t = Math.min(box.t, p.y); box.b = Math.max(box.b, p.y); box.n++; };
+
+function draw(now) {
+  const t = SNAP || REDUCED ? 6 : (now - t0) / 1000;
+  // 모션 줄이기: 스크롤을 세 장의 정지 화면으로 나눈다(첫 화면은 비행기가 활주로 끝에 서 있는 모습)
+  const pv = REDUCED ? (pShown < .3 ? 0 : pShown < .76 ? .72 : 1) : pShown;
+  const { rise, kk, pd, m, wide } = phases(pv), fade = 1 - clamp(m * 2.5, 0, 1);
+  const portrait = W < H;
+  if (!SNAP && !REDUCED) { smx += (mx - smx) * .04; smy += (my - smy) * .04; }
+  const CWv = portrait ? CWP : CW, c = {};
+  for (const f in CA) c[f] = lerp(lerp(lerp(CA[f], CB[f], rise), CT[f], m), CWv[f], wide);
+  if (portrait) c.yaw += .16 * (1 - m);                 // 세로 화면: 활주로 소실점 쪽으로 살짝 돌아본다(실제 사이트 PORTRAIT_HERO_TARGET_DX와 같은 뜻)
+  const P = variant === 'C' ? null : planePose(kk);
+  if (P) {
+    // 고개로 비행기를 살짝 따라간다(방향 차이의 35%, 높이 차이의 30%) — 멀어지는 비행기가 화면 구석으로 빨리 밀려나지 않게.
+    // 지형으로 넘어가면서(m) 따라가기를 풀어 C와 같은 카메라로 돌아온다
+    const follow = sstep(.04, .22, pv) * (1 - m), dx = P.x - c.x, dz = P.z - c.z;
+    c.yaw += (Math.atan2(dx, dz) - c.yaw) * .35 * follow;
+    c.pitch += (-Math.atan2(P.y - c.y, Math.hypot(dx, dz)) - c.pitch) * .3 * follow;
+  }
+  c.yaw += Math.sin(t * .05) * .012 + smx * .035; c.pitch += smy * .012; c.x += Math.sin(t * .07) * 6;
+
+  // 하늘
+  const hz = project(c.x + Math.sin(c.yaw) * 1e6, c.y, c.z + Math.cos(c.yaw) * 1e6, c);
+  const hy = hz ? clamp(hz.y, -H, H * 2) : -H;
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.fillStyle = '#02040A'; ctx.fillRect(0, 0, W, H);
+  if (fade > 0) {
+    ctx.globalAlpha = fade;
+    const sky = ctx.createLinearGradient(0, 0, 0, Math.max(1, hy));
+    sky.addColorStop(0, '#010206'); sky.addColorStop(.7, '#02050c'); sky.addColorStop(.94, '#060b18'); sky.addColorStop(1, '#0c1426');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, Math.max(0, hy));
+    ctx.fillStyle = '#02040a'; ctx.fillRect(0, hy, W, H - hy);
+    STARS.forEach(s => { if (s.y * H > hy - 30) return; ctx.globalAlpha = s.a * fade * (.7 + .3 * Math.sin(t * .8 + s.ph)); ctx.fillStyle = '#dfe7ff'; ctx.fillRect(s.x * W, s.y * H, 1, 1); });
+    ctx.globalAlpha = 1;
+  }
+
+  // 바닥(활주로·유도로 아스팔트, 표시선, 불빛 웅덩이)
+  if (fade > 0) {
+    ctx.globalAlpha = fade; ctx.fillStyle = '#070a12';
+    if (poly([g3(at(-30, -RHALF - 4)), g3(at(RLEN + 30, -RHALF - 4)), g3(at(RLEN + 30, RHALF + 4)), g3(at(-30, RHALF + 4))], c)) ctx.fill();
+    ctx.fillStyle = '#05080f';
+    if (poly([g3(at(-260, TO - 13)), g3(at(RLEN, TO - 13)), g3(at(RLEN, TO + 13)), g3(at(-260, TO + 13))], c)) ctx.fill();
+    CONNECT.forEach(s0 => { if (poly([g3(at(s0 - 10, TO + 12)), g3(at(s0 + 150, -RHALF)), g3(at(s0 + 175, -RHALF)), g3(at(s0 + 16, TO + 12))], c)) ctx.fill(); });
+    ctx.globalCompositeOperation = 'lighter';
+    const mark = (s1, s2, o1, o2) => { const q = [g3(at(s1, o1), .05), g3(at(s2, o1), .05), g3(at(s2, o2), .05), g3(at(s1, o2), .05)];
+      const p = project(...q[0], c); if (!p) return; ctx.globalAlpha = fade * clamp(.22 / (1 + p.d / 700), 0, .2); ctx.fillStyle = '#c9d4ee'; if (poly(q, c)) ctx.fill(); };
+    [RLEN - 40, 10].forEach(s => { for (let o = -26; o <= 26; o += 4.2) if (Math.abs(o) > 3) mark(s, s + 30, o - 1, o + .8); });
+    [150, 300, 450, RLEN - 480, RLEN - 330, RLEN - 180].forEach(s => { mark(s, s + 22, -14, -9); mark(s, s + 22, 9, 14); });
+    for (let s = 60; s < RLEN - 60; s += 50) mark(s, s + 30, -.5, .5);
+    for (const l of L) {
+      if (l.k === 'edge') pool(l.x, l.z, 'white', .09 * fade, 22, c);
+      else if (l.k === 'taxi') pool(l.x, l.z, 'blue', .07 * fade, 14, c);
+      else if (l.k === 'apron') pool(l.x, l.z, 'amb', .13 * fade, 60, c);
+      else if (l.k === 'thr' || l.k === 'end') pool(l.x, l.z, l.c, .05 * fade, 10, c);
+    }
+    const bc = project(TW[0], 60, TW[1], c); point(bc, 'red', fade * (REDUCED || (t % 1.6) < .5 ? 1 : .06), 1.1);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
+
+  // 공항 불빛(→ 지형 점)
+  ctx.globalCompositeOperation = 'lighter';
+  for (const l of L) {
+    const x = lerp(l.x, l.tx, m), y = lerp(l.y, l.ty, m), z = lerp(l.z, l.tz, m);
+    const p = project(x, y, z, c); if (!p) continue;
+    let a = 1 / (1 + p.d / 5200) * (.88 + .12 * Math.sin(t * 2.3 + l.ph));
+    if (l.k === 'center') a *= .7;
+    if ((l.k === 'edge' || l.k === 'center') && fade > 0 && !REDUCED) { const sw = ((t - 3) * 700) % (RLEN + 2600); a *= 1 + Math.exp(-Math.pow((l.ord * RLEN - sw) / 90, 2)) * fade * 2.2; }
+    const k = m > 0 ? mixKey(l.c, l.tc, m) : l.c;
+    if (l.k === 'apron' && m < .5) { const g0 = project(l.x, 0, l.z, c); if (g0) { ctx.globalAlpha = .16 * a * fade; ctx.strokeStyle = rgba('amb', 1); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x, p.y + 2); ctx.lineTo(g0.x, g0.y); ctx.stroke(); } }
+    if (l.k === 'win' && m < .35) { ctx.globalAlpha = clamp(a * .75, 0, 1); ctx.fillStyle = rgba(k, 1); ctx.fillRect(p.x - Math.max(.8, p.s * 3), p.y - .5, Math.max(1.6, p.s * 6), Math.max(1, p.s * 1.4)); }
+    else point(p, k, a, lerp(l.sz, 1, m), 0);
+    if (fade > 0 && l.y < 1 && l.k !== 'city') { const hr = clamp(p.s * .55, .6, 2.6) * 7; ctx.globalAlpha = a * .1 * fade; ctx.drawImage(tint(soft, k, 's'), p.x - hr * .3, p.y + 1, hr * .6, hr * 3.2); }
+  }
+
+  // 비행기 몫 지형 칸 — B·C는 지형이 모일 때 제자리에서 나타난다(A는 비행기 점이 직접 들어온다)
+  if (variant !== 'A' && m > 0) for (const cell of planeCells) {
+    if (variant === 'B' && extraB.has(cell)) continue;
+    const p = project(cell.x, cell.y, cell.z, c); if (p) point(p, cell.c, m / (1 + p.d / 5200), 1, 0);
+  }
+
+  // 이륙하는 비행기
+  box = null;
+  if (variant === 'A') {
+    for (const d of PLANE) {
+      const mi = dotMix(d, pd), w = toWorld(P, d);
+      // 흩어질 때는 곧장 가지 않고 살짝 아래로 부푼 곡선을 그리며 떨어진다(빛이 흘러내리는 느낌)
+      const bow = Math.sin(mi * Math.PI) * 180;
+      const x = lerp(w[0], d.t.x, mi), y = lerp(w[1], d.t.y, mi) - bow * .3, z = lerp(w[2], d.t.z, mi) + bow * .2;
+      const p = project(x, y, z, c); if (!p) continue;
+      const far = 1 / (1 + p.d / 7000);
+      // 흩어지는 동안 점이 성기어 보이게: 떠난 점은 잠깐 흐려졌다가 지형에서 지형 점 밝기가 된다
+      const a = mi <= 0 ? (d.c === 'white' ? 1 : .82) * far : lerp(.8, .25, Math.sin(mi * Math.PI)) * far * (mi < 1 ? 1 : 1);
+      if (mi < 1) pdot(p, mi > .5 ? mixKey('dot', d.t.c, (mi - .5) * 2) : d.c, a);
+      else point(p, d.t.c, far, 1, 0);
+      if (mi < .35) boxAdd(p);
+    }
+  } else if (variant === 'B') {
+    const onGround = P.y < 25;
+    if (onGround && kk > 0 && fade > 0) { const q = [P.x + P.F[0] * 80, P.z + P.F[2] * 80]; pool(q[0], q[1], 'white', .14 * fade, 40, c); }
+    for (const l of PL_LIGHTS) {
+      const mi = ease(clamp((pd - l.delay) / .45, 0, 1)), w = toWorld(P, l), bow = Math.sin(mi * Math.PI) * 180;
+      const p = project(lerp(w[0], l.t.x, mi), lerp(w[1], l.t.y, mi) - bow * .3, lerp(w[2], l.t.z, mi) + bow * .2, c); if (!p) continue;
+      const far = 1 / (1 + p.d / 9000);
+      // 크기: 멀리서도 색 점으로 읽히게 공항 불빛보다 한 단계 크게(착륙등이 가장 밝고, 빨강·초록 항법등이 비행기 방향을 알려 준다)
+      let a = far, sz = 1.7;
+      if (l.kind === 'land') { a *= onGround || kk < 1.05 ? 1 : .55; sz = 3; }
+      if (l.kind === 'tail') sz = 1.2;
+      if (l.kind === 'strobe') a *= (SNAP || REDUCED) ? 1 : ((t % 1.3) < .05 || ((t % 1.3) > .14 && (t % 1.3) < .19)) ? 1 : 0;
+      if (l.kind === 'beacon') a *= (SNAP || REDUCED) ? .9 : ((t % 1.1) < .14 ? 1 : .08);
+      if (l.kind === 'tail' || l.kind === 'nav') a *= .8;
+      const k = mi > 0 ? mixKey(l.c, l.t.c, mi) : l.c;
+      if (mi < 1) point(p, k, a * (1 - .5 * Math.sin(mi * Math.PI)), lerp(sz, 1, mi), l.kind === 'land' && mi < .2 ? 60 * clamp(p.s * .05, .2, 1) : 0);
+      else point(p, l.t.c, far, 1, 0);
+      if (mi < .35 && a > .05) boxAdd(p);
+    }
+  }
+
+  // 진입등 섬광
+  if (fade > 0) { const step = Math.floor((t * 16) % 22);
+    APPROACH.forEach((q, i) => { const p = project(q[0], 1, q[1], c); if (!p) return; point(p, 'white', .25 * fade, .6); if (!REDUCED && APPROACH.length - 1 - i === step) point(p, 'white', fade, 3.2, 26); }); }
+  // 착륙하는 비행기 — 지금 사이트 동작. 같은 활주로에서 이륙하는 A·B에서는 끈다(두 비행기가 겹쳐 헷갈림)
+  if (variant === 'C' && fade > 0 && !REDUCED) { const cyc = (t % 20) / 20;
+    if (cyc < .8) { const u = cyc / .8, s = u < .6 ? lerp(RLEN + 5200, RLEN - 250, u / .6) : lerp(RLEN - 250, 900, ease((u - .6) / .4));
+      const pos = at(s, 0), alt = Math.max(3, (s - (RLEN - 250)) * .052), p = project(pos[0], alt, pos[1], c), k = Math.min(1, u * 10) * fade;
+      if (p) point(p, 'white', k, 5, 170 * clamp(p.s * .02, .3, 1.4)); } }
+  // 유도로를 지나가는 비행기(모든 시안 공통)
+  if (fade > 0) { const s = 2800 - (((REDUCED ? 30 : t) * 22) % 3000), pos = at(s, TO), p = project(pos[0], 4, pos[1], c);
+    if (p) { point(p, 'white', fade * .9, 1.6, 40 * clamp(p.s * .03, .3, 1)); const fw = at(s - 30, TO); pool(fw[0], fw[1], 'white', .12 * fade, 40, c); } }
+
+  // 비네트 + 글 쪽 어둡게 + 필름 입자
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  const v = ctx.createRadialGradient(W * .5, H * .5, Math.min(W, H) * .35, W * .5, H * .5, Math.max(W, H) * .78);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.62)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  const txA = Math.max(TEXT[0].a(pv) * .7, TEXT[2].a(pv), TEXT[3].a(pv));
+  const gx = portrait ? W * .5 : W * .16, gy = portrait ? H * .8 : (TEXT[0].a(pv) > .5 ? H * .78 : H * .5), gr = portrait ? H * .38 : W * .42;
+  const tg = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr); tg.addColorStop(0, `rgba(1,2,6,${.62 * txA})`); tg.addColorStop(1, 'rgba(1,2,6,0)');
+  ctx.fillStyle = tg; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalAlpha = .03; ctx.translate(SNAP || REDUCED ? 0 : -Math.random() * 256, SNAP || REDUCED ? 0 : -Math.random() * 256); ctx.fillStyle = grainPat; ctx.fillRect(0, 0, W + 256, H + 256); ctx.restore();
+
+  // 글 투명도·위치 + 겹침 검사
+  const hits = [];
+  for (const tx of TEXT) {
+    const a = tx.a(REDUCED ? pShown : pv), dy = REDUCED ? 0 : tx.dy(pv);
+    tx.el.style.opacity = a.toFixed(3);
+    tx.el.style.transform = `${baseT(tx.id) === 'none' || tx.id === 'hero' || tx.id === 'meta' ? '' : 'translateY(-50%) '}translateY(${dy.toFixed(1)}px)`;
+    tx.el.style.visibility = a < .005 ? 'hidden' : 'visible';
+    if (box && a > .02) for (const r of tx.rects) { const pad = 10;
+      if (box.l < r.r + pad && box.r > r.l - pad && box.t < r.b + dy + pad && box.b > r.t + dy - pad) { hits.push(tx.id); break; } }
+  }
+  const topA = 1 - sstep(.01, .05, pv);
+  document.getElementById('top').style.opacity = topA; document.getElementById('scrollHint').style.opacity = 1 - sstep(.0, .04, pv);
+  const stage = variant === 'C'
+    ? (pv < .36 ? '활주로' : pv < .72 ? '불빛 → 지형' : pv < .78 ? '지형' : '① PROJECT')
+    : (pv < PH.take0 ? '대기(활주로 끝)' : kk < LIFT ? '활주' : pv < PH.disp0 ? '이륙·상승' : pv < PH.disp1 ? '흩어짐 → 지형' : pv < .78 ? '지형' : '① PROJECT');
+  document.getElementById('ro').innerHTML = `스크롤 <b>${Math.round(pShown * 100)}%</b> · ${stage}${hits.length ? ' · <b style="color:#ff7a7a">겹침</b>' : ''}`;
+  window.__takeoff = { p: pShown, pv, variant, box, hits, reduced: REDUCED };
+}
+
+function loop(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  // 스크롤을 expo.out 느낌으로 따라간다(되감으면 그대로 거꾸로, 튕김 없음). 스크린숏(snap)은 바로 맞춘다
+  pShown = SNAP ? pTarget : pShown + (pTarget - pShown) * (1 - Math.exp(-dt * 7));
+  if (Math.abs(pTarget - pShown) < 1e-4) pShown = pTarget;
+  draw(now);
+  requestAnimationFrame(loop);
+}
+
+// 시안 토글
+function setVariant(v) { variant = v; document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v))); needDraw = true; if (REDUCED) draw(performance.now()); }
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => setVariant(b.dataset.v)));
+window.__setVariant = setVariant;
+
+resize(); readScroll(); pShown = pTarget; setVariant(variant);
+document.fonts && document.fonts.ready.then(() => { measureText(); needDraw = true; });
+if (REDUCED) {
+  // 정지 화면: 반복 그리기 없이 스크롤·크기 바뀔 때만 다시 그린다
+  const redraw = () => { pShown = pTarget; draw(performance.now()); };
+  addEventListener('scroll', redraw, { passive: true }); addEventListener('resize', redraw); redraw();
+  document.fonts && document.fonts.ready.then(redraw);
+} else requestAnimationFrame(loop);
+</script>
+</body>
+</html>
