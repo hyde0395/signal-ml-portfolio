@@ -247,6 +247,7 @@
       "jp_coming_of_age_day": "Coming of Age Day (Japan)",
       "jp_foundation_day": "National Foundation Day (Japan)"
     },
-    "touch": "explore values"
+    "touch": "explore values",
+    "touchHint": "Use left and right arrows to explore"
   }
 }

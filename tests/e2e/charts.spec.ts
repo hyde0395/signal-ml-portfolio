@@ -133,11 +133,14 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     expect(t.y).toBeGreaterThanOrEqual(plot.y - 1);
     // 판 오른쪽 끝에 붙여도 상자가 판 밖으로 안 나간다
     await page.mouse.move(plot.x + plot.width - 2, plot.y + plot.height / 2);
+    // 마지막 항목으로 옮겨 간 뒤에 잰다 — 옮기기 전 상자를 재면 검사가 헛돈다
+    await expect(slider).toHaveAttribute('aria-valuenow', (await slider.getAttribute('aria-valuemax'))!);
     const t2 = (await tip.boundingBox())!;
     expect(t2.x + t2.width).toBeLessThanOrEqual(plot.x + plot.width + 1);
     await page.mouse.move(5, 5);
     await expect(tip).toBeHidden();
-    await expect(slider).not.toHaveAttribute('aria-valuetext', /./);
+    // 짚은 항목이 없으면 valuenow 0 대신 조작 안내가 읽힌다
+    await expect(slider).toHaveAttribute('aria-valuetext', '좌우 화살표로 살펴보기');
   });
 
   test('차트 1: 판 위에서 휠을 굴리면 페이지가 스크롤된다', async ({ page }) => {

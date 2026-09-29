@@ -13,8 +13,9 @@ import type { ChartStrings } from '@/charts/build';
 import { publishChart, setFocus as publishFocus } from '@/charts/registry';
 import type { ChartKey, ChartLabel, ChartLayout } from '@/charts/types';
 
-// label: 조작 층의 aria-label(차트 제목 + " · " + charts.touch). 항목이 있는 차트(1·2·4)만 쓴다
-type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string; label?: string };
+// label: 조작 층의 aria-label(차트 제목 + " · " + charts.touch), hint: 짚은 항목이 없을 때의 valuetext(charts.touchHint).
+// 항목이 있는 차트(1·2·4)만 쓴다
+type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string; label?: string; hint?: string };
 
 // 판이 화면 아래 800px 안으로 들어오면 미리 불러온다(스크롤해 도착했을 때 이미 그려져 있도록)
 const LOAD_MARGIN = '800px 0px';
@@ -23,7 +24,7 @@ const TOUCH_SLOP_PX = 8;
 // 표시 상자와 짚은 항목 사이 간격(px)
 const TIP_GAP = 12;
 
-export function ChartStage({ chartKey, dataVersion, strings, errorText, label }: Props) {
+export function ChartStage({ chartKey, dataVersion, strings, errorText, label, hint }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const plot = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -42,12 +43,15 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label }:
   // 터치: 누른 자리와 아직 끌기로 확정되지 않았는지(pending). 확정되면 dragging
   const touch = useRef<{ x: number; pending: boolean } | null>(null);
   const dragging = useRef(false);
+  // 웹 글꼴이 늦게 도착해 글자 폭이 바뀌면 표시 상자를 다시 잰다(대체 글꼴로 잰 폭이면 판 밖으로 삐져나갈 수 있다)
+  const [fontTick, setFontTick] = useState(0);
 
   useEffect(() => {
     const st = stage.current, pl = plot.current, cv = canvas.current;
     if (!st || !pl || !cv) return;
     let alive = true;
     let redraw = () => {};
+    let pf = 0;
     const io = new IntersectionObserver(async (entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
       io.disconnect();
@@ -68,21 +72,32 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label }:
           lastLayout.current = layout;
           // 처음 배치 때만 처음 강조를 정한다 — 창 크기로 다시 배치해도 짚은 항목(같은 번호)은 그대로 둔다
           if (!inited.current) { inited.current = true; selRef.current = layout.initial ?? -1; setSel(selRef.current); }
+          // 새 배치의 항목 수가 줄었으면 짚은 번호가 범위 밖이 된다(aria-valuenow > valuemax) — 처음 강조로 되돌린다
+          else if (layout.items && selRef.current >= layout.items.length) { selRef.current = layout.initial ?? -1; setSel(selRef.current); }
           setLay(layout);
-          paint.current(selRef.current);
+          draw(selRef.current);
         };
         // 2D 그리기만 따로 둔다 — 강조가 바뀔 때 배치를 다시 만들거나 3D에 다시 올리지 않고 2D만 다시 그린다
-        paint.current = (f: number) => {
+        const draw = (f: number) => {
+          if (pf) { cancelAnimationFrame(pf); pf = 0; }
           const layout = lastLayout.current;
           if (!layout || document.documentElement.getAttribute('data-3d') !== 'off') return;
           const r = pl.getBoundingClientRect();
           const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          cv.width = Math.round(r.width * dpr);
-          cv.height = Math.round(r.height * dpr);
+          // 캔버스 크기를 다시 넣으면 크기가 같아도 버퍼를 새로 잡는다 — 판 크기가 바뀐 때만
+          const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+          if (cv.width !== w) cv.width = w;
+          if (cv.height !== h) cv.height = h;
           const ctx = cv.getContext('2d');
           if (!ctx) return;
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
           mod.drawLayout(ctx, layout, r.width, r.height, f);
+        };
+        // 끌기·마우스 이동은 한 프레임에 강조를 여러 번 바꾼다. 점 수천 개 다시 그리기는 프레임당 한 번, 마지막 강조로만
+        let pending = -1;
+        paint.current = (f: number) => {
+          pending = f;
+          if (!pf) pf = requestAnimationFrame(() => { pf = 0; draw(pending); });
         };
         redraw();
       } catch (e) {
@@ -106,6 +121,8 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label }:
       alive = false; io.disconnect(); ro.disconnect(); mo.disconnect();
       window.removeEventListener('resize', onResize);
       if (rf) cancelAnimationFrame(rf);
+      if (pf) cancelAnimationFrame(pf);
+      paint.current = () => {};
     };
   }, [chartKey, dataVersion, strings]);
 
@@ -124,7 +141,12 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label }:
     const x = cur.x * W, y = cur.y * H;
     el.style.left = `${Math.max(0, Math.min(W - w, x - w / 2))}px`;
     el.style.top = `${y - TIP_GAP - h >= 0 ? y - TIP_GAP - h : Math.min(H - h, y + TIP_GAP)}px`;
-  }, [cur, lay]);
+  }, [cur, lay, fontTick]);
+  useEffect(() => {
+    let alive = true;
+    document.fonts?.ready.then(() => { if (alive) setFontTick((n) => n + 1); });
+    return () => { alive = false; };
+  }, []);
 
   // 마우스·펜은 올리고 내리기, 손가락은 누를 때마다 켜고 끄기(손가락은 떼는 순간 pointerleave가 와서 바로 꺼지므로 무시한다)
   const groupHandlers = (gi: number) => ({
@@ -144,12 +166,15 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label }:
     setSel(items[best].key);
   };
   const touchHandlers = {
+    // 두 번째 손가락(확대 등)이 touch.current를 덮어쓰지 않게 주 포인터만 받는다. 마우스는 왼쪽 단추만(데모 DateStrip과 같다)
     onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
       // 손가락은 세로 스크롤하려고 스친 것일 수 있어 바로 짚지 않는다(세로면 브라우저가 pan-y로 가져가며 pointercancel)
       if (e.pointerType === 'touch') touch.current = { x: e.clientX, pending: true };
       else pick(e.clientX);
     },
     onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!e.isPrimary) return;
       const t = touch.current;
       if (t?.pending && Math.abs(e.clientX - t.x) > TOUCH_SLOP_PX) {
         t.pending = false;
@@ -159,12 +184,13 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label }:
       if (e.pointerType !== 'touch' || dragging.current) pick(e.clientX);
     },
     onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!e.isPrimary) return;
       // 가로로 끌지 않고 뗀 터치는 탭 — 그 자리 항목. 손을 떼도 짚은 항목은 남긴다
       if (touch.current?.pending) pick(e.clientX);
       touch.current = null;
       dragging.current = false;
     },
-    onPointerCancel: () => { touch.current = null; dragging.current = false; },
+    onPointerCancel: (e: React.PointerEvent<HTMLDivElement>) => { if (e.isPrimary) { touch.current = null; dragging.current = false; } },
     // 마우스·펜이 판을 떠나면 차트 1·4는 강조 해제, 차트 2는 마지막 구간(세로선)이 남는다. 손가락은 뗄 때 오므로 무시
     // 부드러운 스크롤(Lenis)이 끝날 때 크롬이 흉내 낸 마우스 이동으로 판 "위"에서도 pointerleave를 보낼 때가 있다
     // (3D 켜짐 실측) — 포인터가 아직 판 안이면 떠난 게 아니다
@@ -226,15 +252,16 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label }:
             role="slider"
             tabIndex={0}
             aria-label={label}
-            // 짚은 항목이 없어도 role=slider는 valuenow가 필수라(ARIA) 0으로 두고, 뜻은 valuetext가 없는 것으로 전한다
+            // 짚은 항목이 없어도 role=slider는 valuenow가 필수라(ARIA) 0으로 두고, "0"이 읽히지 않게 valuetext로 조작 안내를 준다
             aria-valuemin={0}
             aria-valuemax={items.length - 1}
-            aria-valuenow={sel < 0 ? 0 : sel}
-            aria-valuetext={cur?.text}
+            aria-valuenow={cur ? sel : 0}
+            aria-valuetext={cur?.text ?? hint}
             {...touchHandlers}
           />
         )}
-        {failed && <p className="chart-error">{errorText}</p>}
+        {/* 알림 영역은 처음부터 두고 글만 넣어야 화면 낭독기가 바뀐 것으로 읽는다 */}
+        <p className="chart-error" role="status">{failed ? errorText : null}</p>
       </div>
     </div>
   );

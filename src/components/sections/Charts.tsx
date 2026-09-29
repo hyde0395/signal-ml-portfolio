@@ -66,6 +66,7 @@ export function Charts({ locale }: { locale: Locale }) {
             }}
             errorText={t('charts.error')}
             label={`${t(`charts.${b.id}.heading`)} · ${t('charts.touch')}`}
+            hint={t('charts.touchHint')}
           />
           <div className="chart-copy">
             <p className="eyebrow" data-flip-on-enter>{b.tag}</p>

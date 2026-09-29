@@ -387,7 +387,7 @@ html[data-3d="on"] .data-board > :is(p, a) { text-shadow: 0 0 6px #02040A, 0 0 2
 /* 3D가 켜졌거나 판정 중이면 2D 그림은 숨긴다(점은 배경 캔버스가 그린다) */
 html:not([data-3d="off"]) .chart-canvas { visibility: hidden; }
 .chart-labels { position: absolute; inset: 0; }
-.chart-label { position: absolute; transform: translate(-50%, -50%); font: 500 11px var(--font-mono); color: var(--mute); white-space: nowrap; }
+.chart-label { position: absolute; transform: translate(-50%, -50%); font: 400 11px var(--font-mono); color: var(--mute); white-space: nowrap; }
 .chart-label.align-start { transform: translate(0, -50%); }
 .chart-label.align-end { transform: translate(-100%, -50%); }
 .chart-label.axis, .chart-label.month { color: var(--tx); letter-spacing: 0.04em; }
@@ -410,13 +410,14 @@ html:not([data-3d="off"]) .chart-canvas { visibility: hidden; }
 .chart-detail b { color: var(--amb); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .chart-group { transition: none; } }
 /* ④ 차트 1·2·4 조작 층(계획 5-3b): 판 위 투명한 slider. 판은 pointer-events: none이라 이 층만 받는다.
-   pan-y — 세로 스크롤은 브라우저에 맡기고 가로 끌기만 짚기로 쓴다. 초점 링은 판 테두리 안쪽에 */
-.chart-touch { position: absolute; inset: 0; cursor: crosshair; touch-action: pan-y; pointer-events: auto; }
+   가로 끌기만 짚기로 쓰고, 세로 스크롤과 두 손가락 확대는 브라우저에 맡긴다(데모 .strip과 같다). 초점 링은 판 테두리 안쪽에 */
+.chart-touch { position: absolute; inset: 0; cursor: crosshair; touch-action: pan-y pinch-zoom; pointer-events: auto; }
 .chart-touch:focus-visible { outline-offset: -2px; }
 /* 표시 상자: 사이트의 "글 뒤 판 없음" 원칙과 부딪히지 않게 아주 작게. 자리는 ChartStage가 잰 뒤 left·top으로 둔다.
    보통 한 줄(max-content)이지만 판보다 긴 문장(좁은 휴대폰·영어)은 판 폭에서 접는다 — 한 줄로 두면 판 밖으로
    삐져나가 페이지 가로 폭이 늘고, 휴대폰 브라우저가 화면 전체를 축소해 버린다 */
-.chart-tip { position: absolute; left: 0; top: 0; font: 500 11px var(--font-mono); color: var(--tx);
+/* 굵기 400: 글꼴 설정(styles/fonts.ts)이 IBM Plex Mono 400·600만 불러온다 — 500은 합성·대체되어 폭이 달라진다 */
+.chart-tip { position: absolute; left: 0; top: 0; font: 400 11px var(--font-mono); color: var(--tx);
   width: max-content; max-width: 100%; box-sizing: border-box;
   background: rgba(2, 4, 10, 0.85); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; pointer-events: none; }
 /* 차트 2: 고른 구간에 세로선 */

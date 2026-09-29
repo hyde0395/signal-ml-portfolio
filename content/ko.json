@@ -247,6 +247,7 @@
       "jp_coming_of_age_day": "성인의 날(일본)",
       "jp_foundation_day": "건국기념일(일본)"
     },
-    "touch": "값 살펴보기"
+    "touch": "값 살펴보기",
+    "touchHint": "좌우 화살표로 살펴보기"
   }
 }
