@@ -3,7 +3,7 @@
 // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
 import { FOCUS_DIM } from '@/charts/types';
 import { PUSH, RIPPLE } from './pointerField';
-import { DEPTH_FADE, POINT, glslFloat as f } from './pointStyle';
+import { DEPTH_FADE, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
 
 // 아래 두 GLSL 문자열 안에는 // 주석을 두지 않는다 — 문자열이라 빌드 때 안 지워지고 그대로 gzip에 실려
 // 3D 청크를 불필요하게 키운다(2026-09-29 최종 점검, 약 4KB 절감). 원래 줄 옆에 있던 설명을 여기로 옮긴다.
@@ -69,6 +69,11 @@ import { DEPTH_FADE, POINT, glslFloat as f } from './pointStyle';
 // - if (vAlpha < 0.003): 화면에 안 보이는 점(알파가 거의 0)은 크기 0 + 화면 밖으로 보내 래스터화를 아예
 //   건너뛴다(성능 검토 2026-09-28) — 공항 장면의 배경 점 약 27,000개, 차트 장면에서 이번 배치에 안 쓰는 점이
 //   여기 걸린다
+//
+// 지도 장면(설계 2026-09-29 §1, 계획 6-4): aRoute = 1 노선, 0 해안선, −1 지도에 안 쓰는 점(알파 0으로 숨김 — 새 속성을
+// 더하지 않으려고 기존 aRoute에 담았다, 정점 속성 16개 한계). 지도에서는 종류와 상관없이 같은 알파·크기(MAP_POINT)로
+// 그리고, 잡음 점도 끝까지 모인다(gather를 uMap만큼 uAssemble로) — 덜 모인 잡음 점이 해안선 둘레에 뿌옇게 남았었다.
+// terrainCol의 노선 색은 max(aRoute, 0.0)로 −1을 0으로 자른다
 export const vertexShader = /* glsl */ `
   attribute vec3 aTerrain;
   attribute vec3 aMap;
@@ -122,7 +127,7 @@ export const vertexShader = /* glsl */ `
 
   void main() {
     vec3 target = mix(aTerrain, aMap, uMap);
-    float gather = aKind > 0.5 && aKind < 1.5 ? uAssemble * 0.9 : uAssemble;
+    float gather = mix(aKind > 0.5 && aKind < 1.5 ? uAssemble * 0.9 : uAssemble, uAssemble, uMap);
     vec3 p = mix(aScatter, target, gather);
     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
     if (aKind > 1.5) p.y -= uDrop * uDrop * 14.0;
@@ -146,6 +151,7 @@ export const vertexShader = /* glsl */ `
     vec2 off = (dp > 1e-4 ? dv / dp * push : vec2(0.0)) + (drl > 1e-4 ? dr / drl * rip : vec2(0.0));
     gl_Position.xy += off / vec2(uAspect, 1.0) * gl_Position.w;
     float size = aKind < 0.5 ? ${f(POINT.signalSize)} : (aKind < 1.5 ? ${f(POINT.noiseSize)} : 1.1);
+    size = mix(size, ${f(MAP_POINT.size)}, uMap);
     float terrainPx = uSize * size * (20.0 / -mv.z);
     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;
     float corePx = clamp(5.5 * aAirStyle.z / max(-mv.z, 0.01), 0.6, 2.6) * uDpr;
@@ -155,8 +161,10 @@ export const vertexShader = /* glsl */ `
     gl_PointSize = mix(basePx, airPx, vAir);
 
     float a = aKind < 0.5 ? ${f(POINT.signalAlpha)} : (aKind < 1.5 ? ${f(POINT.noiseAlpha)} * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
+    float onMap = step(-0.5, aRoute);
+    a = mix(a, onMap * mix(${f(MAP_POINT.coastAlpha)}, ${f(MAP_POINT.routeAlpha)}, max(aRoute, 0.0)), uMap);
     float fade = clamp(${f(DEPTH_FADE.base)} - (-mv.z - uFocusDist) / ${f(DEPTH_FADE.span)}, ${f(DEPTH_FADE.min)}, 1.0);
-    vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(aHoliday * (1.0 - uMap), aRoute * uMap));
+    vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(aHoliday * (1.0 - uMap), max(aRoute, 0.0) * uMap));
     float chartA = mix(aStyleA.x, aStyleB.x, uSlot);
     vec3 chartCol = mix(toneColor(aStyleA.y), toneColor(aStyleB.y), uSlot);
     if (uFocus > -0.5 && aWaffle > -0.5) {

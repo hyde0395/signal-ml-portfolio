@@ -4,6 +4,9 @@
 
 export const POINT = { signalAlpha: 0.8, noiseAlpha: 0.117, signalSize: 0.9, noiseSize: 0.6 } as const;
 
+// 지도 장면(설계 2026-09-29 §1): 종류(신호·잡음)와 상관없이 같은 알파·크기 — 선 굵기가 고르게. size는 지형 크기 배율
+export const MAP_POINT = { coastAlpha: 0.8, routeAlpha: 0.9, size: 0.55 } as const;
+
 // 거리 흐림: 카메라~점 거리 d가 카메라~장면 목표점 거리 dT보다 멀수록 흐리게.
 // dT 기준이라 멀리 물러난 장면(검증·데모·연락처)에서도 전체가 한꺼번에 어두워지지 않는다.
 // base는 ① 장면(dT ≈ 22.2)에서 시안 D(1.25 − (d − 14)/18)와 같아지도록 맞춘 값이다

@@ -1,6 +1,6 @@
 // 점 스타일 상수와 거리 흐림(설계 2026-09-28 첫 화면 다듬기 §2.2)
 import { describe, expect, it } from 'vitest';
-import { DEPTH_FADE, POINT, depthFade, glslFloat } from '@/three/pointStyle';
+import { DEPTH_FADE, MAP_POINT, POINT, depthFade, glslFloat } from '@/three/pointStyle';
 
 describe('depthFade', () => {
   it('장면 목표점 거리에서는 기준값', () => {
@@ -22,6 +22,12 @@ describe('depthFade', () => {
 describe('POINT', () => {
   it('시안 D 값', () => {
     expect(POINT).toEqual({ signalAlpha: 0.8, noiseAlpha: 0.117, signalSize: 0.9, noiseSize: 0.6 });
+  });
+});
+
+describe('MAP_POINT', () => {
+  it('지도 장면 값(설계 2026-09-29 §1)', () => {
+    expect(MAP_POINT).toEqual({ coastAlpha: 0.8, routeAlpha: 0.9, size: 0.55 });
   });
 });
 
