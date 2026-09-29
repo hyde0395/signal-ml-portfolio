@@ -86,6 +86,8 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
 // 평균 대비 %. 출발일 하나 = 점 뭉치 하나(3D에서는 그 출발일의 배경 점이 모인다, group). 막대·줄기 선은 쓰지 않는다 —
 // 점을 쌓은 막대는 사용자가 "별로"(2026-09-25), 줄기 선은 시안에서 지저분했다. 호박색은 공휴일 무렵이면서 +25% 이상인
 // 날만 — 공휴일 ±3일을 모두 칠하면 강조가 흐려졌다(사용자 지적 2026-09-29). 오른쪽(휴대폰은 아래)은 요일 평균
+// 이름표 겹침 어림값: 공휴일 이름(11px 글꼴) 글자당 폭, 월 이름 사이 최소 간격
+export const DEPART_TEXT = { charPx: 6.6, monthGapPx: 34 } as const;
 export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25 } as const;
 
 export function departLayout(
@@ -117,17 +119,29 @@ export function departLayout(
   });
   for (const v of [50, 25, 0, -25]) labels.push({ type: 'text', x: (gx0 - 6) / W, y: Y(v) / H, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: gx0 / W, y: (top * 0.35) / H, text: s.axis, align: 'start', cls: 'axis' });
-  let lastMonth = '';
+  // 월 이름: 앞 월 이름과 MONTH_GAP_PX보다 가까우면 뺀다 — 첫 출발일(5월 중순)과 다음 달 첫 출발일이 붙어 있어 좁은 판에서 "MayJun"처럼 붙었다
+  let lastMonth = '', lastMonthX = -Infinity;
   d.dates.forEach((iso) => {
     if (iso.slice(0, 7) === lastMonth) return;
     lastMonth = iso.slice(0, 7);
+    if (X(iso) - lastMonthX < DEPART_TEXT.monthGapPx) return;
+    lastMonthX = X(iso);
     labels.push({ type: 'text', x: X(iso) / W, y: (bottom + (gy1 - bottom) * 0.6) / H, text: s.month(iso), align: 'center', cls: 'month' });
   });
-  d.labels.forEach((l) => {
-    const i = d.dates.indexOf(l.date);
-    if (i < 0) return;
-    labels.push({ type: 'text', x: X(l.date) / W, y: (Y(d.depart.pct[i] / 10) - r - 10) / H, text: s.holiday(l.code), align: 'center', cls: 'holiday' });
-  });
+  // 공휴일 이름표: 봉우리 바로 위. 옆 이름표와 가로로 겹치면 한 줄(13px) 위로 올린다 — 글자 폭은 배치 함수에서 잴 수 없어
+  // 글자 수 × charPx로 어림한다(좁은 영어 판에서 Christmas·Seollal이 붙었다). 판 위로 나가지 않게 8px에서 멈춘다
+  const placed: { x: number; y: number; half: number }[] = [];
+  d.labels
+    .map((l) => ({ l, i: d.dates.indexOf(l.date) }))
+    .filter(({ i }) => i >= 0)
+    .sort((a, b) => X(a.l.date) - X(b.l.date))
+    .forEach(({ l, i }) => {
+      const text = s.holiday(l.code), x = X(l.date), half = (text.length * DEPART_TEXT.charPx) / 2;
+      let y = Math.max(8, Y(d.depart.pct[i] / 10) - r - 10);
+      for (const q of placed) if (Math.abs(q.x - x) < q.half + half + 4 && Math.abs(q.y - y) < 12) y = Math.max(8, q.y - 13);
+      placed.push({ x, y, half });
+      labels.push({ type: 'text', x: x / W, y: y / H, text, align: 'center', cls: 'holiday' });
+    });
 
   // 요일 평균(월=0 … 일=6)
   const sum = Array(7).fill(0), cnt = Array(7).fill(0);

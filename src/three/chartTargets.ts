@@ -18,7 +18,7 @@ export function chartShiftY(stageTop: number, vh: number, dist: number, fovDeg: 
 }
 
 // 배치 점마다 점 구름의 어느 점을 쓸지 고른다. group(지형 출발일 번호)이 있으면 그 출발일의 신호·잡음 점을 먼저
-// 쓴다 — 점 달력에서 "그 출발일의 점들이 모여 원을 이룬다"가 실제로 그렇게 되도록. 모자라거나 group이 없으면
+// 쓴다 — 출발일 점 그래프에서 "그 출발일의 점들이 모여 원을 이룬다"가 실제로 그렇게 되도록. 모자라거나 group이 없으면
 // 아직 안 쓴 점을 앞 번호부터. 제거 레이어(kind 2)는 잘못 매칭된 행이라 출발일 원에는 쓰지 않는다.
 export function assignPoints(group: Int16Array, n: number, cloudDate: Int16Array, cloudKind: Float32Array): Int32Array {
   const count = cloudDate.length;

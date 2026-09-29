@@ -10,7 +10,7 @@ const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.
 describe('차트 문구', () => {
   for (const locale of LOCALES) {
     const c = dictionaries[locale].charts as unknown as Record<string, Record<string, string>>;
-    it(`${locale}: 점 달력 이름표의 공휴일 이름이 모두 있다(재추출로 코드가 바뀌면 여기서 멈춘다)`, () => {
+    it(`${locale}: 출발일 점 그래프 이름표의 공휴일 이름이 모두 있다(재추출로 코드가 바뀌면 여기서 멈춘다)`, () => {
       for (const { code } of charts.labels) expect(c.holidays[code], code).toBeTruthy();
     });
     it(`${locale}: 그림 판 블록(depart·curve·band)마다 요약 문단이 있다`, () => {

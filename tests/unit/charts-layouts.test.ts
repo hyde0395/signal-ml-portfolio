@@ -137,6 +137,16 @@ describe('departLayout', () => {
     expect(h[0].y).toBeLessThan(cy);
     expect((cy - h[0].y) * 414).toBeLessThan(30);
   });
+  it('요일 평균 값 = 그 요일 출발일들의 평균 %, +15% 넘는 요일만 호박색 점', () => {
+    const sum = Array(7).fill(0), cnt = Array(7).fill(0);
+    charts.dates.forEach((iso, i) => { const k = (new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7; sum[k] += charts.depart.pct[i] / 10; cnt[k]++; });
+    const avg = sum.map((v, k) => v / cnt[k]);
+    const texts = L.labels.filter((l): l is Extract<ChartLabel, { type: 'text' }> => l.type === 'text').map((l) => l.text);
+    for (const a of avg) expect(texts).toContain(depS.pct(Math.round(a)));
+    // 요일 평균 점(출발일 뭉치가 아닌 group −1, 알파 0.85)의 호박색 여부
+    const weekdayAmber = Array.from({ length: L.n }, (_, i) => i).some((i) => L.group[i] === -1 && L.alpha[i] > 0.8 && L.tone[i] === TONE.amber);
+    expect(weekdayAmber).toBe(avg.some((a) => a > DEPART.hotWeekday));
+  });
   it('요일 평균: 이름 7개와 값 7개, 제목·세로축 이름', () => {
     const t = L.labels.filter((l): l is Extract<ChartLabel, { type: 'text' }> => l.type === 'text');
     for (let k = 0; k < 7; k++) expect(t.some((l) => l.text === `w${k}`)).toBe(true);

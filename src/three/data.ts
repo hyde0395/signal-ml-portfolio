@@ -57,7 +57,7 @@ export type PointCloud = {
   kind: Float32Array;    // 0 신호, 1 잡음, 2 제거
   holiday: Float32Array;
   route: Float32Array;    // 1 노선, 0 해안선, −1 지도에서 안 씀(셰이더가 지도 장면에서 숨긴다)
-  date: Int16Array;      // 지형 출발일 번호(terrain.dates의 인덱스). ④ 점 달력이 출발일마다 점을 모은다
+  date: Int16Array;      // 지형 출발일 번호(terrain.dates의 인덱스). ④ 출발일 점 그래프가 출발일마다 점을 모은다
 };
 
 export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: number; seed?: number }): PointCloud {

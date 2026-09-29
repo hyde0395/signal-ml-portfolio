@@ -36,7 +36,7 @@ describe('buildPointCloud', () => {
     expect(pc.count).toBe(2 + 2 + 1);
     expect(Array.from(pc.kind)).toEqual([0, 0, 1, 1, 2]);
   });
-  it('점마다 지형 출발일 번호를 가진다(점 달력이 출발일로 묶는다)', () => {
+  it('점마다 지형 출발일 번호를 가진다(출발일 점 그래프가 출발일로 묶는다)', () => {
     const pc = buildPointCloud(terrain, map, { noiseStride: 1 });
     expect(Array.from(pc.date)).toEqual([0, 2, 1, 1, 1, 1, 1]);
   });

@@ -29,9 +29,9 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     });
   }
 
-  test('이름표 개수: 달력 요일 7, 벌떼 구간 8 + 눈금 3, 와플 그룹 6', async ({ page }) => {
+  test('이름표 개수: 출발일 눈금 4 + 요일 이름·값 14, 벌떼 구간 8 + 눈금 3, 와플 그룹 6', async ({ page }) => {
     await page.goto('/');
-    for (const [key, sel, n] of [['chartDepart', '.chart-label.tick', 7], ['chartCurve', '.chart-label.tick', 11], ['features', '.chart-group', 6]] as const) {
+    for (const [key, sel, n] of [['chartDepart', '.chart-label.tick', 18], ['chartCurve', '.chart-label.tick', 11], ['features', '.chart-group', 6]] as const) {
       await center(page, `[data-scene="${key}"]`);
       await expect(page.locator(`[data-scene="${key}"] ${sel}`)).toHaveCount(n, { timeout: 10_000 });
     }
