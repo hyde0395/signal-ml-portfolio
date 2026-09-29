@@ -27,7 +27,8 @@ const FINDINGS_BLOCKS: Block[] = [
 
 const VALIDATION_BLOCKS: Block[] = [
   { kind: 'card', id: 'bubble', tag: 'CHART 03', scene: 'bubble', code: 'bubble', paras: 3, figure: 'bubble' },
-  { kind: 'card', id: 'validation', tag: 'VALIDATION', scene: 'validation', code: 'validation', paras: 2, table: true },
+  // 머리표는 EVALUATION — 섹션 머리표 "05 — VALIDATION"과 같은 말이 겹치지 않게(사용자 확인 2026-09-30)
+  { kind: 'card', id: 'validation', tag: 'EVALUATION', scene: 'validation', code: 'validation', paras: 2, table: true },
   { kind: 'stage', id: 'band', tag: 'CHART 04', chart: 'chartCloud', code: 'interval', paras: 3, axis: true },
   { kind: 'card', id: 'limits', tag: 'LIMITS', scene: 'limits', code: 'limits', paras: 3 },
 ];
