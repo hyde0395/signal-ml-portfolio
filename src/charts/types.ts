@@ -1,4 +1,4 @@
-// ③ 와플·④ 차트의 공통 타입(설계 2026-09-25 §3.3·§3.4·§4, 2026-09-27 개정). 의존성이 없어 어디서 불러도 가볍다.
+// ③ 와플·④·⑤ 차트의 공통 타입(설계 2026-09-25 §3.3·§3.4·§4, 2026-09-27 개정). 의존성이 없어 어디서 불러도 가볍다.
 // 좌표는 "그림 판"(data-plot) 안의 정규화 좌표다: x 0=왼쪽 1=오른쪽, y 0=위 1=아래(화면과 같은 방향).
 // 같은 배치를 2D 캔버스(3D가 꺼졌을 때)와 3D 점(켜졌을 때)이 함께 쓴다.
 export type ChartKey = 'features' | 'chartDepart' | 'chartCurve' | 'chartCloud';
@@ -9,7 +9,7 @@ export const TONE = { dot: 1, amber: 2, text: 3 } as const;
 // ③ 와플 강조(설계 2026-09-28 §3): 강조 그룹은 호박색, 다른 와플 그룹은 알파 × FOCUS_DIM. 2D 그리기(draw2d.ts)와
 // 3D 셰이더(three/shaders.ts, 유니폼 uFocusDim)가 ChartLayout.focusDim을 통해 이 숫자를 같이 쓴다
 export const FOCUS_DIM = 0.25;
-// ④ 차트 1·2·4 강조(계획 5-3b): 와플보다 흐림 정도가 약하다 — 강조 항목이 하나가 아니라 이어진 값(점 그래프 등)이라
+// ④·⑤ 차트 1·2·4 강조(계획 5-3b): 와플보다 흐림 정도가 약하다 — 강조 항목이 하나가 아니라 이어진 값(점 그래프 등)이라
 // 너무 흐리면 전체 모양이 안 보인다
 export const CHART_FOCUS_DIM = 0.45;
 
@@ -20,7 +20,7 @@ export type ChartLabel =
   // ③ 와플 설명 줄의 자리(왼쪽 위 기준). 내용은 그림 판이 강조 그룹에 따라 채운다(설계 2026-09-28 §3)
   | { type: 'detail'; x: number; y: number };
 
-// ④ 차트 1·2·4에서 짚을 수 있는 항목 하나(계획 5-3b). key = 강조 번호(ChartLayout.hl과 같은 번호)이자 items 안의 순서 —
+// ④·⑤ 차트 1·2·4에서 짚을 수 있는 항목 하나(계획 5-3b). key = 강조 번호(ChartLayout.hl과 같은 번호)이자 items 안의 순서 —
 // 조작 층이 items[key]로 바로 찾는다. 항목은 화면 왼쪽부터 번호를 매긴다(키보드 → = 번호 +1 = 오른쪽).
 // x·y는 표시 상자를 붙일 자리(정규화), text는 표시 상자와 aria-valuetext에 같이 쓰는 문장
 export type ChartItem = { key: number; x: number; y: number; text: string };
@@ -33,7 +33,7 @@ export type ChartLayout = {
   alpha: Float32Array; // 0..1
   tone: Uint8Array;    // TONE
   group: Int16Array;   // 3D에서 이 점을 어느 지형 출발일(번호)의 점으로 채울지. -1 = 아무 점
-  // 강조 번호 — 같은 번호끼리 함께 강조된다. ③ 와플 그룹, ④ 차트 1·4 출발일 번호, 차트 2 구간 번호.
+  // 강조 번호 — 같은 번호끼리 함께 강조된다. ③ 와플 그룹, ④·⑤ 차트 1·4 출발일 번호, 차트 2 구간 번호.
   // −1 = 강조와 무관(늘 그대로)
   hl: Int16Array;
   focusTone: number; // 강조됐을 때 칠할 색(TONE)

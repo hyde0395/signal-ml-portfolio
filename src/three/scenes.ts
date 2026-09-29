@@ -67,8 +67,9 @@ export const SCENES: Record<SceneKey, SceneState> = {
   // 않게 하는 것이 이 장면의 목적이다(설계 §3.2, 2026-09-27)
   dataBoard: { ...base, camera: [0, 30, 14], target: [0, 0, 0], map: 1, dim: 0.32 }, // 0.16은 지도가 너무 흐려 보여 올림(2026-09-29 시안 B 선택)
   // ③ 모델 카드(설계 2026-09-29 이야기 흐름 §3.4): 문단이 "출발일별 가격 흐름"을 말하므로 가격 지형을 조용히 보여 준다.
-  // 새 점 연출 없이 카메라 자리만 — 처음 값은 limits 구도, 글 대비 화소 검사를 지키는 값으로 Task 5에서 맞춘다
-  model: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.5 },
+  // 새 점 연출 없이 카메라 자리만 — limits 구도에서 잡음만 0.3으로 낮췄다: 0.5에서는 앞줄 흩어진 점이 글 끝에 걸쳐
+  // 지저분했다(실제 GPU 눈 확인, 2026-09-30)
+  model: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.3 },
   features: { ...base, ...CHART },
   chartDepart: { ...base, ...CHART },
   chartCurve: { ...base, ...CHART },
@@ -102,8 +103,10 @@ const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']
   // limits·demo·contact처럼 목표점을 −3까지 내려 문단 영역을 완전히 벗어나게 한다(벡터는 그대로 유지)
   bubble: { camera: [7, 3.5, 17], target: [0, -3, 0] },
   validation: { camera: [0, 22, 0.1], target: [0, 0, 0] },
-  // 모델 카드도 글이 아래쪽이라 limits와 같은 이유로 지형을 화면 위쪽 절반에 둔다
-  model: { camera: [0, 9, 26], target: [0, -3, 0] },
+  // 모델 카드도 글이 아래쪽이라 limits와 같은 이유로 지형을 화면 위쪽 절반에 둔다. 다만 모델 카드는 머리표 바로 아래에
+  // 긴 문단이 붙어 limits 값(목표점 y −3)으로는 지형 앞줄이 첫 문단 위를 지나갔다(실제 GPU 390×844 p99 4.44:1,
+  // 2026-09-30) — y를 2 더 내린다(벡터는 그대로)
+  model: { camera: [0, 7, 26], target: [0, -5, 0] },
   limits: { camera: [0, 9, 26], target: [0, -3, 0] },
   demo: { camera: [0, 13, 30], target: [0, -3, 0] },
   contact: { camera: [0, 13, 30], target: [0, -3, 0] },

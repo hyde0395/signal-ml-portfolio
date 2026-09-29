@@ -17,8 +17,9 @@ export function Features({ locale }: { locale: Locale }) {
   const countUnit = `${locale === 'en' ? ' ' : ''}${t('features.unit')}`;
   return (
     <section id="features" className="wrap" aria-labelledby="features-h">
-      {/* 섹션 머리표·h2는 모델 카드로 옮겼다 — #features-h는 움직임 e2e가 쓰는 제목 리빌 대상이라 id를 그대로 둔다 */}
-      <article className="chapter model-card" data-scene="model" aria-labelledby="features-h">
+      {/* 섹션 머리표·h2는 모델 카드로 옮겼다 — #features-h는 움직임 e2e가 쓰는 제목 리빌 대상이라 id를 그대로 둔다.
+          카드 article에는 이름을 따로 달지 않는다: h2가 이미 섹션 이름이라 같은 이름이 두 번 낭독된다 */}
+      <article className="chapter model-card" data-scene="model">
         <p className="eyebrow" data-flip-on-enter>{eyebrow('features')}</p>
         <h2 id="features-h" className="display" data-reveal>{t('features.structure.heading')}</h2>
         <p>{t('features.structure.body1')}</p>

@@ -60,7 +60,7 @@ describe('sceneFor', () => {
   // 설계 2026-09-28 §2.1: 글 뒤 판 대신 장면 구도로 대비를 지킨다 — 데스크톱은 글이 왼쪽이라 점을 오른쪽으로,
   // 세로 화면은 글이 아래라 옆으로 밀지 않는다. hero는 밤의 공항 전용 구도라 빠진다(설계 2026-09-28 §4.2).
   // about(①)도 빠진다 — 카메라 C는 물결 줄을 화면 가득 깔고 은은한 점(soft)으로 대비를 지킨다(설계 2026-09-29 §6)
-  const TEXT_SIDE: SceneKey[] = ['bubble', 'validation', 'limits', 'demo', 'contact'];
+  const TEXT_SIDE: SceneKey[] = ['model', 'bubble', 'validation', 'limits', 'demo', 'contact'];
   it('글 쪽 장면은 데스크톱에서 목표점이 왼쪽(x −5 이하), 세로 화면에서는 가운데', () => {
     // 지금은 이 목록의 모든 장면이 정확히 −5다(hero는 밤의 공항 전용 구도라 빠져 있다, 위 주석·scenes.ts
     // AIRPORT_CAM 참고). "−5 이하"로 느슨하게 검사해 두는 이유는, 나중에 화소 대비 검사 실패 등으로

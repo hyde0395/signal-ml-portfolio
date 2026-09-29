@@ -5,7 +5,7 @@
 // - 배치와 판의 고정 위치를 저장소(registry)에 올린다 → 3D가 켜져 있으면 배경 점이 그 자리로 모인다,
 // - 3D가 꺼져 있으면(data-3d="off") 같은 배치를 2D 캔버스에 그린다.
 // 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 캔버스와 이름표는 aria-hidden이고, 같은 내용은 자막 띠(.chart-copy)의 요약 문단이 준다.
-// 강조(sel): ③ 와플은 마우스를 올린 그룹(설계 2026-09-28 §3), ④ 차트 1·2·4는 조작 층(role=slider)으로 짚은 항목(계획 5-3b).
+// 강조(sel): ③ 와플은 마우스를 올린 그룹(설계 2026-09-28 §3), ④·⑤ 차트 1·2·4는 조작 층(role=slider)으로 짚은 항목(계획 5-3b).
 // 어느 쪽이든 강조 번호 하나를 저장소로 3D에 알리고 2D도 다시 그린다.
 import type React from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';

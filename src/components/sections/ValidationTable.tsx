@@ -1,4 +1,4 @@
-// ④ 차트 섹션의 검증 블록에 들어가는 평가 방식 3종 비교표(TimeSeriesSplit / GroupKFold / K-Fold).
+// ⑤ 검증 섹션의 평가 방식(EVALUATION) 블록에 들어가는 평가 방식 3종 비교표(TimeSeriesSplit / GroupKFold / K-Fold).
 import { getT } from '@/lib/content';
 import { facts } from '@/lib/facts';
 import { formatValue, type Locale } from '@/lib/i18n';

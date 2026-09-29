@@ -444,7 +444,7 @@ html:not([data-3d="off"]) .chart-canvas { visibility: hidden; }
 .chart-detail:empty { border-top-color: transparent; }
 .chart-detail b { color: var(--amb); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .chart-group { transition: none; } }
-/* ④ 차트 1·2·4 조작 층(계획 5-3b): 판 위 투명한 slider. 판은 pointer-events: none이라 이 층만 받는다.
+/* ④·⑤ 차트 1·2·4 조작 층(계획 5-3b): 판 위 투명한 slider. 판은 pointer-events: none이라 이 층만 받는다.
    가로 끌기만 짚기로 쓰고, 세로 스크롤과 두 손가락 확대는 브라우저에 맡긴다(데모 .strip과 같다). 초점 링은 판 테두리 안쪽에 */
 .chart-touch { position: absolute; inset: 0; cursor: crosshair; touch-action: pan-y pinch-zoom; pointer-events: auto; }
 .chart-touch:focus-visible { outline-offset: -2px; }
