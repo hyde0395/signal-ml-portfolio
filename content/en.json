@@ -181,9 +181,9 @@
   },
   "charts": {
     "depart": {
-      "body1": "What moves prices more is when you fly, not when you buy. Each dot is one departure date; the higher it sits, the pricier it is than the route-and-class average. On the right are averages by weekday. Dates around holidays (amber) and Sunday departures are the most expensive.",
+      "body1": "What moves prices more is when you fly, not when you buy. Each dot is one departure date; the higher it sits, the pricier it is than the route-and-class average. Averages by weekday are shown alongside. Dates around holidays (amber) and Sunday departures are the most expensive.",
       "heading": "Price by departure date",
-      "alt": "Dot chart of price by departure date: departure dates across, price versus the route-and-class average up the side, with weekday averages on the right. Dates around Christmas, New Year's Day and Seollal rise the highest; among weekdays, Sunday is the most expensive.",
+      "alt": "Dot chart of price by departure date: departure dates across, price versus the route-and-class average up the side, with weekday averages alongside. Dates around Christmas, New Year's Day and Seollal rise the highest; among weekdays, Sunday is the most expensive.",
       "axis": "vs. average",
       "weekdays": "By weekday"
     },
