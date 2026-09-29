@@ -13,7 +13,7 @@ import { CameraRig } from './CameraRig';
 import { assignPoints, chartShiftY, pickSlot, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, stepFrameRate } from './frameRate';
-import { CHART_DISTANCE, CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
+import { blendScenes, CHART_DISTANCE, CHART_FOV, handoffProgress, isChartScene, sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
 type Props = { dataVersion: string; onReady: () => void; onFail: (reason: string) => void; capture: SceneKey | null };
@@ -69,16 +69,39 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     const update = () => {
       raf = 0;
       portrait.current = window.innerHeight > window.innerWidth;
-      const active = pickActive(readCandidates(document), window.innerHeight);
-      if (!active) return;
-      // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
-      const progress = active.key === 'hero' ? Math.min(1, window.scrollY / (0.9 * window.innerHeight)) : active.progress;
-      const s = sceneFor(active.key, progress, portrait.current);
+      const vh = window.innerHeight;
+      const active = pickActive(readCandidates(document), vh);
+      const html = document.documentElement;
+      // 첫 화면 → ① 전환(설계 2026-09-29 §2.1·§5): 내려앉기가 끝난 뒤(y0)부터 ① 제목이 읽는 자리에 올 때(y1)까지
+      // 스크롤 위치로 공항과 ① 장면을 섞는다. 머리말(#intro)이 화면 가운데일 때는 활성 장면 후보가 없어
+      // active가 null이므로 그보다 먼저 계산한다. 3D가 맨 위에서 켜졌을 때(hero-runway 여백)만 — 그 밖에는
+      // 내려앉기 여백이 없어 y0가 의미 없다. #project 위치는 방금 readCandidates가 레이아웃을 읽은 뒤
+      // (사이에 DOM 쓰기 없음)라 추가 레이아웃 계산이 없고, 캐시하지 않으므로 글꼴·창 크기 변화에도 늘 맞다
+      let h = -1; // -1 = 전환 계산 안 함
+      if (html.classList.contains('hero-runway') && (!active || !isChartScene(active.key))) {
+        const projectTop = document.getElementById('project')?.getBoundingClientRect().top;
+        if (projectTop !== undefined) h = handoffProgress(window.scrollY, 0.9 * vh, projectTop + window.scrollY - 0.2 * vh);
+      }
+      const handoff = h > 0 && h < 1;
+      // e2e가 전환 진행도를 읽는 작은 표시(전환이 없는 경우엔 지운다)
+      if (h >= 0) html.dataset.handoff = h.toFixed(3);
+      else delete html.dataset.handoff;
+      if (!active && !handoff) return;
+      let s: SceneState;
+      if (handoff) {
+        // 공항 끝(hero 진행 1)과 ① 처음(about 진행 0) 사이. follow로 점·카메라가 스크롤을 바짝 따라간다
+        s = { ...blendScenes(sceneFor('hero', 1, portrait.current), sceneFor('about', 0, portrait.current), h), follow: true };
+      } else {
+        const a = active!;
+        // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
+        const progress = a.key === 'hero' ? Math.min(1, window.scrollY / (0.9 * vh)) : a.progress;
+        s = sceneFor(a.key, progress, portrait.current);
+      }
       // data-scene이 아니라 data-active-scene으로 적는다 — data-scene은 챕터 블록이 자기 장면 이름을 적는
       // 속성이라(activeScene.ts의 readCandidates가 [data-scene]을 찾는다), 같은 이름을 html에도 쓰면
       // html 자신이 후보가 되고 `[data-scene="X"] 자손` 셀렉터가 페이지 전체와 겹친다(e2e에서 발견)
-      document.documentElement.dataset.activeScene = active.key;
-      const chartKey = s.chart === 1 ? (active.key as ChartKey) : null;
+      if (active) html.dataset.activeScene = active.key;
+      const chartKey = s.chart === 1 && active ? (active.key as ChartKey) : null;
       const entry = chartKey ? getChart(chartKey) : undefined;
       const cs = chartState.current;
       if (chartKey && entry && cloud && (cs.key !== chartKey || cs.entry !== entry)) {
@@ -111,8 +134,9 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       slots.current.focusDim = chartKey && entry ? entry.layout.focusDim : 0.25;
       // 배치가 아직 없으면(데이터를 받는 중) 점을 지형에 둔다 — 빈 화면 대신 멀리 보이는 지형
       target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot, shift };
-      parallax.current = active.key === 'hero';
-      setRunning(active.key !== 'contact' && !document.hidden);
+      // 전환 앞 절반(아직 공항에 가까울 때)만 마우스 시차를 둔다
+      parallax.current = handoff ? h < 0.5 : active?.key === 'hero';
+      setRunning(active?.key !== 'contact' && !document.hidden);
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
     update();
@@ -131,6 +155,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       // 남아 있으면 e2e 등이 "지금 장면"을 옛 값으로 잘못 읽는다
       delete document.documentElement.dataset.activeScene;
       delete document.documentElement.dataset.chart;
+      delete document.documentElement.dataset.handoff;
     };
   }, [capture, cloud]);
 

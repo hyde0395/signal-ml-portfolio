@@ -31,12 +31,14 @@ export function CameraRig({ target, instant, parallax }: Props) {
       camera.position.copy(goal);
       look.current.copy(goalLook);
     } else {
-      camera.position.x = THREE.MathUtils.damp(camera.position.x, goal.x, 1.8, delta);
-      camera.position.y = THREE.MathUtils.damp(camera.position.y, goal.y, 1.8, delta);
-      camera.position.z = THREE.MathUtils.damp(camera.position.z, goal.z, 1.8, delta);
-      look.current.x = THREE.MathUtils.damp(look.current.x, goalLook.x, 1.8, delta);
-      look.current.y = THREE.MathUtils.damp(look.current.y, goalLook.y, 1.8, delta);
-      look.current.z = THREE.MathUtils.damp(look.current.z, goalLook.z, 1.8, delta);
+      // 전환 구간(follow)에서는 점(TerrainPoints DAMP×4)과 함께 스크롤을 바짝 따라간다
+      const k = t.follow ? 7 : 1.8;
+      camera.position.x = THREE.MathUtils.damp(camera.position.x, goal.x, k, delta);
+      camera.position.y = THREE.MathUtils.damp(camera.position.y, goal.y, k, delta);
+      camera.position.z = THREE.MathUtils.damp(camera.position.z, goal.z, k, delta);
+      look.current.x = THREE.MathUtils.damp(look.current.x, goalLook.x, k, delta);
+      look.current.y = THREE.MathUtils.damp(look.current.y, goalLook.y, k, delta);
+      look.current.z = THREE.MathUtils.damp(look.current.z, goalLook.z, k, delta);
     }
     camera.lookAt(look.current);
   });

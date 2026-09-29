@@ -169,8 +169,10 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
       slots.current!.pending = null;
     }
     const u = m.uniforms;
+    // 전환 구간(follow)에서는 스크롤을 바짝 따라가게 약 4배 빠르게 — 느리면 휠을 멈춘 뒤에도 한참 흘러간다
+    const k = t.follow ? DAMP * 4 : DAMP;
     const step = (key: string, goal: number) => {
-      u[key].value = instant ? goal : THREE.MathUtils.damp(u[key].value, goal, DAMP, delta);
+      u[key].value = instant ? goal : THREE.MathUtils.damp(u[key].value, goal, k, delta);
     };
     step('uAssemble', t.assemble);
     step('uMap', t.map);
