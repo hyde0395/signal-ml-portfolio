@@ -51,7 +51,7 @@
 **Files:** `src/three/scenes.ts`, `src/three/data.ts`(또는 점 구름 만드는 곳), `src/three/TerrainPoints.tsx`, `src/three/shaders.ts`, 테스트
 
 - [ ] 설계 §6 그대로: `SCENES.about` = 카메라 C(`camera [13, 9, 15]`, `target [1, 0, 2]`), `PORTRAIT_OVERRIDE.about` = `camera [11, 6, 15]`, `target [3, -3, 2]`(세로 1.6배 물러남 규칙 뒤에 적용되는지 확인), `rows: 1`, `noise: 0`, 크기 0.75배·알파 0.6배(장면 값으로 — 새 필드가 필요하면 `blendScenes`에도).
-- [ ] 물결 줄 목표 위치 `buildWave`(순수 함수로 — 단위 테스트: 점 2,070개가 30×69 칸에 하나씩, 정렬 규칙, 호박색 줄 규칙이 지금 데이터에서 두 줄, 높이 식). 셰이더에 `aWave`·`uRows`. **정점 속성 16개 한계** — `aKind`·`aHoliday`·`aRoute`·물결 공휴일을 vec4 `aMeta`로 묶는다(다른 곳에서 이 속성들을 읽는 코드 모두 확인). 시안 코드 `docs/superpowers/mockups/2026-09-29-about-wave/about-wave-mock.diff`를 참고하되 쿼리 스위치는 빼고 정식으로.
+- [ ] 물결 줄 목표 위치 `buildWave`(순수 함수로 — 단위 테스트: 점 2,070개가 30×69 칸에 하나씩, 정렬 규칙, 호박색 줄 규칙이 지금 데이터에서 세 줄(검토 2026-09-29: 줄 묶음을 줄에 놓인 점으로 고친 뒤), 높이 식). 셰이더에 `aWave`·`uRows`. **정점 속성 16개 한계** — `aKind`·`aHoliday`·`aRoute`·물결 공휴일을 vec4 `aMeta`로 묶는다(다른 곳에서 이 속성들을 읽는 코드 모두 확인). 시안 코드 `docs/superpowers/mockups/2026-09-29-about-wave/about-wave-mock.diff`를 참고하되 쿼리 스위치는 빼고 정식으로.
 - [ ] 대비: `terrain.spec` 화소 검사(①·설명 화면) 통과. 3D 청크 ≤ 250KB.
 - [ ] 커밋 `feat(3d): wide camera and a soft wave of per-date rows for ①`.
 
