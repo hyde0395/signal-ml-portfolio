@@ -185,13 +185,15 @@
       "heading": "출발일별 가격",
       "alt": "출발일별 가격 점 그래프. 가로는 출발일, 세로는 노선·등급 평균 대비 가격이고, 요일별 평균을 함께 보여 줍니다. 성탄절·신정·설날 무렵이 가장 높이 솟고, 요일 중에는 일요일이 가장 비쌉니다.",
       "axis": "평균 대비",
-      "weekdays": "요일 평균"
+      "weekdays": "요일 평균",
+      "tip": "{v.date} 출발 · 평균 대비 {v.pct}{v.holiday}"
     },
     "curve": {
       "body1": "출발이 지난 {model.realizedFlights}편의 가격을 날마다 추적했습니다. 출발 직전({model.bookingCurve.0.label})에는 같은 편 평균보다 {model.bookingCurve.0.pct|signed}% 비쌌고, {model.bookingCurve.5.label} 구간이 {model.bookingCurve.5.pct|signed}%로 가장 쌌습니다. 폭 약 {model.curveWidth}%p의 U자 곡선입니다.",
       "heading": "U자 예약 곡선",
       "alt": "출발까지 남은 일수 구간별로 같은 편 평균 대비 가격을 점으로 쌓은 그림. 구간 평균을 이은 선이 U자를 그립니다.",
-      "axis": "같은 편 평균 대비"
+      "axis": "같은 편 평균 대비",
+      "tip": "{v.bin}에 사면 같은 편 평균보다 {v.pct} · 관측 {v.n}건"
     },
     "bubble": {
       "heading": "R² 거품 빼기",
@@ -218,7 +220,8 @@
       "body2": "고정된 구간은 최근 데이터일수록 실제 포함률이 {model.interval.driftLow}%까지 떨어졌습니다. 분포가 이동하는 추세를 반영해 구간 폭을 고르도록 바꿨고, 가장 최근 구간에서 {model.interval.coverage}%를 포함했습니다.",
       "body3": "구름의 점들은 기준일에 계산한 인천→나리타 LCC의 {model.interval.level}% 예측 구간 안에 뿌린 것입니다. 가운데 밝은 점이 예측가이고, 점이 성긴 가장자리일수록 그 값이 나올 가능성이 낮습니다. 다른 노선은 아래 데모에서 볼 수 있습니다.",
       "alt": "출발일별 예측가와 예측 구간을 점구름으로 그린 그림. 가운데 밝은 점이 예측가이고, 구간이 넓은 날일수록 점이 넓게 퍼집니다.",
-      "axis": "예측가(원)"
+      "axis": "예측가(원)",
+      "tip": "{v.date} 출발 · 예측가 {v.price}원 · 범위 {v.lo}~{v.hi}원"
     },
     "limits": {
       "heading": "한계와 다음 단계",
@@ -232,7 +235,17 @@
       "kr_christmas_day": "성탄절",
       "kr_new_year": "신정",
       "kr_korean_new_year_s_day": "설날",
-      "kr_hangul_day": "한글날"
-    }
+      "kr_hangul_day": "한글날",
+      "kr_buddha_s_birthday": "부처님오신날",
+      "kr_memorial_day": "현충일",
+      "kr_liberation_day": "광복절",
+      "jp_marine_day": "바다의 날(일본)",
+      "jp_mountain_day": "산의 날(일본)",
+      "jp_respect_for_the_aged_day": "경로의 날(일본)",
+      "jp_autumnal_equinox_day": "추분의 날(일본)",
+      "jp_coming_of_age_day": "성인의 날(일본)",
+      "jp_foundation_day": "건국기념일(일본)"
+    },
+    "touch": "값 살펴보기"
   }
 }

@@ -2,7 +2,7 @@
 // 판 안 정규화 좌표의 점 목록과 HTML 이름표 목록을 돌려주는 순수 함수들이다. 2D 대체 그림과 3D 점이 같은 결과를 쓴다.
 // 점 개수는 데이터 행 수가 아니라 차트마다 정한 고정 개수다(설계 §4 점 개수 원칙).
 import type { ChartsData, CloudData } from './data';
-import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './types';
+import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartItem, type ChartLabel, type ChartLayout } from './types';
 
 export type PlotSize = { w: number; h: number };
 export type FeatureGroupInput = { id: string; gain: number; features: string[]; name: string };
@@ -93,7 +93,11 @@ export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25
 
 export function departLayout(
   d: ChartsData, size: PlotSize,
-  s: { month(iso: string): string; weekday(i: number): string; holiday(code: string): string; pct(v: number): string; axis: string; weekdayTitle: string },
+  s: {
+    month(iso: string): string; weekday(i: number): string; holiday(code: string): string; pct(v: number): string; axis: string; weekdayTitle: string;
+    // 짚은 출발일 문장. date = ISO 날짜, pct = 평균 대비 %, holiday = 공휴일 이름(공휴일 무렵이 아니면 없음)
+    tip(v: { date: string; pct: number; holiday?: string }): string;
+  },
 ): ChartLayout {
   const wide = size.w >= DEPART.wideMinPx;
   const W = size.w, H = size.h;
@@ -107,16 +111,20 @@ export function departLayout(
   const r = wide ? 4 : 2.4;
   const p = new Pts();
   const labels: ChartLabel[] = [];
+  const items: ChartItem[] = [];
   // 0% 기준선
   for (let x = gx0; x <= gx1; x += 6) p.add(x / W, Y(0) / H, 1.6, 0.28, TONE.text);
   d.dates.forEach((iso, i) => {
     const v = d.depart.pct[i] / 10;
     const hot = d.depart.holiday[i] !== null && v >= DEPART.hotPct;
     const cx = X(iso), cy = Y(v);
+    // 강조 번호 = 출발일 번호(날짜 순 = 화면 왼쪽부터). 뭉치의 해바라기 배치 중심이 곧 (cx, cy)라 항목 자리로 쓴다
     for (let k = 0; k < DEPART.perDate; k++) {
       const rho = r * Math.sqrt((k + 0.5) / DEPART.perDate), th = k * GOLDEN_ANGLE;
-      p.add((cx + rho * Math.cos(th)) / W, (cy + rho * Math.sin(th)) / H, 1.8, 0.8, hot ? TONE.amber : TONE.dot, i);
+      p.add((cx + rho * Math.cos(th)) / W, (cy + rho * Math.sin(th)) / H, 1.8, 0.8, hot ? TONE.amber : TONE.dot, i, i);
     }
+    const code = d.depart.holiday[i];
+    items.push({ key: i, x: cx / W, y: cy / H, text: s.tip({ date: iso, pct: v, holiday: code === null ? undefined : s.holiday(code) }) });
   });
   for (const v of [50, 25, 0, -25]) labels.push({ type: 'text', x: (gx0 - 6) / W, y: Y(v) / H, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: gx0 / W, y: (top * 0.35) / H, text: s.axis, align: 'start', cls: 'axis' });
@@ -180,7 +188,7 @@ export function departLayout(
       labels.push({ type: 'text', x: cx / W, y: (SY(a) - 10) / H, text: s.pct(Math.round(a)), align: 'center', cls: 'tick' });
     });
   }
-  return p.done(labels, TONE.text, CHART_FOCUS_DIM);
+  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: -1 };
 }
 
 // ④ 차트 2 구간별 분포 벌떼: 출발이 지난 편의 관측 하나 = 점 하나. 구간 8개를 왼쪽(D-61~90)에서
@@ -189,12 +197,18 @@ export function departLayout(
 // narrowColPx: 구간 칸이 이보다 좁으면(휴대폰) 이름표에서 "D-"를 뺀다 — 9px 글자로 "D-61~90"이 칸 폭을 다 채워 옆 이름표와 겹친다
 export const SWARM = { dot: 3, gap: 0.4, clip: 22, linePts: 20, cheapCount: 3, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.08, marginBottom: 0.12 } as const;
 
-export function swarmLayout(c: ChartsData['curve'], size: PlotSize, s: { bin(lo: number, hi: number): string; pct(v: number): string; axis: string }): ChartLayout {
+export function swarmLayout(
+  c: ChartsData['curve'], size: PlotSize,
+  // tip: 짚은 구간 문장. bin = 구간 이름, pct = 구간 평균(같은 편 평균 대비 %), n = 관측 수
+  s: { bin(lo: number, hi: number): string; pct(v: number): string; axis: string; tip(v: { bin: string; pct: number; n: number }): string },
+): ChartLayout {
   const nb = c.bins.length;
   const left = size.w * SWARM.marginLeft, top = size.h * SWARM.marginTop;
   const innerW = size.w - left, innerH = size.h * (1 - SWARM.marginTop - SWARM.marginBottom);
   const colW = innerW / nb;
   const cx = (b: number) => left + (nb - 1 - b + 0.5) * colW; // 번호가 클수록(먼 출발일) 왼쪽
+  // 강조·항목 번호는 화면 왼쪽부터 매긴다(구간 번호의 반대) — 키보드 →·aria-valuenow 증가가 화면 오른쪽 이동과 같게
+  const keyOf = (b: number) => nb - 1 - b;
   const y = (v: number) => top + innerH * (1 - (v + SWARM.clip) / (2 * SWARM.clip));
   const step = SWARM.dot + SWARM.gap;
   const p = new Pts();
@@ -218,7 +232,7 @@ export function swarmLayout(c: ChartsData['curve'], size: PlotSize, s: { bin(lo:
       // 칸 폭을 넘치는 점은 버린다. 가장자리에 붙여 두면 같은 자리에 겹겹이 쌓여(더하기 혼합) 밝은 세로 막대로 보인다
       if (reach > colW * 0.45) continue;
       const off = reach * (k % 2 ? 1 : -1);
-      p.add((cx(b) + off) / size.w, (row * step) / size.h, SWARM.dot, 0.55, cheap ? TONE.amber : TONE.dot);
+      p.add((cx(b) + off) / size.w, (row * step) / size.h, SWARM.dot, 0.55, cheap ? TONE.amber : TONE.dot, -1, keyOf(b));
     }
   });
 
@@ -235,10 +249,18 @@ export function swarmLayout(c: ChartsData['curve'], size: PlotSize, s: { bin(lo:
 
   const labels: ChartLabel[] = [];
   const binText = (lo: number, hi: number) => (colW < SWARM.narrowColPx ? `${lo}~${hi}` : s.bin(lo, hi));
+  // 항목 자리 = 구간 마디(평균 높이). 문장의 구간 이름은 좁은 판에서도 "D-"를 뺀 이름표가 아니라 온전한 이름으로
+  const items: ChartItem[] = Array.from({ length: nb }, (_, k) => {
+    const b = nb - 1 - k, [lo, hi] = c.bins[b];
+    const m = Math.max(-SWARM.clip, Math.min(SWARM.clip, c.mean[b] / 10));
+    return { key: k, x: cx(b) / size.w, y: y(m) / size.h, text: s.tip({ bin: s.bin(lo, hi), pct: c.mean[b] / 10, n: c.n[b] }) };
+  });
+  // 처음에는 평균이 가장 낮은(가장 싼) 구간을 강조해 둔다(조작 규칙 표)
+  const cheapest = c.mean.reduce((best, m, b) => (m < c.mean[best] ? b : best), 0);
   c.bins.forEach(([lo, hi], b) => labels.push({ type: 'text', x: cx(b) / size.w, y: (top + innerH + 14) / size.h, text: binText(lo, hi), align: 'center', cls: 'tick' }));
   for (const v of [20, 0, -20]) labels.push({ type: 'text', x: (left - 6) / size.w, y: y(v) / size.h, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: left / size.w, y: (top * 0.4) / size.h, text: s.axis, align: 'start', cls: 'axis' });
-  return p.done(labels, TONE.text, CHART_FOCUS_DIM);
+  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: keyOf(cheapest) };
 }
 
 // 표준정규분포의 분위수 함수(Acklam 근사, 오차 약 1e-9). 구름 점을 q10~q90 안에 뿌릴 때 쓴다
@@ -276,12 +298,18 @@ export function cloudScale(cd: CloudData, size: PlotSize): { x(i: number): numbe
   };
 }
 
-export function cloudLayout(cd: CloudData, size: PlotSize, s: { money(v: number): string; dday(n: number): string; holiday(code: string): string; axis: string }): ChartLayout {
+export function cloudLayout(
+  cd: CloudData, size: PlotSize,
+  // tip: 짚은 출발일 문장. date = ISO 날짜, price·lo·hi = 예측가·구간 아래·위(원)
+  s: { money(v: number): string; dday(n: number): string; holiday(code: string): string; axis: string; tip(v: { date: string; price: number; lo: number; hi: number }): string },
+): ChartLayout {
   const idx = valid(cd);
   const sc = cloudScale(cd, size);
   const colW = (size.w * (1 - CLOUD.marginLeft)) / cd.dates.length;
   const p = new Pts();
-  for (const i of idx) {
+  const items: ChartItem[] = [];
+  // 강조·항목 번호 j는 예측 있는 날만 센 순서다(날짜 번호 i가 아니다) — 예측 없는 날이 끼어도 items[j]로 바로 찾게
+  for (const [j, i] of idx.entries()) {
     const price = cd.price[i]!, lo = cd.lo[i]!, hi = cd.hi[i]!;
     const hol = cd.holidays[cd.dates[i]] !== undefined;
     const rand = mulberry32(i + 1);
@@ -289,9 +317,10 @@ export function cloudLayout(cd: CloudData, size: PlotSize, s: { money(v: number)
       const z = invNorm(0.1 + (0.8 * (k + 0.5)) / CLOUD.perDate);
       const v = z < 0 ? price + (z / CLOUD.z90) * (price - lo) : price + (z / CLOUD.z90) * (hi - price);
       const alpha = 0.16 + 0.34 * (1 - Math.abs(z) / CLOUD.z90);
-      p.add((sc.x(i) + (rand() - 0.5) * colW * 0.7) / size.w, sc.y(v) / size.h, 2.2, alpha, hol ? TONE.amber : TONE.dot);
+      p.add((sc.x(i) + (rand() - 0.5) * colW * 0.7) / size.w, sc.y(v) / size.h, 2.2, alpha, hol ? TONE.amber : TONE.dot, -1, j);
     }
-    p.add(sc.x(i) / size.w, sc.y(price) / size.h, 4.2, 0.95, hol ? TONE.amber : TONE.text);
+    p.add(sc.x(i) / size.w, sc.y(price) / size.h, 4.2, 0.95, hol ? TONE.amber : TONE.text, -1, j);
+    items.push({ key: j, x: sc.x(i) / size.w, y: sc.y(price) / size.h, text: s.tip({ date: cd.dates[i], price, lo, hi }) });
   }
 
   const labels: ChartLabel[] = [];
@@ -323,7 +352,7 @@ export function cloudLayout(cd: CloudData, size: PlotSize, s: { money(v: number)
     labels.push({ type: 'text', x: sc.x(c.at) / size.w, y: y / size.h, text: s.holiday(c.code), align: 'center', cls: 'holiday' });
   });
   labels.push({ type: 'text', x: (size.w * CLOUD.marginLeft) / size.w, y: 0.02, text: s.axis, align: 'start', cls: 'axis' });
-  return p.done(labels, TONE.text, CHART_FOCUS_DIM);
+  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: -1 };
 }
 
 // 눈금 간격: 1·2·5 × 10^k 중에서 대략 n칸이 되는 값

@@ -108,7 +108,11 @@ const charts: ChartsData = {
   labels: [{ date: dates[9], code: 'kr_hangul_day' }],
   curve: { bins: [[1, 3], [4, 7], [8, 14], [15, 21], [22, 30], [31, 45], [46, 60], [61, 90]], mean: Array(8).fill(0), n: Array(8).fill(1), sample: { bin: [], pct: [] } },
 };
-const depS = { month: (iso: string) => `m${iso.slice(5, 7)}`, weekday: (i: number) => `w${i}`, holiday: (c: string) => `h:${c}`, pct: (v: number) => `${v}%`, axis: 'AX', weekdayTitle: 'WT' };
+const depS = {
+  month: (iso: string) => `m${iso.slice(5, 7)}`, weekday: (i: number) => `w${i}`, holiday: (c: string) => `h:${c}`, pct: (v: number) => `${v}%`, axis: 'AX', weekdayTitle: 'WT',
+  // 가짜 문장 함수: 문장 조각이 항목 text에 들어가는지만 본다
+  tip: (v: { date: string; pct: number; holiday?: string }) => `T ${v.date} ${v.pct}${v.holiday ? ` ${v.holiday}` : ''}`,
+};
 
 describe('departLayout', () => {
   const L = departLayout(charts, { w: 1080, h: 414 }, depS);
@@ -158,10 +162,28 @@ describe('departLayout', () => {
     expect(t.some((l) => l.text === 'AX')).toBe(true);
     expect(t.filter((l) => l.cls === 'month').length).toBeGreaterThan(0);
   });
-  it('강조 번호는 모두 −1, 강조 색·흐림은 차트 공통값', () => {
-    expect(Array.from(L.hl).every((v) => v === -1)).toBe(true);
+  it('강조 번호: 출발일 뭉치 점은 출발일 번호, 기준선·요일 평균 점은 −1. 강조 색·흐림은 차트 공통값', () => {
+    for (let i = 0; i < L.n; i++) expect(L.hl[i], `점 ${i}`).toBe(L.group[i] >= 0 ? L.group[i] : -1);
     expect(L.focusTone).toBe(TONE.text);
     expect(L.focusDim).toBe(CHART_FOCUS_DIM);
+  });
+  it('짚을 항목: 출발일마다 하나, key = 번호, x 오름차순, 자리는 그 뭉치 가운데, 처음 강조 없음', () => {
+    const items = L.items!;
+    expect(items).toHaveLength(dates.length);
+    items.forEach((it, i) => {
+      expect(it.key).toBe(i);
+      if (i > 0) expect(it.x).toBeGreaterThan(items[i - 1].x);
+      const [cx, cy] = centerOf(i);
+      expect(Math.abs(it.x - cx) * 1080).toBeLessThan(1);
+      expect(Math.abs(it.y - cy) * 414).toBeLessThan(1);
+    });
+    expect(L.initial).toBe(-1);
+  });
+  it('항목 문장: 출발일·평균 대비 %, 공휴일 출발일이면 공휴일 이름', () => {
+    const items = L.items!;
+    expect(items[0].text).toBe(`T ${dates[0]} ${charts.depart.pct[0] / 10}`);
+    expect(items[9].text).toContain('h:kr_hangul_day');
+    expect(items[8].text).not.toContain('h:');
   });
   it('판 안, 지름 1.6px 이상(넓은 판·좁은 판)', () => { inside(L); inside(departLayout(charts, { w: 340, h: 380 }, depS)); });
 });
@@ -174,7 +196,8 @@ describe('swarmLayout', () => {
   pct.push(300); bin.push(0); // ±22% 밖 → 그리지 않는다
   const curve: ChartsData['curve'] = { ...charts.curve, mean, sample: { bin, pct } };
   const W = 1080, H = 414;
-  const L = swarmLayout(curve, { w: W, h: H }, { bin: (lo, hi) => `D-${lo}~${hi}`, pct: (v) => `${v}%`, axis: 'A' });
+  const tip = (v: { bin: string; pct: number; n: number }) => `T ${v.bin} ${v.pct} ${v.n}`;
+  const L = swarmLayout(curve, { w: W, h: H }, { bin: (lo, hi) => `D-${lo}~${hi}`, pct: (v) => `${v}%`, axis: 'A', tip });
   const isSample = (i: number) => L.size[i] === 3;
   const nodes = () => Array.from({ length: L.n }, (_, i) => i).filter((i) => L.size[i] === 6);
 
@@ -205,7 +228,31 @@ describe('swarmLayout', () => {
     expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'tick')).toHaveLength(11);
     expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'axis')).toHaveLength(1);
   });
-  const S = { bin: (lo: number, hi: number) => `D-${lo}~${hi}`, pct: (v: number) => `${v}%`, axis: 'A' };
+  const S = { bin: (lo: number, hi: number) => `D-${lo}~${hi}`, pct: (v: number) => `${v}%`, axis: 'A', tip };
+  // 항목 번호(= 강조 번호)는 화면 왼쪽부터 0 — 구간 번호 b는 오른쪽(D-1~3)이 0이라 뒤집힌다(k = 7 − b).
+  // 키보드 → / aria-valuenow 증가가 화면 오른쪽 이동과 같아지게 하려는 것이다
+  const keyOfBin = (b: number) => 7 - b;
+  it('강조 번호: 구간 표본 점은 그 구간의 항목 번호, 평균선·마디는 −1', () => {
+    for (let i = 0; i < 320; i++) expect(L.hl[i], `표본 ${i}`).toBe(keyOfBin(Math.floor(i / 40)));
+    for (let i = 320; i < L.n; i++) expect(L.hl[i], `선 ${i}`).toBe(-1);
+    expect(L.focusTone).toBe(TONE.text);
+    expect(L.focusDim).toBe(CHART_FOCUS_DIM);
+  });
+  it('짚을 항목: 구간 8개, key = 번호, x 오름차순(마디 자리), 문장에 구간 이름·평균 %·관측 수', () => {
+    const items = L.items!;
+    expect(items).toHaveLength(8);
+    const ns = nodes().sort((a, b) => L.x[a] - L.x[b]);
+    items.forEach((it, k) => {
+      expect(it.key).toBe(k);
+      expect(it.x).toBeCloseTo(L.x[ns[k]], 6);
+      expect(it.y).toBeCloseTo(L.y[ns[k]], 6);
+      const b = 7 - k, [lo, hi] = curve.bins[b];
+      expect(it.text).toBe(`T D-${lo}~${hi} ${mean[b] / 10} ${curve.n[b]}`);
+    });
+  });
+  it('처음 강조 = 평균이 가장 낮은 구간(D-31~45, 구간 번호 5)의 항목 번호', () => {
+    expect(L.initial).toBe(keyOfBin(5));
+  });
   const binTexts = (lay: ReturnType<typeof swarmLayout>) =>
     lay.labels.filter((l) => l.type === 'text' && l.cls === 'tick' && !l.text.endsWith('%')).map((l) => (l.type === 'text' ? l.text : ''));
   it('좁은 판(340px)에서는 구간 이름표에 "D-"를 빼 서로 겹치지 않게, 넓은 판에서는 그대로', () => {
@@ -258,10 +305,31 @@ describe('cloudLayout', () => {
     holidays: { '2026-09-27': 'kr_midautumn_festival' },
   };
   const size = { w: 1080, h: 414 };
-  const s = { money: (v: number) => `${v}`, dday: (n: number) => `D+${n}`, holiday: (c: string) => `h:${c}`, axis: 'A' };
+  const s = {
+    money: (v: number) => `${v}`, dday: (n: number) => `D+${n}`, holiday: (c: string) => `h:${c}`, axis: 'A',
+    tip: (v: { date: string; price: number; lo: number; hi: number }) => `T ${v.date} ${v.price} ${v.lo}~${v.hi}`,
+  };
   const L = cloudLayout(cd, size, s);
   const sc = cloudScale(cd, size);
   it('예측 없는 날은 건너뛰고, 출발일마다 구름 24개 + 예측가 1개', () => expect(L.n).toBe(2 * 25));
+  // 항목 번호는 예측 있는 날만 센 순서(예측 없는 날이 끼면 날짜 번호와 달라진다) — 조작 층이 items[번호]로 바로 찾게
+  it('강조 번호: 그날 구름·예측가 점 모두 그날 항목 번호', () => {
+    for (let i = 0; i < L.n; i++) expect(L.hl[i], `점 ${i}`).toBe(Math.floor(i / 25));
+    expect(L.focusTone).toBe(TONE.text);
+    expect(L.focusDim).toBe(CHART_FOCUS_DIM);
+  });
+  it('짚을 항목: 예측 있는 날마다 하나, 자리 = 예측가 점, 문장에 날짜·예측가·범위, 처음 강조 없음', () => {
+    const items = L.items!;
+    expect(items).toHaveLength(2);
+    for (const [j, i] of [[0, 0], [1, 2]]) {
+      expect(items[j].key).toBe(j);
+      expect(items[j].x).toBeCloseTo(sc.x(i) / size.w, 6);
+      expect(items[j].y).toBeCloseTo(sc.y(cd.price[i]!) / size.h, 6);
+      expect(items[j].text).toBe(`T ${cd.dates[i]} ${cd.price[i]} ${cd.lo[i]}~${cd.hi[i]}`);
+    }
+    expect(items[1].x).toBeGreaterThan(items[0].x);
+    expect(L.initial).toBe(-1);
+  });
   it('구름 점은 모두 그날 q10~q90 안, 예측가 점은 예측가 자리', () => {
     for (const [j, i] of [[0, 0], [1, 2]]) {
       for (let k = 0; k < 24; k++) {

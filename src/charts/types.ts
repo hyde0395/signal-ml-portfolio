@@ -20,6 +20,11 @@ export type ChartLabel =
   // ③ 와플 설명 줄의 자리(왼쪽 위 기준). 내용은 그림 판이 강조 그룹에 따라 채운다(설계 2026-09-28 §3)
   | { type: 'detail'; x: number; y: number };
 
+// ④ 차트 1·2·4에서 짚을 수 있는 항목 하나(계획 5-3b). key = 강조 번호(ChartLayout.hl과 같은 번호)이자 items 안의 순서 —
+// 조작 층이 items[key]로 바로 찾는다. 항목은 화면 왼쪽부터 번호를 매긴다(키보드 → = 번호 +1 = 오른쪽).
+// x·y는 표시 상자를 붙일 자리(정규화), text는 표시 상자와 aria-valuetext에 같이 쓰는 문장
+export type ChartItem = { key: number; x: number; y: number; text: string };
+
 export type ChartLayout = {
   n: number;
   x: Float32Array;     // 정규화 x
@@ -34,6 +39,8 @@ export type ChartLayout = {
   focusTone: number; // 강조됐을 때 칠할 색(TONE)
   focusDim: number;  // 강조 중일 때 강조 안 된 점의 알파 배율
   labels: ChartLabel[];
+  items?: ChartItem[]; // 짚을 항목(차트 1·2·4만). 없으면 조작 층을 두지 않는다
+  initial?: number;    // 처음 강조 번호(차트 2 = 가장 싼 구간). 없으면 −1
 };
 
 // 판이 고정(sticky, top: 0)된 동안의 화면 위치(px)와 그때의 뷰포트 크기

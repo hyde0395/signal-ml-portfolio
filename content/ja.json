@@ -185,13 +185,15 @@
       "heading": "出発日別の価格",
       "alt": "出発日別の価格の点グラフ。横が出発日、縦が路線・クラス平均との差で、曜日ごとの平均もあわせて示しています。クリスマス・元日・ソルラル前後がいちばん高く、曜日では日曜日がいちばん高くなっています。",
       "axis": "平均比",
-      "weekdays": "曜日平均"
+      "weekdays": "曜日平均",
+      "tip": "{v.date}出発 · 平均比 {v.pct}{v.holiday}"
     },
     "curve": {
       "body1": "出発済みの{model.realizedFlights}便の価格を日次で追跡しました。出発直前（{model.bookingCurve.0.label}）は同じ便の平均より{model.bookingCurve.0.pct|signed}%高く、{model.bookingCurve.5.label}の区間が{model.bookingCurve.5.pct|signed}%で最も安くなりました。幅は約{model.curveWidth}ポイントのU字カーブです。",
       "heading": "U字型の予約カーブ",
       "alt": "出発までの日数の区間ごとに、同じ便の平均に対する価格を点で積み上げた図。区間平均を結んだ線がU字を描きます。",
-      "axis": "同じ便の平均比"
+      "axis": "同じ便の平均比",
+      "tip": "{v.bin}に買うと同じ便の平均比 {v.pct} · 観測{v.n}件"
     },
     "bubble": {
       "heading": "R²の水増しを取り除く",
@@ -218,7 +220,8 @@
       "body2": "固定した区間は、最近のデータほど実際のカバー率が{model.interval.driftLow}%まで低下していました。分布のシフト傾向を反映して区間幅を調整し、直近の区間で{model.interval.coverage}%をカバーしました。",
       "body3": "雲の点は、基準日に計算した仁川→成田LCCの{model.interval.level}%予測区間の中に散らしたものです。中央の明るい点が予測価格で、点がまばらな端ほどその価格になる可能性は低くなります。ほかの路線は下のデモで見られます。",
       "alt": "出発日ごとの予測価格と予測区間を点の雲で描いた図。中央の明るい点が予測価格で、区間が広い日ほど点が広く散らばります。",
-      "axis": "予測価格(ウォン)"
+      "axis": "予測価格(ウォン)",
+      "tip": "{v.date}出発 · 予測価格 {v.price}ウォン · 範囲 {v.lo}〜{v.hi}ウォン"
     },
     "limits": {
       "heading": "限界と次のステップ",
@@ -232,7 +235,17 @@
       "kr_christmas_day": "クリスマス",
       "kr_new_year": "元日",
       "kr_korean_new_year_s_day": "ソルラル",
-      "kr_hangul_day": "ハングルの日"
-    }
+      "kr_hangul_day": "ハングルの日",
+      "kr_buddha_s_birthday": "釈迦誕生日(韓国)",
+      "kr_memorial_day": "顕忠日(韓国)",
+      "kr_liberation_day": "光復節(韓国)",
+      "jp_marine_day": "海の日",
+      "jp_mountain_day": "山の日",
+      "jp_respect_for_the_aged_day": "敬老の日",
+      "jp_autumnal_equinox_day": "秋分の日",
+      "jp_coming_of_age_day": "成人の日",
+      "jp_foundation_day": "建国記念の日"
+    },
+    "touch": "値を見る"
   }
 }

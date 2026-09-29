@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { buildLayout } from '@/charts/build';
 import { drawLayout, TONE_COLOR } from '@/charts/draw2d';
 import { TONE, type ChartLayout } from '@/charts/types';
+import type { ChartsData, CloudData } from '@/charts/data';
+import { dictionaries } from '@/lib/content';
 import { facts } from '@/lib/facts';
+import { LOCALES } from '@/lib/i18n';
 
 function fakeCtx() {
   const calls: { x: number; y: number; r: number; color: string; alpha: number }[] = [];
@@ -55,4 +58,35 @@ describe('buildLayout', () => {
     expect(L.n).toBe(600);
     expect(L.labels[0]).toMatchObject({ type: 'group', count: `${groups[0].features.length} features` });
   });
+
+  // 표시 상자 문장: 서버에서 {v.…}가 남은 채 온 틀(charts.*.tip)을 짚은 항목 값으로 다 채운다(자리표시가 남지 않는다)
+  const dates = ['2026-10-08', '2026-10-09', '2026-10-10'];
+  const charts: ChartsData = {
+    asOf: '2026-09-22', dates,
+    depart: { pct: [-52, 318, 0], holiday: [null, 'kr_hangul_day', null] },
+    labels: [{ date: dates[1], code: 'kr_hangul_day' }],
+    curve: { bins: [[1, 3], [4, 7], [8, 14], [15, 21], [22, 30], [31, 45], [46, 60], [61, 90]], mean: [111, 44, 9, -24, -37, -50, -43, 21], n: [10, 20, 30, 40, 50, 60, 70, 80], sample: { bin: [], pct: [] } },
+  };
+  const cloud: CloudData = { asOf: '2026-09-22', dates, price: [187_400, null, 210_000], lo: [152_000, null, 180_000], hi: [231_000, null, 260_000], holidays: {} };
+  for (const locale of LOCALES) {
+    it(`${locale}: 차트 1·2·4 항목 문장에 자리표시가 남지 않고, 값이 들어간다`, () => {
+      const c = dictionaries[locale].charts;
+      const holidays = c.holidays as Record<string, string>;
+      const size = { w: 1080, h: 414 };
+      const dep = buildLayout('chartDepart', { charts }, size, { locale, holidays, tip: c.depart.tip }).items!;
+      const cur = buildLayout('chartCurve', { charts }, size, { locale, holidays, tip: c.curve.tip }).items!;
+      const clo = buildLayout('chartCloud', { cloud }, size, { locale, holidays, tip: c.band.tip }).items!;
+      for (const it of [...dep, ...cur, ...clo]) expect(it.text).not.toMatch(/[{}]/);
+      expect(dep[0].text).toContain('−5%');
+      expect(dep[0].text).not.toContain(holidays.kr_hangul_day);
+      expect(dep[1].text).toContain('+32%');
+      expect(dep[1].text).toContain(holidays.kr_hangul_day);
+      // 항목 0 = 화면 맨 왼쪽 구간(D-61~90)
+      expect(cur[0].text).toContain('D-61~90');
+      expect(cur[0].text).toContain('+2%');
+      expect(cur[0].text).toContain('80');
+      expect(clo).toHaveLength(2);
+      expect(clo[1].text).toContain(new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(210_000));
+    });
+  }
 });
