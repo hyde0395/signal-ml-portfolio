@@ -13,7 +13,7 @@ test('기본 환경: 3D가 켜지고 대체 이미지는 숨는다', async ({ pa
   await expect(page.locator('.scene-figure').first()).toBeHidden();
 });
 
-test('3D가 켜져도 첫 화면 이름 영역이 움직이지 않는다(CLS)', async ({ page }) => {
+test('3D가 켜져도 첫 화면 제목 영역이 움직이지 않는다(CLS)', async ({ page }) => {
   await page.goto('/');
   const box = async () => (await page.locator('.hero-copy').boundingBox())!;
   const before = await box();
@@ -23,7 +23,7 @@ test('3D가 켜져도 첫 화면 이름 영역이 움직이지 않는다(CLS)', 
   expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1);
 });
 
-test('3D가 켜지는 환경에서는 첫 화면 대체 이미지를 받지 않는다(LCP는 이름 글자)', async ({ page }) => {
+test('3D가 켜지는 환경에서는 첫 화면 대체 이미지를 받지 않는다(LCP는 제목 글자)', async ({ page }) => {
   const hero: string[] = [];
   page.on('request', (r) => { if (r.url().includes('/fallback/hero.webp')) hero.push(r.url()); });
   await page.goto('/');
@@ -79,7 +79,7 @@ test('지형 데이터를 못 받으면 대체 화면으로 돌아간다', async
 test('잘못된 ?capture 값이어도 페이지가 비지 않는다', async ({ page }) => {
   await page.goto('/?capture=bogus');
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
-  await expect(page.locator('h1')).toHaveText('CHOI HALIM');
+  await expect(page.locator('h1')).toHaveText('SIGNAL');
   await expect(page.locator('#charts-h')).toBeVisible();
 });
 
@@ -141,7 +141,6 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
   await page.evaluate(() => document.querySelector('.lang-hint')?.remove()); // 떠 있는 언어 안내가 영역을 가리지 않게
   const cases: [string, number][] = [
     ['.hero-keywords', 0.72],
-    ['.hero-sub', 0.72],
     ['#project-h', 1],
     ['.project-lead', 0.72],
     ['#charts-h', 1],
@@ -163,7 +162,7 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     expect(p99, `${sel} 밝은 쪽 99% 화소 대비 ${p99.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
   }
   // 상단 바의 선택 안 된 언어 링크(--mute, 11px): 맨 위(첫 화면 하늘 위)에서만 전부 보이므로 끝에 맨 위로 돌아가 잰다.
-  // 목록 맨 앞에 넣으면 그 대기(3.5초)만큼 첫 화면 비행기 빛줄기 시점이 밀려 .hero-sub 화소 검사가 흔들렸다
+  // 목록 맨 앞에 넣으면 그 대기(3.5초)만큼 첫 화면 비행기 빛줄기 시점이 밀려 첫 화면 글(당시 .hero-sub) 화소 검사가 흔들렸다
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.locator('html')).toHaveAttribute('data-header', 'top');
   const langSel = '.site-header .lang-switch a:not([aria-current])';

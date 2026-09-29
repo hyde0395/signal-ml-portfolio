@@ -15,8 +15,6 @@
     "dismiss": "닫기"
   },
   "hero": {
-    "nameSub": "최하림",
-    "role": "ML ENGINEER",
     "keywords": "시계열 예측 · 모델 검증 · 데이터 파이프라인"
   },
   "demo": {
@@ -83,6 +81,8 @@
   },
   "contact": {
     "heading": "연락처",
+    "nameSub": "최하림",
+    "role": "ML ENGINEER",
     "passenger": "탑승객",
     "email": "이메일",
     "github": "GitHub",

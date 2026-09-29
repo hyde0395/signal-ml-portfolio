@@ -7,7 +7,7 @@ import { facts } from '@/lib/facts';
 import { interpolate, LOCALES, PLACEHOLDER } from '@/lib/i18n';
 import { dictionaries, flatten } from '@/lib/content';
 
-const MAY_BE_EMPTY = new Set(['hero.nameSub']);
+const MAY_BE_EMPTY = new Set(['contact.nameSub']);
 
 const flat = Object.fromEntries(LOCALES.map((l) => [l, flatten(dictionaries[l])]));
 // 데모 문구의 {v.…}는 실행 중에 채워지므로 견본 값으로 채워 본다(src/demo/reason.ts)

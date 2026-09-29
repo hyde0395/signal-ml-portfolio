@@ -15,8 +15,6 @@
     "dismiss": "Dismiss"
   },
   "hero": {
-    "nameSub": "",
-    "role": "ML ENGINEER",
     "keywords": "Time series forecasting · Model validation · Data pipelines"
   },
   "demo": {
@@ -83,6 +81,8 @@
   },
   "contact": {
     "heading": "Contact",
+    "nameSub": "",
+    "role": "ML ENGINEER",
     "passenger": "Passenger",
     "email": "Email",
     "github": "GitHub",

@@ -24,7 +24,7 @@ const content = Object.fromEntries(
     lang,
     JSON.parse(readFileSync(fileURLToPath(new URL(`../../content/${lang}.json`, import.meta.url)), 'utf-8')),
   ]),
-) as Record<(typeof PAGES)[number]['lang'], { project: { heading: string }; contact: { emailFallback: string }; demo: { noJs: string } }>;
+) as Record<(typeof PAGES)[number]['lang'], { project: { heading: string }; contact: { emailFallback: string; nameSub: string; role: string }; demo: { noJs: string } }>;
 
 // public/resume/ja.pdf가 실제로 나중에 채워지면 "준비 중" 가정이 깨지므로, 파일 존재 여부를
 // 미리 확인해 그 경우 해당 테스트를 건너뛴다.
@@ -34,7 +34,13 @@ for (const { path, lang } of PAGES) {
   test(`${path}: lang 속성과 핵심 섹션`, async ({ page }) => {
     await page.goto(path);
     await expect(page.locator('html')).toHaveAttribute('lang', lang);
-    await expect(page.getByRole('heading', { level: 1, name: 'CHOI HALIM' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'SIGNAL' })).toBeVisible();
+    // 이름·언어별 표기·역할은 첫 화면이 아니라 연락처(자기소개)에 있다(사용자 결정 2026-09-29)
+    await expect(page.locator('.hero')).not.toContainText('CHOI HALIM');
+    const contact = page.locator('#contact');
+    await expect(contact).toContainText('CHOI HALIM');
+    await expect(contact).toContainText(content[lang].contact.role);
+    if (content[lang].contact.nameSub) await expect(contact).toContainText(content[lang].contact.nameSub);
     for (const id of ['project', 'data', 'features', 'charts', 'demo', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
     await expect(page.locator('#charts [data-scene]')).toHaveCount(6);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', new RegExp(`/og/${lang}\\.jpg$`));

@@ -40,7 +40,7 @@ try {
       if (sub) line(sub, '', 'margin-top:10px;font-size:30px;color:rgba(238,243,255,.72)');
       line(role, 'mono', 'margin-top:22px;font-size:26px;letter-spacing:.18em;color:#FFB547');
       document.body.append(card);
-    }, { sub: content.hero.nameSub, role: content.hero.role });
+    }, { sub: content.contact.nameSub, role: content.contact.role });
     await page.evaluate(() => document.fonts.ready);
     const png = await page.screenshot({ type: 'png' });
     await sharp(png).jpeg({ quality: 84, mozjpeg: true }).toFile(`public/og/${locale}.jpg`);

@@ -40,22 +40,22 @@ test('#project로 바로 들어오면(이미 스크롤된 채 3D 켜짐) 여백 
   await expect(page.locator('html')).not.toHaveClass(/hero-runway/);
 });
 
-test('3D가 켜져도 첫 화면 이름 위치가 그대로다(여백은 화면 밖)', async ({ page }) => {
+test('3D가 켜져도 첫 화면 제목 위치가 그대로다(여백은 화면 밖)', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  const before = await page.locator('.hero-name').boundingBox();
+  const before = await page.locator('.hero-title').boundingBox();
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
-  const after = await page.locator('.hero-name').boundingBox();
+  const after = await page.locator('.hero-title').boundingBox();
   expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1);
 });
 
 test.describe('움직임 줄이기(3D 꺼짐)', () => {
   test.use({ reducedMotion: 'reduce' });
-  test('첫 화면 대체 이미지와 이름이 보인다', async ({ page }) => {
+  test('첫 화면 대체 이미지와 제목이 보인다', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-3d', 'off');
     await expect(page.locator('.hero .scene-figure img')).toBeVisible();
-    await expect(page.locator('.hero-name')).toBeVisible();
+    await expect(page.locator('.hero-title')).toBeVisible();
   });
 });
 
