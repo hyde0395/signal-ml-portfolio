@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { AirportBuffers } from './airportAssign';
-import type { PointCloud } from './data';
+import { packMeta, type PointCloud } from './data';
 import { toNdc } from './pointerField';
 import type { SceneState } from './scenes';
 import { fragmentShader, vertexShader } from './shaders';
@@ -38,9 +38,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     g.setAttribute('aTerrain', new THREE.BufferAttribute(cloud.terrain, 3));
     g.setAttribute('aMap', new THREE.BufferAttribute(cloud.map, 3));
     g.setAttribute('aScatter', new THREE.BufferAttribute(cloud.scatter, 3));
-    g.setAttribute('aKind', new THREE.BufferAttribute(cloud.kind, 1));
-    g.setAttribute('aHoliday', new THREE.BufferAttribute(cloud.holiday, 1));
-    g.setAttribute('aRoute', new THREE.BufferAttribute(cloud.route, 1));
+    g.setAttribute('aMeta', new THREE.BufferAttribute(packMeta(cloud), 4));
+    g.setAttribute('aWave', new THREE.BufferAttribute(cloud.wave, 3));
     // 차트 배치 두 벌: 처음엔 비어 있고(알파 0) TerrainScene이 차트 장면에 들어갈 때 채운다
     for (const name of ['aChartA', 'aChartB', 'aStyleA', 'aStyleB']) {
       g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(cloud.count * 3), 3).setUsage(THREE.DynamicDrawUsage));
@@ -147,6 +146,9 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     uPointerOn: { value: 0 },
     uAspect: { value: 1 },
     uRipple: { value: new THREE.Vector3(0, 0, -1) },
+    // 물결 줄·은은한 점(계획 6-5): 초기값이 목표와 같아야 ①에서 3D가 켜질 때 지형 덩어리가 번쩍 보이지 않는다
+    uRows: { value: target.current?.rows ?? 0 },
+    uSoft: { value: target.current?.soft ?? 0 },
   }), [instant]);
 
   useFrame((state, delta) => {
@@ -182,6 +184,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     else step('uSlot', t.slot);
     step('uChart', t.chart);
     step('uAirport', t.airport);
+    step('uRows', t.rows);
+    step('uSoft', t.soft);
     step('uFocusDist', focusDist(t));
     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
     u.uChartShift.value = t.shift;

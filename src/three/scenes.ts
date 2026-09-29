@@ -17,6 +17,8 @@ export type SceneState = {
   shift: number;    // 차트 배치 전체의 세계 y 이동량. 장면 표에서는 0이고 TerrainScene이 판 위치로 정한다(chartShiftY)
   airport: number;  // 1 = 밤의 공항(첫 화면), 0 = 그 밖
   sway: number;     // 첫 화면 마우스 시차 크기(월드 단위)
+  rows: number;     // 1 = 지형 점이 ① 물결 줄 배치(data.ts buildWave)로 모인다
+  soft: number;     // 1 = 지형 점을 은은하게(크기·알파 배율 pointStyle SOFT_POINT) — ① 글 뒤 대비를 지킨다
   follow?: boolean; // 전환 구간 안 — 점·카메라가 스크롤을 바짝 따라가게 감쇠를 빠르게
 };
 
@@ -26,7 +28,7 @@ export const CHART_DISTANCE = 24;
 export const CHART_FOV = 40;
 const CHART = { camera: [0, 0, CHART_DISTANCE] as SceneState['camera'], target: [0, 0, 0] as SceneState['target'], chart: 1, noise: 0 };
 
-const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0 };
+const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0, rows: 0, soft: 0 };
 
 // 밤의 공항(설계 2026-09-28 §4.2): A = 터미널 창가(눈높이 약 42m), B = 땅 가까이(약 12m). 같은 방향을 본다.
 // 값은 시안(mockups/2026-09-28/01-night-airport.html)의 카메라를 사이트 좌표(airport.ts K·z 뒤집기)와 fov 40°로 옮긴 것
@@ -42,7 +44,9 @@ const PORTRAIT_HERO_TARGET_DX = 3.2;
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 밤의 공항. 진행도(내려앉기)는 sceneFor가 A→B로 보간(설계 2026-09-28 §4.2)
   hero: { ...base, camera: AIRPORT_CAM.a.camera, target: AIRPORT_CAM.a.target, airport: 1, sway: 0.06, noise: 0 },
-  about: { ...base, camera: [-19, 7, 16], target: [-5, 0.5, 0], noise: 0.6 },
+  // ①: 카메라 C(설계 2026-09-29 §4·§6) — 앞쪽 대각선 높은 곳에서 물결 줄 전체를 넓게 내려다본다. 잡음은 숨기고
+  // 점을 은은하게(soft) 둬서, 먼 쪽 흐린 점이 왼쪽 글 뒤를 지나가도 대비를 지킨다(시안 실측 8.4/5.5:1)
+  about: { ...base, camera: [13, 9, 15], target: [1, 0, 2], noise: 0, rows: 1, soft: 1 },
   // ② 화면 1: 위에서 내려다본 한·일 지도와 노선 궤적. 데스크톱은 왼쪽에 글 카드가 얹히므로
   // 카메라·목표점을 함께 x=-4.5로 옮겨(같은 방향을 보되 옆으로 이동) 지도 전체가 카드 오른쪽에 오게 한다
   problem: { ...base, camera: [-4.5, 16, 7], target: [-4.5, 0, 0], map: 1 },
@@ -72,7 +76,9 @@ const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구�
 // y를 내려도 점이 화면에서 옆으로 옮겨지지 않고 그냥 살짝 확대(약 9%)될 뿐이라 y 이동을 빼고 원래 값을 쓴다
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
-  about: { camera: [-14, 4, 16], target: [0, -2.5, 0] },
+  // ①: 카메라−목표점 벡터가 데스크톱과 다르다(세로 화면에서 물결 줄이 화면 위쪽에 넓게 깔리도록 시안에서 따로 고른 값).
+  // 1.6배 물러남은 이 값 위에 그대로 적용된다(시안이 본 모습과 같게)
+  about: { camera: [11, 6, 15], target: [3, -3, 2] },
   // bubble: 목표점을 데스크톱에서 3만큼만 내리면(다른 장면과 같은 폭) −0.5에 그친다 — 데스크톱 목표점 y가
   // 이미 2.5로 높기 때문(제거 레이어가 높이 뜬 모습을 보여주려고). 그 −0.5는 화면 중앙 바로 아래라, 문단이
   // 바닥에 붙는 세로 화면에서 제거 레이어가 떨어지는 도중(uDrop 중간값, 아직 알파가 남아 있다)의 점이

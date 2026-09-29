@@ -58,6 +58,8 @@ export type PointCloud = {
   holiday: Float32Array;
   route: Float32Array;    // 1 노선, 0 해안선, −1 지도에서 안 씀(셰이더가 지도 장면에서 숨긴다)
   date: Int16Array;      // 지형 출발일 번호(terrain.dates의 인덱스). ④ 출발일 점 그래프가 출발일마다 점을 모은다
+  wave: Float32Array;    // ① 물결 줄 자리(buildWave)
+  waveHoliday: Float32Array; // ① 물결 줄에서 호박색으로 칠할 점이면 1
 };
 
 export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: number; seed?: number }): PointCloud {
@@ -81,6 +83,8 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     holiday: new Float32Array(count),
     route: new Float32Array(count),
     date: new Int16Array(count),
+    wave: new Float32Array(count * 3),
+    waveHoliday: new Float32Array(count),
   };
 
   const coastPts = resampleLines(m.coast, MAP_LINE.step);
@@ -121,7 +125,90 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     const s = Math.sqrt(1 - u * u);
     out.scatter.set([rr * s * Math.cos(th), rr * u, rr * s * Math.sin(th)], i * 3);
   });
+  const wave = buildWave(t, rows, out.terrain);
+  out.wave = wave.pos;
+  out.waveHoliday = wave.holiday;
   return out;
+}
+
+// ① 물결 줄(설계 2026-09-29 §6, 사용자 선택 C): 공항 시안의 ①처럼 출발일마다 한 줄씩 가지런히 늘어선 무늬를
+// 실제 데이터로 만든다. 신호 점을 출발일 순으로 rows줄 × C칸 격자에 하나씩 놓고, 높이 = 남은 일수별 평균 곡선 B
+// + 줄의 출발일 묶음 평균 편차 O(rowGain배) + 잔물결. 흩어진 덩어리 대신 은은한 줄무늬로 읽히게 하려는 것이다.
+// 평활(sigma)은 줄이 들쭉날쭉하지 않고 곡선으로 보이게, 호박색 규칙(holFrac·minOffset)은 몇 줄만 은은하게 두려고
+// 시안에서 맞춘 값이다(지금 데이터에서 두 줄)
+export const WAVE = { rows: 30, rowGain: 0.7, ripple: 1.2, sigmaDtd: 6, sigmaRow: 1.2, holFrac: 0.5, minOffset: 4 } as const;
+
+export type WavePoint = { dtd: number; date: number; pct: number; kind: number };
+// pos: 점마다 물결 자리(xyz), holiday: 호박색이면 1. 나머지는 검사용(offset은 rowGain을 곱한 O, 단위 %)
+export type Wave = { pos: Float32Array; holiday: Float32Array; cols: number; base: number[]; offset: number[]; holidayRows: number[] };
+
+export function buildWave(t: Terrain, pts: readonly WavePoint[], terrain: Float32Array): Wave {
+  const R = WAVE.rows, nD = t.dates.length, maxDtd = t.maxDtd;
+  const pos = new Float32Array(pts.length * 3), holiday = new Float32Array(pts.length);
+  // 잡음·제거 점은 지형 자리 그대로 — ①에서는 숨지만(noise 0) 다른 장면으로 넘어갈 때 엉뚱한 곳에서 날아오지 않게
+  pos.set(terrain.subarray(0, pts.length * 3));
+  const sig = pts.map((p, i) => ({ ...p, i })).filter((p) => p.kind === 0);
+  const C = Math.max(2, Math.ceil(sig.length / R));
+
+  const sum = new Float64Array(maxDtd + 1), cnt = new Float64Array(maxDtd + 1);
+  for (const p of sig) { sum[p.dtd] += p.pct / 10; cnt[p.dtd]++; }
+  const base = Array.from({ length: maxDtd + 1 }, (_, d) =>
+    gaussMean(maxDtd + 1, d, WAVE.sigmaDtd, (k) => cnt[k], (k) => sum[k] / cnt[k]));
+
+  // 줄 묶음은 출발일 번호를 R등분한 것(점을 놓는 줄과 같은 순서)
+  const bucket = (date: number) => Math.min(R - 1, Math.floor((date / nD) * R));
+  const devSum = new Float64Array(R), devCnt = new Float64Array(R), holSum = new Float64Array(R), dateCnt = new Float64Array(R);
+  for (const p of sig) { const b = bucket(p.date); devSum[b] += p.pct / 10 - base[p.dtd]; devCnt[b]++; }
+  const hs = new Set(t.holiday);
+  for (let d = 0; d < nD; d++) { const b = bucket(d); holSum[b] += hs.has(d) ? 1 : 0; dateCnt[b]++; }
+  // 줄 사이 평활은 점 수가 아니라 줄 하나를 한 표로 센다(점이 적은 줄도 이웃과 같은 무게로 이어지게)
+  const offset = Array.from({ length: R }, (_, r) =>
+    gaussMean(R, r, WAVE.sigmaRow, (k) => (devCnt[k] ? 1 : 0), (k) => devSum[k] / devCnt[k]) * WAVE.rowGain);
+
+  const isHol = offset.map((o, r) => dateCnt[r] > 0 && holSum[r] / dateCnt[r] >= WAVE.holFrac && o > WAVE.minOffset);
+  const holidayRows: number[] = [];
+  for (let r = 0; r < R;) {
+    if (!isHol[r]) { r++; continue; }
+    let best = r;
+    for (; r < R && isHol[r]; r++) if (offset[r] > offset[best]) best = r;
+    holidayRows.push(best);
+  }
+
+  sig.sort((a, b) => a.date - b.date || b.dtd - a.dtd);
+  sig.forEach((p, k) => {
+    const r = Math.floor(k / C), c = k % C, u = c / (C - 1);
+    const d = Math.round(maxDtd * (1 - u)); // 칸의 남은 일수: 왼쪽 = 먼 예약(지형과 같은 방향)
+    const pct = base[d] + offset[r] + Math.sin(r * 1.3 + c * 0.21) * WAVE.ripple;
+    pos.set([round((u - 0.5) * WORLD.width), round(pct * WORLD.heightPerPct), round((r / (R - 1) - 0.5) * WORLD.depth)], p.i * 3);
+    holiday[p.i] = holidayRows.includes(r) ? 1 : 0;
+  });
+  return { pos, holiday, cols: C, base, offset, holidayRows };
+}
+
+// 가우스 가중 평균: 칸 k(0..n−1)의 값 value(k)를 무게 weight(k)·exp(−(k−at)²/2σ²)로 섞는다. 무게 0인 칸은 건너뛴다
+function gaussMean(n: number, at: number, sigma: number, weight: (k: number) => number, value: (k: number) => number): number {
+  let a = 0, w = 0;
+  for (let k = 0; k < n; k++) {
+    const wk = weight(k);
+    if (!wk) continue;
+    const g = Math.exp(-((k - at) ** 2) / (2 * sigma * sigma)) * wk;
+    a += g * value(k);
+    w += g;
+  }
+  return w ? a / w : 0;
+}
+
+// 종류·공휴일·노선·물결 공휴일을 vec4 하나(aMeta)로 묶는다 — 따로 두면 aWave와 함께 정점 속성이
+// WebGL 공통 한계 16개를 넘어 셰이더 링크가 실패한다(shaders.ts 주석). 셰이더가 x·y·z·w 순서로 읽는다
+export function packMeta(cloud: Pick<PointCloud, 'count' | 'kind' | 'holiday' | 'route' | 'waveHoliday'>): Float32Array {
+  const meta = new Float32Array(cloud.count * 4);
+  for (let i = 0; i < cloud.count; i++) {
+    meta[i * 4] = cloud.kind[i];
+    meta[i * 4 + 1] = cloud.holiday[i];
+    meta[i * 4 + 2] = cloud.route[i];
+    meta[i * 4 + 3] = cloud.waveHoliday[i];
+  }
+  return meta;
 }
 
 export async function loadSceneData(dataVersion: string, fetcher: typeof fetch = fetch) {

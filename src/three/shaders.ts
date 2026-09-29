@@ -2,13 +2,18 @@
 // 모든 움직임을 GPU에서 계산하므로 2만8천 개 점도 매 프레임 JS 작업 없이 움직인다.
 // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
 import { PUSH, RIPPLE } from './pointerField';
-import { DEPTH_FADE, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
+import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './pointStyle';
 
 // 아래 두 GLSL 문자열 안에는 // 주석을 두지 않는다 — 문자열이라 빌드 때 안 지워지고 그대로 gzip에 실려
 // 3D 청크를 불필요하게 키운다(2026-09-29 최종 점검, 약 4KB 절감). 원래 줄 옆에 있던 설명을 여기로 옮긴다.
 
 // vertexShader 정점 속성·유니폼(이름 옆에 있던 설명):
-// - aKind: 0 신호, 1 잡음, 2 제거
+// - aMeta: x = 종류(0 신호, 1 잡음, 2 제거), y = 공휴일 ±3일이면 1, z = 지도 노선(1 노선, 0 해안선, −1 지도에 안 씀),
+//   w = ① 물결 줄에서 호박색 줄이면 1. float 속성 넷을 vec4 하나로 묶었다 — aWave를 더하면 정점 속성이
+//   16개(WebGL 공통 한계)를 넘어 셰이더 링크가 실패한다(계획 6-5). main() 첫 줄에서 옛 이름(aKind 등)으로 풀어 쓴다
+// - aWave: ① 물결 줄 자리(data.ts buildWave)
+// - uRows: 0 = 지형 자리, 1 = 물결 줄 자리(장면 값 rows)
+// - uSoft: 지형 점 크기·알파를 SOFT_POINT 배율로 줄이는 정도(장면 값 soft)
 // - aChartA: 차트 배치 A의 목표 좌표(z=0 평면)
 // - aStyleA: 차트 배치 A에서의 (알파, 색 번호, 지름 px). 알파 0 = 이 차트에 안 쓰는 점
 // - aHl: 강조 번호(설계 2026-09-28 §3, 계획 5-3b로 일반화 — ③ 와플 그룹, ④ 차트 1·4 출발일, 차트 2 구간), 아니면 -1
@@ -71,6 +76,8 @@ import { DEPTH_FADE, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
 //   건너뛴다(성능 검토 2026-09-28) — 공항 장면의 배경 점 약 27,000개, 차트 장면에서 이번 배치에 안 쓰는 점이
 //   여기 걸린다
 //
+// - target: 지형 → 물결 줄(uRows) → 지도(uMap) 순서로 섞는다. 물결 줄 공휴일 색도 uRows로 지형 공휴일과 섞는다
+//
 // 지도 장면(설계 2026-09-29 §1, 계획 6-4): aRoute = 1 노선, 0 해안선, −1 지도에 안 쓰는 점(알파 0으로 숨김 — 새 속성을
 // 더하지 않으려고 기존 aRoute에 담았다, 정점 속성 16개 한계). 지도에서는 종류와 상관없이 같은 알파·크기(MAP_POINT)로
 // 그리고, 잡음 점도 끝까지 모인다(gather를 uMap만큼 uAssemble로) — 덜 모인 잡음 점이 해안선 둘레에 뿌옇게 남았었다.
@@ -79,9 +86,8 @@ export const vertexShader = /* glsl */ `
   attribute vec3 aTerrain;
   attribute vec3 aMap;
   attribute vec3 aScatter;
-  attribute float aKind;
-  attribute float aHoliday;
-  attribute float aRoute;
+  attribute vec4 aMeta;
+  attribute vec3 aWave;
   attribute vec3 aChartA;
   attribute vec3 aChartB;
   attribute vec3 aStyleA;
@@ -89,6 +95,8 @@ export const vertexShader = /* glsl */ `
   attribute float aHl;
   attribute vec4 aAirport;
   attribute vec4 aAirStyle;
+  uniform float uRows;
+  uniform float uSoft;
   uniform float uAssemble;
   uniform float uMap;
   uniform float uNoise;
@@ -129,7 +137,10 @@ export const vertexShader = /* glsl */ `
   }
 
   void main() {
-    vec3 target = mix(aTerrain, aMap, uMap);
+    float aKind = aMeta.x;
+    float aHoliday = mix(aMeta.y, aMeta.w, uRows);
+    float aRoute = aMeta.z;
+    vec3 target = mix(mix(aTerrain, aWave, uRows), aMap, uMap);
     float gather = mix(aKind > 0.5 && aKind < 1.5 ? uAssemble * 0.9 : uAssemble, uAssemble, uMap);
     vec3 p = mix(aScatter, target, gather);
     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
@@ -154,6 +165,7 @@ export const vertexShader = /* glsl */ `
     vec2 off = (dp > 1e-4 ? dv / dp * push : vec2(0.0)) + (drl > 1e-4 ? dr / drl * rip : vec2(0.0));
     gl_Position.xy += off / vec2(uAspect, 1.0) * gl_Position.w;
     float size = aKind < 0.5 ? ${f(POINT.signalSize)} : (aKind < 1.5 ? ${f(POINT.noiseSize)} : 1.1);
+    size *= mix(1.0, ${f(SOFT_POINT.size)}, uSoft);
     size = mix(size, ${f(MAP_POINT.size)}, uMap);
     float terrainPx = uSize * size * (20.0 / -mv.z);
     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;
@@ -164,6 +176,7 @@ export const vertexShader = /* glsl */ `
     gl_PointSize = mix(basePx, airPx, vAir);
 
     float a = aKind < 0.5 ? ${f(POINT.signalAlpha)} : (aKind < 1.5 ? ${f(POINT.noiseAlpha)} * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
+    a *= mix(1.0, ${f(SOFT_POINT.alpha)}, uSoft);
     float onMap = step(-0.5, aRoute);
     a = mix(a, onMap * mix(${f(MAP_POINT.coastAlpha)}, ${f(MAP_POINT.routeAlpha)}, max(aRoute, 0.0)), uMap);
     float fade = clamp(${f(DEPTH_FADE.base)} - (-mv.z - uFocusDist) / ${f(DEPTH_FADE.span)}, ${f(DEPTH_FADE.min)}, 1.0);
