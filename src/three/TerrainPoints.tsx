@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import type { AirportBuffers } from './airportAssign';
 import { packMeta, type PointCloud } from './data';
 import { toNdc } from './pointerField';
+import { planePose, planeScatter } from './plane';
 import { followActive, type SceneState } from './scenes';
 import { fragmentShader, vertexShader } from './shaders';
 
@@ -149,7 +150,12 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     // 물결 줄·은은한 점(계획 6-5): 초기값이 목표와 같아야 ①에서 3D가 켜질 때 지형 덩어리가 번쩍 보이지 않는다
     uRows: { value: target.current?.rows ?? 0 },
     uSoft: { value: target.current?.soft ?? 0 },
+    // 이륙 비행기(설계 2026-09-29 §7): 로컬 → 월드 행렬과 흩어짐 진행. 첫 프레임부터 목표 진행도의 자세로
+    uPlane: { value: new THREE.Matrix4().fromArray(planePose(target.current?.plane ?? 1).matrix) },
+    uPlaneGo: { value: planeScatter(target.current?.plane ?? 1) },
   }), [instant]);
+  // 비행기 진행도(시안 눈금)도 다른 값과 같은 감쇠로 따라간다 — 전환 구간(follow)에서는 스크롤을 바짝 따라간다
+  const planeP = useRef(target.current?.plane ?? 1);
 
   useFrame((state, delta) => {
     const m = material.current;
@@ -189,6 +195,13 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     step('uRows', t.rows);
     step('uSoft', t.soft);
     step('uFocusDist', focusDist(t));
+    const pp = instant ? t.plane : THREE.MathUtils.damp(planeP.current, t.plane, k, delta);
+    // 멈춰 있으면(대부분의 장면에서 1) 행렬을 다시 만들지 않는다
+    if (pp !== planeP.current || instant) {
+      planeP.current = pp;
+      (u.uPlane.value as THREE.Matrix4).fromArray(planePose(pp).matrix);
+      u.uPlaneGo.value = planeScatter(pp);
+    }
     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
     u.uChartShift.value = t.shift;
     u.uFocus.value = slots.current?.focus ?? -1; // 강조는 부드럽게 옮기지 않는다 — 2D처럼 바로 바뀐다

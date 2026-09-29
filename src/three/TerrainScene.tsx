@@ -13,6 +13,7 @@ import { CameraRig } from './CameraRig';
 import { assignPoints, chartShiftY, pickSlot, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, maxDpr, stepFrameRate } from './frameRate';
+import { lookToward, PLANE, planeFollow, planePose, planeShape, takeoffProgress } from './plane';
 import { blendScenes, CHART_DISTANCE, CHART_FOV, handoffProgress, sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
@@ -52,7 +53,8 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   // 공항 불빛 배정: 세로 화면(대개 휴대폰)은 불빛 절반(설계 §4.5)
   const airport = useMemo(() => {
     if (!cloud) return null;
-    return assignAirport(buildAirport({ stride: isPortrait ? 2 : 1 }).lights, cloud.kind);
+    // 이륙 비행기 점(설계 2026-09-29 §7)도 함께 — 휴대폰도 같은 232개(비행기 모양이 성기면 실루엣이 안 읽힌다)
+    return assignAirport(buildAirport({ stride: isPortrait ? 2 : 1 }).lights, cloud.kind, planeShape());
   }, [cloud, isPortrait]);
 
   // 스크롤·크기 변화 → 활성 장면 → 목표 상태(차트 장면이면 그림 판 배치도). 캡처 모드에서는 고정.
@@ -101,12 +103,18 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       // 내려앉기 여백이 없어 y0가 의미 없다. #project 위치는 방금 readCandidates가 레이아웃을 읽은 뒤
       // (사이에 DOM 쓰기 없음)라 추가 레이아웃 계산이 없고, 캐시하지 않으므로 글꼴·창 크기 변화에도 늘 맞다
       let h = -1; // -1 = 전환 계산 안 함
+      let plane = -1; // 이륙 비행기 진행도(plane.ts takeoffProgress). -1 = 장면 기본값(첫 화면 0, 그 밖 1)
       if (html.classList.contains('hero-runway')) {
         // 활성 장면이 ①보다 뒤(②~)면 #project 윗변은 이미 y1을 한참 지났다 — 읽지 않고 1로 둔다
-        if (active && active.key !== 'hero' && active.key !== 'about') h = 1;
+        if (active && active.key !== 'hero' && active.key !== 'about') h = plane = 1;
         else {
           const projectTop = document.getElementById('project')?.getBoundingClientRect().top;
-          if (projectTop !== undefined) h = handoffProgress(window.scrollY, 0.9 * vh, projectTop + window.scrollY - 0.2 * vh);
+          if (projectTop !== undefined) {
+            const y1 = projectTop + window.scrollY - 0.2 * vh;
+            h = handoffProgress(window.scrollY, 0.9 * vh, y1);
+            // 비행기는 내려앉기(0 → y0)와 전환(y0 → y1)을 한 눈금으로 잇는다 — 시안이 한 스크롤 안에서 둘을 이었다
+            plane = takeoffProgress(window.scrollY, 0.9 * vh, y1);
+          }
         }
       }
       const handoff = h > 0 && h < 1;
@@ -126,6 +134,14 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
         const progress = a.key === 'hero' ? Math.min(1, window.scrollY / (0.9 * vh)) : a.progress;
         s = sceneFor(a.key, progress, portrait.current);
+      }
+      if (plane >= 0) {
+        // 고개로 비행기를 살짝 따라간다(시안: 방향 차이의 35%, 높이 차이의 30%) — 멀어지는 비행기가 화면 구석으로
+        // 빨리 밀려나지 않고, 흩어지는 모습이 화면 안에서 보이게. 불빛이 지형으로 넘어가며 풀려(planeFollow)
+        // ① 카메라 C는 그대로 도착한다. 목표점만 돌리므로 카메라 위치·감쇠 규칙은 그대로다
+        const f = planeFollow(plane);
+        const target = f > 0 ? lookToward(s.camera, s.target, planePose(plane).pos, PLANE.followYaw * f, PLANE.followPitch * f) : s.target;
+        s = { ...s, target, plane };
       }
       // data-scene이 아니라 data-active-scene으로 적는다 — data-scene은 챕터 블록이 자기 장면 이름을 적는
       // 속성이라(activeScene.ts의 readCandidates가 [data-scene]을 찾는다), 같은 이름을 html에도 쓰면
@@ -208,7 +224,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
           state.gl.domElement.addEventListener('webglcontextlost', () => onFail('context'));
         }}
       >
-        <AirportExtras target={target} instant={!!capture} portrait={isPortrait} />
+        <AirportExtras target={target} instant={!!capture} portrait={isPortrait} takeoff={!!airport && airport.plane > 0} />
         <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} airport={airport} />
         <CameraRig target={target} instant={!!capture} parallax={parallax} />
         <FrameWatch

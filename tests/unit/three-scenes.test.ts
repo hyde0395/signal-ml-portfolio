@@ -221,3 +221,10 @@ describe('horizonFrac', () => {
     expect(horizonFrac(AIRPORT_CAM.b.camera, AIRPORT_CAM.b.target, HERO_FOV)).toBeCloseTo(0.366, 3);
   });
 });
+
+describe('이륙 비행기 진행도(plane)', () => {
+  it('첫 화면은 0(서 있음), 그 밖 장면은 1(다 흩어짐)', () => {
+    expect(sceneFor('hero', 0.5, false).plane).toBe(0);
+    for (const k of Object.keys(SCENES) as (keyof typeof SCENES)[]) if (k !== 'hero') expect(sceneFor(k, 0, false).plane).toBe(1);
+  });
+});

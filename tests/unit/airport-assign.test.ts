@@ -28,4 +28,26 @@ describe('assignAirport', () => {
     const r = assignAirport(Array.from({ length: 9 }, (_, i) => light(i)), kind);
     expect(r.assigned).toBe(5);
   });
+  // 이륙 비행기(설계 2026-09-29 §7): 첫 화면에서 숨은 신호 점 중 몇 개를 비행기 점으로(aAirStyle.x = 2).
+  // 신호 점 전체에 고르게 흩어 뽑는다 — ①에서 물결 줄 전체로 퍼져 들어가게(시안: 비행기 몫 칸을 격자 전체에 고르게)
+  const dot = (i: number) => ({ pos: [i, -i, i * 2] as [number, number, number], tone: 3, delay: 0.1 * i });
+  it('비행기 점: 신호 점에 고르게, 표시 2·색·지연·로컬 좌표, 불빛과 겹치지 않는다', () => {
+    const k = Float32Array.from([0, 0, 0, 0, 0, 0, 0, 0, 1, 1]); // 신호 8개
+    const r = assignAirport([light(0), light(1), light(2)], k, [dot(0), dot(1)]);
+    expect(r.plane).toBe(2);
+    const planeIdx = [...Array(10).keys()].filter((i) => r.style[i * 4] === 2);
+    expect(planeIdx).toEqual([2, 6]); // 8개를 둘로 나눈 칸의 가운데
+    expect(Array.from(r.pos.slice(6 * 3, 6 * 3 + 3))).toEqual([1, -1, 2]);
+    expect(r.style[6 * 4 + 1]).toBe(3);
+    expect(r.style[6 * 4 + 3]).toBeCloseTo(0.1);
+    expect(r.runS[6]).toBe(-1);
+    const lit = [...Array(10).keys()].filter((i) => r.style[i * 4] === 1);
+    expect(lit).toEqual([0, 1, 3]); // 불빛은 비행기 점을 건너뛰고 신호 점부터
+  });
+  it('비행기 점이 없으면 예전과 같다', () => {
+    const a = assignAirport([light(0), light(1)], kind), b = assignAirport([light(0), light(1)], kind, []);
+    expect(b).toEqual(a);
+    expect(a.plane).toBe(0);
+  });
 });
+

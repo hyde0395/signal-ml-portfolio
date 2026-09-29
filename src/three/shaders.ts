@@ -20,7 +20,10 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 // - aHl: 강조 번호(설계 2026-09-28 §3, 계획 5-3b로 일반화 — ③ 와플 그룹, ④ 차트 1·4 출발일, 차트 2 구간), 아니면 -1
 // - aAirport: xyz = 공항 불빛 자리, w = 활주로 위 거리(m, 신호 물결. 아니면 -1) — 지형용 float 속성 하나(aRunS)를
 //   따로 두면 정점 속성이 16개(WebGL 공통 한계, position·normal·uv 3개 포함)를 넘어 셰이더 링크가 실패한다
-// - aAirStyle: (공항 불빛이면 1, 색 번호, 크기 배율, 켜지는 순서)
+// - aAirStyle: (공항 불빛이면 1 · 이륙 비행기 점이면 2, 색 번호, 크기 배율, 켜지는 순서 — 비행기 점은 흩어짐 지연).
+//   비행기 점(설계 2026-09-29 §7)은 aAirport.xyz에 비행기 로컬 좌표(plane.ts planeShape)를 담는다 — 새 속성 없이
+//   기존 두 속성을 재사용한다(정점 속성 16개 한계, 지금 13개)
+// - uPlane: 비행기 로컬 → 월드 행렬(plane.ts planePose, TerrainPoints가 매 프레임). uPlaneGo: 흩어짐 진행(planeScatter)
 // - uChart: 0 = 지형·지도, 1 = 차트 배치
 // - uSlot: 0 = A, 1 = B
 // - uChartShift: 차트 배치의 세계 y 이동(판이 고정되기 전·풀린 뒤 이름표를 따라가게)
@@ -52,6 +55,10 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 // - if (aKind > 1.5) p.y -= ...: 제거 레이어(kind 2)만 가속하며 떨어진다
 // - isAir / p = mix(p, aAirport.xyz, ...): 공항은 불빛으로 배정된 점만 공항 자리로. uAirport가 1→0으로 줄면
 //   자기 지형 자리로 옮겨 간다
+// - isPlane / mi / bow / pq: 이륙 비행기 점(시안 A). 비행기 위 자리 = uPlane × 로컬 좌표, 점마다 지연(aAirStyle.w)만큼
+//   늦게 0.45 동안(quart.out) 자기 지형·물결 자리(위에서 계산한 p)로 간다. 가는 동안 아래·앞으로 부푼 곡선
+//   (시안 bow: 아래 54m·앞 36m) — 빛이 흘러내리는 느낌. planeOn = 아직 비행기에 붙은 정도(1 − mi)로 vAir처럼 쓴다.
+//   uAirport와 상관없이 uPlaneGo만 따른다(첫 화면 밖에서는 늘 1이라 보통 점과 같다)
 // - 포인터 밀기·물결(설계 2026-09-25 §4.1, 계획 5-3a, gl_Position 바로 뒤): 장면 평면에 투영하지 않고 화면 공간(NDC)에서 민다.
 //   지형(xz)·지도·차트(z=0)·공항처럼 장면마다 평면이 달라도 식 하나로 되고, 셰이더가 짧다(3D 청크 여유).
 //   식·상수는 pointerField.ts와 같다(단위 테스트). 차트 장면은 uChart만큼 PUSH.chartScale로 줄인다.
@@ -62,6 +69,8 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 // - airPx: 스프라이트 지름 = 시안 번짐 지름(번짐 반지름 9·핵 → 18·핵, 큰 불빛(크기 배율 ≥ 1.5, 계류장 조명 4개)은
 //   16·핵 → 32·핵). 성능 검토(2026-09-28)로 12·핵까지 줄였었지만, 번짐이 스프라이트 가장자리(곡선 값 약 0.02)에서
 //   잘려 어두운 바닥 위에 테두리가 보였다(2026-09-29 실제 GPU 비교). 불빛 약 1,300개 중 가까운 몇십 개만 크다
+// - 비행기 점 크기(시안 pdot): 핵 = clamp(0.42·(1m의 px), 0.55, 1.7)px ≈ clamp(4.5/거리), 스프라이트 = 핵·11(번짐 반지름 5.5·핵),
+//   번짐 세기는 불빛의 0.35/0.55(조각 셰이더가 vShape.z < 0으로 알아본다)
 // - big / isWin / isCenter: 공항 불빛 종류를 크기 배율(aAirStyle.z)로 가려낸다 — 종류 속성을 더하면 정점 속성
 //   16개 한계를 넘는다. center·win 크기 배율은 다른 종류와 겹치지 않는다(airport.ts AIR_SIZE, 단위 테스트)
 // - barW / barH: 창문은 둥근 불빛이 아니라 가로 막대(시안: 폭 max(1.6, 6·s), 높이 max(1, 1.4·s)px, s = 1m의 px).
@@ -79,7 +88,11 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 // - vEdge = mix(0.15, 0.38, uChart): 차트 점은 가장자리를 덜 흐려 또렷한 원으로(2D 대체 그림과 같게)
 // - on / haze / wave: 켜지는 순서(로딩 뒤 앞에서 뒤로) + 공기 원근(멀수록 흐림) + 신호 물결.
 //   중앙등은 ×0.7(시안), 창문 막대는 ×0.75(시안 fillRect 알파)
-// - vAlpha = mix(vAlpha * (1.0 - uAirport), airA, vAir): 공항 장면에서 불빛이 아닌 점은 숨긴다
+// - planeA: 비행기 점 알파(시안): 붙어 있을 때 흰 점 1·파란 점 0.82, 떠나는 동안 0.8 → 0.25 → 0.8(성기어 보이게),
+//   거리 흐림 1/(1 + 거리/70). 켜짐은 앞쪽 불빛(순서 0.1)과 함께
+// - vAlpha = mix(vAlpha * (1.0 - uAirport), ...): 공항 장면에서 불빛이 아닌 점은 숨긴다. 내려앉은 비행기 점(mi 1)도
+//   같은 규칙 — 시안처럼 바로 지형 점 밝기로 두면 머리말 글 뒤에 밝은 점이 먼저 모여 휴대폰 #intro-h 대비가
+//   4.37:1로 떨어졌다(terrain.spec 화소 검사). 다른 지형 점과 함께 공항이 걷히는 만큼 밝아진다
 // - if (vAlpha < 0.003): 화면에 안 보이는 점(알파가 거의 0)은 크기 0 + 화면 밖으로 보내 래스터화를 아예
 //   건너뛴다(성능 검토 2026-09-28) — 공항 장면의 배경 점 약 27,000개, 차트 장면에서 이번 배치에 안 쓰는 점이
 //   여기 걸린다
@@ -132,6 +145,8 @@ export const vertexShader = /* glsl */ `
   uniform float uPointerOn;
   uniform float uAspect;
   uniform vec3 uRipple;
+  uniform mat4 uPlane;
+  uniform float uPlaneGo;
   varying float vAlpha;
   varying vec3 vColor;
   varying float vEdge;
@@ -155,8 +170,14 @@ export const vertexShader = /* glsl */ `
     vec3 p = mix(aScatter, target, gather);
     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
     if (aKind > 1.5) p.y -= uDrop * uDrop * 14.0;
-    float isAir = aAirStyle.x;
+    float isPlane = step(1.5, aAirStyle.x);
+    float isAir = aAirStyle.x * (1.0 - isPlane);
     p = mix(p, aAirport.xyz, uAirport * isAir);
+    float mi = 1.0 - pow(1.0 - clamp((uPlaneGo - aAirStyle.w) / 0.45, 0.0, 1.0), 4.0);
+    float bow = sin(mi * 3.14159);
+    vec3 pq = mix((uPlane * vec4(aAirport.xyz, 1.0)).xyz, p, mi) - vec3(0.0, 0.54, 0.36) * bow;
+    p = mix(p, pq, isPlane);
+    float planeOn = isPlane * (1.0 - mi);
     p = mix(p, mix(aChartA, aChartB, uSlot) + vec3(0.0, uChartShift, 0.0), uChart);
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
@@ -183,14 +204,14 @@ export const vertexShader = /* glsl */ `
     float big = step(1.5, aAirStyle.z);
     float isWin = 1.0 - step(0.01, abs(aAirStyle.z - ${f(AIR_SIZE.win)}));
     float isCenter = 1.0 - step(0.01, abs(aAirStyle.z - ${f(AIR_SIZE.center)}));
-    float corePx = clamp(5.5 * aAirStyle.z / dz, 0.6, 2.6) * uDpr;
-    float airPx = corePx * mix(18.0, 32.0, big);
+    float corePx = mix(clamp(5.5 * aAirStyle.z / dz, 0.6, 2.6), clamp(4.5 / dz, 0.55, 1.7), isPlane) * uDpr;
+    float airPx = corePx * mix(mix(18.0, 32.0, big), 11.0, isPlane);
     float barW = max(1.6, 60.0 / dz) * uDpr;
     float barH = max(1.0, 14.0 / dz) * uDpr;
     airPx = mix(airPx, barW, isWin);
-    vShape = vec3(corePx / airPx, 0.5, isWin * barH * step(0.5, uAirport * isAir));
+    vShape = vec3(corePx / airPx, 0.5, isWin * barH * step(0.5, uAirport * isAir) - isPlane);
     float basePx = mix(terrainPx, chartPx, uChart);
-    vAir = uAirport * isAir;
+    vAir = uAirport * isAir + planeOn;
     gl_PointSize = mix(basePx, airPx, vAir);
     vPx = gl_PointSize;
 
@@ -208,11 +229,12 @@ export const vertexShader = /* glsl */ `
     vAlpha = mix(a * uDim * fade, chartA, uChart);
     vColor = toSrgbTone(mix(terrainCol, chartCol, uChart));
     vEdge = mix(0.15, 0.38, uChart);
-    float on = clamp((uLightT - aAirStyle.w * 1.2) / 0.18, 0.0, 1.0);
+    float on = clamp((uLightT - mix(aAirStyle.w, 0.1, isPlane) * 1.2) / 0.18, 0.0, 1.0);
     float haze = 1.0 / (1.0 + dz / 52.0);
     float wave = aAirport.w < 0.0 ? 0.0 : exp(-pow((aAirport.w - uWave) / 90.0, 2.0));
     float airA = on * haze * (1.0 + wave * 2.2) * mix(1.0, 0.7, isCenter) * mix(1.0, 0.75, isWin);
-    vAlpha = mix(vAlpha * (1.0 - uAirport), airA, vAir);
+    float planeA = on * (mi > 0.0 ? mix(0.8, 0.25, bow) : (aAirStyle.y > 2.5 ? 1.0 : 0.82)) / (1.0 + dz / 70.0);
+    vAlpha = mix(vAlpha * (1.0 - uAirport), mix(airA, planeA, isPlane), vAir);
     vColor = mix(vColor, toSrgbTone(airTone(aAirStyle.y)), vAir);
     vEdge = mix(vEdge, 0.0, vAir);
     if (vAlpha < 0.003) {
@@ -259,7 +281,7 @@ export const fragmentShader = /* glsl */ `
     float core = 1.0 - smoothstep(vShape.x - aa, vShape.x + aa, d);
     float t = d / vShape.y;
     float glow = (t < 0.15 ? mix(1.0, 0.35, t / 0.15) : (t < 0.45 ? mix(0.35, 0.06, (t - 0.15) / 0.3) : mix(0.06, 0.0, min((t - 0.45) / 0.55, 1.0)))) * 0.55;
-    float air = vShape.z > 0.0 ? bar : min(core + glow, 1.0);
+    float air = vShape.z > 0.0 ? bar : min(core + glow * (vShape.z < 0.0 ? 0.64 : 1.0), 1.0);
     float disc = smoothstep(0.5, vEdge, d);
     float a = min(vAlpha * mix(disc, air, vAir), 1.0);
     gl_FragColor = vec4(vColor * a, a * mix(1.0, a, vAir));

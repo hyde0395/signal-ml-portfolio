@@ -9,7 +9,8 @@ import * as THREE from 'three';
 import { buildAirport, landingPlane, runwayPoint, RUNWAY, taxiPlane, toWorld, type AirKind } from './airport';
 import { followActive, type SceneState } from './scenes';
 
-type Props = { target: React.RefObject<SceneState>; instant: boolean; portrait: boolean };
+// takeoff: 점 비행기가 같은 활주로에서 이륙하는 중(설계 2026-09-29 §7) — 착륙 비행기를 끈다(두 비행기가 겹쳐 헷갈림, 시안 A)
+type Props = { target: React.RefObject<SceneState>; instant: boolean; portrait: boolean; takeoff: boolean };
 
 const DAMP = 2.2; // TerrainPoints와 같게 — 점과 곁가지가 함께 사라진다
 // useFrame마다 새로 만들지 않게 미리 둔다(리뷰 2026-09-28): movers 속성 갱신 키 목록,
@@ -152,7 +153,7 @@ const C = { white: new THREE.Color('#EEF3FF'), warm: new THREE.Color('#FFE2B8'),
 // 공항 색 번호(airport.ts AIR_TONE: 1 파랑, 2 호박, 3 흰색, 4 따뜻한 흰색) → 색
 const TONE_COLOR = [C.white, C.blue, C.amber, C.white, C.warm];
 
-export function AirportExtras({ target, instant, portrait }: Props) {
+export function AirportExtras({ target, instant, portrait, takeoff }: Props) {
   const fade = useRef(target.current?.airport ?? 0);
   const root = useRef<THREE.Group>(null);
   const air = useMemo(() => buildAirport({ stride: portrait ? 2 : 1 }), [portrait]);
@@ -328,7 +329,7 @@ export function AirportExtras({ target, instant, portrait }: Props) {
     const step = Math.floor((t * 16) % 22);
     air.approach.forEach((p, i) => set(i, p, C.white, 13 - i === step ? 14 : 4, 13 - i === step ? 1 : 0.25));
     // 착륙 비행기(20초 주기) — 착륙등 + 양 날개 흰 불빛
-    const lp = landingPlane(((t % 20) / 20));
+    const lp = takeoff ? null : landingPlane(((t % 20) / 20));
     set(14, lp, C.white, 18, 0.95);
     const wing = (dx: number, dz: number): [number, number, number] | null => (lp ? [lp[0] + dx, lp[1] + 0.01, lp[2] + dz] : null);
     set(15, wing(0.14, -0.1), C.white, 4, 0.45);

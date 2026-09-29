@@ -20,6 +20,9 @@ export type SceneState = {
   rows: number;     // 1 = 지형 점이 ① 물결 줄 배치(data.ts buildWave)로 모인다
   soft: number;     // 1 = 지형 점을 은은하게(크기·알파 배율 pointStyle SOFT_POINT) — ① 글 뒤 대비를 지킨다
   fov: number;      // 세로 화각(도). CameraRig가 이 값으로 옮겨 간다 — 첫 화면만 HERO_FOV, 나머지는 CHART_FOV
+  // 이륙 비행기 진행도(plane.ts, 시안 스크롤 눈금 0..1): 첫 화면 0(활주로 끝에 서 있음), 그 밖 1(다 흩어져 지형 점).
+  // 첫 화면·전환 구간에서는 TerrainScene이 스크롤 위치로 채운다
+  plane: number;
   follow?: boolean; // 전환 구간 안 — 점·카메라가 스크롤을 바짝 따라가게 감쇠를 빠르게
   // 전환이 마지막으로 움직인 시각 + 600ms(performance.now 기준). 휠 한 번에 y1(또는 y0)을 넘어가면 follow가
   // 바로 꺼져 남은 거리를 느린 감쇠로 한참 흘러가므로, 이 시각까지는 빠른 감쇠를 유지한다(followActive)
@@ -36,7 +39,7 @@ export const CHART_FOV = 40;
 export const HERO_FOV = 45;
 const CHART = { camera: [0, 0, CHART_DISTANCE] as SceneState['camera'], target: [0, 0, 0] as SceneState['target'], chart: 1, noise: 0 };
 
-const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0, rows: 0, soft: 0, fov: CHART_FOV };
+const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0, rows: 0, soft: 0, fov: CHART_FOV, plane: 1 };
 
 // 밤의 공항(설계 2026-09-28 §4.2): A = 터미널 창가(눈높이 약 42m), B = 땅 가까이(약 12m). 같은 방향을 본다.
 // 값은 시안(mockups/2026-09-28/01-night-airport.html)의 카메라를 사이트 좌표(airport.ts K·z 뒤집기)와 fov 45°(HERO_FOV)로
@@ -53,7 +56,7 @@ const PORTRAIT_HERO_TARGET_DX = 3.2;
 
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 밤의 공항. 진행도(내려앉기)는 sceneFor가 A→B로 보간(설계 2026-09-28 §4.2)
-  hero: { ...base, camera: AIRPORT_CAM.a.camera, target: AIRPORT_CAM.a.target, airport: 1, sway: 0.06, noise: 0, fov: HERO_FOV },
+  hero: { ...base, camera: AIRPORT_CAM.a.camera, target: AIRPORT_CAM.a.target, airport: 1, sway: 0.06, noise: 0, fov: HERO_FOV, plane: 0 },
   // ①: 카메라 C(설계 2026-09-29 §4·§6) — 앞쪽 대각선 높은 곳에서 물결 줄 전체를 넓게 내려다본다. 잡음은 숨기고
   // 점을 은은하게(soft) 둬서, 먼 쪽 흐린 점이 왼쪽 글 뒤를 지나가도 대비를 지킨다(시안 실측 8.4/5.5:1)
   about: { ...base, camera: [13, 9, 15], target: [1, 0, 2], noise: 0, rows: 1, soft: 1 },
