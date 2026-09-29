@@ -20,16 +20,18 @@ const colorScratch = new Float32Array(3);
 
 // GLSL 문자열 안에는 주석을 두지 않는다(shaders.ts 머리 주석과 같은 이유 — 3D 청크에 그대로 실린다). 설명은 여기에:
 //
-// srgb: 선형 → sRGB(shaders.ts toSrgbTone과 같은 식). THREE.Color('#…')는 선형 값으로 바뀌어 들어오는데
-//   ShaderMaterial 출력은 sRGB로 되돌려지지 않아 곁가지 색이 시안보다 짙게 가라앉았다(설계 2026-09-29 §8)
+// SRGB(srgb 함수): 선형 → sRGB(shaders.ts toSrgbTone과 같은 식). THREE.Color('#…')는 선형 값으로 바뀌어 들어오는데
+//   ShaderMaterial 출력은 sRGB로 되돌려지지 않아 곁가지 색이 시안보다 짙게 가라앉았다(설계 2026-09-29 §8).
+//   셰이더 세 개(glow·pool·refl)가 같이 쓰므로 한 번만 적어 끼워 넣는다(3D 청크에 세 번 실리지 않게)
 //
 // glowVert / glowFrag — 둥근 빛 점(별·움직이는 불빛): 위치·색·크기(px)·알파를 받아 빛 더하기로 그린다.
 // 별(크기 ≤ 1.5px)만 천천히 반짝인다
+const SRGB = 'vec3 srgb(vec3 c) { c = max(c, vec3(0.0)); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }';
 const glowVert = /* glsl */ `
   attribute vec3 color; attribute float size; attribute float alpha;
   uniform float uFade; uniform float uDpr; uniform float uTime;
   varying vec3 vColor; varying float vAlpha;
-  vec3 srgb(vec3 c) { c = max(c, vec3(0.0)); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }
+  ${SRGB}
   void main() {
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mv;
@@ -59,11 +61,12 @@ function glowMaterial() {
 // - 반지름 px = 바닥 반지름(aPool.x, m → 월드 ×0.01) × 투영 배율 × 화면 높이/2 ÷ 거리, 시안처럼 2~420 CSS px로 자른다
 // - 납작함 = clamp(카메라 높이/거리·1.3, 0.04, 0.9)(시안 그대로) — 세로 반지름에만 곱해 땅에 누운 타원
 // - 모양은 시안 soft 곡선(0 → 1, 0.5 → 0.35, 1 → 0), 알파 aPool.y
+// - 그 불빛이 켜진 만큼만(aPool.z = 켜지는 순서, 점 셰이더·반사와 같은 식) — 불빛보다 웅덩이가 먼저 보이지 않게
 const poolVert = /* glsl */ `
-  attribute vec3 color; attribute vec2 aCorner; attribute vec2 aPool;
-  uniform float uFade; uniform float uDpr; uniform vec2 uView;
+  attribute vec3 color; attribute vec2 aCorner; attribute vec3 aPool;
+  uniform float uFade; uniform float uDpr; uniform vec2 uView; uniform float uLightT;
   varying vec3 vColor; varying float vAlpha; varying vec2 vQ;
-  vec3 srgb(vec3 c) { c = max(c, vec3(0.0)); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }
+  ${SRGB}
   void main() {
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mv;
@@ -73,7 +76,7 @@ const poolVert = /* glsl */ `
     gl_Position.xy += aCorner * vec2(r, r * fl) * 2.0 / uView * gl_Position.w;
     vQ = aCorner;
     vColor = srgb(color);
-    vAlpha = aPool.y * uFade;
+    vAlpha = aPool.y * uFade * clamp((uLightT - aPool.z * 1.2) / 0.18, 0.0, 1.0);
   }`;
 const poolFrag = /* glsl */ `
   varying vec3 vColor; varying float vAlpha; varying vec2 vQ;
@@ -110,7 +113,7 @@ const reflVert = /* glsl */ `
   attribute vec3 color; attribute float size; attribute float alpha; attribute vec2 aMeta;
   uniform float uFade; uniform float uDpr; uniform float uVh; uniform float uLightT; uniform float uWave;
   varying vec3 vColor; varying float vAlpha;
-  vec3 srgb(vec3 c) { c = max(c, vec3(0.0)); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }
+  ${SRGB}
   void main() {
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mv;
@@ -132,6 +135,22 @@ const reflFrag = /* glsl */ `
     float g = r < 0.5 ? mix(1.0, 0.35, r / 0.5) : mix(0.35, 0.0, (r - 0.5) / 0.5);
     gl_FragColor = vec4(vColor, vAlpha * g);
   }`;
+
+// poleVert / poleFrag — 계류장 기둥선(시안): 높이 26m 조명에서 바닥까지 가는 호박색 선. 시안처럼 그 조명의 알파를 따른다 —
+// 켜지는 순서(aOrd, 점 셰이더와 같은 식)와 공기 원근 1/(1+거리/52). 시안은 1 CSS px 선이라 기기 px 1줄인 WebGL 선은
+// DPR만큼(최대 2) 알파를 올려 같은 밝기로 보이게 한다(uGain, useFrame)
+const poleVert = /* glsl */ `
+  attribute float aOrd;
+  uniform float uFade; uniform float uGain; uniform float uLightT;
+  varying float vAlpha;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mv;
+    vAlpha = 0.16 * uGain * uFade * clamp((uLightT - aOrd * 1.2) / 0.18, 0.0, 1.0) / (1.0 + max(-mv.z, 0.0) / 52.0);
+  }`;
+const poleFrag = /* glsl */ `
+  varying float vAlpha;
+  void main() { gl_FragColor = vec4(1.0, 0.71, 0.278, vAlpha); }`;
 
 // 반사가 생기는 바닥 불빛(시안: 높이 1m 미만, 도시 제외 — 계류장·창문은 높이 떠 있어 빠진다)
 const WET: readonly AirKind[] = ['edge', 'center', 'thr', 'end', 'taxi'];
@@ -179,7 +198,7 @@ export function AirportExtras({ target, instant, portrait, takeoff }: Props) {
   // 빛 웅덩이: 계류장 조명·활주로 가장자리·유도로·시작·끝 줄 아래 바닥(사각형 하나 = 꼭짓점 4개·삼각형 2개)
   const pools = useMemo(() => {
     const ls = air.lights.filter((l) => POOL[l.kind]);
-    const n = ls.length, pos = new Float32Array(n * 12), col = new Float32Array(n * 12), corner = new Float32Array(n * 8), pool = new Float32Array(n * 8);
+    const n = ls.length, pos = new Float32Array(n * 12), col = new Float32Array(n * 12), corner = new Float32Array(n * 8), pool = new Float32Array(n * 12);
     const idx: number[] = [];
     const CORNERS = [-1, -1, 1, -1, 1, 1, -1, 1];
     ls.forEach((l, i) => {
@@ -188,7 +207,7 @@ export function AirportExtras({ target, instant, portrait, takeoff }: Props) {
         pos.set([l.pos[0], 0.002, l.pos[2]], (i * 4 + k) * 3);
         col.set([c.r, c.g, c.b], (i * 4 + k) * 3);
         corner.set([CORNERS[k * 2], CORNERS[k * 2 + 1]], (i * 4 + k) * 2);
-        pool.set([P.r, P.a], (i * 4 + k) * 2);
+        pool.set([P.r, P.a, l.ord], (i * 4 + k) * 3);
       }
       idx.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
     });
@@ -196,13 +215,13 @@ export function AirportExtras({ target, instant, portrait, takeoff }: Props) {
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     g.setAttribute('aCorner', new THREE.BufferAttribute(corner, 2));
-    g.setAttribute('aPool', new THREE.BufferAttribute(pool, 2));
+    g.setAttribute('aPool', new THREE.BufferAttribute(pool, 3));
     g.setIndex(idx);
     return g;
   }, [air]);
   const poolMat = useMemo(() => new THREE.ShaderMaterial({
     vertexShader: poolVert, fragmentShader: poolFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    uniforms: { uFade: { value: 1 }, uDpr: { value: 1 }, uView: { value: new THREE.Vector2(1440, 900) } },
+    uniforms: { uFade: { value: 1 }, uDpr: { value: 1 }, uView: { value: new THREE.Vector2(1440, 900) }, uLightT: { value: 0 } },
   }), []);
 
   // 젖은 노면 반사: 바닥 불빛마다 세로 빛줄기 하나(속성은 glowGeometry + aMeta(켜지는 순서, 활주로 거리))
@@ -226,15 +245,19 @@ export function AirportExtras({ target, instant, portrait, takeoff }: Props) {
     uniforms: { uFade: { value: 1 }, uDpr: { value: 1 }, uVh: { value: 900 }, uLightT: { value: 0 }, uWave: { value: -1e4 } },
   }), []);
 
-  // 계류장 기둥선(시안): 높이 26m 조명에서 바닥까지 가는 호박색 선. 시안은 1 CSS px 선이라 기기 px 1줄인
-  // WebGL 선은 DPR만큼 알파를 올려 같은 밝기로 보이게 한다(useFrame)
+  // 계류장 기둥선(시안): 조명마다 위(조명 바로 아래)~바닥 선 하나, 두 끝 모두 그 조명의 켜지는 순서(aOrd)
   const poles = useMemo(() => {
-    const v: number[] = [];
-    for (const l of air.lights) if (l.kind === 'apron') v.push(l.pos[0], l.pos[1] - 0.02, l.pos[2], l.pos[0], 0, l.pos[2]);
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+    const v: number[] = [], ord: number[] = [];
+    for (const l of air.lights) if (l.kind === 'apron') { v.push(l.pos[0], l.pos[1] - 0.02, l.pos[2], l.pos[0], 0, l.pos[2]); ord.push(l.ord, l.ord); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+    g.setAttribute('aOrd', new THREE.Float32BufferAttribute(ord, 1));
     return g;
   }, [air]);
-  const poleMat = useMemo(() => new THREE.LineBasicMaterial({ color: '#FFB547', transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending }), []);
+  const poleMat = useMemo(() => new THREE.ShaderMaterial({
+    vertexShader: poleVert, fragmentShader: poleFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { uFade: { value: 1 }, uGain: { value: 1 }, uLightT: { value: 0 } },
+  }), []);
 
   // 바닥: 활주로·평행 유도로 판(풀밭보다 아주 조금 밝게) + 활주로 표시(끝 줄무늬·착지 막대·중앙 점선)
   const ground = useMemo(() => {
@@ -308,14 +331,17 @@ export function AirportExtras({ target, instant, portrait, takeoff }: Props) {
     if (root.current) root.current.visible = f > 0.002;
     const vh = state.size.height * dpr; // 기기 px 화면 높이(웅덩이·반사 크기 계산)
     for (const m of glowMats) { m.uniforms.uFade.value = f; m.uniforms.uDpr.value = dpr; m.uniforms.uTime.value = t; }
-    poolMat.uniforms.uFade.value = f; poolMat.uniforms.uDpr.value = dpr;
+    // 켜짐 시각은 점 셰이더(TerrainPoints uLightT)와 같게 — 웅덩이·반사·기둥선이 제 불빛과 함께 켜진다
+    const lightT = instant ? 99 : state.clock.elapsedTime;
+    poolMat.uniforms.uFade.value = f; poolMat.uniforms.uDpr.value = dpr; poolMat.uniforms.uLightT.value = lightT;
     (poolMat.uniforms.uView.value as THREE.Vector2).set(state.size.width * dpr, vh);
-    // 반사는 불빛과 같은 켜짐 시각·신호 물결(TerrainPoints의 uLightT·uWave와 같은 식)
+    // 반사는 불빛과 같은 신호 물결(TerrainPoints의 uWave와 같은 식)
     const ru = reflMat.uniforms, wt = state.clock.elapsedTime - 3;
     ru.uFade.value = f; ru.uDpr.value = dpr; ru.uVh.value = vh;
-    ru.uLightT.value = instant ? 99 : state.clock.elapsedTime;
+    ru.uLightT.value = lightT;
     ru.uWave.value = instant || wt < 0 ? -1e4 : (wt * 700) % 5800;
-    poleMat.opacity = 0.16 * Math.min(dpr, 2) * f;
+    const pu = poleMat.uniforms;
+    pu.uFade.value = f; pu.uGain.value = Math.min(dpr, 2); pu.uLightT.value = lightT;
     surfaceMat.opacity = 0.9 * f; markMat.uniforms.uFade.value = f; flareMat.opacity = f;
     const P = movers.attributes.position.array as Float32Array, Cc = movers.attributes.color.array as Float32Array;
     const S = movers.attributes.size.array as Float32Array, A = movers.attributes.alpha.array as Float32Array;

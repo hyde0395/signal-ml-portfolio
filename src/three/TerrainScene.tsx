@@ -51,6 +51,9 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   }, [data, isPortrait]);
 
   // 공항 불빛 배정: 세로 화면(대개 휴대폰)은 불빛 절반(설계 §4.5)
+  // 비행기 출발 자리: 세로 화면은 활주로 시작점이 화면 왼쪽 밖이라 앞으로 당겨 세운다(plane.ts PLANE.portraitStart)
+  const planeStart = isPortrait ? PLANE.portraitStart : 0;
+
   const airport = useMemo(() => {
     if (!cloud) return null;
     // 이륙 비행기 점(설계 2026-09-29 §7)도 함께 — 휴대폰도 같은 232개(비행기 모양이 성기면 실루엣이 안 읽힌다)
@@ -139,9 +142,10 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         // 고개로 비행기를 살짝 따라간다(시안: 방향 차이의 35%, 높이 차이의 30%) — 멀어지는 비행기가 화면 구석으로
         // 빨리 밀려나지 않고, 흩어지는 모습이 화면 안에서 보이게. 불빛이 지형으로 넘어가며 풀려(planeFollow)
         // ① 카메라 C는 그대로 도착한다. 목표점만 돌리므로 카메라 위치·감쇠 규칙은 그대로다
+        // 세로 화면은 출발 자리를 앞으로 당긴다(PLANE.portraitStart) — 점(TerrainPoints planeStart)과 같은 값이어야 고개가 비행기를 향한다
         const f = planeFollow(plane);
-        const target = f > 0 ? lookToward(s.camera, s.target, planePose(plane).pos, PLANE.followYaw * f, PLANE.followPitch * f) : s.target;
-        s = { ...s, target, plane };
+        const look = f > 0 ? lookToward(s.camera, s.target, planePose(plane, planeStart).pos, PLANE.followYaw * f, PLANE.followPitch * f) : s.target;
+        s = { ...s, target: look, plane };
       }
       // data-scene이 아니라 data-active-scene으로 적는다 — data-scene은 챕터 블록이 자기 장면 이름을 적는
       // 속성이라(activeScene.ts의 readCandidates가 [data-scene]을 찾는다), 같은 이름을 html에도 쓰면
@@ -205,7 +209,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       delete document.documentElement.dataset.handoff;
       document.documentElement.style.removeProperty('--sky');
     };
-  }, [capture, cloud]);
+  }, [capture, cloud, planeStart]);
 
   if (!cloud) return null;
 
@@ -225,7 +229,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         }}
       >
         <AirportExtras target={target} instant={!!capture} portrait={isPortrait} takeoff={!!airport && airport.plane > 0} />
-        <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} airport={airport} />
+        <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} airport={airport} planeStart={planeStart} />
         <CameraRig target={target} instant={!!capture} parallax={parallax} />
         <FrameWatch
           enabled={!capture}

@@ -1,7 +1,7 @@
 // 이륙하는 점 비행기(설계 2026-09-29 §7, 시안 A `docs/superpowers/mockups/2026-09-29-takeoff/takeoff.html`):
 // 비행기 모양(점 232개), 스크롤 → 진행도 p, 이륙 경로 자세, 흩어짐 진행, 카메라 따라가기를 순수 함수로 둔다.
 // React·three에 의존하지 않는다 — TerrainPoints가 매 프레임 planePose로 uPlane 행렬을, TerrainScene이 카메라 목표점을 만든다.
-import { K, RUNWAY, runwayPoint } from './airport';
+import { K, RUNWAY } from './airport';
 
 // 진행도 p는 시안의 "스크롤 비율" 눈금을 그대로 쓴다(시안 단계 값을 옮겨 적지 않고 같은 숫자로 비교하려고).
 // 사이트 스크롤과의 대응(takeoffProgress): 첫 화면 내려앉기 0 → y0(0.9·화면 높이) = 시안 0 → 0.30(내려앉기),
@@ -11,6 +11,14 @@ export const PLANE = {
   landEnd: 0.3, handoffEnd: 0.96,
   take0: 0.02, take1: 0.36, disp0: 0.26, disp1: 0.54, m0: 0.36, m1: 0.72,
   followYaw: 0.35, followPitch: 0.3,
+  // 점 하나가 비행기 자리에서 자기 지형 칸까지 가는 데 쓰는 흩어짐 진행 몫(셰이더 mi). 지연(delay 최대 0.52)과 더해 1을
+  // 넘으면 흩어짐이 끝나도(uPlaneGo 1) 덜 도착한 점이 남는다 — 단위 테스트가 max(delay) + dotMove ≤ 1을 지킨다
+  dotMove: 0.45,
+  // 세로 화면 출발 자리(활주로 시작점에서 m). 시작점(0)은 390×844에서 비행기가 화면 왼쪽 밖으로 잘리고 SIGNAL 제목이
+  // 위를 지나갔다. 실제 GPU 겹침 훑기(스크롤 1%): 0m 제목·키워드 8회, 600·750m 제목이 비행기 왼쪽 끝을 스침, 900m 제목 0회·
+  // 온전히 화면 안. 키워드 줄(화면 폭의 약 3/4)은 어느 자리에서도 잠깐(3회) 지나간다 — 비행기가 멀어질수록 소실점 쪽으로 모일 뿐 키워드 끝보다
+  // 오른쪽으로 가지 않아(1,300m에서도 화면 55%) 출발 자리로는 피할 수 없다. 더 멀리 세우면 실루엣만 작아진다
+  portraitStart: 900,
 } as const;
 
 export type PlaneDot = { pos: [number, number, number]; tone: number; delay: number };
@@ -67,32 +75,47 @@ const turnOf = (s: number) => 0.32 * sstep(2600, 8000, s);  // 뜬 뒤 오른쪽
 const altOf = (s: number) => { const q = Math.max(0, s - SROLL); return (0.17 * q * q) / (q + 260); }; // 상승각 약 9.6°
 
 export type PlanePose = {
-  s: number;                          // 활주로 방향으로 간 거리(m)
+  s: number;                          // 활주로 방향으로 간 거리(m, 출발 자리 start 제외)
   pos: [number, number, number];      // 사이트 월드 좌표
   matrix: number[];                   // 4×4 열 우선(three Matrix4.fromArray) — 로컬(앞·오른쪽·위) → 월드
 };
 
-export function planePose(p: number): PlanePose {
+// runwayPoint를 풀어 쓴 값: 매 프레임 부르는 planePose가 배열을 새로 만들지 않게(airport.ts RD·RN과 같은 식)
+const RSIN = Math.sin(RUNWAY.angle), RCOS = Math.cos(RUNWAY.angle);
+
+// start: 출발 자리(활주로 시작점에서 m). 세로 화면은 시작점이 화면 왼쪽 밖이라(PLANE.portraitStart) 앞으로 당겨 세운다 —
+// 활주로를 따라 옮기기만 하고 비행 모양(s에 대한 이륙·선회·상승)은 그대로다.
+// out: 결과를 쓸 자리. 매 프레임 부르는 곳(TerrainPoints)은 하나를 재사용해 프레임마다 객체·배열을 만들지 않는다
+export function planePose(p: number, start = 0, out?: PlanePose): PlanePose {
+  const r = out ?? { s: 0, pos: [0, 0, 0], matrix: new Array<number>(16).fill(0) };
   const kk = Math.max(0, (p - PLANE.take0) / (PLANE.take1 - PLANE.take0));
   const s = kk <= LIFT ? SROLL * (kk / LIFT) ** 2 : SROLL + V0 * (kk - LIFT) + 3800 * (kk - LIFT) ** 2;
   // 선회로 생긴 옆 거리(200m 칸 작은 적분 — 시안과 같은 근사)
   let o = 0;
   for (let q = 2600, n = 0; q < s && n < 80; q += 200, n++) o += Math.sin(turnOf(q + 100)) * Math.min(200, s - q);
-  const h = RUNWAY.angle + turnOf(s), xz = runwayPoint(s, o), y = altOf(s);
+  const h = RUNWAY.angle + turnOf(s), y = altOf(s), sr = start + s;
+  const x = RUNWAY.start[0] + RSIN * sr + RCOS * o, z = RUNWAY.start[1] + RCOS * sr - RSIN * o;
   const th = kk <= LIFT ? 0.15 * sstep(LIFT - 0.09, LIFT, kk) : lerp(0.15, 0.12, sstep(LIFT, 1, kk)); // 바퀴가 뜨기 직전 기수를 든다
   const ph = 0.3 * (sstep(2800, 4800, s) - sstep(6500, 9500, s));                                      // 선회하는 동안만 살짝 기운다
-  const F0 = [Math.sin(h), 0, Math.cos(h)], R0 = [Math.cos(h), 0, -Math.sin(h)];
-  const F = [F0[0] * Math.cos(th), Math.sin(th), F0[2] * Math.cos(th)];
-  const U = [-F0[0] * Math.sin(th), Math.cos(th), -F0[2] * Math.sin(th)];
-  const R = R0.map((v, i) => v * Math.cos(ph) - U[i] * Math.sin(ph));
-  const U2 = U.map((v, i) => v * Math.cos(ph) + R0[i] * Math.sin(ph));
+  // 앞 F = (F0·cos th, sin th), 위 U = (−F0·sin th, cos th), 옆으로 기울기(ph): R = R0·cos − U·sin, U2 = U·cos + R0·sin
+  // (F0 = (sin h, 0, cos h), R0 = (cos h, 0, −sin h))
+  const sh = Math.sin(h), ch = Math.cos(h), st = Math.sin(th), ct = Math.cos(th), sp = Math.sin(ph), cp = Math.cos(ph);
+  const Fx = sh * ct, Fy = st, Fz = ch * ct;
+  const Ux = -sh * st, Uy = ct, Uz = -ch * st;
+  const Rx = ch * cp - Ux * sp, Ry = -Uy * sp, Rz = -sh * cp - Uz * sp;
+  const Vx = Ux * cp + ch * sp, Vy = Uy * cp, Vz = Uz * cp - sh * sp;
   // 시안 좌표(+z 앞) → 사이트(−z 앞): z 성분만 뒤집는다(airport.ts toWorld와 같은 규칙). 로컬 좌표는 이미 × K
-  const pos: [number, number, number] = [xz[0] * K, y * K, -xz[1] * K];
-  const col = (v: number[]) => [v[0], v[1], -v[2], 0];
-  return { s, pos, matrix: [...col(F), ...col(R), ...col(U2), pos[0], pos[1], pos[2], 1] };
+  r.s = s;
+  r.pos[0] = x * K; r.pos[1] = y * K; r.pos[2] = -z * K;
+  const m = r.matrix;
+  m[0] = Fx; m[1] = Fy; m[2] = -Fz; m[3] = 0;
+  m[4] = Rx; m[5] = Ry; m[6] = -Rz; m[7] = 0;
+  m[8] = Vx; m[9] = Vy; m[10] = -Vz; m[11] = 0;
+  m[12] = r.pos[0]; m[13] = r.pos[1]; m[14] = r.pos[2]; m[15] = 1;
+  return r;
 }
 
-// 흩어짐 진행(셰이더 uPlaneGo): 점마다 delay만큼 늦게 0.45 동안 지형 자리로 간다(셰이더)
+// 흩어짐 진행(셰이더 uPlaneGo): 점마다 delay만큼 늦게 PLANE.dotMove 동안 지형 자리로 간다(셰이더)
 export function planeScatter(p: number): number {
   return clamp01((p - PLANE.disp0) / (PLANE.disp1 - PLANE.disp0));
 }

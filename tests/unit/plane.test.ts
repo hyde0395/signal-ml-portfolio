@@ -109,6 +109,23 @@ describe('planePose', () => {
     const f = apply(P.matrix, [1, 0, 0]).map((v, i) => v - P.pos[i]);
     expect(Math.hypot(f[0], f[1], f[2])).toBeCloseTo(1);
   });
+  it('출발 자리 start: 활주로를 따라 그만큼 옮기기만 한다(s·고도·방향 행렬은 그대로)', () => {
+    for (const p of [0, 0.1, 0.25, 0.5, 0.9]) {
+      const a = planePose(p), b = planePose(p, PLANE.portraitStart);
+      expect(b.s).toBe(a.s);
+      expect(b.pos[1]).toBeCloseTo(a.pos[1]);
+      for (let i = 0; i < 12; i++) expect(b.matrix[i]).toBeCloseTo(a.matrix[i]);
+      const d = runwayPoint(PLANE.portraitStart, 0), o = runwayPoint(0, 0);
+      expect(b.pos[0] - a.pos[0]).toBeCloseTo((d[0] - o[0]) * K);
+      expect(b.pos[2] - a.pos[2]).toBeCloseTo(-(d[1] - o[1]) * K);
+    }
+  });
+  it('out 자리에 써서 돌려준다(매 프레임 새 객체를 만들지 않게) — 값은 새로 만든 것과 같다', () => {
+    const out = planePose(0);
+    const r = planePose(0.47, 600, out);
+    expect(r).toBe(out);
+    expect(r).toEqual(planePose(0.47, 600));
+  });
   it('이륙 뒤 오른쪽으로 돈다(사이트 x가 활주로 직선보다 오른쪽)', () => {
     const P = planePose(0.6);
     const straight = runwayPoint(P.s, 0);
@@ -120,6 +137,10 @@ describe('planePose', () => {
 });
 
 describe('planeScatter · planeFollow', () => {
+  it('도착 보장: 가장 늦은 점(지연 최대)도 흩어짐이 끝날 때(uPlaneGo 1) 제자리에 닿는다 — max(delay) + dotMove ≤ 1', () => {
+    const maxDelay = Math.max(...planeShape().map((d) => d.delay));
+    expect(maxDelay + PLANE.dotMove).toBeLessThanOrEqual(1);
+  });
   it('흩어짐: 0.26 전 0, 0.54 뒤 1, 사이 단조', () => {
     expect(planeScatter(0.2)).toBe(0);
     expect(planeScatter(0.4)).toBeCloseTo(0.5);

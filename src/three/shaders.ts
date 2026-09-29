@@ -3,6 +3,7 @@
 // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
 import { PUSH, RIPPLE } from './pointerField';
 import { AIR_SIZE } from './airport';
+import { PLANE } from './plane';
 import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './pointStyle';
 
 // 아래 두 GLSL 문자열 안에는 // 주석을 두지 않는다 — 문자열이라 빌드 때 안 지워지고 그대로 gzip에 실려
@@ -56,7 +57,7 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 // - isAir / p = mix(p, aAirport.xyz, ...): 공항은 불빛으로 배정된 점만 공항 자리로. uAirport가 1→0으로 줄면
 //   자기 지형 자리로 옮겨 간다
 // - isPlane / mi / bow / pq: 이륙 비행기 점(시안 A). 비행기 위 자리 = uPlane × 로컬 좌표, 점마다 지연(aAirStyle.w)만큼
-//   늦게 0.45 동안(quart.out) 자기 지형·물결 자리(위에서 계산한 p)로 간다. 가는 동안 아래·앞으로 부푼 곡선
+//   늦게 PLANE.dotMove(0.45) 동안(quart.out) 자기 지형·물결 자리(위에서 계산한 p)로 간다. 가는 동안 아래·앞으로 부푼 곡선
 //   (시안 bow: 아래 54m·앞 36m) — 빛이 흘러내리는 느낌. planeOn = 아직 비행기에 붙은 정도(1 − mi)로 vAir처럼 쓴다.
 //   uAirport와 상관없이 uPlaneGo만 따른다(첫 화면 밖에서는 늘 1이라 보통 점과 같다)
 // - 포인터 밀기·물결(설계 2026-09-25 §4.1, 계획 5-3a, gl_Position 바로 뒤): 장면 평면에 투영하지 않고 화면 공간(NDC)에서 민다.
@@ -173,7 +174,7 @@ export const vertexShader = /* glsl */ `
     float isPlane = step(1.5, aAirStyle.x);
     float isAir = aAirStyle.x * (1.0 - isPlane);
     p = mix(p, aAirport.xyz, uAirport * isAir);
-    float mi = 1.0 - pow(1.0 - clamp((uPlaneGo - aAirStyle.w) / 0.45, 0.0, 1.0), 4.0);
+    float mi = 1.0 - pow(1.0 - clamp((uPlaneGo - aAirStyle.w) / ${f(PLANE.dotMove)}, 0.0, 1.0), 4.0);
     float bow = sin(mi * 3.14159);
     vec3 pq = mix((uPlane * vec4(aAirport.xyz, 1.0)).xyz, p, mi) - vec3(0.0, 0.54, 0.36) * bow;
     p = mix(p, pq, isPlane);

@@ -23,8 +23,18 @@ export function assignAirport(lights: AirLight[], kind: Float32Array, plane: rea
   // 신호 점은 불빛보다 많아(2,070 대 약 1,300, 휴대폰은 불빛 절반) 불빛 자리를 뺏지 않는다
   const taken = new Set<number>();
   const np = Math.min(plane.length, signal.length);
+  const picked: number[] = [];
+  for (let k = 0; k < np; k++) picked.push(signal[Math.floor(((k + 0.5) * signal.length) / np)]);
+  // 뽑은 칸을 시드 난수로 섞은 뒤 비행기 점과 짝짓는다. 신호 점은 남은 일수 순으로 늘어서 있고 비행기 점은 동체 → 날개
+  // → 꼬리 순이라, 그대로 짝지으면 동체가 물결 한쪽 절반에만 내려앉았다(시안 의도: 무작위 칸). 시드 고정 = 대체 이미지 불변
+  let seed = 13;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  for (let k = np - 1; k > 0; k--) {
+    const j = Math.floor(rnd() * (k + 1));
+    [picked[k], picked[j]] = [picked[j], picked[k]];
+  }
   for (let k = 0; k < np; k++) {
-    const i = signal[Math.floor(((k + 0.5) * signal.length) / np)], d = plane[k];
+    const i = picked[k], d = plane[k];
     out.pos.set(d.pos, i * 3);
     out.style.set([2, d.tone, 0, d.delay], i * 4);
     taken.add(i);

@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AirLight } from '@/three/airport';
 import { assignAirport } from '@/three/airportAssign';
+import { planeShape } from '@/three/plane';
 
 const light = (i: number, runS = -1): AirLight => ({ pos: [i, i, i], tone: 3, size: 1, ord: 0.5, runS, kind: 'edge' });
 
@@ -36,13 +37,26 @@ describe('assignAirport', () => {
     const r = assignAirport([light(0), light(1), light(2)], k, [dot(0), dot(1)]);
     expect(r.plane).toBe(2);
     const planeIdx = [...Array(10).keys()].filter((i) => r.style[i * 4] === 2);
-    expect(planeIdx).toEqual([2, 6]); // 8개를 둘로 나눈 칸의 가운데
-    expect(Array.from(r.pos.slice(6 * 3, 6 * 3 + 3))).toEqual([1, -1, 2]);
-    expect(r.style[6 * 4 + 1]).toBe(3);
-    expect(r.style[6 * 4 + 3]).toBeCloseTo(0.1);
-    expect(r.runS[6]).toBe(-1);
+    expect(planeIdx).toEqual([2, 6]); // 8개를 둘로 나눈 칸의 가운데(어느 점이 어느 칸에 갈지는 섞는다)
+    const at1 = planeIdx.find((i) => r.pos[i * 3] === 1)!;
+    expect(Array.from(r.pos.slice(at1 * 3, at1 * 3 + 3))).toEqual([1, -1, 2]);
+    expect(r.style[at1 * 4 + 1]).toBe(3);
+    expect(r.style[at1 * 4 + 3]).toBeCloseTo(0.1);
+    expect(r.runS[at1]).toBe(-1);
     const lit = [...Array(10).keys()].filter((i) => r.style[i * 4] === 1);
     expect(lit).toEqual([0, 1, 3]); // 불빛은 비행기 점을 건너뛰고 신호 점부터
+  });
+  it('비행기 점은 칸을 섞어 짝짓는다: 동체 앞쪽 점이 신호 점 순서의 한쪽 절반에 몰리지 않는다(시드 고정)', () => {
+    const shape = planeShape();
+    const k = new Float32Array(2070); // 신호 점 2,070개(실제 데이터와 같은 수)
+    const r = assignAirport([], k, shape);
+    const a = assignAirport([], k, shape);
+    expect(Array.from(r.style)).toEqual(Array.from(a.style));
+    const front = [...Array(k.length).keys()].filter((i) => r.style[i * 4] === 2 && r.pos[i * 3] > 0);
+    const early = front.filter((i) => i < k.length / 2).length / front.length;
+    expect(front.length).toBeGreaterThan(40);
+    expect(early).toBeGreaterThan(0.3);
+    expect(early).toBeLessThan(0.7);
   });
   it('비행기 점이 없으면 예전과 같다', () => {
     const a = assignAirport([light(0), light(1)], kind), b = assignAirport([light(0), light(1)], kind, []);
