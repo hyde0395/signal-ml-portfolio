@@ -29,7 +29,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   const target = useRef<SceneState>(sceneFor(capture ?? 'hero', 0, false));
   const parallax = useRef(true);
   const slots = useRef<ChartSlots>({ pending: null, focus: -1, focusTone: 2, focusDim: 0.25 });
-  // 지금 슬롯에 써 넣은 차트와 그 슬롯. 차트에서 차트로 넘어갈 때만 다른 슬롯에 써서 점이 두 배치 사이를 옮겨 간다
+  // 지금 슬롯에 써 넣은 차트와 그 슬롯. 다른 차트로 가면(지형을 거쳐도) 반대 슬롯에 써서 점이 두 배치 사이를 옮겨 간다
   const shiftKey = useRef<ChartKey | null>(null); // 점 이동량(shift)을 잴 판의 차트 — 차트를 벗어나도 마지막 것을 유지
   const chartState = useRef<{ key: ChartKey | null; entry: ChartEntry | null; slot: 0 | 1 }>({ key: null, entry: null, slot: 0 });
   // 마지막으로 슬롯에 써 넣은 차트 — chartState.key와 달리 지형으로 나가도 지우지 않는다(chartTargets.ts pickSlot)
