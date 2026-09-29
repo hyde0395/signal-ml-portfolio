@@ -89,7 +89,9 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
     const line = pairs(r.pts);
     for (let k = 0; k < MAP_LINE.routePts; k++) {
       const f = k / (MAP_LINE.routePts - 1);
-      const [lon, lat] = line[Math.min(line.length - 1, Math.round(f * (line.length - 1)))];
+      // 원본 샘플(노선마다 약 150개) 사이를 보간한다 — 반올림한 인덱스를 쓰면 170점 중 약 20점이 같은 자리에 겹쳐 밝게 뭉쳤다(검토 2026-09-29)
+      const fi = f * (line.length - 1), j = Math.min(line.length - 2, Math.floor(fi)), w = fi - j;
+      const lon = line[j][0] + (line[j + 1][0] - line[j][0]) * w, lat = line[j][1] + (line[j + 1][1] - line[j][1]) * w;
       const [x, zz] = mapPosition(lon, lat);
       routePts.push([x, round(Math.sin(f * Math.PI) * ROUTE_ARC_HEIGHT), zz]);
     }
