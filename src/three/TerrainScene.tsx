@@ -12,7 +12,7 @@ import { assignAirport } from './airportAssign';
 import { CameraRig } from './CameraRig';
 import { assignPoints, chartShiftY, pickSlot, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
-import { initialFrameRate, stepFrameRate } from './frameRate';
+import { initialFrameRate, maxDpr, stepFrameRate } from './frameRate';
 import { blendScenes, CHART_DISTANCE, CHART_FOV, handoffProgress, sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
@@ -192,15 +192,16 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   }, [capture, cloud]);
 
   if (!cloud) return null;
-  const maxDpr = level > 0 ? 1 : 1.5;
 
   return (
     <div className="backdrop" aria-hidden="true">
       <Canvas
-        dpr={[1, maxDpr]}
+        // 데스크톱 2 · 세로 화면 1.5 · 낮춤 단계 1(frameRate.ts maxDpr). 세로 판정은 점 구름과 같은 값(isPortrait)
+        dpr={[1, maxDpr(level, isPortrait)]}
         frameloop={running || capture ? 'always' : 'never'}
-        // 차트 좌표 대응(three/scenes.ts CHART_DISTANCE)이 이 fov 값에 묶여 있다
-        camera={{ fov: CHART_FOV, near: 0.1, far: 200, position: target.current.camera }}
+        // 처음 화각은 첫 장면 값(첫 화면 45°), 그 뒤는 CameraRig가 장면 값으로 옮긴다. 차트 장면은 CHART_FOV(40°)라
+        // 차트 좌표 대응(three/scenes.ts CHART_DISTANCE·CHART_FOV)이 그대로 맞는다
+        camera={{ fov: target.current.fov, near: 0.1, far: 200, position: target.current.camera }}
         gl={{ antialias: false, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: !!capture }}
         onCreated={(state) => {
           // 모바일에서는 GL 컨텍스트가 갑자기 끊길 수 있다 — 화면이 멈추는 대신 대체 이미지로 넘어간다
@@ -221,6 +222,8 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
           onSlow={() => (level === 0 ? setLevel(1) : onFail('fps'))}
         />
       </Canvas>
+      {/* 첫 화면 전용 비네트(시안식, globals.css .backdrop-veil). ::after(다른 장면 비네트)와 불투명도로 엇갈려 바뀐다 */}
+      <div className="backdrop-veil" />
     </div>
   );
 }

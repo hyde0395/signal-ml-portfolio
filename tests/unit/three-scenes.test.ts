@@ -1,7 +1,7 @@
 // 장면 표 검사: 모든 키 존재, problem·dataBoard만 지도, bubble만 제거 레이어·떨어짐,
 // 차트 장면은 정면 고정 카메라이고 세로 화면에서도 카메라가 그대로다.
 import { describe, expect, it } from 'vitest';
-import { blendScenes, CHART_DISTANCE, followActive, handoffProgress, isChartScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
+import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, handoffProgress, HERO_FOV, horizonFrac, isChartScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 
 const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'features', 'chartDepart', 'chartCurve', 'bubble',
   'validation', 'chartCloud', 'limits', 'demo', 'contact'];
@@ -192,5 +192,32 @@ describe('followActive', () => {
     expect(followActive({ followUntil: 1000 }, 1000)).toBe(false);
     expect(followActive({}, 0)).toBe(false);
     expect(followActive(null, 0)).toBe(false);
+  });
+});
+
+// 설계 2026-09-29 §8: 첫 화면만 화각 45°(시안 카메라 fov 1.2·H ≈ 45.2°). 차트 장면은 판 px ↔ 월드 대응이
+// CHART_FOV에 묶여 있어 그대로 40°, 나머지 장면도 지금 구도를 지키려고 40°
+describe('화각(fov)', () => {
+  it('hero만 HERO_FOV(45°), 나머지는 CHART_FOV', () => {
+    expect(HERO_FOV).toBe(45);
+    for (const k of KEYS) expect(SCENES[k].fov, k).toBe(k === 'hero' ? HERO_FOV : CHART_FOV);
+    expect(sceneFor('hero', 0.5, true).fov).toBe(HERO_FOV);
+    expect(sceneFor('chartCurve', 0, true).fov).toBe(CHART_FOV);
+  });
+  it('전환 중에는 화각도 섞인다', () => {
+    expect(blendScenes(SCENES.hero, SCENES.about, 0.5).fov).toBeCloseTo((HERO_FOV + CHART_FOV) / 2, 9);
+  });
+});
+
+describe('horizonFrac', () => {
+  it('수평으로 보면 화면 가운데, 내려다보면 위로 올라간다', () => {
+    expect(horizonFrac([0, 1, 0], [0, 1, -10], 45)).toBeCloseTo(0.5, 9);
+    expect(horizonFrac([0, 1, 0], [0, 0, -10], 45)).toBeLessThan(0.5);
+    expect(horizonFrac([0, 1, 0], [0, 2, -10], 45)).toBeGreaterThan(0.5);
+  });
+  // 시안: A는 pitch 0.085·가운데 0.5 → 지평선 39.8%, B는 pitch −0.03·가운데 0.33 → 36.6%(fov 1.2·H)
+  it('공항 카메라 A·B의 지평선이 시안과 같은 높이(45°에서 39.8% / 36.6%)', () => {
+    expect(horizonFrac(AIRPORT_CAM.a.camera, AIRPORT_CAM.a.target, HERO_FOV)).toBeCloseTo(0.398, 3);
+    expect(horizonFrac(AIRPORT_CAM.b.camera, AIRPORT_CAM.b.target, HERO_FOV)).toBeCloseTo(0.366, 3);
   });
 });

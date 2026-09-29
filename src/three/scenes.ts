@@ -19,6 +19,7 @@ export type SceneState = {
   sway: number;     // 첫 화면 마우스 시차 크기(월드 단위)
   rows: number;     // 1 = 지형 점이 ① 물결 줄 배치(data.ts buildWave)로 모인다
   soft: number;     // 1 = 지형 점을 은은하게(크기·알파 배율 pointStyle SOFT_POINT) — ① 글 뒤 대비를 지킨다
+  fov: number;      // 세로 화각(도). CameraRig가 이 값으로 옮겨 간다 — 첫 화면만 HERO_FOV, 나머지는 CHART_FOV
   follow?: boolean; // 전환 구간 안 — 점·카메라가 스크롤을 바짝 따라가게 감쇠를 빠르게
   // 전환이 마지막으로 움직인 시각 + 600ms(performance.now 기준). 휠 한 번에 y1(또는 y0)을 넘어가면 follow가
   // 바로 꺼져 남은 거리를 느린 감쇠로 한참 흘러가므로, 이 시각까지는 빠른 감쇠를 유지한다(followActive)
@@ -29,15 +30,21 @@ export type SceneState = {
 // (three/chartTargets.ts) TerrainScene의 Canvas 카메라 fov도 CHART_FOV를 쓴다
 export const CHART_DISTANCE = 24;
 export const CHART_FOV = 40;
+// 첫 화면 공항만 화각 45°(설계 2026-09-29 §8): 시안 카메라(초점 거리 1.2·H → 세로 화각 약 45.2°)와 같은 원근이라야
+// 활주로 불빛 간격·소실점이 시안과 겹친다. 차트 장면은 판 px ↔ 월드 대응이 CHART_FOV에 묶여 있어 건드리지 않고,
+// ①~④의 다른 장면도 지금 구도(카메라 C 등 40°에서 고른 값)를 지키려고 40° 그대로 둔다
+export const HERO_FOV = 45;
 const CHART = { camera: [0, 0, CHART_DISTANCE] as SceneState['camera'], target: [0, 0, 0] as SceneState['target'], chart: 1, noise: 0 };
 
-const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0, rows: 0, soft: 0 };
+const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0, rows: 0, soft: 0, fov: CHART_FOV };
 
 // 밤의 공항(설계 2026-09-28 §4.2): A = 터미널 창가(눈높이 약 42m), B = 땅 가까이(약 12m). 같은 방향을 본다.
-// 값은 시안(mockups/2026-09-28/01-night-airport.html)의 카메라를 사이트 좌표(airport.ts K·z 뒤집기)와 fov 40°로 옮긴 것
+// 값은 시안(mockups/2026-09-28/01-night-airport.html)의 카메라를 사이트 좌표(airport.ts K·z 뒤집기)와 fov 45°(HERO_FOV)로
+// 옮긴 것. 방향(yaw 0.2)은 그대로, 목표점 y만 지평선이 시안과 같은 높이(A 39.8%, B 36.6% — B는 시안이 화면 중심을
+// 0.33으로 올려 둔 것을 기울기로 옮겼다)에 오게 정했다(horizonFrac 단위 테스트). 40° 시절엔 y가 −0.321 / −0.85였다
 export const AIRPORT_CAM = {
-  a: { camera: [-1.2, 0.42, 1.6] as SceneState['camera'], target: [0.781, -0.321, -8.174] as SceneState['target'] },
-  b: { camera: [-1.2, 0.12, 1.6] as SceneState['camera'], target: [0.777, -0.85, -8.154] as SceneState['target'] },
+  a: { camera: [-1.2, 0.42, 1.6] as SceneState['camera'], target: [0.781, -0.4247, -8.174] as SceneState['target'] },
+  b: { camera: [-1.2, 0.12, 1.6] as SceneState['camera'], target: [0.777, -0.9847, -8.154] as SceneState['target'] },
 };
 
 // 세로 화면 전용(Task 9 스크린샷으로 맞춘 값): 가로 시야가 좁아 활주로 소실점이 화면 오른쪽 밖으로 나간다.
@@ -46,7 +53,7 @@ const PORTRAIT_HERO_TARGET_DX = 3.2;
 
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 밤의 공항. 진행도(내려앉기)는 sceneFor가 A→B로 보간(설계 2026-09-28 §4.2)
-  hero: { ...base, camera: AIRPORT_CAM.a.camera, target: AIRPORT_CAM.a.target, airport: 1, sway: 0.06, noise: 0 },
+  hero: { ...base, camera: AIRPORT_CAM.a.camera, target: AIRPORT_CAM.a.target, airport: 1, sway: 0.06, noise: 0, fov: HERO_FOV },
   // ①: 카메라 C(설계 2026-09-29 §4·§6) — 앞쪽 대각선 높은 곳에서 물결 줄 전체를 넓게 내려다본다. 잡음은 숨기고
   // 점을 은은하게(soft) 둬서, 먼 쪽 흐린 점이 왼쪽 글 뒤를 지나가도 대비를 지킨다(시안 실측 8.4/5.5:1)
   about: { ...base, camera: [13, 9, 15], target: [1, 0, 2], noise: 0, rows: 1, soft: 1 },
@@ -161,6 +168,14 @@ export function followActive(t: Pick<SceneState, 'follow' | 'followUntil'> | nul
 export function handoffProgress(scrollY: number, y0: number, y1: number): number {
   if (y1 <= y0) return 0;
   return smooth(clamp01((scrollY - y0) / (y1 - y0)));
+}
+
+// 기울지 않은(roll 0, lookAt) 카메라에서 먼 지평선이 화면 위에서 몇 할 높이에 오는지(0 = 맨 위, 1 = 맨 아래).
+// 하늘 그라데이션(globals.css .backdrop::before)의 지평선 줄을 3D 지평선에 맞출 때 쓴다(CameraRig가 --hz로 적는다)
+export function horizonFrac(camera: readonly number[], target: readonly number[], fovDeg: number): number {
+  const dx = target[0] - camera[0], dy = target[1] - camera[1], dz = target[2] - camera[2];
+  const down = -dy / Math.hypot(dx, dz); // 내려다보는 기울기의 tan
+  return 0.5 - down / (2 * Math.tan((fovDeg * Math.PI) / 360));
 }
 
 function isNum(v: unknown): v is number { return typeof v === 'number'; }

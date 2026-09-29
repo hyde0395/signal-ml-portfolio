@@ -7,6 +7,11 @@ export const K = 0.01;
 // 색 번호: 셰이더(shaders.ts airTone)와 같은 순서. 1 파랑(유도로), 2 호박(계류장), 3 흰색, 4 따뜻한 흰색
 export const AIR_TONE = { blue: 1, amber: 2, white: 3, warm: 4 } as const;
 
+// 종류별 크기 배율. 셰이더(shaders.ts)는 중앙등(알파 ×0.7)과 창문(가로 막대)을 이 값으로 가려낸다 — 종류를 담을
+// 정점 속성을 더하면 16개 한계를 넘는다(aAirStyle.z = 크기 배율). 그래서 center·win 값은 다른 종류와 겹치면 안 된다
+// (단위 테스트). 값은 시안의 sz 그대로
+export const AIR_SIZE = { edge: 1, center: 0.45, thr: 0.6, taxi: 0.6, connector: 0.55, apron: 2.2, win: 0.8, city: 1.3 } as const;
+
 export type AirKind = 'edge' | 'center' | 'thr' | 'end' | 'taxi' | 'apron' | 'win' | 'city';
 // pos: 사이트 월드 좌표, size: 크기 배율, ord: 켜지는 순서(0 앞 → 1 뒤), runS: 활주로 위 거리(m, 신호 물결용), 아니면 -1
 export type AirLight = { pos: [number, number, number]; tone: number; size: number; ord: number; runS: number; kind: AirKind };
@@ -56,34 +61,34 @@ export function buildAirport({ stride }: { stride: number }): Airport {
   const keep = (k: number) => k % stride === 0;
   for (let s = 0, i = 0; s <= RLEN; s += 60, i++) {
     if (!keep(i)) continue;
-    add(runwayPoint(s, -RH), 0.5, AIR_TONE.white, 'edge', 1, s / RLEN, s);
-    add(runwayPoint(s, RH), 0.5, AIR_TONE.white, 'edge', 1, s / RLEN, s);
+    add(runwayPoint(s, -RH), 0.5, AIR_TONE.white, 'edge', AIR_SIZE.edge, s / RLEN, s);
+    add(runwayPoint(s, RH), 0.5, AIR_TONE.white, 'edge', AIR_SIZE.edge, s / RLEN, s);
   }
   // 중앙등: 끝 900m는 따뜻한 흰색(실제 활주로와 같은 규칙)
   for (let s = 30, i = 0; s < RLEN; s += 18, i++) {
     if (!keep(i)) continue;
-    add(runwayPoint(s, 0), 0.2, s > RLEN - 900 ? AIR_TONE.warm : AIR_TONE.white, 'center', 0.45, s / RLEN, s);
+    add(runwayPoint(s, 0), 0.2, s > RLEN - 900 ? AIR_TONE.warm : AIR_TONE.white, 'center', AIR_SIZE.center, s / RLEN, s);
   }
   // 시작·끝 줄: 실제는 초록·빨강이지만 흰색·따뜻한 흰색으로(설계 §4.1 — 빨강은 경고등 하나뿐)
   for (let o = -RH, i = 0; o <= RH; o += 6, i++) {
     if (!keep(i)) continue;
-    add(runwayPoint(0, o), 0.5, AIR_TONE.white, 'thr', 0.6, 0);
-    add(runwayPoint(RLEN, o), 0.5, AIR_TONE.warm, 'end', 0.6, 1);
+    add(runwayPoint(0, o), 0.5, AIR_TONE.white, 'thr', AIR_SIZE.thr, 0);
+    add(runwayPoint(RLEN, o), 0.5, AIR_TONE.warm, 'end', AIR_SIZE.thr, 1);
   }
   for (let s = -200, i = 0; s <= RLEN; s += 34, i++) {
     if (!keep(i)) continue;
-    add(runwayPoint(s, TO - 11), 0.3, AIR_TONE.blue, 'taxi', 0.6, (s + 200) / RLEN);
-    add(runwayPoint(s, TO + 11), 0.3, AIR_TONE.blue, 'taxi', 0.6, (s + 200) / RLEN);
+    add(runwayPoint(s, TO - 11), 0.3, AIR_TONE.blue, 'taxi', AIR_SIZE.taxi, (s + 200) / RLEN);
+    add(runwayPoint(s, TO + 11), 0.3, AIR_TONE.blue, 'taxi', AIR_SIZE.taxi, (s + 200) / RLEN);
   }
   for (const s0 of CONNECTORS) {
     for (let i = 0; i <= 9; i++) {
       if (!keep(i)) continue;
       const t = i / 9, o = TO + 11 + (-RH - 10 - (TO + 11)) * t, s = s0 + Math.sin((t * Math.PI) / 2) * 160;
-      add(runwayPoint(s, o - 8), 0.3, AIR_TONE.blue, 'taxi', 0.55, s / RLEN);
-      add(runwayPoint(s, o + 8), 0.3, AIR_TONE.blue, 'taxi', 0.55, s / RLEN);
+      add(runwayPoint(s, o - 8), 0.3, AIR_TONE.blue, 'taxi', AIR_SIZE.connector, s / RLEN);
+      add(runwayPoint(s, o + 8), 0.3, AIR_TONE.blue, 'taxi', AIR_SIZE.connector, s / RLEN);
     }
   }
-  for (const p of APRON) add(p, 26, AIR_TONE.amber, 'apron', 2.2, 0); // 4개뿐이라 솎지 않는다
+  for (const p of APRON) add(p, 26, AIR_TONE.amber, 'apron', AIR_SIZE.apron, 0); // 4개뿐이라 솎지 않는다
   // 건물: 형체 없이 창문 불빛만(설계 §4.1). 줄 = 높이/9, 칸 = 폭/14, 45%만 켠다.
   // stride는 건물 전체를 통틀어 켜진 창 중에서 솎는다(rnd() 순서는 stride와 무관하게 유지 — 같은 시드는 같은 창 자리)
   let winI = 0;
@@ -94,7 +99,7 @@ export function buildAirport({ stride }: { stride: number }): Airport {
       if (rnd() >= 0.45) continue;
       const u = (c + 0.5) / cols, tone = rnd() < 0.2 ? AIR_TONE.white : AIR_TONE.warm;
       if (!keep(winI++)) continue;
-      add([a[0] + (e[0] - a[0]) * u, a[1] + (e[1] - a[1]) * u], h * ((r + 0.5) / rows), tone, 'win', 0.8, 1.05);
+      add([a[0] + (e[0] - a[0]) * u, a[1] + (e[1] - a[1]) * u], h * ((r + 0.5) / rows), tone, 'win', AIR_SIZE.win, 1.05);
     }
   }
   // 먼 도시: 지평선의 작은 반짝임
@@ -102,7 +107,7 @@ export function buildAirport({ stride }: { stride: number }): Airport {
     const ang = -0.9 + rnd() * 1.9, r = 9000 + rnd() * 6000;
     const y = rnd() * 40, tone = rnd() < 0.7 ? AIR_TONE.warm : AIR_TONE.white;
     if (!keep(i)) continue;
-    add([Math.sin(ang) * r, Math.cos(ang) * r], y, tone, 'city', 1.3, 1.1);
+    add([Math.sin(ang) * r, Math.cos(ang) * r], y, tone, 'city', AIR_SIZE.city, 1.1);
   }
   const tw = runwayPoint(1500, -520);
   return {

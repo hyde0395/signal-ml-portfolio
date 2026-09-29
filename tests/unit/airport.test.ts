@@ -1,7 +1,7 @@
 // 공항 배치 검사: 종류별 개수, 색은 파랑·호박·흰색·따뜻한 흰색뿐(빨강·초록 없음), 켜지는 순서 0~1.1,
 // 활주로 등만 신호 물결 위치(runS)를 가진다, 좌표 변환(z 뒤집기·축척), 휴대폰은 절반.
 import { describe, expect, it } from 'vitest';
-import { AIR_TONE, buildAirport, K, runwayPoint, toWorld } from '@/three/airport';
+import { AIR_SIZE, AIR_TONE, buildAirport, K, runwayPoint, toWorld } from '@/three/airport';
 
 describe('buildAirport', () => {
   const A = buildAirport({ stride: 1 });
@@ -64,5 +64,17 @@ describe('좌표', () => {
     const [x, z] = runwayPoint(3200, 0);
     expect(x).toBeCloseTo(-60 + Math.sin(0.62) * 3200, 6);
     expect(z).toBeCloseTo(180 + Math.cos(0.62) * 3200, 6);
+  });
+});
+
+// 셰이더는 공항 불빛 종류를 크기 배율(aAirStyle.z)로 가려낸다(속성을 늘리지 않으려고, shaders.ts 주석) —
+// 중앙등(알파 ×0.7)·창문(가로 막대)의 크기 배율이 다른 종류와 겹치면 엉뚱한 불빛이 바뀐다
+describe('AIR_SIZE(셰이더가 종류를 가리는 크기 배율)', () => {
+  const A = buildAirport({ stride: 1 });
+  it('중앙등만 AIR_SIZE.center, 창문만 AIR_SIZE.win', () => {
+    for (const l of A.lights) {
+      expect(Math.abs(l.size - AIR_SIZE.center) < 0.01, l.kind).toBe(l.kind === 'center');
+      expect(Math.abs(l.size - AIR_SIZE.win) < 0.01, l.kind).toBe(l.kind === 'win');
+    }
   });
 });

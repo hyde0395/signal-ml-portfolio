@@ -25,3 +25,10 @@ export function stepFrameRate(
   if (slowFor > opts.seconds) return { state: { avg, slowFor: 0 }, slow: true };
   return { state: { avg, slowFor }, slow: false };
 }
+
+// 캔버스 DPR 상한(설계 2026-09-29 §7·§8): 데스크톱 우선이라 가로 화면은 2(시안과 같은 선명함 — 1.5에선 불빛 핵이
+// 번져 보였다), 세로 화면(대개 휴대폰)은 가볍게 1.5. 프레임이 떨어져 낮춘 단계(level ≥ 1)는 어디서나 1
+export function maxDpr(level: number, portrait: boolean): number {
+  if (level > 0) return 1;
+  return portrait ? 1.5 : 2;
+}

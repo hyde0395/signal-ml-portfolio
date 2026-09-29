@@ -2,6 +2,7 @@
 // 모든 움직임을 GPU에서 계산하므로 2만8천 개 점도 매 프레임 JS 작업 없이 움직인다.
 // 차트 배치는 두 벌을 두고 번갈아 쓴다(uSlot) — 차트에서 차트로 넘어갈 때 점이 지형을 거치지 않고 바로 옮겨 간다.
 import { PUSH, RIPPLE } from './pointerField';
+import { AIR_SIZE } from './airport';
 import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './pointStyle';
 
 // 아래 두 GLSL 문자열 안에는 // 주석을 두지 않는다 — 문자열이라 빌드 때 안 지워지고 그대로 gzip에 실려
@@ -56,22 +57,29 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 //   식·상수는 pointerField.ts와 같다(단위 테스트). 차트 장면은 uChart만큼 PUSH.chartScale로 줄인다.
 //   이동은 w를 곱해 클립 좌표에 더한다 — 원근 나눗셈 뒤 화면에서 정확히 그만큼 옮겨진다
 // - terrainPx: 지형은 거리에 따라 작아지고(20.0: 계획 3에서 점이 1~2px로 너무 작아 키운 값), 차트는 판 px 그대로다
-// - corePx: 공항 불빛은 작고 선명한 점 + 옅은 번짐(시안 core = clamp(5.5·size/거리, 0.6, 2.6)px, 번짐 반경 = core × 6).
-//   스프라이트 지름 = 번짐 지름이고, 조각 셰이더가 가운데 core만 또렷하게 칠한다
-// - airPx: 번짐 반경을 12배로 줄인다(18 → 12) — 스프라이트 픽셀 수는 지름의 제곱이라 18px 스프라이트가 화면을
-//   채우는 비용이 컸다(성능 검토 2026-09-28). 핵 반경(조각 셰이더)도 같은 비로 키워 핵 크기는 그대로 유지한다
+// - corePx: 공항 불빛 핵의 반지름 px(시안 core = clamp(5.5·size/거리, 0.6, 2.6)px). 조각 셰이더가 핵을 또렷하게,
+//   그 둘레를 시안 halo 곡선으로 칠한다(설계 2026-09-29 §8)
+// - airPx: 스프라이트 지름 = 시안 번짐 지름(번짐 반지름 9·핵 → 18·핵, 큰 불빛(크기 배율 ≥ 1.5, 계류장 조명 4개)은
+//   16·핵 → 32·핵). 성능 검토(2026-09-28)로 12·핵까지 줄였었지만, 번짐이 스프라이트 가장자리(곡선 값 약 0.02)에서
+//   잘려 어두운 바닥 위에 테두리가 보였다(2026-09-29 실제 GPU 비교). 불빛 약 1,300개 중 가까운 몇십 개만 크다
+// - big / isWin / isCenter: 공항 불빛 종류를 크기 배율(aAirStyle.z)로 가려낸다 — 종류 속성을 더하면 정점 속성
+//   16개 한계를 넘는다. center·win 크기 배율은 다른 종류와 겹치지 않는다(airport.ts AIR_SIZE, 단위 테스트)
+// - barW / barH: 창문은 둥근 불빛이 아니라 가로 막대(시안: 폭 max(1.6, 6·s), 높이 max(1, 1.4·s)px, s = 1m의 px).
+//   s는 corePx와 같은 근사(5.5 = 0.55·10)로 10/거리. 스프라이트 지름 = 막대 폭, 막대 높이는 vShape.z로 넘긴다.
+//   지형으로 반 넘게 옮겨 가면(vAir < 0.5) 막대를 끄고 둥근 불빛으로 — 시안도 모이는 도중(0.35)에 점으로 바꾼다
+// - vShape: (핵 반지름, 번짐 반지름(= 스프라이트 반지름 0.5), 창문 막대 높이 px — 창문이 아니면 0). 앞 둘은 gl_PointCoord 단위(0.5 = 스프라이트 반지름)
+// - vPx: 스프라이트 지름(기기 px) — 조각 셰이더가 핵·막대 가장자리를 딱 1화소만 부드럽게 한다
 // - fade: 거리 흐림(설계 첫 화면 다듬기 §2.2): 장면 목표점보다 먼 점일수록 흐리게 — 지형·지도에만(차트 점은
 //   아래 mix에서 빠진다)
 // - terrainCol: 지도 장면에서는 공휴일 색을 끈다(지도 위 호박색은 노선 전용). 제거 레이어는 글자색
 // - uFocus 분기: 강조 규칙(설계 2026-09-28 §3, 계획 5-3b로 일반화) — 2D 그리기(charts/draw2d.ts)와 같은
 //   규칙을 uFocusTone·uFocusDim 유니폼으로 받는다(차트마다 값이 다르다, TerrainPoints가 슬롯에서 넣는다)
-// - vColor = toSrgbTone(...): 지형·지도·차트 색만 sRGB로 되돌린다. 공항 색(airTone)은 6-2에서 지금 모습
-//   그대로 맞춰 둔 값이라 손대지 않는다
+// - vColor = toSrgbTone(...): 지형·지도·차트 색을 sRGB로 되돌린다. 공항 색(airTone)도 설계 2026-09-29 §8로
+//   sRGB로 되돌린다(시안의 색 그대로 — 선형 값이라 파랑·호박이 짙게 가라앉아 시안보다 탁했다)
 // - vEdge = mix(0.15, 0.38, uChart): 차트 점은 가장자리를 덜 흐려 또렷한 원으로(2D 대체 그림과 같게)
-// - on / haze / wave: 켜지는 순서(로딩 뒤 앞에서 뒤로) + 공기 원근(멀수록 흐림) + 신호 물결
+// - on / haze / wave: 켜지는 순서(로딩 뒤 앞에서 뒤로) + 공기 원근(멀수록 흐림) + 신호 물결.
+//   중앙등은 ×0.7(시안), 창문 막대는 ×0.75(시안 fillRect 알파)
 // - vAlpha = mix(vAlpha * (1.0 - uAirport), airA, vAir): 공항 장면에서 불빛이 아닌 점은 숨긴다
-// - vColor = mix(vColor, airTone(...), vAir) 다음: 넘어가는 동안(0 < vAir < 1)은 sRGB로 되돌린 지형 색과
-//   되돌리지 않은 공항 색이 섞인다 — 의도한 것이고 눈에 띄지 않는다(공항 색은 6-2에서 맞춘 그대로 둔다)
 // - if (vAlpha < 0.003): 화면에 안 보이는 점(알파가 거의 0)은 크기 0 + 화면 밖으로 보내 래스터화를 아예
 //   건너뛴다(성능 검토 2026-09-28) — 공항 장면의 배경 점 약 27,000개, 차트 장면에서 이번 배치에 안 쓰는 점이
 //   여기 걸린다
@@ -128,6 +136,8 @@ export const vertexShader = /* glsl */ `
   varying vec3 vColor;
   varying float vEdge;
   varying float vAir;
+  varying float vPx;
+  varying vec3 vShape;
 
   vec3 toneColor(float t) { return t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot); }
   vec3 airTone(float t) { return t > 3.5 ? uWarm : (t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot)); }
@@ -169,11 +179,20 @@ export const vertexShader = /* glsl */ `
     size = mix(size, ${f(MAP_POINT.size)}, uMap);
     float terrainPx = uSize * size * (20.0 / -mv.z);
     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;
-    float corePx = clamp(5.5 * aAirStyle.z / max(-mv.z, 0.01), 0.6, 2.6) * uDpr;
-    float airPx = corePx * 12.0;
+    float dz = max(-mv.z, 0.01);
+    float big = step(1.5, aAirStyle.z);
+    float isWin = 1.0 - step(0.01, abs(aAirStyle.z - ${f(AIR_SIZE.win)}));
+    float isCenter = 1.0 - step(0.01, abs(aAirStyle.z - ${f(AIR_SIZE.center)}));
+    float corePx = clamp(5.5 * aAirStyle.z / dz, 0.6, 2.6) * uDpr;
+    float airPx = corePx * mix(18.0, 32.0, big);
+    float barW = max(1.6, 60.0 / dz) * uDpr;
+    float barH = max(1.0, 14.0 / dz) * uDpr;
+    airPx = mix(airPx, barW, isWin);
+    vShape = vec3(corePx / airPx, 0.5, isWin * barH * step(0.5, uAirport * isAir));
     float basePx = mix(terrainPx, chartPx, uChart);
     vAir = uAirport * isAir;
     gl_PointSize = mix(basePx, airPx, vAir);
+    vPx = gl_PointSize;
 
     float a = aKind < 0.5 ? ${f(POINT.signalAlpha)} : (aKind < 1.5 ? ${f(POINT.noiseAlpha)} * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
     a *= mix(1.0, ${f(SOFT_POINT.alpha)}, uSoft);
@@ -190,11 +209,11 @@ export const vertexShader = /* glsl */ `
     vColor = toSrgbTone(mix(terrainCol, chartCol, uChart));
     vEdge = mix(0.15, 0.38, uChart);
     float on = clamp((uLightT - aAirStyle.w * 1.2) / 0.18, 0.0, 1.0);
-    float haze = 1.0 / (1.0 + (-mv.z) / 52.0);
+    float haze = 1.0 / (1.0 + dz / 52.0);
     float wave = aAirport.w < 0.0 ? 0.0 : exp(-pow((aAirport.w - uWave) / 90.0, 2.0));
-    float airA = on * haze * (1.0 + wave * 2.2);
+    float airA = on * haze * (1.0 + wave * 2.2) * mix(1.0, 0.7, isCenter) * mix(1.0, 0.75, isWin);
     vAlpha = mix(vAlpha * (1.0 - uAirport), airA, vAir);
-    vColor = mix(vColor, airTone(aAirStyle.y), vAir);
+    vColor = mix(vColor, toSrgbTone(airTone(aAirStyle.y)), vAir);
     vEdge = mix(vEdge, 0.0, vAir);
     if (vAlpha < 0.003) {
       gl_PointSize = 0.0;
@@ -204,8 +223,11 @@ export const vertexShader = /* glsl */ `
 `;
 
 // fragmentShader 로직(이름 옆에 있던 설명):
-// - core / glow / air: 공항 불빛은 가운데 또렷한 핵(반경 = 스프라이트의 1/12, 번짐 반경 축소(18→12)에 맞춰
-//   핵 반지름도 키워 화면 픽셀 크기는 그대로 유지한다) + 가우스 번짐
+// - core / glow / air: 공항 불빛(설계 2026-09-29 §8, 시안 point()): 또렷한 핵(반지름 vShape.x, 가장자리 딱 1화소
+//   aa만 부드럽게) + 시안 halo 곡선(번짐 반지름에 대해 0 → 1, 0.15 → 0.35, 0.45 → 0.06, 1 → 0을 선형으로, ×0.55).
+//   시안처럼 핵과 번짐을 더한다(둘 다 빛 더하기로 그렸다). 예전 가우스 번짐·작은 핵(1/24)은 핵이 흐려 보였다
+// - bar: 창문 막대(vShape.z > 0) — 세로로 막대 높이만큼만, 가장자리 1화소 부드럽게. 막대 끝은 스프라이트 원
+//   (d > 0.5) 밖으로 나가므로 막대는 원으로 자르지 않는다
 // - disc = smoothstep(0.5, vEdge, d): 이름을 dot으로 하면 GLSL 내장 함수와 겹친다
 // - a = min(vAlpha * mix(disc, air, vAir), 1.0): 미리 곱한 알파(TerrainPoints의 섞기 ONE, ONE_MINUS_SRC_ALPHA와
 //   짝) — 색은 늘 vColor·a를 그대로 더하고, 뒤 화소를 줄이는 비율(= 출력 알파)만 점마다 바꾼다. 지형·지도·차트
@@ -225,13 +247,19 @@ export const fragmentShader = /* glsl */ `
   varying vec3 vColor;
   varying float vEdge;
   varying float vAir;
+  varying float vPx;
+  varying vec3 vShape;
 
   void main() {
-    float d = length(gl_PointCoord - 0.5);
-    if (d > 0.5) discard;
-    float core = 1.0 - smoothstep(0.033, 0.05, d);
-    float glow = exp(-d * d * 28.0) * 0.55;
-    float air = max(core, glow);
+    vec2 q = gl_PointCoord - 0.5;
+    float d = length(q);
+    float bar = vShape.z > 0.0 ? clamp(0.5 * vShape.z - abs(q.y) * vPx + 0.5, 0.0, 1.0) : 0.0;
+    if (d > 0.5 && bar <= 0.0) discard;
+    float aa = 0.5 / max(vPx, 1.0);
+    float core = 1.0 - smoothstep(vShape.x - aa, vShape.x + aa, d);
+    float t = d / vShape.y;
+    float glow = (t < 0.15 ? mix(1.0, 0.35, t / 0.15) : (t < 0.45 ? mix(0.35, 0.06, (t - 0.15) / 0.3) : mix(0.06, 0.0, min((t - 0.45) / 0.55, 1.0)))) * 0.55;
+    float air = vShape.z > 0.0 ? bar : min(core + glow, 1.0);
     float disc = smoothstep(0.5, vEdge, d);
     float a = min(vAlpha * mix(disc, air, vAir), 1.0);
     gl_FragColor = vec4(vColor * a, a * mix(1.0, a, vAir));

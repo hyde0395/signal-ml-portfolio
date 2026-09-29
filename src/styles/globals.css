@@ -191,10 +191,15 @@ select.demo-slot option { background: var(--bg2); color: var(--tx); }
 .backdrop canvas { display: block; position: relative; z-index: 1; }
 main { position: relative; z-index: 1; }
 
-/* 밤의 공항 하늘(설계 2026-09-28 §4.1): 거의 검은 남색, 지평선(화면 위에서 약 38%)에만 가는 빛 띠.
-   지평선 높이는 카메라 기울기로만 정해져(화면 비율과 무관) 고정 비율로 맞춘다. 첫 화면에서만 보인다 */
+/* 밤의 공항 하늘(설계 2026-09-28 §4.1, 2026-09-29 §8 시안 값): 거의 검은 남색, 지평선에만 가는 빛 띠 + 오른쪽
+   지평선 위 따뜻한 띠(시안 band, 납작한 타원), 지평선 아래는 땅 #04060b. 색은 시안 필름 입자의 평균 밝기(+4)를
+   녹인 값이다(입자는 빼기로 함). 지평선 높이 --hz는 CameraRig가 3D 카메라에서 계산해 .backdrop에 적는다
+   (맨 위 A 39.8% → 내려앉은 B 36.6%). 다른 멈춤 비율은 시안처럼 지평선에 비례한다. 첫 화면에서만 보인다 */
 .backdrop::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s var(--ease);
-  background: linear-gradient(180deg, #010206 0%, #02050c 26%, #060b18 34%, #0c1426 38%, #03050b 38.4%, #02040a 100%); }
+  background:
+    radial-gradient(45vw 5.4vw at 66% 100%, rgba(255, 196, 140, 0.06), rgba(255, 196, 140, 0)) top / 100% var(--hz, 39.8%) no-repeat,
+    linear-gradient(180deg, #05060a 0%, #06090f calc(var(--hz, 39.8%) * 0.701), #0a0f1c calc(var(--hz, 39.8%) * 0.94),
+      #161b2a var(--hz, 39.8%), #04060b calc(var(--hz, 39.8%) + 0.1%), #04060b 100%); }
 html[data-active-scene="hero"] .backdrop::before { opacity: 1; }
 /* 첫 화면 → ① 전환 중(TerrainScene이 data-handoff·--sky를 적는다)에는 하늘을 스크롤에 묶는다. 머리말이 화면
    가운데일 때 활성 장면이 hero로 남아 지평선 띠가 글 뒤에 또렷이 남던 문제, ①에서 되돌아올 때 0.8초에 걸쳐
@@ -209,6 +214,17 @@ html[data-active-scene="hero"] .backdrop::before { opacity: 1; }
   z-index: 2;
   background: radial-gradient(120% 95% at 72% 40%, rgba(2, 4, 10, 0) 38%, rgba(2, 4, 10, 0.8) 100%); }
 html[data-chart] .backdrop::after { opacity: 0; }
+/* 첫 화면 비네트(설계 2026-09-29 §8, 시안 그대로): 가운데를 비운 둥근 검정 0.62 + 제목·키워드 쪽(왼쪽 아래)을
+   더 어둡게. 배경 그림(background)은 전환으로 섞을 수 없어 따로 한 겹을 두고 ::after와 불투명도로 엇갈린다 —
+   첫 화면에서는 ::after를 끄고, 전환(data-handoff) 중에는 하늘과 같은 --sky로 이 겹을 걷고 ::after를 되살린다 */
+.backdrop-veil { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity 0.6s var(--ease);
+  background:
+    radial-gradient(circle 42vw at 12% 78%, rgba(1, 2, 6, 0.6), rgba(1, 2, 6, 0)),
+    radial-gradient(circle 78vmax at 50% 50%, rgba(0, 0, 0, 0) 28%, rgba(0, 0, 0, 0.62) 100%); }
+html[data-active-scene="hero"] .backdrop-veil { opacity: 1; }
+html[data-active-scene="hero"] .backdrop::after { opacity: 0; }
+:root[data-handoff] .backdrop-veil { opacity: var(--sky, 0); transition: none; }
+:root[data-handoff][data-active-scene="hero"] .backdrop::after { opacity: calc(1 - var(--sky, 0)); transition: none; }
 @media (max-width: 767px) {
   /* 휴대폰은 어둠 대신 구도로 자리를 나눈다(코드 리뷰 2026-09-28): 글은 화면 아래쪽에 정렬하고(.chapter·
      #project 모두), 지형은 세로 화면 카메라가 위쪽 절반에 오게 옮겼다(three/scenes.ts PORTRAIT_OVERRIDE).
@@ -225,7 +241,8 @@ html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
 /* 첫 화면 대체 이미지는 글 뒤 배경으로 깐다. 흐름 안에 두면 3D가 켜져 숨을 때 이름이 밀려 CLS가 생긴다 */
 .hero { position: relative; }
 .hero .scene-figure { position: absolute; inset: 0; margin: 0; z-index: -1;
-  background: linear-gradient(180deg, #010206 0%, #02050c 26%, #060b18 34%, #0c1426 38%, #03050b 38.4%, #02040a 100%); }
+  /* 3D 하늘(.backdrop::before)과 같은 색·지평선(맨 위 카메라 A의 39.8%) */
+  background: linear-gradient(180deg, #05060a 0%, #06090f 27.9%, #0a0f1c 37.4%, #161b2a 39.8%, #04060b 39.9%, #04060b 100%); }
 .hero .scene-figure img { width: 100%; height: 100%; object-fit: cover; border: 0; border-radius: 0; opacity: 0.55;
   /* 이미지는 .wrap 폭까지라 좌우 끝이 선처럼 보인다. 가장자리를 흐려 배경에 녹인다 */
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }

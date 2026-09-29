@@ -1,6 +1,6 @@
 // 프레임 저하 판정 검사: 평균 fps가 30 미만으로 2초 이어질 때만 느림으로 본다(한 번의 빠른 프레임에 초기화되지 않는다).
 import { describe, expect, it } from 'vitest';
-import { initialFrameRate, stepFrameRate, type FrameRateState } from '@/three/frameRate';
+import { initialFrameRate, maxDpr, stepFrameRate, type FrameRateState } from '@/three/frameRate';
 
 const opts = { minFps: 30, seconds: 2 };
 
@@ -45,5 +45,16 @@ describe('stepFrameRate', () => {
     const s = initialFrameRate();
     expect(stepFrameRate(s, 5, opts).state).toBe(s);
     expect(stepFrameRate(s, 0, opts).state).toBe(s);
+  });
+});
+
+// 설계 2026-09-29 §7·§8: 데스크톱 우선 — 가로 화면은 DPR 상한 2(시안과 같은 선명함), 세로 화면(대개 휴대폰)은
+// 가볍게 1.5, 프레임이 떨어져 한 단계 낮춘 뒤(level 1)는 어디서나 1
+describe('maxDpr', () => {
+  it('가로 2, 세로 1.5, 낮춤 단계는 1', () => {
+    expect(maxDpr(0, false)).toBe(2);
+    expect(maxDpr(0, true)).toBe(1.5);
+    expect(maxDpr(1, false)).toBe(1);
+    expect(maxDpr(1, true)).toBe(1);
   });
 });
