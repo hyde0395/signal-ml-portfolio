@@ -79,6 +79,6 @@
 
 ### Task 6: 검사·기록
 
-- [ ] `npm run typecheck && npm test && npm run build && npm run size && npm run e2e`. 대체 이미지는 `hero`·`problem`·`bubble`뿐 — 다시 찍을 필요 있는지 확인.
-- [ ] 설계 문서에 `## 구현 결과 (계획 6-5)`. `CLAUDE.md` 현재 상태 표에 6-5 줄(PR 대기), 페이지 구성에 설명 화면 한 줄, 다음 할 일에서 6-5 항목 정리(커버리지 그래프는 하지 않기로 함).
-- [ ] 커밋 `chore: record plan 6-5`.
+- [x] `npm run typecheck && npm test && npm run build && npm run size && npm run e2e`. 대체 이미지는 `hero`·`problem`·`bubble`뿐 — 다시 찍을 필요 있는지 확인.
+- [x] 설계 문서에 `## 구현 결과 (계획 6-5)`. `CLAUDE.md` 현재 상태 표에 6-5 줄(PR 대기), 페이지 구성에 설명 화면 한 줄, 다음 할 일에서 6-5 항목 정리(커버리지 그래프는 하지 않기로 함).
+- [x] 커밋 `chore: record plan 6-5`.
