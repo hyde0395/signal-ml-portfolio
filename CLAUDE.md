@@ -4,9 +4,9 @@ ML 엔지니어 포트폴리오 사이트. 사이트 브랜드는 **SIGNAL**.
 
 Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용 개발자 포트폴리오**. 목표 포지션은 **ML 엔지니어**.
 
-## 현재 상태 (2026-09-29, 맥북에서 계획 6-3 구현 후 정리)
+## 현재 상태 (2026-09-29, 맥북에서 5-3b 진행 중 세션 마감)
 
-계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3이 모두 main에 병합되어 운영 사이트에 배포돼 있다(6-3은 PR #9, 2026-09-29 병합). 남은 것은 5-3(인터랙션)과 공개 전 준비.
+계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4가 모두 main에 병합되어 운영 사이트에 배포돼 있다(6-4는 PR #11, 2026-09-29 병합). **진행 중 2개**: 5-3b(차트 직접 만지기, 브랜치 `plan-5-3b-touch`), 6-5(첫 화면 → ① 전환, 별도 작업 폴더). 남은 것은 5-3b·6-5·5-3c와 공개 전 준비.
 
 - 운영: https://signal-ml-portfolio.vercel.app (아직 `noindex` — 공개 전환 전)
 - GitHub: https://github.com/hyde0395/signal-ml-portfolio (공개), main = 운영, PR = Vercel 미리보기
@@ -26,8 +26,10 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 6-3 첫 화면 다듬기 | 배경 #02040A, 점 D(안 타게·거리 흐림·sRGB 색), 상단 바 E(내리면 숨김·올리면 오른쪽), SCROLL 표시 | `2026-09-28-plan-6-3-polish.md` | ✅ PR #9 (2026-09-29 병합·배포) |
 | 5-3a 점 반응 | 배경 점이 마우스 주위로 비켜남(차트는 약하게), 휴대폰은 가볍게 누른 곳에 물결 | `2026-09-29-plan-5-3a-pointer.md` | ✅ PR #10 (2026-09-29 병합·배포) |
 | 6-4 지도·출발일 | 지도 가는 실선, 차트 1 점 그래프 + 요일 평균, 공휴일 이름표 4개 | `2026-09-29-plan-6-4-map-depart.md` | ✅ PR #11 (2026-09-29 병합·배포) |
+| 5-3b 차트 만지기 | 차트 1·2·4 마우스·터치·키보드로 값 짚기, 표시 상자, 슬롯 튐 수정 | `2026-09-29-plan-5-3b-chart-touch.md` | 🚧 Task 1·2·3 완료(3은 검토 전), 4·5 남음(아래 0번) |
+| 6-5 첫 화면 → ① 전환 | 스크롤에 묶인 불빛 → 지형 전환, ① 넓은 지형(카메라 C), 은은한 물결무늬 | `2026-09-29-plan-6-5-hero-handoff.md`(작업 폴더에만) | 🚧 Task 1 끝, 사용자 결정 받음(아래 1번) |
 
-계획 5-3(인터랙션)이 남았다. 설계: `docs/superpowers/specs/2026-09-25-page-restructure-design.md`
+진행 중인 두 계획의 이어서 할 일은 아래 "다음 세션에서 할 일" 0·1번. 두 브랜치 모두 GitHub에도 올려 두었다(다른 컴퓨터에서 이어받을 때 `git fetch` → `git switch plan-5-3b-touch` / `plan-6-5-handoff`).
 
 **5-1 마무리 검사 (2026-09-25, `npm run size`)**: 초기 JS gzip 139.5KB/150KB(ko·en·ja 동일), 3D 청크 239.7KB/250KB, `terrain.json` 53.1KB/300KB, `demo.json` 21.7KB/500KB, `band.json` 0.6KB/50KB. 단위 테스트 201개·e2e 120개·pytest 42개 모두 통과.
 
@@ -35,32 +37,45 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 다음 세션에서 할 일 (순서대로)
 
-0. 계획 6-3(첫 화면 다듬기)은 PR #9로 병합·배포됨(2026-09-29). OG 이미지도 새 공항 첫 화면으로 다시 찍었다(사용자 결정)
-   - 설계: `docs/superpowers/specs/2026-09-28-first-screen-polish-design.md`, 구현 결과는 그 문서의 "구현 결과 (계획 6-3)"
-   - 알려진 작은 것: `/en/` 320px 폭에서 상단 바가 두 줄, 글자 크기 2배쯤에서 언어 안내 띠와 SCROLL 표시가 겹칠 수 있음, `hero.webp`의 작은 불빛이 실제 3D보다 조금 흐림(캡처 스크립트의 `toDataURL` 탓)
-   - `board.spec`의 "화면에 들어오면 넘어가고…" e2e는 main에서도 가끔 실패한다(로컬 6회 중 3회). 고칠 거리로 남겨 둠
-   - `terrain.spec`의 "글 뒤 배경이 4.5:1 대비를 지킨다(화소 검사)"도 전체 e2e를 한꺼번에 돌릴 때 드물게 실패한다(2026-09-29 로컬 2회 중 1회, `.data-board .board-head` 1.98:1 — 따로 돌리면 8회 모두 통과, 5-2 CI에서도 한 번). 부하로 3D 장면 타이밍이 밀리는 것으로 보인다. 고칠 거리로 남겨 둠
-   - 다음: 계획 5-3(아래 1번). 3D 청크 여유는 244.6KB/250KB(5-3a 뒤)
-1. **계획 5-3 — a·b·c 세 계획으로 나눠 진행**(2026-09-29, 각각 계획서 → 실행 subagent-driven-development → PR). 설계 §4.1:
-   - **a 점이 마우스에 반응**: PR #10으로 병합·배포(사용자: "지금이 딱 좋다"). 구현 결과는 설계 문서 "구현 결과 (계획 5-3a)"
-   - **b 차트 직접 만지기**(다음) + 아래 "5-2에서 미룬 작은 것". 차트 1은 계획 6-4에서 점 그래프 + 요일 평균으로 바뀌었다 — 마우스를 올리면 가장 가까운 출발일(가로 위치로 찾기) 강조 + 표시 상자
-   - **c ③ 와플 SHAP 벌떼**: 추출 가능 확인(2026-09-29) — 모델 입력이 피처 33개 그대로(범주형도 한 열), `booster.predict(pred_contribs=True)`, 모델 로드 약 17초. 값은 log-잔차 단위라 표시할 때 `exp(v)−1`로 %
-   - ③ 와플 눌러 **SHAP 벌떼**로 펼치기(초점·Enter/Space·Esc, 한 번에 하나). SHAP 값 추출 포함: 항공권 저장소 `src/models/shap_analysis.py`처럼 `v2_predictor.pkl` + `booster.predict(pred_contribs=True)`(재학습 없음), 피처 33개 × 표본 약 150개를 `charts.json`의 `shap`으로. 범주형 피처(노선·항공사)는 값 색 대신 중간색
-   - 차트 직접 만지기: 차트 1·4는 마우스를 올리면 가장 가까운 출발일 강조 + 표시 상자, 차트 2는 세로선 슬라이더(구간 8개, `role="slider"`), 키보드 ←/→·Home/End, 조작 멈춘 뒤 한 번 알림
-   - 와플 이름표는 지금 `aria-hidden` 판 안에 있어 초점을 못 받는다 — 5-3에서 키보드 초점을 줄 때 접근성 구조를 다시 짠다
-   - 5-2 최종 검토에서 미룬 작은 것: 차트에서 차트로 가다 지형을 거쳐 다른 차트로 가면 보이는 슬롯에 바로 써서 잠깐 튄다(`TerrainScene`에 마지막으로 쓴 차트 키를 따로 두면 해결), 빠르게 스크롤해 차트를 벗어날 때 잠깐 번짐
-2. **별도 계획: 차트 3을 예측 대 실제 산점도로** — TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성(R² 0.84)의 예측값이 필요해 NeuralProphet를 폴드마다 다시 학습해야 한다(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음, 몇십 분 걸릴 수 있음). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
-3. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
+0. **★ 계획 5-3b 마무리 — 차트 직접 만지기** (이 폴더, 브랜치 `plan-5-3b-touch`, 아직 push 안 함)
+   - 계획서 `docs/superpowers/plans/2026-09-29-plan-5-3b-chart-touch.md`. 설계는 `docs/superpowers/specs/2026-09-25-page-restructure-design.md` §4.1 "차트 직접 만지기" 표(차트 1은 6-4에서 점 그래프로 바뀜 — "가장 가까운 출발일 점 뭉치")
+   - 한 것: Task 1 `40ff2fb`(와플 강조 번호 `waffle` → 일반 강조 번호 `hl`, 차트마다 강조 색·흐림 `focusTone`·`focusDim`, 셰이더 유니폼 `uFocusTone`·`uFocusDim`, 속성 `aHl`) ✅ 검토 통과. Task 2 `a0bc7a5`·`84129f7`(배치가 `items`·`initial`을 돌려줌, 표시 상자 문구 `charts.{depart,curve,band}.tip`·`depart.tipHoliday`("무렵")·`charts.touch` 3개 언어, 공휴일 이름 9개 추가) ✅ 검토 통과
+     - 받아들인 결정: 차트 2 항목 번호는 왼쪽→오른쪽(key = 7 − 구간 번호, → 키가 오른쪽으로), 차트 4는 예측 있는 날만 차례 번호, 문구 템플릿은 `t()`가 아니라 `prefill`로 넘긴다(`{v.…}`를 남기려고 — 데모와 같은 방식)
+   - **Task 3(조작 층)** `1481162` 커밋됨, **검토는 아직** — 다음 세션 첫 일: 스펙 대조 + 코드 품질 검토(접근성 구조, 휠 스크롤, 터치 8px, 표시 상자 판 안, 초기 JS 142.3KB/150KB). 구현하며 바꾼 것(검토 때 확인):
+     - 표시 상자는 한 줄이 기본이고 판보다 넓을 때만 줄바꿈(375px 영어에서 판 밖으로 나가 페이지가 넓어졌다). e2e로 지킴
+     - 차트 1·4의 마우스 떠남은 포인터가 아직 판 안이면 무시(3D 켜짐에서 크롬이 가만히 있는데 떠남을 보낸 적 있음)
+     - `demo.spec.ts`의 `getByRole('slider')`를 `#demo` 안으로 좁힘(차트 슬라이더가 생겨 한 개 규칙 위반). 앞으로 e2e에서 맨 `getByRole('slider')`를 쓰지 않는다
+     - 차트 4 키보드 e2e는 검증 카드의 코드 링크에서 Tab으로 들어간다(문서 순서에 기댐)
+     - 휴대폰에서 12월 말 출발일을 짚으면 표시 상자가 성탄절·설날 이름표를 잠깐 가린다(그대로 둠)
+     - 검사: 단위 318, 차트·사이트·지형·데모 e2e 150개 통과. 눈 확인 캡처는 세션 스크래치라 없어진다
+   - **Task 4**: 5-2에서 미룬 슬롯 튐 — 차트 A → 지형 → 차트 B로 갈 때 보이는 슬롯에 B를 써서 점이 튄다. `chartTargets.ts`에 순수 함수 `pickSlot(last, next)`(마지막으로 쓴 차트 키를 지형으로 나가도 지우지 않고 기억)와 단위 테스트, `TerrainScene.tsx`의 슬롯 고르는 줄만 바꾼다. "빠르게 스크롤할 때 번짐"은 실제 GPU로 재현만 시도해 기록
+   - **Task 5**: 전체 검사(`typecheck`·`test`·`build`·`size`·`e2e`) → 설계 문서에 "구현 결과 (계획 5-3b)" → 이 파일 현재 상태 표에 5-3b 줄 → 커밋 → push → PR → CI → 미리보기 주소를 사용자에게 주고 확인받기 → main에 fast-forward 병합
+1. **계획 6-5 — 첫 화면 → ① PROJECT 전환** (별도 작업 폴더 `~/dev/untitled folder/signal-ml-portfolio-6-5`, git worktree, 브랜치 `plan-6-5-handoff`, 아직 push 안 함. `node_modules`는 APFS 복제로 들어 있다)
+   - 사용자 요청(2026-09-29): 공항 시안(`docs/superpowers/mockups/2026-09-28/01-night-airport.html`)에서 ①로 넘어갈 때 **불빛이 스크롤한 만큼 지형으로 날아가는 느낌**과 **①의 넓고 은은한 지형**을 살려 달라. 비교 화면에서 고른 것: 2(스크롤에 묶인 전환)·3(넓은 지형). 고르지 않은 것: 하늘·지평선 배경 유지, 필름 입자
+   - 설계 `docs/superpowers/specs/2026-09-29-hero-project-handoff-design.md`(§4에 결정), 계획서 `docs/superpowers/plans/2026-09-29-plan-6-5-hero-handoff.md`(그 작업 폴더에만 커밋돼 있음)
+   - Task 1(카메라 후보) 끝남 → **사용자가 C를 골랐다**: 데스크톱 `SCENES.about` = `camera [13, 9, 15]`, `target [1, 0, 2]` / 세로 `PORTRAIT_OVERRIDE.about` = `camera [11, 6, 15]`, `target [3, -3, 2]`. 가장 넓게 깔리지만 **데스크톱 제목 대비가 모자람**(`#project-h` 밝은 쪽 99% 화소 2.46:1, 본문 2.6~2.8:1, 기준 4.5:1) → 글(화면 왼쪽) 뒤 점만 더 흐리게 해야 한다. 후보: ① 장면만 거리 흐림을 세게, 셰이더에서 화면 x(왼쪽 글 쪽)에 따라 흐리게, `about`의 `dim`. `terrain.spec` 화소 검사를 통과하는 가장 약한 방법을 고른다
+   - **새 요청 — ① 배경 점을 "은은한 물결무늬"로**: 시안의 ① 장면처럼 지형 점이 가지런한 줄(출발일마다 한 줄)로 늘어서 곡선 줄무늬로 보이게(지금은 신호·잡음 점이 흩어진 덩어리). **이 해석이 맞는지 비주얼 컴패니언 시안으로 먼저 보여 주고 확인받은 뒤** 구현한다(계획서에 Task로 더한다)
+   - 남은 Task: 2(순수 함수 `blendScenes`·`handoffProgress`), 3(TerrainScene에 전환 구간 연결 + `follow` 빠른 감쇠 — 5-3b가 TerrainScene의 슬롯·강조 줄을 고치므로 장면 목표 부분만 건드려 충돌을 줄인다), 4(카메라 C + 대비 대책 + 물결무늬), 5(검사·기록)
+   - 작업 폴더 주의: e2e 설정(`playwright.config.ts`)은 포트 4173 고정 — 두 폴더를 동시에 돌리면 서로의 서버를 재사용한다. 6-5 폴더에서는 4180에 서버를 띄우고 임시 설정 파일(커밋 안 함)로 돌렸다. 한 폴더만 쓸 때는 신경 쓸 필요 없다
+   - 5-3b와 6-5 중 먼저 병합되는 쪽 다음에, 다른 쪽을 main 위로 rebase(둘 다 `TerrainScene.tsx`를 고친다)
+2. **계획 5-3c — ③ 와플 눌러 SHAP 벌떼로 펼치기**(5-3b·6-5 뒤, 계획서부터 `superpowers:writing-plans`)
+   - SHAP 추출 가능 확인(2026-09-29): 모델 입력이 피처 33개 그대로(범주형도 한 열), 항공권 저장소 `src/models/shap_analysis.py`처럼 `v2_predictor.pkl` + `booster.predict(pred_contribs=True)`(재학습 없음), 모델 로드 약 17초. 값은 log-잔차 단위라 표시할 때 `exp(v)−1`로 %. 피처 33개 × 표본 약 150개를 `charts.json`의 `shap`으로. 범주형 피처(노선·항공사)는 값 색 대신 중간색
+   - 와플을 누르거나 초점 후 Enter/Space → 그 그룹 피처별 벌떼(가로 = SHAP, 색 = 피처 값), 다른 와플 흐리게, Esc·다시 누르기로 닫기, 한 번에 하나. 5-3b에서 강조 번호(`hl`)를 일반화해 두었으니 그 위에 얹는다
+   - 와플 그룹 이름표는 아직 `aria-hidden`(5-3b는 차트 1·2·4만 조작 층) — 키보드 초점을 줄 때 접근성 구조를 다시 짠다
+   - 알려진 작은 것(6-3): `/en/` 320px 폭에서 상단 바 두 줄, 글자 2배에서 언어 안내 띠와 SCROLL 표시 겹칠 수 있음, `hero.webp` 작은 불빛이 실제보다 조금 흐림
+   - 흔들리는 e2e: `board.spec` "화면에 들어오면 넘어가고…"(main에서도 가끔), `terrain.spec` "글 뒤 배경이 4.5:1 대비를 지킨다(화소 검사)"(전체 e2e를 한꺼번에 돌릴 때 드물게 — 따로 돌리면 통과). 실패하면 한 번 다시 돌려 본다
+3. **별도 계획: 차트 3을 예측 대 실제 산점도로** — TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성(R² 0.84)의 예측값이 필요해 NeuralProphet를 폴드마다 다시 학습해야 한다(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음, 몇십 분 걸릴 수 있음). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
+4. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
    - 이력서 PDF 3개: `public/resume/{ko,en,ja}.pdf` (내려받을 때 `CHOI_HALIM_resume_<언어>.pdf`). 파일이 생기면 헤더·연락처의 "준비 중"이 자동으로 링크가 된다
    - 문구 검토: 한국어는 사용자, 영어는 사용자, 일본어는 사용자가 섭외한 검수자(학과 일본어명 포함). 데모 문구(`content/*.json`의 `demo`)도 포함
    - LinkedIn 주소: `data/facts.json`의 `contact.linkedin` (비어 있으면 버튼 숨김)
    - 공개용 항공권 저장소: 만들면 `facts.json`의 `codeLinks.baseUrl`만 바꾼다(그 전까지 "코드 보기" 404는 의도된 상태). 그 저장소도 커밋 이메일 noreply
    - Vercel 대시보드 → 프로젝트 → Analytics에서 Web Analytics 켜기
-4. **공개 전환**: 위가 끝나면 `src/lib/site.ts`의 `LAUNCHED = true` (noindex·`robots.txt` Disallow 해제). 사용자가 정한다
-5. **남은 개선 (급하지 않음)**
+5. **공개 전환**: 위가 끝나면 `src/lib/site.ts`의 `LAUNCHED = true` (noindex·`robots.txt` Disallow 해제). 사용자가 정한다
+6. **남은 개선 (급하지 않음)**
    - 성능 ko·ja 90: 남은 몫은 TBT(3D·연출 코드의 메인 스레드 점유)와 ja의 렌더 지연. `experimental.inlineCss`는 시험 후 되돌림(HTML이 커져 ko·ja 악화, 스펙 §8.2). 다음 후보: 3D 시작을 더 늦추기(첫 입력·스크롤 뒤), 지형 점 구름 만들기를 Web Worker로
    - 계획 4-2 최종 검토의 작은 지적(`flip.ts`는 글자를 코드 포인트 단위로 나눔, 리빌은 제목 안쪽 마크업을 지움 — 지금 제목은 모두 글자만이라 문제없음)
-6. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
+7. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
 
 **작업 방식**: 새 기능은 `superpowers:brainstorming`(필요하면) → `superpowers:writing-plans` → 사용자가 고른 실행 방식(지금까지는 subagent-driven-development). 브랜치 → PR → CI 통과 → 사용자 확인 → main에 fast-forward 병합 → 운영 확인. 이미 정해진 결정은 다시 묻지 않는다.
 
