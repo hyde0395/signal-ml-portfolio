@@ -31,6 +31,23 @@ test('3D가 켜지는 환경에서는 첫 화면 대체 이미지를 받지 않�
   expect(hero).toEqual([]);
 });
 
+// 점 밀기·물결(계획 5-3a) 연기 검사: 셰이더가 컴파일되지 않거나 유니폼이 빠지면 3D가 오류로 꺼진다.
+// 모양은 단위 테스트(pointer-field)와 눈 확인으로 본다 — 여기서는 움직여도 오류가 없는지만. 셰이더 오류는 페이지
+// 오류가 아니라 three의 console.error로 나와서 둘 다 모은다. 끝에 "3D가 아직 켜짐"은 보지 않는다 — 소프트웨어
+// 렌더러(CI)는 fps가 낮아 몇 초 뒤 스스로 꺼질 수 있다(이 변경과 무관한 정상 동작)
+test('마우스를 움직이고 눌러도 오류가 없다(점 밀기)', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error' && /THREE|WebGL|shader/i.test(m.text())) errors.push(m.text()); });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-3d', 'on', { timeout: 20_000 });
+  const vp = page.viewportSize()!;
+  for (const [fx, fy] of [[0.7, 0.4], [0.5, 0.5], [0.3, 0.6]]) await page.mouse.move(vp.width * fx, vp.height * fy, { steps: 5 });
+  await page.mouse.click(vp.width * 0.6, vp.height * 0.3);
+  await page.waitForTimeout(500);
+  expect(errors).toEqual([]);
+});
+
 test.describe('움직임 줄이기', () => {
   test.use({ reducedMotion: 'reduce' });
   test('캔버스 없이 대체 이미지와 대체 텍스트가 보인다', async ({ page }) => {
