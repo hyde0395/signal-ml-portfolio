@@ -18,37 +18,45 @@
 
 ---
 
-### Task 1: ① 카메라 후보 찍기 → 사용자 선택
-
-- [ ] `SCENES.about`(지금 `camera [-19, 7, 16]`, `target [-5, 0.5, 0]`, `noise 0.6`)을 바꿔 가며(빌드 → 실제 GPU 1280×720·390×844 캡처, ①을 읽는 위치로 스크롤) 후보 3개를 만든다. 방향: 앞쪽 가운데 높은 곳에서 멀리 내려다봐 지형이 화면 가로 대부분에 깔리고, 밝은 가까운 쪽은 오른쪽·위, 글(왼쪽) 뒤에는 먼 쪽만.
-  - 참고 좌표: 지형은 x −8 ~ 8(왼쪽 = 먼 예약 시점), z −10 ~ 10(출발일), 높이 = %×0.04. 거리 흐림은 카메라~목표점 거리 기준(`DEPTH_FADE`).
-  - 예: A `camera [2, 13, 22] target [2, 0, −2]`(높이 내려다봄), B `camera [4, 8, 24] target [3, 1, −4]`(낮게 멀리), C `camera [-2, 16, 18] target [1, 0, −1]`(더 위에서). 값은 출발점일 뿐 — 화면을 보고 조정.
-  - 후보마다 `terrain.spec`의 화소 대비 검사가 ① 제목·본문에 통과하는지 확인(`npx playwright test tests/e2e/terrain.spec.ts -g "화소 검사"`).
-- [ ] 캡처(후보별 데스크톱·휴대폰, 지금 값도 같이)를 스크래치 폴더에 두고 경로·관찰·대비 결과를 보고한다. **여기서 멈추고 컨트롤러의 선택을 기다린다**(커밋하지 않음 — 후보 값은 되돌린다).
+### Task 1: ① 카메라 후보 찍기 → 사용자 선택 ✅ (카메라 C, 물결 줄 C — 설계 §4·§6)
 
 ### Task 2: 섞기 함수와 전환 진행도(순수)
 
 **Files:** `src/three/scenes.ts`, `tests/unit/three-scenes.test.ts`
 
-- [ ] 테스트 먼저: `blendScenes(a, b, h)` — h 0이면 a, 1이면 b, 가운데는 숫자 필드(카메라·목표점 각 성분, `airport`, `noise`, `dim`, `assemble`, `map`, `removed`, `drop`, `sway`)를 선형으로 섞는다. `chart`는 둘 다 0이어야 한다(차트 장면은 섞지 않는다 — 인자로 차트 장면이 오면 던진다). `handoffProgress(scrollY, y0, y1)` — `y0` 이하 0, `y1` 이상 1, 사이 smoothstep, `y1 <= y0`이면 0.
-- [ ] 구현 + `SceneState`에 `follow?: boolean` 추가(주석: 전환 구간 안 — 점·카메라가 스크롤을 바짝 따라가게 감쇠를 빠르게). 커밋 `feat(3d): blend two scene states; handoff progress (pure)`.
+- [ ] 테스트 먼저: `blendScenes(a, b, h)` — h 0이면 a, 1이면 b, 가운데는 숫자 필드(카메라·목표점 각 성분, `airport`, `noise`, `dim`, `assemble`, `map`, `removed`, `drop`, `sway`, 그리고 Task 4의 `rows`)를 선형으로 섞는다. `chart`는 둘 다 0이어야 한다(차트 장면이 오면 던진다). `handoffProgress(scrollY, y0, y1)` — `y0` 이하 0, `y1` 이상 1, 사이 smoothstep, `y1 <= y0`이면 0.
+- [ ] 구현 + `SceneState`에 `follow?: boolean`(전환 구간 안 — 점·카메라가 스크롤을 바짝 따라가게 감쇠를 빠르게). 커밋 `feat(3d): blend two scene states; handoff progress (pure)`.
 
-### Task 3: 전환 연결과 빠른 감쇠
+### Task 3: SIGNAL 설명 화면(머리말)
 
-**Files:** `src/three/TerrainScene.tsx`(장면 목표 계산 부분만), `src/three/TerrainPoints.tsx`, `src/three/CameraRig.tsx`
+**Files:** `src/components/sections/Intro.tsx`(새), `src/components/HomePage.tsx`, `src/styles/globals.css`, `content/{ko,en,ja}.json`, 테스트(`tests/unit/content.test.ts` 키 일치·숫자 금지는 자동, e2e `site.spec.ts`)
 
-- [ ] `TerrainScene.update()`: 차트가 아닌 장면이고 `html.hero-runway`가 붙어 있을 때(3D가 맨 위에서 켜진 경우만 — 설계 §2.1), `y0 = 0.9 × innerHeight`, `y1 = (#project의 문서 위치) − 0.2 × innerHeight`, `h = handoffProgress(scrollY, y0, y1)`. `0 < h < 1`이면 목표 = `{ ...blendScenes(sceneFor('hero', 1, portrait), sceneFor('about', 0, portrait), h), follow: true }`, `parallax`는 `h < 0.5`일 때만. `h`가 0이면 지금처럼(첫 화면), 1 이상이면 지금처럼(활성 장면). `data-active-scene`은 지금처럼 활성 장면 이름.
-- [ ] `TerrainPoints`: `step`의 감쇠 상수를 `t.follow ? DAMP * 4 : DAMP`로. `CameraRig`: `1.8` → `t.follow ? 7 : 1.8`(위치·목표점 모두). 공항 곁가지 `AirportExtras`가 `target.airport`를 어떻게 따라가는지 확인하고, 같은 `follow` 규칙이 필요하면 맞춘다.
-- [ ] 눈 확인(실제 GPU): 스크롤 60·75·90·100% 캡처(설계 비교와 같은 위치) — 불빛이 지형 자리로 옮겨 가는 도중이 보이는지, 위로 되돌리면 거꾸로 가는지, 끊김·튐 없음. 빠르게 휠해도 이상 없음.
-- [ ] 커밋 `feat(3d): hero → project handoff follows the scroll`.
+- [ ] 첫 화면과 ① 사이에 `<section id="intro" className="intro wrap" aria-labelledby="intro-h">` 한 화면(높이 약 100svh — 전환 구간이 이 화면을 지나는 동안 일어난다). 섹션 목록(`sections.ts`)·옆 목차·번호에는 넣지 않는다(머리말). `data-scene`은 두지 않는다(전환 구간은 Task 4가 스크롤 위치로 계산 — 활성 장면은 지금처럼 `hero`에서 `about`으로).
+- [ ] 문구(설계 §5, 사용자 선택 A): 큰 두 줄 `intro.line1` "가격은 매일 흔들립니다." · `intro.line2` "대부분은 잡음이고, 그 안에 몇 개의 신호가 있습니다." + 작은 한 줄 `intro.note` "점 하나는 실제로 수집한 가격 하나입니다." 영·일은 같은 톤으로 담백하게(설명조·광고조 금지). 제목 요소는 `<h2 id="intro-h">`에 두 줄(시각적으로 줄바꿈), 작은 줄은 `<p>`.
+- [ ] 모양: 글은 화면 가운데 또는 왼쪽(①과 같은 글 열), 제목 글꼴(Space Grotesk 계열이면 한글은 Pretendard로 대체 — 기존 제목 규칙 따름), 리빌 연출(`data-reveal`)은 기존 섹션 제목과 같게. 판 없음. 글 뒤 대비 4.5:1 — 전환 중 점이 글 뒤를 지나가므로 `terrain.spec` 화소 검사에 `#intro-h`·`.intro-note`를 추가한다.
+- [ ] 3D 꺼짐·움직임 줄이기: 글만 보인다(대체 이미지 흐름 확인 — `ChapterFigure`가 필요하면 `hero` 그림을 쓰지 않고 없이 둔다).
+- [ ] 커밋 `feat(intro): SIGNAL prologue screen between the hero and ①`.
 
-### Task 4: 고른 ① 카메라 적용
+### Task 4: 전환 연결과 빠른 감쇠
 
-- [ ] Task 1에서 고른 값을 `SCENES.about`(·`PORTRAIT_OVERRIDE.about`)에 넣는다. `three-scenes.test.ts`에 값이 바뀌어 깨지는 테스트가 있으면 새 값에 맞춘다. 대비 화소 검사·`terrain.spec` 전체 통과. 대체 이미지는 `hero`·`problem`·`bubble`뿐이라 다시 찍을 필요 없음(확인만).
-- [ ] 커밋 `feat(3d): wide, soft terrain view for ① PROJECT`.
+**Files:** `src/three/TerrainScene.tsx`(장면 목표 계산 부분만), `src/three/TerrainPoints.tsx`, `src/three/CameraRig.tsx`, `src/three/AirportExtras.tsx`(필요하면)
 
-### Task 5: 검사·기록
+- [ ] `TerrainScene.update()`: 차트가 아닌 장면이고 `html.hero-runway`가 붙어 있을 때만, `y0 = 0.9 × innerHeight`(내려앉기 끝), `y1 = (#project의 문서 위치) − 0.2 × innerHeight`, `h = handoffProgress(scrollY, y0, y1)`. `0 < h < 1`이면 목표 = `{ ...blendScenes(sceneFor('hero', 1, portrait), sceneFor('about', 0, portrait), h), follow: true }`, `parallax`는 `h < 0.5`일 때만. `h`가 0이면 지금처럼(첫 화면), 1이면 지금처럼(활성 장면). 설명 화면이 `y0`~`y1` 사이에 있으므로 전환은 설명 글이 떠 있는 동안 일어난다 — 실제로 그런지 확인하고, 아니면 `y0`·`y1` 정의를 설명 화면 위·아래 끝에 맞춘다.
+- [ ] `TerrainPoints`: `step` 감쇠를 `t.follow ? DAMP * 4 : DAMP`. `CameraRig`: `t.follow ? 7 : 1.8`. `AirportExtras`가 `airport` 값을 따라 함께 사라지는지 확인하고 필요하면 같은 규칙.
+- [ ] 눈 확인(실제 GPU): 설명 화면 진입·가운데·끝, ① 도착 캡처 — 불빛이 지형 자리로 옮겨 가는 도중이 보이는지, 위로 되돌리면 거꾸로 가는지, 빠른 휠에 튐 없음.
+- [ ] 커밋 `feat(3d): hero → project handoff follows the scroll through the intro`.
 
-- [ ] `npm run typecheck && npm test && npm run build && npm run size && npm run e2e`.
-- [ ] 설계 문서에 `## 구현 결과 (계획 6-5)`: 전환 구간 값, 감쇠 배율, 고른 카메라 값(데스크톱·휴대폰), 대비 검사 결과, 눈 확인. `CLAUDE.md` 현재 상태 표에 6-5 줄(PR 대기)과 페이지 구성의 첫 화면 설명에 "스크롤한 만큼 불빛이 지형으로" 한 줄.
+### Task 5: ① 카메라 C + 물결 줄
+
+**Files:** `src/three/scenes.ts`, `src/three/data.ts`(또는 점 구름 만드는 곳), `src/three/TerrainPoints.tsx`, `src/three/shaders.ts`, 테스트
+
+- [ ] 설계 §6 그대로: `SCENES.about` = 카메라 C(`camera [13, 9, 15]`, `target [1, 0, 2]`), `PORTRAIT_OVERRIDE.about` = `camera [11, 6, 15]`, `target [3, -3, 2]`(세로 1.6배 물러남 규칙 뒤에 적용되는지 확인), `rows: 1`, `noise: 0`, 크기 0.75배·알파 0.6배(장면 값으로 — 새 필드가 필요하면 `blendScenes`에도).
+- [ ] 물결 줄 목표 위치 `buildWave`(순수 함수로 — 단위 테스트: 점 2,070개가 30×69 칸에 하나씩, 정렬 규칙, 호박색 줄 규칙이 지금 데이터에서 두 줄, 높이 식). 셰이더에 `aWave`·`uRows`. **정점 속성 16개 한계** — `aKind`·`aHoliday`·`aRoute`·물결 공휴일을 vec4 `aMeta`로 묶는다(다른 곳에서 이 속성들을 읽는 코드 모두 확인). 시안 코드 `docs/superpowers/mockups/2026-09-29-about-wave/about-wave-mock.diff`를 참고하되 쿼리 스위치는 빼고 정식으로.
+- [ ] 대비: `terrain.spec` 화소 검사(①·설명 화면) 통과. 3D 청크 ≤ 250KB.
+- [ ] 커밋 `feat(3d): wide camera and a soft wave of per-date rows for ①`.
+
+### Task 6: 검사·기록
+
+- [ ] `npm run typecheck && npm test && npm run build && npm run size && npm run e2e`. 대체 이미지는 `hero`·`problem`·`bubble`뿐 — 다시 찍을 필요 있는지 확인.
+- [ ] 설계 문서에 `## 구현 결과 (계획 6-5)`. `CLAUDE.md` 현재 상태 표에 6-5 줄(PR 대기), 페이지 구성에 설명 화면 한 줄, 다음 할 일에서 6-5 항목 정리(커버리지 그래프는 하지 않기로 함).
 - [ ] 커밋 `chore: record plan 6-5`.

@@ -1,0 +1,238 @@
+diff --git a/src/three/TerrainPoints.tsx b/src/three/TerrainPoints.tsx
+index ff4124b..9d72a47 100644
+--- a/src/three/TerrainPoints.tsx
++++ b/src/three/TerrainPoints.tsx
+@@ -38,9 +38,14 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
+     g.setAttribute('aTerrain', new THREE.BufferAttribute(cloud.terrain, 3));
+     g.setAttribute('aMap', new THREE.BufferAttribute(cloud.map, 3));
+     g.setAttribute('aScatter', new THREE.BufferAttribute(cloud.scatter, 3));
+-    g.setAttribute('aKind', new THREE.BufferAttribute(cloud.kind, 1));
+-    g.setAttribute('aHoliday', new THREE.BufferAttribute(cloud.holiday, 1));
+-    g.setAttribute('aRoute', new THREE.BufferAttribute(cloud.route, 1));
++    // MOCK: 정점 속성 16개 한계 — 종류·공휴일·노선·물결 공휴일을 vec4 하나로 묶는다
++    const meta = new Float32Array(cloud.count * 4), wave = new Float32Array(cloud.count * 3);
++    for (let i = 0; i < cloud.count; i++) {
++      meta.set([cloud.kind[i], cloud.holiday[i], cloud.route[i], cloud.wave[i * 4 + 3]], i * 4);
++      wave.set(cloud.wave.subarray(i * 4, i * 4 + 3), i * 3);
++    }
++    g.setAttribute('aMeta', new THREE.BufferAttribute(meta, 4));
++    g.setAttribute('aWave', new THREE.BufferAttribute(wave, 3));
+     // 차트 배치 두 벌: 처음엔 비어 있고(알파 0) TerrainScene이 차트 장면에 들어갈 때 채운다
+     for (const name of ['aChartA', 'aChartB', 'aStyleA', 'aStyleB']) {
+       g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(cloud.count * 3), 3).setUsage(THREE.DynamicDrawUsage));
+@@ -147,6 +152,9 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
+     uPointerOn: { value: 0 },
+     uAspect: { value: 1 },
+     uRipple: { value: new THREE.Vector3(0, 0, -1) },
++    uRows: { value: 0 },
++    uFadeK: { value: 1 },
++    uLeft: { value: 0 },
+   }), [instant]);
+ 
+   useFrame((state, delta) => {
+@@ -182,6 +190,9 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
+     else step('uSlot', t.slot);
+     step('uChart', t.chart);
+     step('uAirport', t.airport);
++    step('uRows', t.rows);
++    step('uFadeK', t.fadeK);
++    step('uLeft', t.left);
+     step('uFocusDist', focusDist(t));
+     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
+     u.uChartShift.value = t.shift;
+diff --git a/src/three/data.ts b/src/three/data.ts
+index 16ea459..f239539 100644
+--- a/src/three/data.ts
++++ b/src/three/data.ts
+@@ -58,6 +58,7 @@ export type PointCloud = {
+   holiday: Float32Array;
+   route: Float32Array;    // 1 노선, 0 해안선, −1 지도에서 안 씀(셰이더가 지도 장면에서 숨긴다)
+   date: Int16Array;      // 지형 출발일 번호(terrain.dates의 인덱스). ④ 출발일 점 그래프가 출발일마다 점을 모은다
++  wave: Float32Array;    // MOCK: ① 물결 줄 자리(xyz) + w = 공휴일 줄
+ };
+ 
+ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: number; seed?: number }): PointCloud {
+@@ -81,6 +82,7 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
+     holiday: new Float32Array(count),
+     route: new Float32Array(count),
+     date: new Int16Array(count),
++    wave: new Float32Array(count * 4),
+   };
+ 
+   const coastPts = resampleLines(m.coast, MAP_LINE.step);
+@@ -121,9 +123,54 @@ export function buildPointCloud(t: Terrain, m: MapData, opts: { noiseStride: num
+     const s = Math.sqrt(1 - u * u);
+     out.scatter.set([rr * s * Math.cos(th), rr * u, rr * s * Math.sin(th)], i * 3);
+   });
++  buildWave(t, rows, out, rand);
+   return out;
+ }
+ 
++// MOCK(시안): 신호 점을 출발일 줄 R개 × 남은 일수 칸 C개의 가지런한 격자에 놓는다. 높이 = 남은 일수별 평균 곡선(가우스 평활)
++// + 줄마다 평균 편차(줄 사이 평활) + 잔물결. 잡음 점은 줄 사이(0.25~0.75)에 같은 면 높이로 흐리게
++export const WAVE = { rows: 30, rowGain: 0.7, ripple: 1.2, sigmaDtd: 6, sigmaRow: 1.2 } as const;
++function buildWave(t: Terrain, rows: { dtd: number; date: number; pct: number; kind: number }[], out: PointCloud, rand: () => number) {
++  const R = WAVE.rows, nD = t.dates.length, maxDtd = t.maxDtd;
++  const sig = rows.map((r, i) => ({ ...r, i })).filter((r) => r.kind === 0);
++  const C = Math.ceil(sig.length / R);
++  // 남은 일수별 평균(가우스 평활)
++  const sum = new Float64Array(maxDtd + 1), cnt = new Float64Array(maxDtd + 1);
++  for (const r of sig) { sum[r.dtd] += r.pct / 10; cnt[r.dtd]++; }
++  const base = (d: number) => { let a = 0, w = 0; for (let k = 0; k <= maxDtd; k++) { if (!cnt[k]) continue; const g = Math.exp(-((k - d) ** 2) / (2 * WAVE.sigmaDtd ** 2)) * cnt[k]; a += g * sum[k] / cnt[k]; w += g; } return w ? a / w : 0; };
++  const B = Array.from({ length: maxDtd + 1 }, (_, d) => base(d));
++  const bucket = (date: number) => Math.min(R - 1, Math.floor((date / nD) * R));
++  const rs = new Float64Array(R), rc = new Float64Array(R), hol = new Float64Array(R), hc = new Float64Array(R);
++  for (const r of sig) { const b = bucket(r.date); rs[b] += r.pct / 10 - B[r.dtd]; rc[b]++; }
++  const hs = new Set(t.holiday);
++  for (let d = 0; d < nD; d++) { const b = bucket(d); hol[b] += hs.has(d) ? 1 : 0; hc[b]++; }
++  const O = Array.from({ length: R }, (_, r) => { let a = 0, w = 0; for (let k = 0; k < R; k++) { if (!rc[k]) continue; const g = Math.exp(-((k - r) ** 2) / (2 * WAVE.sigmaRow ** 2)); a += g * rs[k] / rc[k]; w += g; } return w ? (a / w) * WAVE.rowGain : 0; });
++  // 호박색 줄: 공휴일이 반 이상 + 가격이 오른 줄들이 이어진 묶음마다 가장 높은 줄 하나만(시안처럼 몇 줄만 은은하게)
++  const isHol = Array.from({ length: R }, (_, r) => hol[r] / hc[r] >= 0.5 && O[r] > 4);
++  const holRow = new Array(R).fill(0);
++  for (let r = 0; r < R; ) { if (!isHol[r]) { r++; continue; } let best = r; while (r < R && isHol[r]) { if (O[r] > O[best]) best = r; r++; } holRow[best] = 1; }
++  // 줄 r(연속), 칸 위치 u(0..1, 왼쪽=먼 예약)에서 면 높이
++  const pctAt = (rf: number, u: number) => {
++    const r0 = Math.max(0, Math.min(R - 1, Math.floor(rf))), r1 = Math.min(R - 1, r0 + 1), f = rf - r0;
++    const d = Math.round(maxDtd * (1 - u));
++    return B[d] + O[r0] * (1 - f) + O[r1] * f + Math.sin(rf * 1.3 + u * (C - 1) * 0.21) * WAVE.ripple;
++  };
++  const X = (u: number) => (u - 0.5) * WORLD.width, Z = (rf: number) => (rf / (R - 1) - 0.5) * WORLD.depth;
++  const Y = (p: number) => p * WORLD.heightPerPct;
++  sig.sort((a, b) => a.date - b.date || b.dtd - a.dtd);
++  sig.forEach((r, k) => {
++    const row = Math.floor(k / C), col = k % C, u = col / (C - 1);
++    out.wave.set([round(X(u)), round(Y(pctAt(row, u))), round(Z(row)), holRow[row]], r.i * 4);
++  });
++  rows.forEach((r, i) => {
++    if (r.kind === 0) return;
++    if (r.kind === 2) { out.wave.set([...out.terrain.subarray(i * 3, i * 3 + 3), 0], i * 4); return; }
++    const rf = Math.floor(rand() * (R - 1)) + 0.25 + rand() * 0.5, u = rand();
++    out.wave.set([round(X(u)), round(Y(pctAt(rf, u)) + (rand() - 0.5) * 0.08), round(Z(rf)), 0], i * 4);
++  });
++  if (typeof window !== 'undefined') (window as unknown as { __wave: unknown }).__wave = { R, C, holRows: holRow.map((h, r) => (h >= 0.5 ? r : -1)).filter((r) => r >= 0), O: O.map((v) => +v.toFixed(1)) };
++}
++
+ export async function loadSceneData(dataVersion: string, fetcher: typeof fetch = fetch) {
+   const get = async (url: string) => {
+     const res = await fetcher(url);
+diff --git a/src/three/scenes.ts b/src/three/scenes.ts
+index 266f563..3e0c2fe 100644
+--- a/src/three/scenes.ts
++++ b/src/three/scenes.ts
+@@ -17,6 +17,9 @@ export type SceneState = {
+   shift: number;    // 차트 배치 전체의 세계 y 이동량. 장면 표에서는 0이고 TerrainScene이 판 위치로 정한다(chartShiftY)
+   airport: number;  // 1 = 밤의 공항(첫 화면), 0 = 그 밖
+   sway: number;     // 첫 화면 마우스 시차 크기(월드 단위)
++  rows: number;     // MOCK: 1 = ① 물결 줄 배치
++  fadeK: number;    // MOCK: 거리 흐림 세기 배율(1 = 지금)
++  left: number;     // MOCK: 데스크톱 화면 왼쪽(글 쪽) 흐림 세기 0..1
+ };
+ 
+ // 차트 장면 카메라: 원점을 정면(z축)에서 본다. 그림 판의 화면 px ↔ z=0 평면 좌표가 이 두 값으로 정해지므로
+@@ -25,7 +28,7 @@ export const CHART_DISTANCE = 24;
+ export const CHART_FOV = 40;
+ const CHART = { camera: [0, 0, CHART_DISTANCE] as SceneState['camera'], target: [0, 0, 0] as SceneState['target'], chart: 1, noise: 0 };
+ 
+-const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0 };
++const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0, rows: 0, fadeK: 1, left: 0 };
+ 
+ // 밤의 공항(설계 2026-09-28 §4.2): A = 터미널 창가(눈높이 약 42m), B = 땅 가까이(약 12m). 같은 방향을 본다.
+ // 값은 시안(mockups/2026-09-28/01-night-airport.html)의 카메라를 사이트 좌표(airport.ts K·z 뒤집기)와 fov 40°로 옮긴 것
+@@ -84,6 +87,23 @@ const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']
+   contact: { camera: [0, 13, 30], target: [0, -3, 0] },
+ };
+ 
++// MOCK(시안): ?about=cur|C|C-wave|C-wave-noise, 조정 ?fk=거리흐림배율 &lx=왼쪽흐림 &dim= &nz=잡음
++if (typeof window !== 'undefined') {
++  const q = new URLSearchParams(window.location.search);
++  const v = q.get('about');
++  const num = (k: string, d: number) => (q.get(k) !== null ? Number(q.get(k)) : d);
++  if (v && v !== 'cur') {
++    const wave = v.startsWith('C-wave');
++    SCENES.about = {
++      ...SCENES.about, camera: [13, 9, 15], target: [1, 0, 2],
++      rows: wave ? 1 : 0,
++      noise: v === 'C-wave' ? 0 : v === 'C-wave-noise' ? num('nz', 0.35) : 0.6,
++      fadeK: num('fk', 1), left: num('lx', 0), dim: num('dim', 1),
++    };
++    PORTRAIT_OVERRIDE.about = { camera: [11, 6, 15], target: [3, -3, 2] };
++  }
++}
++
+ export function isChartScene(key: SceneKey): boolean {
+   return SCENES[key].chart === 1;
+ }
+diff --git a/src/three/shaders.ts b/src/three/shaders.ts
+index d748d39..2fb56ad 100644
+--- a/src/three/shaders.ts
++++ b/src/three/shaders.ts
+@@ -75,13 +75,14 @@ import { DEPTH_FADE, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
+ // 더하지 않으려고 기존 aRoute에 담았다, 정점 속성 16개 한계). 지도에서는 종류와 상관없이 같은 알파·크기(MAP_POINT)로
+ // 그리고, 잡음 점도 끝까지 모인다(gather를 uMap만큼 uAssemble로) — 덜 모인 잡음 점이 해안선 둘레에 뿌옇게 남았었다.
+ // terrainCol의 노선 색은 max(aRoute, 0.0)로 −1을 0으로 자른다
++// MOCK: 물결 점의 은은함(알파·크기 배율)과 글 쪽 흐림 경계 — ?wa= &ws= 로 조정
++const MQ = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
++const WA = Number(MQ.get('wa') ?? 0.6), WS = Number(MQ.get('ws') ?? 0.75), LE = Number(MQ.get('le') ?? -0.25);
+ export const vertexShader = /* glsl */ `
+   attribute vec3 aTerrain;
+   attribute vec3 aMap;
+   attribute vec3 aScatter;
+-  attribute float aKind;
+-  attribute float aHoliday;
+-  attribute float aRoute;
++  attribute vec4 aMeta;
+   attribute vec3 aChartA;
+   attribute vec3 aChartB;
+   attribute vec3 aStyleA;
+@@ -89,6 +90,10 @@ export const vertexShader = /* glsl */ `
+   attribute float aHl;
+   attribute vec4 aAirport;
+   attribute vec4 aAirStyle;
++  attribute vec3 aWave;
++  uniform float uRows;
++  uniform float uFadeK;
++  uniform float uLeft;
+   uniform float uAssemble;
+   uniform float uMap;
+   uniform float uNoise;
+@@ -129,7 +134,10 @@ export const vertexShader = /* glsl */ `
+   }
+ 
+   void main() {
+-    vec3 target = mix(aTerrain, aMap, uMap);
++    float aKind = aMeta.x;
++    float aHoliday = aMeta.y;
++    float aRoute = aMeta.z;
++    vec3 target = mix(mix(aTerrain, aWave.xyz, uRows), aMap, uMap);
+     float gather = mix(aKind > 0.5 && aKind < 1.5 ? uAssemble * 0.9 : uAssemble, uAssemble, uMap);
+     vec3 p = mix(aScatter, target, gather);
+     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
+@@ -154,6 +162,7 @@ export const vertexShader = /* glsl */ `
+     vec2 off = (dp > 1e-4 ? dv / dp * push : vec2(0.0)) + (drl > 1e-4 ? dr / drl * rip : vec2(0.0));
+     gl_Position.xy += off / vec2(uAspect, 1.0) * gl_Position.w;
+     float size = aKind < 0.5 ? ${f(POINT.signalSize)} : (aKind < 1.5 ? ${f(POINT.noiseSize)} : 1.1);
++    size *= mix(1.0, ${f(WS)}, uRows);
+     size = mix(size, ${f(MAP_POINT.size)}, uMap);
+     float terrainPx = uSize * size * (20.0 / -mv.z);
+     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;
+@@ -166,14 +175,17 @@ export const vertexShader = /* glsl */ `
+     float a = aKind < 0.5 ? ${f(POINT.signalAlpha)} : (aKind < 1.5 ? ${f(POINT.noiseAlpha)} * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
+     float onMap = step(-0.5, aRoute);
+     a = mix(a, onMap * mix(${f(MAP_POINT.coastAlpha)}, ${f(MAP_POINT.routeAlpha)}, max(aRoute, 0.0)), uMap);
+-    float fade = clamp(${f(DEPTH_FADE.base)} - (-mv.z - uFocusDist) / ${f(DEPTH_FADE.span)}, ${f(DEPTH_FADE.min)}, 1.0);
+-    vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(aHoliday * (1.0 - uMap), max(aRoute, 0.0) * uMap));
++    float fade = clamp(${f(DEPTH_FADE.base)} - (-mv.z - uFocusDist) * uFadeK / ${f(DEPTH_FADE.span)}, ${f(DEPTH_FADE.min)} / uFadeK, 1.0);
++    vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(mix(aHoliday, aMeta.w, uRows) * (1.0 - uMap), max(aRoute, 0.0) * uMap));
+     float chartA = mix(aStyleA.x, aStyleB.x, uSlot);
+     vec3 chartCol = mix(toneColor(aStyleA.y), toneColor(aStyleB.y), uSlot);
+     if (uFocus > -0.5 && aHl > -0.5) {
+       if (abs(aHl - uFocus) < 0.5) chartCol = toneColor(uFocusTone); else chartA *= uFocusDim;
+     }
+-    vAlpha = mix(a * uDim * fade, chartA, uChart);
++    a *= mix(1.0, ${f(WA)}, uRows);
++    float side = uAspect > 1.0 ? smoothstep(${f(LE)}, ${f(LE + 0.3)}, ndc.x) : smoothstep(0.15, 0.45, ndc.y);
++    float lf = 1.0 - uLeft * (1.0 - side);
++    vAlpha = mix(a * uDim * fade * lf, chartA, uChart);
+     vColor = toSrgbTone(mix(terrainCol, chartCol, uChart));
+     vEdge = mix(0.15, 0.38, uChart);
+     float on = clamp((uLightT - aAirStyle.w * 1.2) / 0.18, 0.0, 1.0);
