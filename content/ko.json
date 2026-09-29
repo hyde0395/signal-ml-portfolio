@@ -231,7 +231,8 @@
     "holidays": {
       "kr_christmas_day": "성탄절",
       "kr_new_year": "신정",
-      "kr_korean_new_year_s_day": "설날"
+      "kr_korean_new_year_s_day": "설날",
+      "kr_hangul_day": "한글날"
     }
   }
 }

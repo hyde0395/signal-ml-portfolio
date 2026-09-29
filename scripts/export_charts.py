@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MAX_GZIP_BYTES = 150 * 1024   # 설계 §4 charts.json 예산
 SAMPLE_SIZE = 4000            # 차트 2 관측 점 개수(고정)
 SAMPLE_CLIP = 40.0            # 표본 %는 ±40에서 자른다(화면은 ±22만 그린다 — 값이 큰 몇 개가 파일만 키우지 않게)
-TOP_LABELS = 3
+TOP_LABELS = 4                # 점 그래프에서 봉우리 바로 위에 이름을 붙이므로 한글날·추석 무렵까지(설계 2026-09-29 §2)
 SEED = 7
 CURVE_TOLERANCE = 0.1         # 지표는 소수 첫째 자리, 사이트 값은 %×10 정수라 반올림 차이만 허용
 
