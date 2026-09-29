@@ -67,30 +67,49 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   // 포인터(계획 5-3a): 캔버스는 pointer-events: none이라 창 전체에서 듣는다(CameraRig와 같은 이유)
-  const pointer = useRef({ x: 0, y: 0, on: 0, rippleAt: -1, rx: 0, ry: 0 });
+  const pointer = useRef({ x: 0, y: 0, on: 0, snap: false, rippleAt: -1, rx: 0, ry: 0 });
   useEffect(() => {
     if (instant) return;
     const p = pointer.current;
+    // 고정 배경 캔버스(.backdrop)는 늘 보이는 스크롤바 폭을 빼고 그려진다 — innerWidth를 쓰면 밀기 중심이
+    // 커서에서 최대 15px쯤 어긋나므로 스크롤바를 뺀 clientWidth·clientHeight로 NDC를 구한다
+    const ndc = (x: number, y: number) =>
+      toNdc(x, y, document.documentElement.clientWidth, document.documentElement.clientHeight);
     const onMove = (e: PointerEvent) => {
       if (e.pointerType === 'touch') return; // 터치로 계속 밀면 스크롤을 방해한다 — 물결만(설계 §4.1)
-      [p.x, p.y] = toNdc(e.clientX, e.clientY, window.innerWidth, window.innerHeight);
+      [p.x, p.y] = ndc(e.clientX, e.clientY);
+      // 꺼져 있다가 다시 켜질 때(창에 다시 들어옴·탭이 다시 보임)는 그 자리에서 시작 — 옛 자리에서 미끄러져 오지 않게
+      if (!p.on) p.snap = true;
       p.on = 1;
     };
+    // 물결은 가볍게 누른 곳에서만: 스크롤도 pointerdown으로 시작해서, 누를 때마다 물결을 내면 스크롤할 때마다
+    // 화면이 부산했다(검토 2026-09-29). 손가락별 시작 자리를 기억해 두고, 10px 안에서 떼면(취소 없이) 물결을 낸다
+    const taps = new Map<number, [number, number]>();
     const onDown = (e: PointerEvent) => {
-      if (e.pointerType !== 'touch') return;
-      [p.rx, p.ry] = toNdc(e.clientX, e.clientY, window.innerWidth, window.innerHeight);
+      if (e.pointerType === 'touch') taps.set(e.pointerId, [e.clientX, e.clientY]);
+    };
+    const onUp = (e: PointerEvent) => {
+      const start = taps.get(e.pointerId);
+      taps.delete(e.pointerId);
+      if (!start || Math.hypot(e.clientX - start[0], e.clientY - start[1]) >= 10) return;
+      [p.rx, p.ry] = ndc(start[0], start[1]);
       p.rippleAt = performance.now();
     };
+    const onCancel = (e: PointerEvent) => { taps.delete(e.pointerId); };
     // 창 밖으로 나가면(relatedTarget 없음) 밀기를 끈다 — 창 가장자리에 멈춘 채 점이 계속 비켜 있지 않게
     const onOut = (e: MouseEvent) => { if (!e.relatedTarget) p.on = 0; };
     const onHide = () => { if (document.hidden) p.on = 0; };
     window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('pointerup', onUp, { passive: true });
+    window.addEventListener('pointercancel', onCancel, { passive: true });
     window.addEventListener('mouseout', onOut);
     document.addEventListener('visibilitychange', onHide);
     return () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
       window.removeEventListener('mouseout', onOut);
       document.removeEventListener('visibilitychange', onHide);
     };
@@ -174,7 +193,10 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     const p = pointer.current;
     u.uAspect.value = state.size.width / Math.max(1, state.size.height);
     const pv = u.uPointer.value as THREE.Vector2;
-    if (u.uPointerOn.value < 0.01 && p.on) pv.set(p.x, p.y); // 막 켜질 때는 그 자리에서 시작(화면을 가로질러 날아오지 않게)
+    if (p.snap) {
+      pv.set(p.x, p.y); // 막 다시 켜질 때는 그 자리에서 시작(화면을 가로질러 날아오지 않게)
+      p.snap = false;
+    }
     pv.x = THREE.MathUtils.damp(pv.x, p.x, 10, delta);
     pv.y = THREE.MathUtils.damp(pv.y, p.y, 10, delta);
     u.uPointerOn.value = instant ? 0 : THREE.MathUtils.damp(u.uPointerOn.value, p.on, 6, delta);
