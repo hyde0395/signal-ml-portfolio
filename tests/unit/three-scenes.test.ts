@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, handoffProgress, HERO_FOV, horizonFrac, isChartScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 
-const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'features', 'chartDepart', 'chartCurve', 'bubble',
+const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'model', 'features', 'chartDepart', 'chartCurve', 'bubble',
   'validation', 'chartCloud', 'limits', 'demo', 'contact'];
 const CHARTS: SceneKey[] = ['features', 'chartDepart', 'chartCurve', 'chartCloud'];
 
@@ -26,6 +26,11 @@ describe('SCENES', () => {
   const DIMMED: SceneKey[] = ['dataBoard', 'demo', 'contact'];
   it('dataBoard·데모·연락처만 점을 흐리게(dim < 1) — 판 없는 화면이 읽히도록', () => {
     for (const k of KEYS) expect(SCENES[k].dim < 1, k).toBe(DIMMED.includes(k));
+  });
+  it('model은 지형 장면이다(지도·제거 레이어·차트·흐림 없음) — 설계 2026-09-29 이야기 흐름 §3.4', () => {
+    const s = SCENES.model;
+    expect([s.map, s.removed, s.chart, s.rows, s.airport]).toEqual([0, 0, 0, 0, 0]);
+    expect(s.dim).toBe(1);
   });
   it('장면 표의 slot은 모두 0(어느 슬롯을 보일지는 TerrainScene이 정한다)', () => {
     for (const k of KEYS) expect(SCENES[k].slot).toBe(0);
