@@ -139,11 +139,11 @@
   "data": {
     "body1": "仁川と東京（成田・羽田）、大阪（関西）を結ぶ{data.routes}路線の航空券価格を、{data.collectStart|date}から{data.collectEnd|date}まで収集しました。",
     "body2": "SerpApi経由でGoogle Flightsの検索結果を取得し、GitHub Actionsが毎日実行します。元データ{data.rawRows}行のうち、エラーを除いて{data.filteredRows}行を使用しました。",
-    "sparse": "近い出発日は毎日、遠い出発日は週に一回収集したため、遠い区間はデータがまばらです。点が少ない場所がその区間です。",
+    "sparse": "出発が近いほど頻繁に集めました。一週間以内は水・金・日の出発便を毎日、一か月以内は全曜日を三日ごとに順番に、それより先は毎週日曜に隔週の金・日の出発便と祝日だけを集めました。そのため遠い区間は点がまばらです。収集ルールは初期に二度変わり、これが最後のルールです。",
     "heading": "集めたデータ",
     "steps": {
       "collect": "SerpApi · Google Flights の検索結果",
-      "schedule": "GitHub Actions · 毎日(遠い出発日は毎週)",
+      "schedule": "GitHub Actions · 毎日(遠い出発日は日曜)",
       "filter": "整合性・直行便チェック · {data.rawRows}行 → {data.filteredRows}行",
       "join": "ウォン/円レート · 日韓の祝日 · 原油価格"
     },

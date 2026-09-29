@@ -139,11 +139,11 @@
   "data": {
     "body1": "인천과 도쿄(나리타·하네다), 오사카(간사이)를 오가는 {data.routes}개 노선의 항공권 가격을 {data.collectStart|date}부터 {data.collectEnd|date}까지 모았습니다.",
     "body2": "SerpApi로 Google Flights 검색 결과를 가져오고, GitHub Actions가 매일 실행합니다. 원본 {data.rawRows}행 중 오류를 걸러 {data.filteredRows}행을 썼습니다.",
-    "sparse": "가까운 출발일은 매일, 먼 출발일은 매주 한 번 수집해서 먼 구간은 데이터가 성깁니다. 점이 듬성한 곳이 그 구간입니다.",
+    "sparse": "출발이 가까울수록 자주 모았습니다. 일주일 안쪽은 수·금·일 출발편을 매일, 한 달 안쪽은 모든 요일을 사흘에 한 번씩 돌아가며, 그보다 먼 출발일은 일요일마다 격주 금·일 출발편과 공휴일만 모았습니다. 그래서 먼 구간은 점이 듬성합니다. 수집 규칙은 초기에 두 번 바뀌었고, 이것이 마지막 규칙입니다.",
     "heading": "수집한 데이터",
     "steps": {
       "collect": "SerpApi · Google Flights 검색 결과",
-      "schedule": "GitHub Actions · 매일(먼 출발일은 매주)",
+      "schedule": "GitHub Actions · 매일(먼 출발일은 일요일)",
       "filter": "무결성·직항 확인 · {data.rawRows}행 → {data.filteredRows}행",
       "join": "원/엔 환율 · 한·일 공휴일 · 유가"
     },
