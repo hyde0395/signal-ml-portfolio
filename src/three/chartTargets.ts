@@ -1,7 +1,7 @@
 // 그림 판의 배치(정규화 좌표) → 3D 점 목표. 차트 장면의 카메라는 원점을 정면으로 보는 고정 위치(scenes.ts
 // CHART_DISTANCE·CHART_FOV)라, 화면 px과 z=0 평면 좌표가 선형으로 대응한다. 판이 sticky로 고정된 동안
 // HTML 이름표와 점이 정확히 겹친다(설계 §4).
-import type { ChartEntry } from '@/charts/types';
+import type { ChartEntry, ChartKey } from '@/charts/types';
 
 export function screenToWorld(sx: number, sy: number, vw: number, vh: number, dist: number, fovDeg: number): [number, number] {
   const halfH = dist * Math.tan((fovDeg * Math.PI) / 360);
@@ -67,4 +67,12 @@ export function slotBuffers(entry: ChartEntry, assign: Int32Array, terrain: Floa
     hl[i] = L.hl[j];
   }
   return { pos, style, hl };
+}
+
+// 새 차트 배치를 쓸 슬롯. last는 마지막으로 슬롯에 써 넣은 차트로, 지형 장면으로 나가도 지우지 않는다 —
+// 지우면 uChart가 1→0으로 줄어드는 동안(앞 차트가 아직 보이는 동안) 다른 차트에 들어올 때 보이는 슬롯을
+// 덮어써 점이 한 번에 튄다. 다른 차트면 반대 슬롯, 같은 차트(다시 들어옴·창 크기 변경)면 같은 슬롯.
+export function pickSlot(last: { key: ChartKey | null; slot: 0 | 1 }, next: ChartKey): 0 | 1 {
+  if (last.key === null || last.key === next) return last.slot;
+  return last.slot === 0 ? 1 : 0;
 }

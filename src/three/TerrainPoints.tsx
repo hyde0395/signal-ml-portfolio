@@ -176,8 +176,11 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     step('uRemoved', t.removed);
     step('uDrop', t.drop);
     step('uDim', t.dim);
+    // 차트가 전혀 안 보일 때(지형에서 막 들어오는 순간) 슬롯은 바로 맞춘다 — 천천히 옮기면 들어오는 동안
+    // 옛 슬롯의 이전 차트 배치가 섞여 보인다. uChart를 움직이기 전 값으로 판정해야 첫 프레임을 놓치지 않는다
+    if (u.uChart.value < 1e-3) u.uSlot.value = t.slot;
+    else step('uSlot', t.slot);
     step('uChart', t.chart);
-    step('uSlot', t.slot);
     step('uAirport', t.airport);
     step('uFocusDist', focusDist(t));
     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다

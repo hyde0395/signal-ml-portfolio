@@ -2,7 +2,7 @@
 // 슬롯 버퍼는 쓰는 점만 차트 자리·모양을 받고, 나머지는 지형 자리에서 알파 0.
 import { describe, expect, it } from 'vitest';
 import type { ChartEntry } from '@/charts/types';
-import { assignPoints, chartShiftY, screenToWorld, slotBuffers } from '@/three/chartTargets';
+import { assignPoints, chartShiftY, pickSlot, screenToWorld, slotBuffers } from '@/three/chartTargets';
 
 const HALF_H = 24 * Math.tan((40 * Math.PI) / 360);
 
@@ -67,5 +67,19 @@ describe('chartShiftY', () => {
   });
   it('판이 화면 한 높이만큼 내려가 있으면 시야 높이(halfH×2)만큼 내려간다', () => {
     expect(chartShiftY(800, 800, 24, 40)).toBeCloseTo(-HALF_H * 2, 6);
+  });
+});
+
+describe('pickSlot', () => {
+  it('처음(아직 쓴 차트 없음)은 슬롯 0', () => {
+    expect(pickSlot({ key: null, slot: 0 }, 'chartDepart')).toBe(0);
+  });
+  it('A → (지형) → B: 마지막으로 쓴 슬롯의 반대쪽', () => {
+    expect(pickSlot({ key: 'chartDepart', slot: 0 }, 'chartCurve')).toBe(1);
+    expect(pickSlot({ key: 'chartDepart', slot: 1 }, 'chartCurve')).toBe(0);
+  });
+  it('A → (지형) → A, 또는 같은 차트 재배치: 같은 슬롯', () => {
+    expect(pickSlot({ key: 'chartDepart', slot: 1 }, 'chartDepart')).toBe(1);
+    expect(pickSlot({ key: 'chartDepart', slot: 0 }, 'chartDepart')).toBe(0);
   });
 });

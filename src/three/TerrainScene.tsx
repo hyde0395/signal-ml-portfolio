@@ -10,7 +10,7 @@ import { buildAirport } from './airport';
 import { AirportExtras } from './AirportExtras';
 import { assignAirport } from './airportAssign';
 import { CameraRig } from './CameraRig';
-import { assignPoints, chartShiftY, slotBuffers } from './chartTargets';
+import { assignPoints, chartShiftY, pickSlot, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, stepFrameRate } from './frameRate';
 import { CHART_DISTANCE, CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
@@ -32,6 +32,8 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   // 지금 슬롯에 써 넣은 차트와 그 슬롯. 차트에서 차트로 넘어갈 때만 다른 슬롯에 써서 점이 두 배치 사이를 옮겨 간다
   const shiftKey = useRef<ChartKey | null>(null); // 점 이동량(shift)을 잴 판의 차트 — 차트를 벗어나도 마지막 것을 유지
   const chartState = useRef<{ key: ChartKey | null; entry: ChartEntry | null; slot: 0 | 1 }>({ key: null, entry: null, slot: 0 });
+  // 마지막으로 슬롯에 써 넣은 차트 — chartState.key와 달리 지형으로 나가도 지우지 않는다(chartTargets.ts pickSlot)
+  const lastWritten = useRef<{ key: ChartKey | null; slot: 0 | 1 }>({ key: null, slot: 0 });
 
   useEffect(() => {
     loadSceneData(dataVersion).then(setData).catch((e) => onFail(`data: ${e.message}`));
@@ -80,13 +82,13 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       const entry = chartKey ? getChart(chartKey) : undefined;
       const cs = chartState.current;
       if (chartKey && entry && cloud && (cs.key !== chartKey || cs.entry !== entry)) {
-        // 다른 차트에서 넘어오면 반대 슬롯에 쓰고 그쪽으로 옮겨 간다. 지형에서 들어오거나(key null)
-        // 같은 차트가 다시 배치되면(창 크기 변경) 지금 슬롯에 바로 쓴다
-        const slot: 0 | 1 = cs.key !== null && cs.key !== chartKey ? (cs.slot === 0 ? 1 : 0) : cs.slot;
+        // 다른 차트면(사이에 지형 장면을 거쳤어도) 반대 슬롯에 쓰고 그쪽으로 옮겨 간다
+        const slot = pickSlot(lastWritten.current, chartKey);
         const assign = assignPoints(entry.layout.group, entry.layout.n, cloud.date, cloud.kind);
         const { pos, style, hl } = slotBuffers(entry, assign, cloud.terrain, CHART_DISTANCE, CHART_FOV);
         slots.current.pending = { slot, pos, style, hl };
         chartState.current = { key: chartKey, entry, slot };
+        lastWritten.current = { key: chartKey, slot };
         document.documentElement.dataset.chart = chartKey;
       }
       if (!chartKey) {
