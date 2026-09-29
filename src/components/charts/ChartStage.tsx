@@ -4,31 +4,44 @@
 // 판이 화면 가까이 오면 데이터와 배치 코드를 불러와(import()) 배치를 만들고,
 // - 배치와 판의 고정 위치를 저장소(registry)에 올린다 → 3D가 켜져 있으면 배경 점이 그 자리로 모인다,
 // - 3D가 꺼져 있으면(data-3d="off") 같은 배치를 2D 캔버스에 그린다.
-// 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 판 전체가 aria-hidden이고, 같은 내용은 자막 띠(.chart-copy)의 요약 문단이 준다.
-// ③ 와플은 마우스를 올린 그룹을 저장소로 3D에 알리고 2D도 다시 그린다(설계 2026-09-28 §3).
+// 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 캔버스와 이름표는 aria-hidden이고, 같은 내용은 자막 띠(.chart-copy)의 요약 문단이 준다.
+// 강조(sel): ③ 와플은 마우스를 올린 그룹(설계 2026-09-28 §3), ④ 차트 1·2·4는 조작 층(role=slider)으로 짚은 항목(계획 5-3b).
+// 어느 쪽이든 강조 번호 하나를 저장소로 3D에 알리고 2D도 다시 그린다.
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ChartStrings } from '@/charts/build';
 import { publishChart, setFocus as publishFocus } from '@/charts/registry';
 import type { ChartKey, ChartLabel, ChartLayout } from '@/charts/types';
 
-type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string };
+// label: 조작 층의 aria-label(차트 제목 + " · " + charts.touch). 항목이 있는 차트(1·2·4)만 쓴다
+type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string; label?: string };
 
 // 판이 화면 아래 800px 안으로 들어오면 미리 불러온다(스크롤해 도착했을 때 이미 그려져 있도록)
 const LOAD_MARGIN = '800px 0px';
+// 손가락이 가로로 이만큼 움직여야 짚기(끌기)로 본다 — 그 전엔 세로 스크롤일 수 있다(데모 DateStrip과 같은 규칙)
+const TOUCH_SLOP_PX = 8;
+// 표시 상자와 짚은 항목 사이 간격(px)
+const TIP_GAP = 12;
 
-export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props) {
+export function ChartStage({ chartKey, dataVersion, strings, errorText, label }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const plot = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const [labels, setLabels] = useState<ChartLabel[]>([]);
+  const tipEl = useRef<HTMLDivElement>(null);
+  const [lay, setLay] = useState<ChartLayout | null>(null);
+  const labels = lay?.labels ?? [];
+  const items = lay?.items;
   const [failed, setFailed] = useState(false);
-  // ③ 와플 강조(설계 2026-09-28 §3): 마우스를 올린(휴대폰은 누른) 그룹 번호, 없으면 -1
-  const [focus, setFocusState] = useState(-1);
+  // 강조 번호(ChartLayout.hl): 와플 그룹 또는 차트 항목. −1 = 없음. 차트 2는 첫 배치 때 layout.initial(가장 싼 구간)
+  const [sel, setSel] = useState(-1);
   const lastLayout = useRef<ChartLayout | null>(null);
   const paint = useRef<(f: number) => void>(() => {});
   const lastPointer = useRef('mouse');
-  const focusRef = useRef(-1);
+  const selRef = useRef(-1);
+  const inited = useRef(false);
+  // 터치: 누른 자리와 아직 끌기로 확정되지 않았는지(pending). 확정되면 dragging
+  const touch = useRef<{ x: number; pending: boolean } | null>(null);
+  const dragging = useRef(false);
 
   useEffect(() => {
     const st = stage.current, pl = plot.current, cv = canvas.current;
@@ -52,9 +65,11 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
             layout,
             rect: { left: r.left, top: r.top - s.top, width: r.width, height: r.height, vw: document.documentElement.clientWidth, vh: window.innerHeight },
           });
-          setLabels(layout.labels);
           lastLayout.current = layout;
-          paint.current(focusRef.current);
+          // 처음 배치 때만 처음 강조를 정한다 — 창 크기로 다시 배치해도 짚은 항목(같은 번호)은 그대로 둔다
+          if (!inited.current) { inited.current = true; selRef.current = layout.initial ?? -1; setSel(selRef.current); }
+          setLay(layout);
+          paint.current(selRef.current);
         };
         // 2D 그리기만 따로 둔다 — 강조가 바뀔 때 배치를 다시 만들거나 3D에 다시 올리지 않고 2D만 다시 그린다
         paint.current = (f: number) => {
@@ -95,30 +110,93 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
   }, [chartKey, dataVersion, strings]);
 
   useEffect(() => {
-    focusRef.current = focus;
-    if (chartKey === 'features') publishFocus('features', focus);
-    paint.current(focus);
-  }, [focus, chartKey]);
+    selRef.current = sel;
+    publishFocus(chartKey, sel);
+    paint.current(sel);
+  }, [sel, chartKey]);
+
+  // 표시 상자 자리: 짚은 항목 위 TIP_GAP(자리가 없으면 아래), 좌우는 판 안으로 자른다. 상자 폭은 문장마다 달라 그린 뒤 잰다
+  const cur = items && sel >= 0 ? items[sel] : undefined;
+  useLayoutEffect(() => {
+    const el = tipEl.current, pl = plot.current;
+    if (!el || !pl || !cur) return;
+    const W = pl.clientWidth, H = pl.clientHeight, w = el.offsetWidth, h = el.offsetHeight;
+    const x = cur.x * W, y = cur.y * H;
+    el.style.left = `${Math.max(0, Math.min(W - w, x - w / 2))}px`;
+    el.style.top = `${y - TIP_GAP - h >= 0 ? y - TIP_GAP - h : Math.min(H - h, y + TIP_GAP)}px`;
+  }, [cur, lay]);
 
   // 마우스·펜은 올리고 내리기, 손가락은 누를 때마다 켜고 끄기(손가락은 떼는 순간 pointerleave가 와서 바로 꺼지므로 무시한다)
   const groupHandlers = (gi: number) => ({
-    onPointerEnter: (e: React.PointerEvent) => { lastPointer.current = e.pointerType; if (e.pointerType !== 'touch') setFocusState(gi); },
-    onPointerLeave: (e: React.PointerEvent) => { if (e.pointerType !== 'touch') setFocusState(-1); },
-    onClick: () => { if (lastPointer.current === 'touch') setFocusState((f) => (f === gi ? -1 : gi)); },
+    onPointerEnter: (e: React.PointerEvent) => { lastPointer.current = e.pointerType; if (e.pointerType !== 'touch') setSel(gi); },
+    onPointerLeave: (e: React.PointerEvent) => { if (e.pointerType !== 'touch') setSel(-1); },
+    onClick: () => { if (lastPointer.current === 'touch') setSel((f) => (f === gi ? -1 : gi)); },
   });
 
+  // 조작 층: 판 기준 가로 위치에서 가장 가까운 항목(항목 ≤ 180개라 차례로 본다)
+  const pick = (clientX: number) => {
+    const pl = plot.current;
+    if (!items?.length || !pl) return;
+    const r = pl.getBoundingClientRect();
+    const fx = (clientX - r.left) / r.width;
+    let best = 0;
+    for (let i = 1; i < items.length; i++) if (Math.abs(items[i].x - fx) < Math.abs(items[best].x - fx)) best = i;
+    setSel(items[best].key);
+  };
+  const touchHandlers = {
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+      // 손가락은 세로 스크롤하려고 스친 것일 수 있어 바로 짚지 않는다(세로면 브라우저가 pan-y로 가져가며 pointercancel)
+      if (e.pointerType === 'touch') touch.current = { x: e.clientX, pending: true };
+      else pick(e.clientX);
+    },
+    onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+      const t = touch.current;
+      if (t?.pending && Math.abs(e.clientX - t.x) > TOUCH_SLOP_PX) {
+        t.pending = false;
+        dragging.current = true;
+        e.currentTarget.setPointerCapture(e.pointerId); // 판 밖으로 끌고 나가도 계속 따라가게
+      }
+      if (e.pointerType !== 'touch' || dragging.current) pick(e.clientX);
+    },
+    onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => {
+      // 가로로 끌지 않고 뗀 터치는 탭 — 그 자리 항목. 손을 떼도 짚은 항목은 남긴다
+      if (touch.current?.pending) pick(e.clientX);
+      touch.current = null;
+      dragging.current = false;
+    },
+    onPointerCancel: () => { touch.current = null; dragging.current = false; },
+    // 마우스·펜이 판을 떠나면 차트 1·4는 강조 해제, 차트 2는 마지막 구간(세로선)이 남는다. 손가락은 뗄 때 오므로 무시
+    // 부드러운 스크롤(Lenis)이 끝날 때 크롬이 흉내 낸 마우스 이동으로 판 "위"에서도 pointerleave를 보낼 때가 있다
+    // (3D 켜짐 실측) — 포인터가 아직 판 안이면 떠난 게 아니다
+    onPointerLeave: (e: React.PointerEvent<HTMLDivElement>) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      const inside = e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom;
+      if (e.pointerType !== 'touch' && chartKey !== 'chartCurve' && !inside) setSel(-1);
+    },
+    onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!items?.length) return;
+      const last = items.length - 1, k = e.key;
+      const step = k === 'ArrowRight' || k === 'ArrowUp' ? 1 : k === 'ArrowLeft' || k === 'ArrowDown' ? -1 : 0;
+      // 아직 짚은 항목이 없으면(차트 1·4) 화살표는 첫 항목부터
+      const next = step ? (sel < 0 ? 0 : Math.max(0, Math.min(last, sel + step))) : k === 'Home' ? 0 : k === 'End' ? last : null;
+      if (next === null) return;
+      e.preventDefault(); // 화살표·Home·End가 페이지를 스크롤하지 않게
+      setSel(next);
+    },
+  };
+
   return (
-    <div ref={stage} className="chart-stage" aria-hidden="true">
+    <div ref={stage} className="chart-stage">
       <div ref={plot} className="chart-plot" data-plot>
-        <canvas ref={canvas} className="chart-canvas" />
-        <div className="chart-labels">
+        <canvas ref={canvas} className="chart-canvas" aria-hidden="true" />
+        <div className="chart-labels" aria-hidden="true">
           {(() => {
             const groups = labels.filter((l): l is Extract<ChartLabel, { type: 'group' }> => l.type === 'group');
             return labels.map((l, i) => {
               const style = { left: `${l.x * 100}%`, top: `${l.y * 100}%` };
               if (l.type === 'group') {
                 const gi = groups.indexOf(l);
-                const cls = `chart-group${l.holiday ? ' is-holiday' : ''}${focus === gi ? ' is-focus' : focus >= 0 ? ' is-dim' : ''}`;
+                const cls = `chart-group${l.holiday ? ' is-holiday' : ''}${sel === gi ? ' is-focus' : sel >= 0 ? ' is-dim' : ''}`;
                 return (
                   <div key={l.id} className={cls} style={style} {...groupHandlers(gi)}>
                     <span className="chart-group-pct">{l.pct}</span>
@@ -129,7 +207,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
                 );
               }
               if (l.type === 'detail') {
-                const g = focus >= 0 ? groups[focus] : undefined;
+                const g = sel >= 0 ? groups[sel] : undefined;
                 return (
                   <p key="detail" className="chart-detail" style={style}>
                     {g && <><b>{g.name} · {g.pct} · {g.count}</b><span>{g.features.join(' · ')}</span></>}
@@ -140,6 +218,22 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText }: Props)
             });
           })()}
         </div>
+        {chartKey === 'chartCurve' && cur && <div className="chart-cursor" aria-hidden="true" style={{ left: `${cur.x * 100}%` }} />}
+        {cur && <div ref={tipEl} className="chart-tip" aria-hidden="true">{cur.text}</div>}
+        {items && items.length > 0 && (
+          <div
+            className="chart-touch"
+            role="slider"
+            tabIndex={0}
+            aria-label={label}
+            // 짚은 항목이 없어도 role=slider는 valuenow가 필수라(ARIA) 0으로 두고, 뜻은 valuetext가 없는 것으로 전한다
+            aria-valuemin={0}
+            aria-valuemax={items.length - 1}
+            aria-valuenow={sel < 0 ? 0 : sel}
+            aria-valuetext={cur?.text}
+            {...touchHandlers}
+          />
+        )}
         {failed && <p className="chart-error">{errorText}</p>}
       </div>
     </div>

@@ -16,7 +16,7 @@ async function openDemo(page: Page, path = '/') {
   // 스크롤해야 이후 조작이 옮겨 간 자리를 누르지 않는다(좌표 클릭 테스트가 가끔 실패하던 원인)
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
   await page.locator('#demo').scrollIntoViewIfNeeded();
-  const slider = page.getByRole('slider');
+  const slider = page.locator('#demo').getByRole('slider');
   await expect(slider).toBeVisible({ timeout: 15_000 });
   return slider;
 }
@@ -50,7 +50,7 @@ test('키보드: Home·→·End로 날짜를 고른다', async ({ page }) => {
 // page.mouse.click은 마우스 포인터라 두 프로젝트 모두에서 통과하지만, 그러면 모바일에서도 실제로는
 // 마우스 경로만 검증하게 된다. tap()으로 진짜 터치-탭 경로(pointerup 선택)를 타게 한다.
 async function clickLeftEdge(page: Page, testInfo: TestInfo) {
-  const slider = page.getByRole('slider');
+  const slider = page.locator('#demo').getByRole('slider');
   const box = (await slider.boundingBox())!;
   if (testInfo.project.name === 'mobile') {
     await slider.tap({ position: { x: 1, y: box.height / 2 } });
@@ -108,7 +108,7 @@ test('데모 데이터를 못 받으면 안내가 뜨고, 다시 시도하면 �
   await expect(page.locator('#demo').getByRole('alert')).toContainText(ko.demo.error, { timeout: 15_000 });
   fail = false;
   await page.getByRole('button', { name: ko.demo.retry }).click();
-  await expect(page.getByRole('slider')).toBeVisible();
+  await expect(page.locator('#demo').getByRole('slider')).toBeVisible();
   // 다시 불러온 뒤에는 실패 알림이 완전히 사라져야 한다(예: 재시도 실패 상태가 남아 있지 않음)
   await expect(page.locator('#demo').getByRole('alert')).toHaveCount(0);
 });

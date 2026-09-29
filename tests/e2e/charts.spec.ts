@@ -112,6 +112,124 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     });
   }
 
+  // 계획 5-3b: 차트 1·2·4 조작 층(role=slider) — 마우스·키보드·손가락으로 짚으면 표시 상자(.chart-tip)에 값
+  test('차트 1: 마우스를 올리면 표시 상자, 조작 층 valuetext가 같은 문장, 떠나면 숨는다', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await center(page, '[data-scene="chartDepart"]');
+    const stage = page.locator('[data-scene="chartDepart"]');
+    const slider = stage.locator('[role="slider"]');
+    await expect(slider).toBeAttached({ timeout: 10_000 });
+    await expect(stage.locator('.chart-tip')).toHaveCount(0); // 처음엔 짚은 항목이 없다
+    await slider.hover();
+    const tip = stage.locator('.chart-tip');
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText('평균 대비');
+    await expect(slider).toHaveAttribute('aria-valuetext', (await tip.textContent())!);
+    // 표시 상자는 판 안
+    const t = (await tip.boundingBox())!, plot = (await stage.locator('[data-plot]').boundingBox())!;
+    expect(t.x).toBeGreaterThanOrEqual(plot.x - 1);
+    expect(t.x + t.width).toBeLessThanOrEqual(plot.x + plot.width + 1);
+    expect(t.y).toBeGreaterThanOrEqual(plot.y - 1);
+    // 판 오른쪽 끝에 붙여도 상자가 판 밖으로 안 나간다
+    await page.mouse.move(plot.x + plot.width - 2, plot.y + plot.height / 2);
+    const t2 = (await tip.boundingBox())!;
+    expect(t2.x + t2.width).toBeLessThanOrEqual(plot.x + plot.width + 1);
+    await page.mouse.move(5, 5);
+    await expect(tip).toBeHidden();
+    await expect(slider).not.toHaveAttribute('aria-valuetext', /./);
+  });
+
+  test('차트 1: 판 위에서 휠을 굴리면 페이지가 스크롤된다', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await center(page, '[data-scene="chartDepart"]');
+    const slider = page.locator('[data-scene="chartDepart"] [role="slider"]');
+    await expect(slider).toBeAttached({ timeout: 10_000 });
+    await slider.hover();
+    const y0 = await page.evaluate(() => window.scrollY);
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(y0 + 100);
+  });
+
+  test('차트 2: 처음부터 가장 싼 구간에 세로선과 표시 상자, 키보드로 옮긴다', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await center(page, '[data-scene="chartCurve"]');
+    const stage = page.locator('[data-scene="chartCurve"]');
+    const slider = stage.locator('[role="slider"]');
+    await expect(slider).toBeAttached({ timeout: 10_000 });
+    await expect(stage.locator('.chart-cursor')).toBeVisible();
+    await expect(stage.locator('.chart-tip')).toBeVisible();
+    await expect(slider).toHaveAttribute('aria-valuemax', '7');
+    const start = Number(await slider.getAttribute('aria-valuenow'));
+    await slider.focus();
+    await page.keyboard.press(start < 7 ? 'ArrowRight' : 'ArrowLeft');
+    await expect(slider).toHaveAttribute('aria-valuenow', String(start < 7 ? start + 1 : start - 1));
+    await page.keyboard.press('End');
+    await expect(slider).toHaveAttribute('aria-valuenow', '7');
+    await page.keyboard.press('Home');
+    await expect(slider).toHaveAttribute('aria-valuenow', '0');
+    // 판을 떠나도(마우스) 차트 2는 마지막 구간이 남는다
+    await slider.hover();
+    await page.mouse.move(5, 5);
+    await expect(stage.locator('.chart-cursor')).toBeVisible();
+    await expect(slider).toHaveAttribute('aria-valuetext', /./);
+  });
+
+  test('차트 4: Tab으로 조작 층에 초점, → 두 번이면 두 번째 항목', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await center(page, '[data-scene="chartCloud"]');
+    const stage = page.locator('[data-scene="chartCloud"]');
+    const slider = stage.locator('[role="slider"]');
+    await expect(slider).toBeAttached({ timeout: 10_000 });
+    await expect(slider).toHaveAttribute('aria-label', /값 살펴보기$/);
+    // 앞 블록(검증 표)의 코드 링크에서 Tab 한 번 — 문서 순서상 바로 다음이 차트 4 조작 층이다
+    await page.locator('[data-scene="validation"] a.code-link').focus();
+    await page.keyboard.press('Tab');
+    await expect(slider).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect(slider).toHaveAttribute('aria-valuenow', '1');
+    await expect(stage.locator('.chart-tip')).toContainText('예측가');
+  });
+
+  test.describe('휴대폰 조작 층', () => {
+    test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+    test('차트 1을 가볍게 누르면 표시 상자가 보이고, 손을 떼도 남는다', async ({ page }) => {
+      await page.goto('/');
+      await center(page, '[data-scene="chartDepart"]');
+      const stage = page.locator('[data-scene="chartDepart"]');
+      await expect(stage.locator('[role="slider"]')).toBeAttached({ timeout: 10_000 });
+      const plot = (await stage.locator('[data-plot]').boundingBox())!;
+      await page.touchscreen.tap(plot.x + plot.width / 2, plot.y + plot.height / 2);
+      const tip = stage.locator('.chart-tip');
+      await expect(tip).toBeVisible();
+      await expect(tip).toContainText('평균 대비');
+      await page.waitForTimeout(300);
+      await expect(tip).toBeVisible();
+      const t = (await tip.boundingBox())!;
+      expect(t.x).toBeGreaterThanOrEqual(plot.x - 1);
+      expect(t.x + t.width).toBeLessThanOrEqual(plot.x + plot.width + 1);
+    });
+
+    // 표시 상자 문장이 판보다 길면(영어·좁은 화면) 판 폭에서 접힌다 — 한 줄로 삐져나가면 페이지 가로 폭이 늘어
+    // 휴대폰 브라우저가 화면 전체를 축소한다(자막 띠 검사가 이걸로 깨졌다)
+    test('영어 375px: 처음부터 떠 있는 차트 2 표시 상자가 판 안, 가로 스크롤 없음', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.goto('/en/');
+      await center(page, '[data-scene="chartCurve"]');
+      const stage = page.locator('[data-scene="chartCurve"]');
+      const tip = stage.locator('.chart-tip');
+      await expect(tip).toBeVisible({ timeout: 10_000 });
+      const t = (await tip.boundingBox())!, plot = (await stage.locator('[data-plot]').boundingBox())!;
+      expect(t.x).toBeGreaterThanOrEqual(plot.x - 1);
+      expect(t.x + t.width).toBeLessThanOrEqual(plot.x + plot.width + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+    });
+  });
+
   test('차트 데이터를 못 받으면 안내가 뜨고 글 카드는 그대로다', async ({ page }) => {
     await page.route('**/data/charts.*.json', (r) => r.abort());
     await page.goto('/');

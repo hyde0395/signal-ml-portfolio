@@ -65,6 +65,7 @@ export function Charts({ locale }: { locale: Locale }) {
               tipHoliday: b.id === 'depart' ? tipOf('depart', 'tipHoliday') : undefined,
             }}
             errorText={t('charts.error')}
+            label={`${t(`charts.${b.id}.heading`)} · ${t('charts.touch')}`}
           />
           <div className="chart-copy">
             <p className="eyebrow" data-flip-on-enter>{b.tag}</p>
