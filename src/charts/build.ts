@@ -1,21 +1,22 @@
 // 그림 판 키별로 데이터를 불러와 배치를 만든다. zod와 배치 코드가 들어 있어 ChartStage가 import()로만 부른다
 // (초기 JS 150KB). 날짜·금액 글자는 방문자 언어(Intl)로 만든다 — 문구 파일이 아니라 형식이라 숫자 규칙과 무관.
 import { loadCharts, loadCloud, type ChartsData, type CloudData } from './data';
-import { calendarLayout, cloudLayout, swarmLayout, waffleLayout, type FeatureGroupInput, type PlotSize } from './layouts';
+import { cloudLayout, departLayout, swarmLayout, waffleLayout, type FeatureGroupInput, type PlotSize } from './layouts';
 import type { ChartKey, ChartLayout } from './types';
 
 export { drawLayout } from './draw2d';
 
 export type ChartStrings = {
   locale: string;
-  holidays: Record<string, string>; // 공휴일 코드 → 이름(점 달력·구름)
-  axis?: string;                    // 세로축 이름(벌떼·구름)
+  holidays: Record<string, string>; // 공휴일 코드 → 이름(출발일·구름)
+  axis?: string;                    // 세로축 이름(출발일·벌떼·구름)
+  weekdayTitle?: string;            // 요일 평균 제목(출발일만)
   groups?: FeatureGroupInput[];     // 와플(③)만
   countUnit?: string;               // "개" / " features" / "個"
 };
 export type Loaded = { charts?: ChartsData; cloud?: CloudData };
 
-// charts.json은 점 달력과 벌떼가 같이 쓰므로 한 번만 받는다
+// charts.json은 출발일 차트와 벌떼가 같이 쓰므로 한 번만 받는다
 const memo = new Map<string, Promise<unknown>>();
 function once<T>(key: string, f: () => Promise<T>): Promise<T> {
   if (!memo.has(key)) memo.set(key, f().catch((e) => { memo.delete(key); throw e; })); // 실패는 기억하지 않는다(다시 시도 가능)
@@ -39,10 +40,10 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
     case 'chartDepart': {
       const wd = new Intl.DateTimeFormat(s.locale, { weekday: 'short', timeZone: 'UTC' });
       const mo = new Intl.DateTimeFormat(s.locale, { month: 'short', timeZone: 'UTC' });
-      return calendarLayout(loaded.charts!, size, {
+      return departLayout(loaded.charts!, size, {
         weekday: (i) => wd.format(new Date(MONDAY + i * 86_400_000)),
         month: (iso) => mo.format(new Date(`${iso}T00:00:00Z`)),
-        holiday,
+        holiday, pct: signed, axis: s.axis ?? '', weekdayTitle: s.weekdayTitle ?? '',
       });
     }
     case 'chartCurve':

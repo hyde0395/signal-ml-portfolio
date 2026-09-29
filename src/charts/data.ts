@@ -1,4 +1,4 @@
-// ④ 차트 데이터 읽기: charts.<기준일>.json(점 달력·구간별 벌떼)과 demo.<기준일>.json의 인천→나리타 LCC
+// ④ 차트 데이터 읽기: charts.<기준일>.json(출발일 점 그래프·구간별 벌떼)과 demo.<기준일>.json의 인천→나리타 LCC
 // 예측(불확실성 구름)을 zod로 검사한다. zod가 들어 있어 그림 판이 화면 가까이 올 때만 import()로 불러온다.
 import { z } from 'zod';
 

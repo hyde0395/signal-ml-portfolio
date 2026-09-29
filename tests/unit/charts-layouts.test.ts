@@ -1,7 +1,7 @@
 // 배치 함수 검사: 점 개수, 판 안(0..1), 강조 색, 크기 순서, 이름표. 좁은 휴대폰 판에서도 깨지지 않는지.
 import { describe, expect, it } from 'vitest';
 import type { ChartsData, CloudData } from '@/charts/data';
-import { calendarLayout, cloudLayout, cloudScale, invNorm, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
+import { cloudLayout, cloudScale, DEPART, departLayout, invNorm, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
 import { TONE, type ChartLabel, type ChartLayout } from '@/charts/types';
 
 const inside = (L: ChartLayout) => {
@@ -104,42 +104,48 @@ const charts: ChartsData = {
   labels: [{ date: dates[9], code: 'kr_hangul_day' }],
   curve: { bins: [[1, 3], [4, 7], [8, 14], [15, 21], [22, 30], [31, 45], [46, 60], [61, 90]], mean: Array(8).fill(0), n: Array(8).fill(1), sample: { bin: [], pct: [] } },
 };
-const calS = { weekday: (i: number) => `w${i}`, month: (iso: string) => `m${iso.slice(5, 7)}`, holiday: (c: string) => `h:${c}` };
+const depS = { month: (iso: string) => `m${iso.slice(5, 7)}`, weekday: (i: number) => `w${i}`, holiday: (c: string) => `h:${c}`, pct: (v: number) => `${v}%`, axis: 'AX', weekdayTitle: 'WT' };
 
-describe('calendarLayout', () => {
-  const L = calendarLayout(charts, { w: 1080, h: 414 }, calS);
-  const PER = L.n / dates.length;
-  it('와플이 아닌 차트는 와플 그룹 번호가 모두 −1', () => {
-    expect(Array.from(L.waffle).every((v) => v === -1)).toBe(true);
+describe('departLayout', () => {
+  const L = departLayout(charts, { w: 1080, h: 414 }, depS);
+  const dateIdx = Array.from(L.group).filter((g) => g >= 0);
+  const PER = DEPART.perDate;
+  const centerOf = (d: number) => {
+    let x = 0, y = 0, n = 0;
+    for (let i = 0; i < L.n; i++) if (L.group[i] === d) { x += L.x[i]; y += L.y[i]; n++; }
+    return [x / n, y / n, n] as const;
+  };
+  it('출발일마다 perDate개 점, group = 출발일 번호', () => {
+    for (let d = 0; d < dates.length; d++) expect(centerOf(d)[2]).toBe(PER);
+    expect(dateIdx.length).toBe(dates.length * PER);
   });
-  it('출발일마다 같은 수의 점, group = 출발일 번호', () => {
-    expect(Number.isInteger(PER)).toBe(true);
-    for (let i = 0; i < L.n; i++) expect(L.group[i]).toBe(Math.floor(i / PER));
+  it('가로는 날짜 순서, 세로는 비쌀수록 위', () => {
+    expect(centerOf(1)[0]).toBeGreaterThan(centerOf(0)[0]);
+    expect(centerOf(13)[1]).toBeLessThan(centerOf(0)[1]); // 픽스처 pct는 번호가 클수록 크다
   });
-  it('공휴일 출발일만 호박색', () => {
-    for (let i = 0; i < L.n; i++) expect(L.tone[i] === TONE.amber).toBe(L.group[i] === 9);
+  it('호박색 = 공휴일이면서 +25% 이상', () => {
+    for (let i = 0; i < L.n; i++) if (L.group[i] >= 0) {
+      const d = L.group[i];
+      expect(L.tone[i] === TONE.amber).toBe(charts.depart.holiday[d] !== null && charts.depart.pct[d] / 10 >= DEPART.hotPct);
+    }
   });
-  it('비싼 출발일일수록 점 원이 넓다', () => {
-    const spread = (d: number) => {
-      const xs: number[] = [];
-      for (let i = d * PER; i < (d + 1) * PER; i++) xs.push(L.x[i] * 1080);
-      return Math.max(...xs) - Math.min(...xs);
-    };
-    expect(spread(13)).toBeGreaterThan(spread(0));
+  it('공휴일 이름표는 그 출발일 뭉치 바로 위', () => {
+    const h = L.labels.filter((l): l is Extract<ChartLabel, { type: 'text' }> => l.type === 'text' && l.cls === 'holiday');
+    expect(h.map((l) => l.text)).toEqual(['h:kr_hangul_day']);
+    const [cx, cy] = centerOf(9);
+    expect(Math.abs(h[0].x - cx)).toBeLessThan(0.01);
+    expect(h[0].y).toBeLessThan(cy);
+    expect((cy - h[0].y) * 414).toBeLessThan(30);
   });
-  it('같은 요일은 같은 줄(y), 다음 주 같은 요일은 오른쪽', () => {
-    const cy = (d: number) => L.y[d * PER] ;
-    const cx = (d: number) => L.x[d * PER];
-    expect(Math.abs(cy(0) - cy(7))).toBeLessThan(0.02);
-    expect(cx(7)).toBeGreaterThan(cx(0));
+  it('요일 평균: 이름 7개와 값 7개, 제목·세로축 이름', () => {
+    const t = L.labels.filter((l): l is Extract<ChartLabel, { type: 'text' }> => l.type === 'text');
+    for (let k = 0; k < 7; k++) expect(t.some((l) => l.text === `w${k}`)).toBe(true);
+    expect(t.some((l) => l.text === 'WT')).toBe(true);
+    expect(t.some((l) => l.text === 'AX')).toBe(true);
+    expect(t.filter((l) => l.cls === 'month').length).toBeGreaterThan(0);
   });
-  it('요일 이름표 7개, 공휴일 이름표는 labels만큼', () => {
-    const text = L.labels.filter((l) => l.type === 'text');
-    expect(text.filter((l) => l.type === 'text' && l.cls === 'tick').map((l) => (l as { text: string }).text)).toEqual(['w0', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6']);
-    expect(text.filter((l) => l.type === 'text' && l.cls === 'holiday').map((l) => (l as { text: string }).text)).toEqual(['h:kr_hangul_day']);
-    expect(text.some((l) => l.type === 'text' && l.cls === 'month')).toBe(true);
-  });
-  it('좁은 휴대폰 판(340×380)에서도 모든 점이 판 안, 지름 1.6px 이상', () => inside(calendarLayout(charts, { w: 340, h: 380 }, calS)));
+  it('와플 번호는 모두 −1', () => expect(Array.from(L.waffle).every((v) => v === -1)).toBe(true));
+  it('판 안, 지름 1.6px 이상(넓은 판·좁은 판)', () => { inside(L); inside(departLayout(charts, { w: 340, h: 380 }, depS)); });
 });
 
 describe('swarmLayout', () => {

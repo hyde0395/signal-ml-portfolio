@@ -82,54 +82,88 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
   return p.done(labels);
 }
 
-// ④ 차트 1 출발일 점 달력: 가로 = 주(월요일 시작), 세로 = 요일. 출발일 하나 = 점 perDate개로 된 원 하나.
-// 원 크기·밝기 = 그 출발일의 노선·등급 평균 대비 %(-40%에서 +70% 사이를 0..1로). 공휴일 ±3일은 호박색.
-export const CALENDAR = { perDate: 48, marginLeft: 0.07, marginTop: 0.12, marginBottom: 0.16 } as const;
+// ④ 차트 1 출발일(설계 2026-09-29 §2, 시안 3): 시간 흐름 점 그래프 + 요일 평균. 가로 = 출발일(실제 날짜 비례), 세로 = 노선·등급
+// 평균 대비 %. 출발일 하나 = 점 뭉치 하나(3D에서는 그 출발일의 배경 점이 모인다, group). 막대·줄기 선은 쓰지 않는다 —
+// 점을 쌓은 막대는 사용자가 "별로"(2026-09-25), 줄기 선은 시안에서 지저분했다. 호박색은 공휴일 무렵이면서 +25% 이상인
+// 날만 — 공휴일 ±3일을 모두 칠하면 강조가 흐려졌다(사용자 지적 2026-09-29). 오른쪽(휴대폰은 아래)은 요일 평균
+export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25 } as const;
 
-export function calendarLayout(d: ChartsData, size: PlotSize, s: { weekday(i: number): string; month(iso: string): string; holiday(code: string): string }): ChartLayout {
-  const first = utc(d.dates[0]);
-  const t0 = first - ((new Date(first).getUTCDay() + 6) % 7) * DAY; // 첫 출발일이 든 주의 월요일
-  const pos = d.dates.map((iso) => {
-    const k = Math.round((utc(iso) - t0) / DAY);
-    return { col: Math.floor(k / 7), row: k % 7 };
-  });
-  const weeks = Math.max(...pos.map((q) => q.col)) + 1;
-  const left = size.w * CALENDAR.marginLeft, top = size.h * CALENDAR.marginTop;
-  const cw = (size.w - left) / weeks;
-  const ch = (size.h * (1 - CALENDAR.marginTop - CALENDAR.marginBottom)) / 7;
-  const rMax = Math.min(cw, ch) * 0.46;
-  const cx = (col: number) => left + (col + 0.5) * cw;
-  const cy = (row: number) => top + (row + 0.5) * ch;
+export function departLayout(
+  d: ChartsData, size: PlotSize,
+  s: { month(iso: string): string; weekday(i: number): string; holiday(code: string): string; pct(v: number): string; axis: string; weekdayTitle: string },
+): ChartLayout {
+  const wide = size.w >= DEPART.wideMinPx;
+  const W = size.w, H = size.h;
+  // 점 그래프 영역(px)
+  const gx0 = W * (wide ? 0.06 : 0.1), gx1 = W * (wide ? 0.74 : 1), gy0 = 0, gy1 = H * (wide ? 1 : 0.68);
+  const top = gy0 + (gy1 - gy0) * 0.08, bottom = gy1 - (gy1 - gy0) * 0.14;
+  const t0 = utc(d.dates[0]), t1 = utc(d.dates[d.dates.length - 1]);
+  const X = (iso: string) => gx0 + (gx1 - gx0 - 8) * ((utc(iso) - t0) / Math.max(1, t1 - t0)) + 4;
+  const Y = (v: number) => top + (bottom - top) * (1 - (Math.min(DEPART.hi, Math.max(DEPART.lo, v)) - DEPART.lo) / (DEPART.hi - DEPART.lo));
+  const r = wide ? 4 : 2.4;
   const p = new Pts();
-  d.dates.forEach((_, i) => {
-    const norm = clamp01((d.depart.pct[i] / 10 + 40) / 110);
-    const r = rMax * (0.35 + 0.65 * norm);
-    const tone = d.depart.holiday[i] ? TONE.amber : TONE.dot;
-    const alpha = 0.35 + 0.55 * norm;
-    const dot = Math.max(1.6, r * 0.28);
-    for (let k = 0; k < CALENDAR.perDate; k++) {
-      const rho = r * Math.sqrt((k + 0.5) / CALENDAR.perDate), th = k * GOLDEN_ANGLE;
-      p.add((cx(pos[i].col) + rho * Math.cos(th)) / size.w, (cy(pos[i].row) + rho * Math.sin(th)) / size.h, dot, alpha, tone, i);
+  const labels: ChartLabel[] = [];
+  // 0% 기준선
+  for (let x = gx0; x <= gx1; x += 6) p.add(x / W, Y(0) / H, 1.6, 0.28, TONE.text);
+  d.dates.forEach((iso, i) => {
+    const v = d.depart.pct[i] / 10;
+    const hot = d.depart.holiday[i] !== null && v >= DEPART.hotPct;
+    const cx = X(iso), cy = Y(v);
+    for (let k = 0; k < DEPART.perDate; k++) {
+      const rho = r * Math.sqrt((k + 0.5) / DEPART.perDate), th = k * GOLDEN_ANGLE;
+      p.add((cx + rho * Math.cos(th)) / W, (cy + rho * Math.sin(th)) / H, 1.8, 0.8, hot ? TONE.amber : TONE.dot, i);
     }
   });
-
-  const labels: ChartLabel[] = [];
-  for (let r = 0; r < 7; r++) labels.push({ type: 'text', x: (left - 6) / size.w, y: cy(r) / size.h, text: s.weekday(r), align: 'end', cls: 'tick' });
+  for (const v of [50, 25, 0, -25]) labels.push({ type: 'text', x: (gx0 - 6) / W, y: Y(v) / H, text: s.pct(v), align: 'end', cls: 'tick' });
+  labels.push({ type: 'text', x: gx0 / W, y: (top * 0.35) / H, text: s.axis, align: 'start', cls: 'axis' });
   let lastMonth = '';
-  for (let c = 0; c < weeks; c++) {
-    const iso = new Date(t0 + c * 7 * DAY).toISOString().slice(0, 10);
-    if (iso.slice(0, 7) !== lastMonth) {
-      labels.push({ type: 'text', x: cx(c) / size.w, y: (top * 0.4) / size.h, text: s.month(iso), align: 'start', cls: 'month' });
-      lastMonth = iso.slice(0, 7);
-    }
-  }
-  // 공휴일 이름표: 가까운 날짜끼리 겹치지 않게 두 줄로 엇갈린다(성탄절·신정은 한 주 차이)
-  const base = size.h * (1 - CALENDAR.marginBottom * 0.6);
-  d.labels.forEach((l, k) => {
+  d.dates.forEach((iso) => {
+    if (iso.slice(0, 7) === lastMonth) return;
+    lastMonth = iso.slice(0, 7);
+    labels.push({ type: 'text', x: X(iso) / W, y: (bottom + (gy1 - bottom) * 0.6) / H, text: s.month(iso), align: 'center', cls: 'month' });
+  });
+  d.labels.forEach((l) => {
     const i = d.dates.indexOf(l.date);
     if (i < 0) return;
-    labels.push({ type: 'text', x: cx(pos[i].col) / size.w, y: (base + (k % 2) * 14) / size.h, text: s.holiday(l.code), align: 'center', cls: 'holiday' });
+    labels.push({ type: 'text', x: X(l.date) / W, y: (Y(d.depart.pct[i] / 10) - r - 10) / H, text: s.holiday(l.code), align: 'center', cls: 'holiday' });
   });
+
+  // 요일 평균(월=0 … 일=6)
+  const sum = Array(7).fill(0), cnt = Array(7).fill(0);
+  d.dates.forEach((iso, i) => { const k = (new Date(utc(iso)).getUTCDay() + 6) % 7; sum[k] += d.depart.pct[i] / 10; cnt[k]++; });
+  const avg = sum.map((v, k) => (cnt[k] ? v / cnt[k] : null));
+  const clampW = (v: number) => Math.min(DEPART.weekHi, Math.max(DEPART.weekLo, v));
+  if (wide) {
+    // 요일 이름 칸(nameX, 오른쪽 맞춤)과 점 줄 시작(sx0) 사이를 비워 둔다 — 음수 값 이름표가 점 줄 왼쪽 끝 밖에 붙으므로
+    // 이름 바로 옆에서 시작하면 "화−17%"처럼 요일 이름과 붙었다(2026-09-29 눈 확인)
+    const nameX = W * 0.78 + 16, sx0 = W * 0.78 + 64, sx1 = W - 44, sy0 = H * 0.12, sy1 = H * 0.9;
+    const SX = (v: number) => sx0 + (sx1 - sx0) * ((clampW(v) - DEPART.weekLo) / (DEPART.weekHi - DEPART.weekLo));
+    const rowH = (sy1 - sy0) / 7;
+    labels.push({ type: 'text', x: (W * 0.78) / W, y: (sy0 * 0.45) / H, text: s.weekdayTitle, align: 'start', cls: 'axis' });
+    for (let y = sy0; y <= sy1; y += 4) p.add(SX(0) / W, y / H, 1.6, 0.28, TONE.text);
+    avg.forEach((a, k) => {
+      const y = sy0 + rowH * (k + 0.5);
+      labels.push({ type: 'text', x: nameX / W, y: y / H, text: s.weekday(k), align: 'end', cls: 'tick' });
+      if (a === null) return;
+      const tone = a > DEPART.hotWeekday ? TONE.amber : TONE.dot;
+      const x0 = SX(0), x1 = SX(a), n = Math.max(1, Math.round(Math.abs(x1 - x0) / 3));
+      for (let j = 1; j <= n; j++) p.add((x0 + ((x1 - x0) * j) / n) / W, y / H, 2.2, 0.85, tone);
+      labels.push({ type: 'text', x: (x1 + (a >= 0 ? 6 : -6)) / W, y: y / H, text: s.pct(Math.round(a)), align: a >= 0 ? 'start' : 'end', cls: 'tick' });
+    });
+  } else {
+    const sy0 = H * 0.74, sy1 = H * 0.96, colW = (W * 0.9) / 7, sx0 = W * 0.1;
+    const SY = (v: number) => sy0 + 14 + (sy1 - sy0 - 28) * (1 - (clampW(v) - DEPART.weekLo) / (DEPART.weekHi - DEPART.weekLo));
+    labels.push({ type: 'text', x: 0, y: (sy0 - 4) / H, text: s.weekdayTitle, align: 'start', cls: 'axis' });
+    for (let x = sx0; x <= W; x += 5) p.add(x / W, SY(0) / H, 1.6, 0.28, TONE.text);
+    avg.forEach((a, k) => {
+      const cx = sx0 + colW * (k + 0.5);
+      labels.push({ type: 'text', x: cx / W, y: sy1 / H, text: s.weekday(k), align: 'center', cls: 'tick' });
+      if (a === null) return;
+      const tone = a > DEPART.hotWeekday ? TONE.amber : TONE.dot;
+      for (let j = 0; j < 5; j++) { const rho = 2.4 * Math.sqrt((j + 0.5) / 5), th = j * GOLDEN_ANGLE; p.add((cx + rho * Math.cos(th)) / W, (SY(a) + rho * Math.sin(th)) / H, 1.8, 0.9, tone); }
+      labels.push({ type: 'text', x: cx / W, y: (SY(a) - 10) / H, text: s.pct(Math.round(a)), align: 'center', cls: 'tick' });
+    });
+  }
   return p.done(labels);
 }
 

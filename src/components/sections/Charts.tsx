@@ -1,5 +1,5 @@
 // ④ 차트(설계 2026-09-25 §3.4, 2026-09-27 개정). 차트 1·2·4는 그림 판(ChartStage) 블록이다 — 판이 화면에 고정되고
-// 배경 점이 점 달력·구간별 벌떼·불확실성 구름으로 모인다(3D가 꺼지면 같은 그림을 2D로). 글은 판 아래 자막 띠에서
+// 배경 점이 출발일 점 그래프·구간별 벌떼·불확실성 구름으로 모인다(3D가 꺼지면 같은 그림을 2D로). 글은 판 아래 자막 띠에서
 // 문단을 차례로 보여 준다(설계 2026-09-28 §2). 차트 3(R² 거품)과 검증 표·한계는 지금 장면을 쓰는 글 카드(.chapter)로
 // 둔다(차트 3의 산점도는 별도 계획).
 import type React from 'react';
@@ -20,7 +20,7 @@ type Block =
   | (Common & { kind: 'card'; scene: SceneKey; figure?: FigureKey; table?: true });
 
 const BLOCKS: Block[] = [
-  { kind: 'stage', id: 'depart', tag: 'CHART 01', chart: 'chartDepart', code: 'features', paras: 1 },
+  { kind: 'stage', id: 'depart', tag: 'CHART 01', chart: 'chartDepart', code: 'features', paras: 1, axis: true },
   { kind: 'stage', id: 'curve', tag: 'CHART 02', chart: 'chartCurve', code: 'insight', paras: 1, axis: true },
   { kind: 'card', id: 'bubble', tag: 'CHART 03', scene: 'bubble', code: 'bubble', paras: 3, figure: 'bubble' },
   { kind: 'card', id: 'validation', tag: 'VALIDATION', scene: 'validation', code: 'validation', paras: 2, table: true },
@@ -31,7 +31,7 @@ const BLOCKS: Block[] = [
 export function Charts({ locale }: { locale: Locale }) {
   const t = getT(locale);
   const dict = dictionaries[locale];
-  // 점 달력(charts.holidays)과 구름(데모 공휴일 이름)이 쓰는 공휴일 이름을 한 표로
+  // 출발일 점 그래프(charts.holidays)와 구름(데모 공휴일 이름)이 쓰는 공휴일 이름을 한 표로
   const holidays = { ...dict.demo.holidays, ...dict.charts.holidays } as Record<string, string>;
   const body = (b: Block) => Array.from({ length: b.paras }, (_, i) => <p key={i}>{t(`charts.${b.id}.body${i + 1}`)}</p>);
   // 그림 판 블록은 문단마다 칸 하나 — 자막 띠에서 한 칸씩 바꿔 보여 준다(motion/caption.ts)
@@ -55,7 +55,10 @@ export function Charts({ locale }: { locale: Locale }) {
           <ChartStage
             chartKey={b.chart}
             dataVersion={facts.dataVersion}
-            strings={{ locale, holidays, axis: b.axis ? t(`charts.${b.id}.axis`) : undefined }}
+            strings={{
+              locale, holidays, axis: b.axis ? t(`charts.${b.id}.axis`) : undefined,
+              weekdayTitle: b.id === 'depart' ? t('charts.depart.weekdays') : undefined,
+            }}
             errorText={t('charts.error')}
           />
           <div className="chart-copy">
