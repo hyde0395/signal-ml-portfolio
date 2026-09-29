@@ -121,3 +121,25 @@
 
 - ③ 모델 카드 한국어 초안 **그대로 확정**. 영·일은 같은 뜻·톤으로 확정해도 된다(검수는 공개 전 문구 검토 때).
 - ⑤ 안 검증 표 블록 머리표 `VALIDATION` → **`EVALUATION`**.
+
+## 구현 결과 (계획 7-1)
+
+- **섹션**(`src/lib/sections.ts`): `01 — PROJECT` · `02 — DATA COLLECTION` · `03 — MODEL & FEATURES`(h2 "모델 구조") · `04 — FINDINGS`(h2 "데이터가 보여 준 것", CHART 01·02) · `05 — VALIDATION`(h2 "모델 검증", CHART 03 · `EVALUATION` 표 · CHART 04 · LIMITS) · 데모 · 연락처. 옆 목차 5칸. `Charts.tsx`는 `renderBlock`을 공유하는 `Findings`·`Validation`을 내보낸다(`headingKey`는 `'charts.heading' | 'charts.validationHeading'`로 좁힘).
+- **③ 모델 카드**: `.chapter.model-card`(`data-scene="model"`) — 머리표 · `h2#features-h` · 문단 두 개 · 흐름 줄(`.model-flow`) · 코드 보기(`blob/main/src/models/v2_predictor.py`). 뒤 와플 블록은 `h3#waffle-h`(`{model.featureCount} FEATURES`), 세 칸 = 설명 · lookup 주의 · `features.serve`. 섹션은 `aria-labelledby="features-h"`, 카드 article은 따로 이름을 달지 않는다(h2가 섹션 이름이라 같은 이름이 두 번 낭독되지 않게).
+- **확정 문구**: 한국어는 §5.1 초안 그대로(사용자 확인 2026-09-30), ⑤ 제목 "모델 검증", 블록 머리표 `VALIDATION` → `EVALUATION`. 영·일은 같은 뜻의 Claude 초안(검토 전 — 공개 전 문구 검토 때).
+- **`SCENES.model` 최종 값**: 데스크톱 `camera [-5, 12, 26]`·`target [-5, 0, 0]`(limits 구도 그대로), `noise 0.5 → 0.3`(0.5에서는 앞줄 흩어진 점이 글 끝에 걸쳤다). 세로 화면 `camera [0, 7, 26]`·`target [0, -5, 0]`(limits 값 y −3에서 2 더 내림 — 실제 GPU 390×844에서 첫 문단 p99 4.44:1이었다. 벡터는 그대로라 1.6배 물러남 검사 유지). `model`은 글 쪽 장면 목록(`TEXT_SIDE`)에도 들어갔다.
+- **글 대비 화소 검사**(`terrain.spec`에 모델 카드 첫 문단 · `.model-flow`(0.72) · `#validation-h` 추가). 실제 GPU(헤드 있는 크로미움) 평균 / p99:
+
+  | 자리 | 데스크톱 1440×900 | 세로 390×844 |
+  |---|---|---|
+  | 모델 카드 첫 문단 | 18.38 / 17.78 | 18.44 / 18.33 (조정 전 18.10 / 4.44) |
+  | 모델 카드 둘째 문단 | 18.37 / 17.78 | 18.44 / 18.34 |
+  | `.model-flow`(α 0.72) | 9.44 / 9.29 | 9.45 / 9.43 |
+  | `#features-h` | 18.39 / 17.80 | 18.43 / 18.35 |
+  | `#findings-h` | 18.44 / 18.34 | 18.38 / 17.57 |
+  | `#validation-h` | 18.44 / 18.34 | 18.38 / 17.57 |
+
+- **눈 확인(실제 GPU)**: ② 보드 → ③ 모델 카드(지형이 글 오른쪽 / 휴대폰은 위쪽 절반) → 와플 → ④ 머리 → CHART 02 → ⑤ 머리(U자 점이 판과 함께 위로 빠지고 머리 뒤는 비어 있다) → CHART 03(지형으로 풀림). 옆 목차 호박색 표시가 02 → 03 → 04 → 05로 따라간다. 3D 꺼짐(움직임 줄이기)에서 모델 카드는 글만으로 읽힌다.
+- **용량**: 초기 JS gzip 142.5KB/150KB(ko·en·ja 동일), 3D 청크 249.8KB/280KB.
+- **테스트**: 단위 387개(36 파일), e2e 206개(desktop·mobile, axe 포함 — terrain·airport는 `--workers=1`로 38개 따로) 모두 통과.
+- **알게 된 작은 것**: 휴대폰 모델 카드에서 머리표(`03 — MODEL & FEATURES`) 줄 뒤로 지형 앞줄 점이 몇 개 지난다(호박색 굵은 글자라 읽힘, 화소 검사 대상 아님). 3D 꺼짐에서 모델 카드 문단은 `.chapter` 규칙대로 글 폭 제한 없이 넓게 펼쳐진다(다른 카드와 같음). 옛 주소 `signal-ml-portfolio.vercel.app`은 404 — README·CLAUDE.md를 `signal-ml.vercel.app`으로 고쳤다.
