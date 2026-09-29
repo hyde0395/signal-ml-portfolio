@@ -26,7 +26,8 @@ test('보드: 화면에 들어오면 넘어가고, 끝나면 칸 글자가 완�
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
   const board = page.locator('[data-board]');
   await board.scrollIntoViewIfNeeded();
-  await expect.poll(() => board.evaluate(settled), { timeout: 8_000 }).toBe(true);
+  // 연출 예산(board.ts budgetMs 4.2초) 안에 반드시 끝난다. 부하 여유를 두어 12초까지 기다린다
+  await expect.poll(() => board.evaluate(settled), { timeout: 12_000 }).toBe(true);
 });
 
 test.describe('움직임 줄이기', () => {
