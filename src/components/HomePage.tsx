@@ -8,7 +8,7 @@ import { Loader } from './Loader';
 import { Motion } from './Motion';
 import { ScrollState } from './ScrollState';
 import { SideNav } from './SideNav';
-import { Charts } from './sections/Charts';
+import { Findings, Validation } from './sections/Charts';
 import { Contact } from './sections/Contact';
 import { DataSection } from './sections/DataSection';
 import { Demo } from './sections/Demo';
@@ -25,7 +25,8 @@ const SECTION_VIEWS: Record<SectionId, (props: { locale: Locale }) => ReactEleme
   project: Project,
   data: DataSection,
   features: Features,
-  charts: Charts,
+  findings: Findings,
+  validation: Validation,
 };
 
 export function HomePage({ locale }: { locale: Locale }) {

@@ -1,7 +1,8 @@
-// ④ 차트(설계 2026-09-25 §3.4, 2026-09-27 개정). 차트 1·2·4는 그림 판(ChartStage) 블록이다 — 판이 화면에 고정되고
-// 배경 점이 출발일 점 그래프·구간별 벌떼·불확실성 구름으로 모인다(3D가 꺼지면 같은 그림을 2D로). 글은 판 아래 자막 띠에서
-// 문단을 차례로 보여 준다(설계 2026-09-28 §2). 차트 3(R² 거품)과 검증 표·한계는 지금 장면을 쓰는 글 카드(.chapter)로
-// 둔다(차트 3의 산점도는 별도 계획).
+// ④ 발견·⑤ 검증(설계 2026-09-25 §3.4, 2026-09-29 이야기 흐름 §2·§3.1). 두 섹션이 블록 그리기를 공유한다 — 차트 1·2·4는
+// 그림 판(ChartStage) 블록으로, 판이 화면에 고정되고 배경 점이 출발일 점 그래프·구간별 벌떼·불확실성 구름으로 모인다(3D가
+// 꺼지면 같은 그림을 2D로). 글은 판 아래 자막 띠에서 문단을 차례로 보여 준다(설계 2026-09-28 §2). 차트 3(R² 거품)과 평가
+// 방식 표·한계는 지금 장면을 쓰는 글 카드(.chapter). 장면은 블록의 data-scene으로 고르므로 블록을 어느 섹션에 두든 3D 장면
+// 대응은 같다(three/activeScene.ts).
 import type React from 'react';
 import { ChartStage } from '../charts/ChartStage';
 import { ChapterFigure, type FigureKey } from './ChapterFigure';
@@ -19,16 +20,21 @@ type Block =
   | (Common & { kind: 'stage'; chart: ChartKey; axis?: true })
   | (Common & { kind: 'card'; scene: SceneKey; figure?: FigureKey; table?: true });
 
-const BLOCKS: Block[] = [
+const FINDINGS_BLOCKS: Block[] = [
   { kind: 'stage', id: 'depart', tag: 'CHART 01', chart: 'chartDepart', code: 'features', paras: 1, axis: true },
   { kind: 'stage', id: 'curve', tag: 'CHART 02', chart: 'chartCurve', code: 'insight', paras: 1, axis: true },
+];
+
+const VALIDATION_BLOCKS: Block[] = [
   { kind: 'card', id: 'bubble', tag: 'CHART 03', scene: 'bubble', code: 'bubble', paras: 3, figure: 'bubble' },
   { kind: 'card', id: 'validation', tag: 'VALIDATION', scene: 'validation', code: 'validation', paras: 2, table: true },
   { kind: 'stage', id: 'band', tag: 'CHART 04', chart: 'chartCloud', code: 'interval', paras: 3, axis: true },
   { kind: 'card', id: 'limits', tag: 'LIMITS', scene: 'limits', code: 'limits', paras: 3 },
 ];
 
-export function Charts({ locale }: { locale: Locale }) {
+type ChartSectionProps = { locale: Locale; id: 'findings' | 'validation'; headingKey: string; blocks: Block[] };
+
+function ChartSection({ locale, id, headingKey, blocks }: ChartSectionProps) {
   const t = getT(locale);
   const dict = dictionaries[locale];
   // 출발일 점 그래프(charts.holidays)와 구름(데모 공휴일 이름)이 쓰는 공휴일 이름을 한 표로
@@ -47,12 +53,12 @@ export function Charts({ locale }: { locale: Locale }) {
     <a className="code-link mono" href={codeUrl(b.code)} target="_blank" rel="noopener noreferrer">{t('common.codeLink')} ↗</a>
   );
   return (
-    <section id="charts" className="wrap" aria-labelledby="charts-h">
+    <section id={id} className="wrap" aria-labelledby={`${id}-h`}>
       <div className="charts-head">
-        <p className="eyebrow" data-flip-on-enter>{eyebrow('charts')}</p>
-        <h2 id="charts-h" className="display" data-reveal>{t('charts.heading')}</h2>
+        <p className="eyebrow" data-flip-on-enter>{eyebrow(id)}</p>
+        <h2 id={`${id}-h`} className="display" data-reveal>{t(headingKey)}</h2>
       </div>
-      {BLOCKS.map((b) => b.kind === 'stage' ? (
+      {blocks.map((b) => b.kind === 'stage' ? (
         <article key={b.id} data-scene={b.chart} className="chart-block" aria-labelledby={`chart-${b.id}`}
           style={{ '--paras': b.paras } as React.CSSProperties}>
           <ChartStage
@@ -89,3 +95,11 @@ export function Charts({ locale }: { locale: Locale }) {
     </section>
   );
 }
+
+export const Findings = ({ locale }: { locale: Locale }) => (
+  <ChartSection locale={locale} id="findings" headingKey="charts.heading" blocks={FINDINGS_BLOCKS} />
+);
+
+export const Validation = ({ locale }: { locale: Locale }) => (
+  <ChartSection locale={locale} id="validation" headingKey="charts.validationHeading" blocks={VALIDATION_BLOCKS} />
+);

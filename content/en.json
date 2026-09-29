@@ -236,6 +236,7 @@
       "body3": "The next step is to beat the baseline by adding the same flight's recent observed prices as a feature."
     },
     "heading": "What the data showed",
+    "validationHeading": "Checking the model",
     "error": "Couldn't load the chart.",
     "holidays": {
       "kr_christmas_day": "Christmas",

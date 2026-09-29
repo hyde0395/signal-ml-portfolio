@@ -41,8 +41,12 @@ for (const { path, lang } of PAGES) {
     await expect(contact).toContainText('CHOI HALIM');
     await expect(contact).toContainText(content[lang].contact.role);
     if (content[lang].contact.nameSub) await expect(contact).toContainText(content[lang].contact.nameSub);
-    for (const id of ['project', 'data', 'features', 'charts', 'demo', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
-    await expect(page.locator('#charts [data-scene]')).toHaveCount(6);
+    for (const id of ['project', 'data', 'features', 'findings', 'validation', 'demo', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
+    // ④ 발견(출발일·U자)과 ⑤ 검증(R² 거품·평가 방식 표·예측 구간·한계) — 설계 2026-09-29 이야기 흐름 §2
+    await expect(page.locator('#findings [data-scene]')).toHaveCount(2);
+    await expect(page.locator('#validation [data-scene]')).toHaveCount(4);
+    const order = await page.locator('main').evaluate((m) => [...m.querySelectorAll('#features, #findings, #validation, #demo')].map((e) => e.id));
+    expect(order).toEqual(['features', 'findings', 'validation', 'demo']);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', new RegExp(`/og/${lang}\\.jpg$`));
   });
 
@@ -73,7 +77,7 @@ test.describe('JS 없이', () => {
     test(`${path}: 모든 섹션 본문이 읽힌다`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole('heading', { name: content[lang].project.heading })).toBeVisible();
-      await expect(page.locator('#charts table')).toBeVisible();
+      await expect(page.locator('#validation table')).toBeVisible();
       await expect(page.getByText(content[lang].contact.emailFallback)).toBeVisible();
       // <noscript> 안의 텍스트는 실제로 화면에 보여도 Playwright의 getByText가 SCRIPT/NOSCRIPT
       // 노드를 항상 건너뛰어 못 찾는다(엔진 한계). 클래스로 직접 짚어 내용과 가시성을 모두 확인한다

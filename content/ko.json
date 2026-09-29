@@ -236,6 +236,7 @@
       "body3": "다음 단계는 같은 편의 최근 관측가를 피처로 넣어 기준선을 넘는 것입니다."
     },
     "heading": "데이터가 보여 준 것",
+    "validationHeading": "모델 검증",
     "error": "차트를 불러오지 못했습니다.",
     "holidays": {
       "kr_christmas_day": "성탄절",

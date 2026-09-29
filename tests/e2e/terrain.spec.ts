@@ -80,7 +80,7 @@ test('잘못된 ?capture 값이어도 페이지가 비지 않는다', async ({ p
   await page.goto('/?capture=bogus');
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
   await expect(page.locator('h1')).toHaveText('SIGNAL');
-  await expect(page.locator('#charts-h')).toBeVisible();
+  await expect(page.locator('#findings-h')).toBeVisible();
 });
 
 test('초기 HTML(세 언어)은 three 청크를 직접 불러오지 않는다', async () => {
@@ -146,7 +146,9 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     ['.intro-note', 0.72],
     ['#project-h', 1],
     ['.project-lead', 0.72],
-    ['#charts-h', 1],
+    ['#findings-h', 1],
+    // ⑤ 머리는 U자 판이 빠져나가는 자리 위에 뜬다(설계 2026-09-29 이야기 흐름 §3.4)
+    ['#validation-h', 1],
     // .is-on을 셀렉터에 넣으면 안 된다 — scrollIntoView가 그 클래스를 붙이는 스크롤 자체이므로, 셀렉터가
     // 미리 그 클래스를 요구하면 되돌아오지 않는다(닭이 먼저냐 요소가 먼저냐). 차트 2는 문단이 하나뿐이라
     // 화면 안에 들어오면 항상 is-on이 된다(motion/caption.ts activeParagraph, count<=1)

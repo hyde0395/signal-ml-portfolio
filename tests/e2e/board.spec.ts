@@ -45,10 +45,10 @@ test('옆 목차: 섹션 번호 순서, 누르면 이동하고 현재 섹션 표
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   const nav = page.getByRole('navigation', { name: '섹션 목차' });
-  await expect(nav.getByRole('link')).toHaveText(['01', '02', '03', '04']);
-  await nav.getByRole('link', { name: '03 FEATURES' }).click();
+  await expect(nav.getByRole('link')).toHaveText(['01', '02', '03', '04', '05']);
+  await nav.getByRole('link', { name: '03 MODEL & FEATURES' }).click();
   await expect(page).toHaveURL(/#features$/);
-  await expect(nav.getByRole('link', { name: '03 FEATURES' })).toHaveAttribute('aria-current', 'true');
+  await expect(nav.getByRole('link', { name: '03 MODEL & FEATURES' })).toHaveAttribute('aria-current', 'true');
 });
 
 test('옆 목차: 휴대폰에서는 숨는다', async ({ page }) => {
