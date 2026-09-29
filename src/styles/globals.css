@@ -86,7 +86,9 @@ a.header-resume:hover, .site-header .lang-switch a:hover { color: var(--tx); }
    사라지는 중인 바가 그 아래 본문 클릭을 가로채지 않게. .site-header 자체는 이미 늘 none이라 여기서 건드릴 게 없다 */
 html[data-header="hidden"] .site-header { opacity: 0; transform: translateY(-8px); }
 html[data-header="hidden"] .header-actions { pointer-events: none; }
-html[data-header="peek"] .brand { opacity: 0; }
+/* 숨김 상태에서도 SIGNAL을 미리 0으로 둔다 — 안 그러면 hidden → peek 때 바가 0→1로 나타나는 동안 SIGNAL이 1→0으로
+   사라지는 전환이 겹쳐 잠깐 번쩍인다. 맨 위(top)로 돌아가면 두 규칙이 다 풀려 SIGNAL은 원래대로 서서히 나타난다 */
+html[data-header="hidden"] .brand, html[data-header="peek"] .brand { opacity: 0; }
 /* 우선순위를 위 숨김 규칙(html[data-header] .header-actions)보다 높게 — 같으면 숨김이 이긴다 */
 html[data-header] .site-header:focus-within { opacity: 1; transform: none; }
 html[data-header] .site-header:focus-within .header-actions { pointer-events: auto; }

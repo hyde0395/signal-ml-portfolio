@@ -37,6 +37,36 @@ test('내리면 숨고, 위로 올리면 오른쪽만 다시 보인다', async (
   await expect(header(page).locator('.brand')).toHaveCSS('opacity', '1');
 });
 
+// 전환을 켠 채로 본다: 예전에는 hidden → peek 때 SIGNAL이 1에서 0으로 0.4초 동안 사라지며 잠깐 번쩍였다.
+// 숨김 상태에서 이미 0이면 올린 직후에도 전환할 게 없어 바로 0이다
+test.describe('움직임 켬', () => {
+  test.use({ reducedMotion: 'no-preference' });
+  test('숨김 → 오른쪽만: SIGNAL이 번쩍이지 않는다(올린 직후에도 투명도 0)', async ({ page }) => {
+    await page.goto('/');
+    await scrollTo(page, 400);
+    await scrollTo(page, 1400);
+    await expect(page.locator('html')).toHaveAttribute('data-header', 'hidden');
+    await expect(header(page).locator('.brand')).toHaveCSS('opacity', '0', { timeout: 10_000 });
+    const opacityAfterUp = await page.evaluate(() => {
+      window.scrollTo(0, 1300);
+      window.dispatchEvent(new Event('scroll'));
+      return new Promise<string[]>((resolve) => {
+        const brand = document.querySelector('.site-header .brand')!;
+        const seen: string[] = [];
+        // 전환이 있다면 도는 동안(0.4초) 몇 프레임을 모아 한 번이라도 0이 아닌 값이 보이는지 본다
+        const t0 = performance.now();
+        const tick = () => {
+          seen.push(document.documentElement.dataset.header + ':' + getComputedStyle(brand).opacity);
+          if (performance.now() - t0 < 300) requestAnimationFrame(tick); else resolve(seen);
+        };
+        requestAnimationFrame(tick);
+      });
+    });
+    expect(opacityAfterUp.some((v) => v.startsWith('peek:'))).toBe(true);
+    for (const v of opacityAfterUp) expect(v.endsWith(':0')).toBe(true);
+  });
+});
+
 test('숨은 동안에도 Tab 초점이 오면 나타난다', async ({ page }) => {
   await page.goto('/');
   await scrollTo(page, 400);
