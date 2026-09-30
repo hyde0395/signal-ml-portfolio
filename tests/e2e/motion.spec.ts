@@ -63,8 +63,13 @@ test('제목은 화면에 들어오면 단어 단위로 떠올라 끝내 보인�
 // 플립(발동하면 sr-only 완성값이 생긴다)으로 본다 — 리빌의 opacity는 진행 중 값과 끝난 값을 가르려면 오래 기다려야 한다.
 // 페이지 아래쪽(#features-h)은 swiftshader에서 3D가 무거워(약 11fps) 병렬 실행 전체를 멈춰 세웠으므로 위쪽 챕터를 쓴다.
 test('3D가 켜져 페이지가 길어진 뒤에도 GATE 플립은 제목이 화면에 들어올 때 시작한다', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-3d', 'on', { timeout: 20_000 });
+  // 3D 판정은 Backdrop 마운트 뒤 늦어도 SLOW_START_MS(20초)에 on/off로 끝난다. 여기서도 20초만 기다리면 두 시계가
+  // 거의 같이 끝나 부하가 크면 "pending"에서 실패했다. 판정이 끝날 때까지 넉넉히 기다리고, off로 끝났으면 이 검사의
+  // 전제(3D가 켜진 긴 페이지)가 없으므로 아래 도중 꺼짐과 같이 건너뛴다
+  await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 30_000 });
+  test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 켜지지 않음(느린 시작 제한 시간)');
   await expect(page.locator('.reveal-word').first()).toBeAttached({ timeout: 10_000 }); // 연출 시작됨
   // run.ts는 본문 크기 변화를 150ms 모아 refresh한다 — 그 창 안에서 스크롤하면 옛 위치로 판정되므로 잠시 기다린다
   await page.waitForTimeout(500);
