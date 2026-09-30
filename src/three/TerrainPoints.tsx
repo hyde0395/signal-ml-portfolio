@@ -159,7 +159,9 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     uPlane: { value: new THREE.Matrix4().fromArray(planePose(target.current?.plane ?? 1, planeStart).matrix) },
     uPlaneGo: { value: planeScatter(target.current?.plane ?? 1) },
   }), [instant, planeStart]);
-  // 비행기 진행도(시안 눈금)도 다른 값과 같은 감쇠로 따라간다 — 전환 구간(follow)에서는 스크롤을 바짝 따라간다
+  // 비행기 진행도(시안 눈금)도 다른 값과 같은 감쇠로 따라간다. 첫 화면 → ① 구간의 목표(t.plane)는 이미 TerrainScene의
+  // 비행기 시계(최대 속도 PLANE.maxRate)라 빠른 휠에도 천천히 움직인다 — 카메라 고개(lookToward)도 같은 값으로 정해져
+  // 둘이 같은 감쇠 지연만큼만 어긋난다
   const planeP = useRef(target.current?.plane ?? 1);
 
   useFrame((state, delta) => {

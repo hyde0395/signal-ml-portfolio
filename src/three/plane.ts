@@ -11,6 +11,10 @@ export const PLANE = {
   landEnd: 0.3, handoffEnd: 0.96,
   take0: 0.02, take1: 0.36, disp0: 0.26, disp1: 0.54, m0: 0.36, m1: 0.72,
   followYaw: 0.35, followPitch: 0.3,
+  // 비행기 시계의 최대 속도(진행도/초, stepPlaneClock). 스크롤은 그대로 두고 이륙 연출만 이 속도를 넘지 않게 따라간다 —
+  // 휠 한 번에 ①까지 내려가도 굴러가기(0.02) → 뜨기 → 흩어짐 → 지형(0.72)이 최소 2.5초(0.7 / 0.28)에 걸쳐 보이게.
+  // 너무 빠르면 흩어짐이 한순간에 지나가고, 너무 느리면 ① 글이 다 올라온 뒤에도 공항이 한참 남는다
+  maxRate: 0.28,
   // 점 하나가 비행기 자리에서 자기 지형 칸까지 가는 데 쓰는 흩어짐 진행 몫(셰이더 mi). 지연(delay 최대 0.52)과 더해 1을
   // 넘으면 흩어짐이 끝나도(uPlaneGo 1) 덜 도착한 점이 남는다 — 단위 테스트가 max(delay) + dotMove ≤ 1을 지킨다
   dotMove: 0.45,
@@ -67,6 +71,20 @@ export function takeoffProgress(scrollY: number, y0: number, y1: number): number
   if (scrollY <= y0 || y1 <= y0) return PLANE.landEnd * clamp01(scrollY / y0);
   if (scrollY >= y1) return 1;
   return PLANE.landEnd + (PLANE.handoffEnd - PLANE.landEnd) * ((scrollY - y0) / (y1 - y0));
+}
+
+// 비행기 시계 한 걸음: cur를 goal 쪽으로 dt초 동안 최대 rate만큼만 옮긴다(되감기도 같은 속도).
+// 감쇠(damp)와 달리 거리가 멀어도 빨라지지 않아서, 빠른 휠에도 이륙 장면을 건너뛰지 않는다
+export function stepPlaneClock(cur: number, goal: number, dt: number, rate: number = PLANE.maxRate): number {
+  const d = goal - cur, m = rate * Math.max(0, dt);
+  return Math.abs(d) <= m ? goal : cur + Math.sign(d) * m;
+}
+
+// 진행도 p(시계) → 첫 화면 내려앉기(0..1)와 전환 진행도 h(0..1). takeoffProgress의 거꾸로라서, 스크롤 대신 시계로
+// 첫 화면 → ① 장면 전체(카메라 내려앉기·공항 → 지형 섞기·하늘)를 움직인다 — 비행기만 느리고 카메라가 먼저 ①에
+// 가 버리면 흩어짐이 화면 밖에서 일어난다. h는 scenes.ts handoffProgress와 같은 smoothstep이다(단위 테스트)
+export function runwayPhases(p: number): { land: number; h: number } {
+  return { land: clamp01(p / PLANE.landEnd), h: sstep(PLANE.landEnd, PLANE.handoffEnd, p) };
 }
 
 // 이륙 경로(시안 planePose, 미터): kk = 이륙 진행(0 서 있음, 0.5 바퀴가 뜸, 1 = p 0.36, 그 뒤에도 계속 오른다)

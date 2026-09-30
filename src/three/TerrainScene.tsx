@@ -13,8 +13,8 @@ import { CameraRig } from './CameraRig';
 import { assignPoints, chartShiftY, pickSlot, slotBuffers } from './chartTargets';
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, maxDpr, stepFrameRate } from './frameRate';
-import { lookToward, PLANE, planeFollow, planePose, planeShape, takeoffProgress } from './plane';
-import { blendScenes, CHART_DISTANCE, CHART_FOV, handoffProgress, sceneFor, type SceneKey, type SceneState } from './scenes';
+import { lookToward, PLANE, planeFollow, planePose, planeShape, runwayPhases, stepPlaneClock, takeoffProgress } from './plane';
+import { blendScenes, CHART_DISTANCE, CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
 type Props = { dataVersion: string; onReady: () => void; onFail: (reason: string) => void; capture: SceneKey | null };
@@ -27,6 +27,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   const [level, setLevel] = useState(0);        // 0 정상, 1 낮춤(DPR 1·잡음 숨김)
   const [running, setRunning] = useState(true); // 탭 숨김·연락처 섹션에서는 멈춘다
   const portrait = useRef(false);
+  const backdrop = useRef<HTMLDivElement>(null); // 하늘 불투명도(--sky)를 적을 자리(writeHandoff)
   const target = useRef<SceneState>(sceneFor(capture ?? 'hero', 0, false));
   const parallax = useRef(true);
   const slots = useRef<ChartSlots>({ pending: null, focus: -1, focusTone: 2, focusDim: 0.25 });
@@ -75,7 +76,13 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     let shownHandoff: string | null = null, shownSky: string | null = null;
     let prevH = -1;        // 직전 update의 전환 진행도(-1 = 계산 안 함)
     let lastHandoff = -Infinity; // 전환이 마지막으로 움직인 시각(performance.now)
-    // 전환 표시(data-handoff, e2e가 읽는다)와 하늘 불투명도(--sky)를 html에 적는다. 이 함수는 update의 DOM 읽기가
+    // 비행기 시계(plane.ts stepPlaneClock): 스크롤로 정한 진행도(목표)를 최대 PLANE.maxRate로 따라가는 값.
+    // 첫 화면 → ① 장면 전체를 이 값으로 움직인다(runwayPhases). -1 = 아직 없음 — 여백 클래스(hero-runway)는 3D가 켜진
+    // 뒤에 붙어 첫 계산이 이미 스크롤한 뒤일 수 있으므로, 목표로 건너뛰지 않고 지금 보이는 진행도(target.plane)에서 출발한다
+    let clock = -1, clockAt = 0, ticking = false;
+    // 전환 표시(data-handoff, e2e가 읽는다)는 html에, 하늘 불투명도(--sky)는 .backdrop에 적는다 — --sky를 html에 두면
+    // 값이 바뀔 때마다 페이지 전체의 스타일이 다시 계산된다. 비행기 시계가 도는 동안은 스크롤이 멈춰도 매 프레임
+    // 바뀌어서, html에 두었을 때 소프트웨어 렌더러에서 프레임이 떨어져 3D가 꺼졌다. 이 함수는 update의 DOM 읽기가
     // 끝난 뒤에만 부른다 — 먼저 쓰면 뒤따르는 .chart-stage 읽기가 스타일 재계산을 강제한다
     const writeHandoff = (html: HTMLElement, h: number) => {
       const hs = h >= 0 ? h.toFixed(3) : null;
@@ -88,9 +95,10 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         else html.dataset.handoff = hs;
         shownHandoff = hs;
       }
-      if (ss !== shownSky) {
-        if (ss === null) html.style.removeProperty('--sky');
-        else html.style.setProperty('--sky', ss);
+      const bd = backdrop.current;
+      if (ss !== shownSky && bd) {
+        if (ss === null) bd.style.removeProperty('--sky');
+        else bd.style.setProperty('--sky', ss);
         shownSky = ss;
       }
     };
@@ -107,21 +115,34 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       // (사이에 DOM 쓰기 없음)라 추가 레이아웃 계산이 없고, 캐시하지 않으므로 글꼴·창 크기 변화에도 늘 맞다
       let h = -1; // -1 = 전환 계산 안 함
       let plane = -1; // 이륙 비행기 진행도(plane.ts takeoffProgress). -1 = 장면 기본값(첫 화면 0, 그 밖 1)
+      let goal = -1;  // 스크롤로 정한 비행기 진행도(시계가 따라갈 목표)
+      const now = performance.now();
       if (html.classList.contains('hero-runway')) {
-        // 활성 장면이 ①보다 뒤(②~)면 #project 윗변은 이미 y1을 한참 지났다 — 읽지 않고 1로 둔다
-        if (active && active.key !== 'hero' && active.key !== 'about') h = plane = 1;
+        // 활성 장면이 ①보다 뒤(②~)면 #project 윗변은 이미 y1을 한참 지났다 — 읽지 않고 1로 둔다.
+        // 시계도 바로 1로: 차트 장면에 온 뒤까지 공항 연출이 남아 차트를 가리지 않게(지나쳐 온 이륙은 건너뛴다)
+        if (active && active.key !== 'hero' && active.key !== 'about') h = plane = clock = goal = 1;
         else {
           const projectTop = document.getElementById('project')?.getBoundingClientRect().top;
           if (projectTop !== undefined) {
             const y1 = projectTop + window.scrollY - 0.2 * vh;
-            h = handoffProgress(window.scrollY, 0.9 * vh, y1);
-            // 비행기는 내려앉기(0 → y0)와 전환(y0 → y1)을 한 눈금으로 잇는다 — 시안이 한 스크롤 안에서 둘을 이었다
-            plane = takeoffProgress(window.scrollY, 0.9 * vh, y1);
+            // 비행기는 내려앉기(0 → y0)와 전환(y0 → y1)을 한 눈금으로 잇는다 — 시안이 한 스크롤 안에서 둘을 이었다.
+            // 스크롤은 목표일 뿐, 장면은 최대 속도로 따라가는 시계 값으로 정한다(빠른 휠에도 이륙·흩어짐이 보이게).
+            // 시계가 멈춰 있다 움직이기 시작하면 직전 update가 오래전일 수 있어 한 프레임(1/60초)으로 센다.
+            // 한 프레임이 길게 멈춰도(차트 준비 등) 장면이 한 번에 건너뛰지 않게 0.25초로 자른다 — 더 짧게 자르면
+            // 프레임이 느린 기기(초당 4~10장)에서 시계가 실제 시간보다 느려져 연출이 몇 배로 늘어진다
+            goal = takeoffProgress(window.scrollY, 0.9 * vh, y1);
+            const dt = ticking ? Math.min(0.25, (now - clockAt) / 1000) : 1 / 60;
+            clock = stepPlaneClock(clock < 0 ? target.current.plane : clock, goal, dt);
+            clockAt = now;
+            plane = clock;
+            h = runwayPhases(clock).h;
           }
         }
       }
+      // 시계가 아직 목표에 못 미쳤으면 다음 프레임에도 update를 돈다(스크롤이 멈춰도 장면은 이어서 움직인다)
+      ticking = goal >= 0 && clock !== goal;
+      if (ticking) raf = requestAnimationFrame(update);
       const handoff = h > 0 && h < 1;
-      const now = performance.now();
       // 전환이 움직였으면(구간 안이거나, 휠 한 번에 y0·y1을 건너뛰어 0↔1로 바로 바뀐 경우도) 시각을 적어 둔다.
       // 건너뛴 경우 follow가 곧바로 꺼져 남은 거리를 느린 감쇠로 한참 흘러가므로 600ms 동안 빠른 감쇠를 잇는다
       if (handoff || (prevH >= 0 && h >= 0 && h !== prevH)) lastHandoff = now;
@@ -135,7 +156,9 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       } else {
         const a = active!;
         // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
-        const progress = a.key === 'hero' ? Math.min(1, window.scrollY / (0.9 * vh)) : a.progress;
+        // 여백이 있으면(plane ≥ 0) 내려앉기도 비행기 시계로 — 한 눈금이라 비행기 굴러가기와 카메라가 어긋나지 않는다
+        const progress = a.key !== 'hero' ? a.progress
+          : plane >= 0 ? runwayPhases(plane).land : Math.min(1, window.scrollY / (0.9 * vh));
         s = sceneFor(a.key, progress, portrait.current);
       }
       if (plane >= 0) {
@@ -208,14 +231,14 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       delete document.documentElement.dataset.activeScene;
       delete document.documentElement.dataset.chart;
       delete document.documentElement.dataset.handoff;
-      document.documentElement.style.removeProperty('--sky');
+      backdrop.current?.style.removeProperty('--sky');
     };
   }, [capture, cloud, planeStart]);
 
   if (!cloud) return null;
 
   return (
-    <div className="backdrop" aria-hidden="true">
+    <div className="backdrop" aria-hidden="true" ref={backdrop}>
       <Canvas
         // 데스크톱 2 · 세로 화면 1.5 · 낮춤 단계 1(frameRate.ts maxDpr). 세로 판정은 점 구름과 같은 값(isPortrait)
         dpr={[1, maxDpr(level, isPortrait)]}

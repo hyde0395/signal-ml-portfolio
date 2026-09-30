@@ -2,7 +2,8 @@
 // 이륙 경로(정지·이륙·상승·되돌림), 흩어짐 진행, 카메라 따라가기.
 import { describe, expect, it } from 'vitest';
 import { K, runwayPoint, RUNWAY, toWorld } from '@/three/airport';
-import { lookToward, PLANE, planeFollow, planePose, planeScatter, planeShape, takeoffProgress } from '@/three/plane';
+import { lookToward, PLANE, planeFollow, planePose, planeScatter, planeShape, runwayPhases, stepPlaneClock, takeoffProgress } from '@/three/plane';
+import { handoffProgress } from '@/three/scenes';
 
 const apply = (m: number[], v: readonly number[]) =>
   [0, 1, 2].map((r) => m[r] * v[0] + m[4 + r] * v[1] + m[8 + r] * v[2] + m[12 + r]);
@@ -180,5 +181,39 @@ describe('PLANE 상수', () => {
   it('시안 단계 값', () => {
     expect(PLANE.landEnd).toBe(0.3);
     expect(PLANE.handoffEnd).toBe(0.96);
+  });
+});
+
+// 비행기 시계(계획 6-6): 스크롤은 그대로 두고 이륙 연출만 최대 속도로 따라간다
+describe('stepPlaneClock', () => {
+  it('한 걸음에 rate × dt보다 많이 움직이지 않는다(앞으로·뒤로 모두)', () => {
+    expect(stepPlaneClock(0, 1, 0.1, 0.28)).toBeCloseTo(0.028, 10);
+    expect(stepPlaneClock(1, 0, 0.1, 0.28)).toBeCloseTo(0.972, 10);
+  });
+  it('목표가 가까우면 넘치지 않고 목표에 멈춘다', () => {
+    expect(stepPlaneClock(0.5, 0.51, 0.1, 0.28)).toBe(0.51);
+    expect(stepPlaneClock(0.5, 0.49, 0.1, 0.28)).toBe(0.49);
+    expect(stepPlaneClock(0.3, 0.3, 0.1)).toBe(0.3);
+  });
+  it('dt가 0이거나 음수면 그대로', () => {
+    expect(stepPlaneClock(0.2, 1, 0)).toBe(0.2);
+    expect(stepPlaneClock(0.2, 1, -1)).toBe(0.2);
+  });
+  it('굴러가기(take0) → 지형(m1)은 60fps로 최소 2.5초 걸린다', () => {
+    let p: number = PLANE.take0, frames = 0;
+    while (p < PLANE.m1) { p = stepPlaneClock(p, 1, 1 / 60); frames++; }
+    expect(frames / 60).toBeGreaterThanOrEqual(2.5);
+    expect(frames / 60).toBeLessThan(3); // 너무 느리지도 않게(①이 올라온 뒤 공항이 한참 남지 않게)
+  });
+});
+
+describe('runwayPhases', () => {
+  it('스크롤로 구한 p를 넣으면 내려앉기·전환 진행도가 스크롤 계산과 같다', () => {
+    const vh = 900, y0 = 0.9 * vh, y1 = 2400;
+    for (let y = 0; y <= 2600; y += 37) {
+      const { land, h } = runwayPhases(takeoffProgress(y, y0, y1));
+      expect(land).toBeCloseTo(Math.min(1, y / y0), 6);
+      expect(h).toBeCloseTo(handoffProgress(y, y0, y1), 6);
+    }
   });
 });

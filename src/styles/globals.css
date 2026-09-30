@@ -206,7 +206,7 @@ main { position: relative; z-index: 1; }
     linear-gradient(180deg, #05060a 0%, #06090f calc(var(--hz, 39.8%) * 0.701), #0a0f1c calc(var(--hz, 39.8%) * 0.94),
       #161b2a var(--hz, 39.8%), #04060b calc(var(--hz, 39.8%) + 0.1%), #04060b 100%); }
 html[data-active-scene="hero"] .backdrop::before { opacity: 1; }
-/* 첫 화면 → ① 전환 중(TerrainScene이 data-handoff·--sky를 적는다)에는 하늘을 스크롤에 묶는다. 머리말이 화면
+/* 첫 화면 → ① 전환 중(TerrainScene이 html에 data-handoff, .backdrop에 --sky를 적는다)에는 하늘을 스크롤에 묶는다. 머리말이 화면
    가운데일 때 활성 장면이 hero로 남아 지평선 띠가 글 뒤에 또렷이 남던 문제, ①에서 되돌아올 때 0.8초에 걸쳐
    뒤늦게 떠오르던 문제를 함께 없앤다. :root로 위 규칙보다 우선순위를 높이고, 전환(transition)은 끈다 —
    켜 두면 불투명도가 스크롤보다 늦게 따라온다 */

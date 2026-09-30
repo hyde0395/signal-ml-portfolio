@@ -26,13 +26,23 @@ test.describe('3D 켜짐', () => {
     // (NaN은 어떤 크기 비교도 통과하지 않는다). 끝값은 문자열로 비교한다
     const raw = () => page.locator('html').getAttribute('data-handoff');
     const handoff = async () => { const v = await raw(); return v === null ? NaN : Number(v); };
+    // 장면은 스크롤을 최대 속도(plane.ts PLANE.maxRate)로 따라가므로 끝까지 가는 데 몇 초 걸린다 — 소프트웨어
+    // 렌더러(swiftshader)는 프레임이 느려 더 걸릴 수 있어 넉넉히 기다린다. 그렇게 오래 도는 동안 프레임 감시가
+    // 3D를 끌 수 있어(저프레임) 꺼지면 건너뛴다
+    const on = async () => (await page.locator('html').getAttribute('data-3d')) === 'on';
+    const skipIfOff = async () => test.skip(!(await on()), '도중에 3D가 꺼짐(프레임 저하)');
     await page.locator('#intro').evaluate((n) => n.scrollIntoView({ block: 'center' }));
-    await expect.poll(handoff).toBeGreaterThan(0.2);
+    await expect.poll(async () => ((await on()) ? handoff() : 1), { timeout: 15_000 }).toBeGreaterThan(0.2);
+    await skipIfOff();
     expect(await handoff()).toBeLessThan(0.8);
+    const reach = async (want: string) => {
+      await expect.poll(async () => ((await on()) ? raw() : want), { timeout: 15_000 }).toBe(want);
+      await skipIfOff();
+    };
     await page.locator('#project-h').evaluate((n) => n.scrollIntoView({ block: 'start' }));
-    await expect.poll(raw).toBe('1.000');
+    await reach('1.000');
     await page.evaluate(() => window.scrollTo(0, 0));
-    await expect.poll(raw).toBe('0.000');
+    await reach('0.000');
     await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'hero');
   });
 
@@ -68,7 +78,11 @@ test('맨 위가 아닐 때 3D가 켜져도, 맨 위로 돌아오면 여백 클�
   test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 꺼진 환경');
   await expect(page.locator('html')).not.toHaveClass(/hero-runway/);
   await page.evaluate(() => window.scrollTo(0, 0));
-  await expect(page.locator('html')).toHaveClass(/hero-runway/);
+  // 병렬 실행의 소프트웨어 렌더러에서는 프레임 감시가 그사이 3D를 꺼 버릴 수 있다 — 꺼지면 여백을 새로 붙이지 않는 게 맞으므로 건너뛴다
+  const html = page.locator('html');
+  await expect.poll(async () => (await html.getAttribute('data-3d')) !== 'on' || /hero-runway/.test((await html.getAttribute('class')) ?? '')).toBe(true);
+  test.skip((await html.getAttribute('data-3d')) !== 'on', '도중에 3D가 꺼짐(프레임 저하)');
+  await expect(html).toHaveClass(/hero-runway/);
   const title = await page.locator('.hero-title').boundingBox();
   expect(title!.y).toBeGreaterThanOrEqual(0);
   // 여백이 붙었으니 스크롤로 전환이 계산된다(data-handoff)
