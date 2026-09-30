@@ -123,10 +123,11 @@ html[data-header] .site-header:focus-within .header-actions { pointer-events: au
    JS가 맨 위임을 확인했을 때만(data-hint="on") 보이게 뒤집는다. 로딩 화면이 처음 순간은 어차피 가려 준다 */
 html:not([data-hint="on"]) .scroll-hint { opacity: 0; visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .scroll-hint i { animation: none; } .scroll-hint { transition: none; } }
-/* 좁은 휴대폰에서 언어 안내 판(LangHint, left 16px/bottom 16px, z 50, 약 50px 높이 — 글 한 줄 + 닫기 버튼)이 뜨면
-   SCROLL 표시와 겹친다. 판은 뜨지 않을 때 DOM에서 아예 빠지므로(LangHint.tsx가 null을 반환) body:has()로 있을 때만 올린다.
-   지원 브라우저 기준(Chromium/Safari/Firefox 최신)이라 :has()를 그대로 쓴다 */
-@media (max-width: 767px) { body:has(.lang-hint) .scroll-hint { bottom: calc(16px + 50px + 16px); } }
+/* 좁은 휴대폰에서 언어 안내 판(LangHint, left 16px/bottom 16px, z 50)이 뜨면 SCROLL 표시와 겹친다. 판은 뜨지 않을 때
+   DOM에서 아예 빠지므로(LangHint.tsx가 null을 반환) body:has()로 있을 때만 올린다. 판 높이는 글자 크기에 따라
+   약 50px(기본)에서 70px 넘게(글자 200%) 바뀌어, LangHint가 잰 실제 높이(--lang-hint-h)를 쓴다. 50px은 그 값이
+   오기 전 한 순간의 기본값. 지원 브라우저 기준(Chromium/Safari/Firefox 최신)이라 :has()를 그대로 쓴다 */
+@media (max-width: 767px) { body:has(.lang-hint) .scroll-hint { bottom: calc(16px + var(--lang-hint-h, 50px) + 16px); } }
 /* 3D가 맨 위에서 처음 켜졌을 때만 첫 화면 뒤에 60vh를 둔다 — 스크롤하는 동안 카메라가 땅 가까이
    내려앉을 거리(설계 §4.2). 첫 화면(88vh) 아래라 3D가 켜지는 순간 보이는 글은 움직이지 않는다(CLS 0).
    data-3d="on"이 아니라 html.hero-runway에 매단 이유(Backdrop.tsx setMode 참고): data-3d를 그대로 쓰면

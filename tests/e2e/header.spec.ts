@@ -139,3 +139,26 @@ test.describe('320px 좁은 화면', () => {
     });
   }
 });
+
+// 글자 크기 200%(브라우저 글자 확대): 언어 안내 판은 글자와 함께 커지지만(높이·폭) SCROLL 표시는 10px 고정이라,
+// 판 높이를 50px로 어림한 예전 규칙으로는 휴대폰에서 둘이 겹쳤다. 데스크톱 폭에서도 판이 가운데까지 넓어지면 겹친다
+test.describe('글자 200%에서 언어 안내 판과 SCROLL 표시', () => {
+  test.use({ locale: 'ko-KR' });
+  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }, { width: 768, height: 600 }, { width: 1280, height: 800 }]) {
+    test(`${viewport.width}×${viewport.height}: 겹치지 않는다`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/en/');
+      await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      const banner = page.locator('.lang-hint');
+      const hint = page.locator('.scroll-hint');
+      await expect(banner).toBeVisible();
+      await expect(hint).toBeVisible();
+      // 판 크기가 바뀐 뒤 SCROLL 자리가 따라 옮겨지는 데 한 프레임쯤 걸릴 수 있어 조건이 맞을 때까지 본다
+      await expect.poll(async () => {
+        const [a, b] = [(await banner.boundingBox())!, (await hint.boundingBox())!];
+        const apart = a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
+        return apart ? 'apart' : `겹침 판 ${JSON.stringify(a)} 표시 ${JSON.stringify(b)}`;
+      }).toBe('apart');
+    });
+  }
+});
