@@ -33,9 +33,12 @@ const VALIDATION_BLOCKS: Block[] = [
   { kind: 'card', id: 'limits', tag: 'LIMITS', scene: 'limits', code: 'limits', paras: 3 },
 ];
 
-type ChartSectionProps = { locale: Locale; id: 'findings' | 'validation'; headingKey: 'charts.heading' | 'charts.validationHeading'; blocks: Block[] };
+type ChartSectionProps = {
+  locale: Locale; id: 'findings' | 'validation'; headingKey: 'charts.heading' | 'charts.validationHeading'; blocks: Block[];
+  headScene: SceneKey;
+};
 
-function ChartSection({ locale, id, headingKey, blocks }: ChartSectionProps) {
+function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectionProps) {
   const t = getT(locale);
   const dict = dictionaries[locale];
   // 출발일 점 그래프(charts.holidays)와 구름(데모 공휴일 이름)이 쓰는 공휴일 이름을 한 표로
@@ -55,7 +58,8 @@ function ChartSection({ locale, id, headingKey, blocks }: ChartSectionProps) {
   );
   return (
     <section id={id} className="wrap" aria-labelledby={`${id}-h`}>
-      <div className="charts-head">
+      {/* 머리 자리의 장면 — 장면이 없는 머리 위에서는 3D가 앞 섹션의 차트 배치에 멈춘 채 제목 위에 남는다(2026-09-30) */}
+      <div className="charts-head" data-scene={headScene}>
         <p className="eyebrow" data-flip-on-enter>{eyebrow(id)}</p>
         <h2 id={`${id}-h`} className="display" data-reveal>{t(headingKey)}</h2>
       </div>
@@ -98,9 +102,12 @@ function ChartSection({ locale, id, headingKey, blocks }: ChartSectionProps) {
 }
 
 export const Findings = ({ locale }: { locale: Locale }) => (
-  <ChartSection locale={locale} id="findings" headingKey="charts.heading" blocks={FINDINGS_BLOCKS} />
+  // ④ 머리는 첫 판의 차트 장면: ③ 와플에서 지형을 거치지 않고 제목이 올라오는 동안 곧장 출발일 판으로 옮겨 간다
+  <ChartSection locale={locale} id="findings" headingKey="charts.heading" blocks={FINDINGS_BLOCKS} headScene="chartDepart" />
 );
 
 export const Validation = ({ locale }: { locale: Locale }) => (
-  <ChartSection locale={locale} id="validation" headingKey="charts.validationHeading" blocks={VALIDATION_BLOCKS} />
+  // ⑤ 머리는 ③ 머리와 같은 조용한 지형(model). 첫 블록 장면(bubble)은 제거 레이어가 화면 가운데 높이에 떠 있어
+  // 제목 뒤 대비가 1.9:1로 떨어졌다(화소 검사 2026-09-30). 지형 → 차트 3(지형)이라 옮겨 가는 모양도 이어진다
+  <ChartSection locale={locale} id="validation" headingKey="charts.validationHeading" blocks={VALIDATION_BLOCKS} headScene="model" />
 );

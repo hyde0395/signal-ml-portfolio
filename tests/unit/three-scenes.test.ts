@@ -237,7 +237,7 @@ describe('이륙 비행기 진행도(plane)', () => {
 
 // 첫 화면 → ① 장면 고르기(계획 6-6): 여백(hero-runway)이 있으면 활성 섹션이 아니라 비행기 시계로 고른다
 describe('pickScene', () => {
-  const base = { portrait: false, heroScroll: 0 };
+  const base = { portrait: false, heroScroll: 0, intro: true };
   it('활성 섹션이 ①인데 시계가 아직 내려앉는 중(p < 0.3)이면 공항 내려앉기', () => {
     const s = pickScene({ ...base, active: { key: 'about', progress: 0.4 }, plane: 0.1, h: 0 });
     expect(s).toEqual(sceneFor('hero', runwayPhases(0.1).land, false));
@@ -264,5 +264,11 @@ describe('pickScene', () => {
   });
   it('활성 섹션도 전환도 여백도 없으면 null(장면을 바꾸지 않는다)', () => {
     expect(pickScene({ ...base, active: null, plane: -1, h: -1 })).toBeNull();
+  });
+  it('머리말 틈(① 위)에서 활성 섹션이 없으면 시계로 ① 처음', () => {
+    expect(pickScene({ ...base, active: null, plane: 1, h: 1 })).toEqual(sceneFor('about', 0, false));
+  });
+  it('① 아래 틈(섹션 사이 여백·제목)에서는 여백이 있어도 null — ① 물결 줄로 되돌아가지 않는다', () => {
+    expect(pickScene({ ...base, intro: false, active: null, plane: 1, h: 1 })).toBeNull();
   });
 });

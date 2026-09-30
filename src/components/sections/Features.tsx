@@ -22,12 +22,13 @@ export function Features({ locale }: { locale: Locale }) {
     Object.entries(dictionaries[locale].features.shap).map(([k, v]) => [k, prefill(v as string, facts, locale)]),
   ) as ShapTexts;
   return (
-    // data-scene="model": 섹션 전체의 3D 장면(가격 지형). 안쪽 그림 판 블록이 더 작아 블록 위에서는 블록 장면이 이기고,
-    // 머리·블록 사이 틈에서만 이 장면이 쓰인다 — 장면이 없는 틈이면 3D가 마지막 차트 배치에 멈춘 채 글 위에 남았다(계획 7-2 눈 확인)
-    <section id="features" className="wrap" aria-labelledby="features-h" data-scene="model">
+    <section id="features" className="wrap" aria-labelledby="features-h">
       {/* 섹션 머리표·h2는 ④·⑤처럼 블록 위 머리(.charts-head)에 둔다 — #features-h는 움직임 e2e가 쓰는 제목 리빌 대상이라 id를 그대로 둔다.
           모델 구조 블록에는 이름을 따로 달지 않는다: h2가 이미 이 블록의 이름이라 같은 이름이 두 번 낭독된다 */}
-      <div className="charts-head">
+      {/* data-scene="model": 머리 자리의 3D 장면(가격 지형) — 장면이 없으면 3D가 ② 보드 배치에 멈춘 채 글 위에 남았다(계획 7-2 눈 확인).
+          섹션 전체가 아니라 머리에만 둔다: 섹션에 두면 와플 아래 여백에서 지형이 켜져 ③ 와플 → ④ 출발일 차트 사이에 점이
+          지형으로 한 번 흩어졌다 다시 모였다(2026-09-30). 블록이 붙어 있어 블록 사이에는 틈이 없다 */}
+      <div className="charts-head" data-scene="model">
         <p className="eyebrow" data-flip-on-enter>{eyebrow('features')}</p>
         <h2 id="features-h" className="display" data-reveal>{t('features.structure.heading')}</h2>
       </div>

@@ -15,7 +15,7 @@ const facts = JSON.parse(readFileSync(fileURLToPath(new URL('../../data/facts.js
 const STAGES = ['chartModel', 'features', 'chartDepart', 'chartCurve', 'chartCloud'] as const;
 
 async function painted(page: Page, key: string) {
-  return page.locator(`[data-scene="${key}"] .chart-canvas`).evaluate((c: HTMLCanvasElement) => {
+  return page.locator(`.chart-block[data-scene="${key}"] .chart-canvas`).evaluate((c: HTMLCanvasElement) => {
     if (c.width === 0) return false;
     const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
     for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return true;
@@ -32,16 +32,16 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     test(`${key}: 2D로 그리고 이름표를 붙인다`, async ({ page }) => {
       await page.goto('/');
       await expect(page.locator('html')).toHaveAttribute('data-3d', 'off');
-      await center(page, `[data-scene="${key}"]`);
+      await center(page, `.chart-block[data-scene="${key}"]`);
       await expect.poll(() => painted(page, key), { timeout: 10_000 }).toBe(true);
-      await expect(page.locator(`[data-scene="${key}"]`).locator('.chart-label, .chart-group').first()).toBeAttached();
+      await expect(page.locator(`.chart-block[data-scene="${key}"]`).locator('.chart-label, .chart-group').first()).toBeAttached();
     });
   }
 
   // ③ 모델 구조 점(계획 7-2): 판이 고정된 스크롤 구간을 문단 수(4)로 나눈 자리마다 단계가 바뀐다 — 넷째 칸은 3단계 그대로
   test.describe('③ 모델 구조', () => {
     // 블록 안 고정 구간의 f 위치(0 = 판이 막 고정됨, 1 = 풀리기 직전)로 스크롤한다
-    const scrollInto = (page: Page, f: number) => page.locator('[data-scene="chartModel"]').evaluate((el, f) => {
+    const scrollInto = (page: Page, f: number) => page.locator('.chart-block[data-scene="chartModel"]').evaluate((el, f) => {
       const r = el.getBoundingClientRect();
       window.scrollTo(0, window.scrollY + r.top + (r.height - window.innerHeight) * f);
     }, f);
@@ -50,7 +50,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       test(`${label}: 문단이 바뀌면 점 단계가 바뀌고 2D로 다시 그린다, 이름표는 판 안, 가로 스크롤 없음`, async ({ page }) => {
         await page.setViewportSize({ width: w, height: h });
         await page.goto('/');
-        const block = page.locator('[data-scene="chartModel"]');
+        const block = page.locator('.chart-block[data-scene="chartModel"]');
         const stage = block.locator('.chart-stage');
         const axis = block.locator('.chart-label.axis');
         for (const [f, n, para] of [[0.1, '0', 0], [0.37, '1', 1], [0.62, '2', 2], [0.9, '2', 3]] as const) {
@@ -78,7 +78,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     test('axe 위반 없음(3단계)', async ({ page }) => {
       await page.goto('/');
       await scrollInto(page, 0.62);
-      await expect(page.locator('[data-scene="chartModel"] .chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
+      await expect(page.locator('.chart-block[data-scene="chartModel"] .chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
       const r = await new AxeBuilder({ page }).include('#features').analyze();
       expect(r.violations).toEqual([]);
     });
@@ -87,16 +87,16 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('이름표 개수: 출발일 눈금 4 + 요일 이름·값 14, 벌떼 구간 8 + 눈금 3, 와플 그룹 6', async ({ page }) => {
     await page.goto('/');
     for (const [key, sel, n] of [['chartDepart', '.chart-label.tick', 18], ['chartCurve', '.chart-label.tick', 11], ['features', '.chart-group', 6]] as const) {
-      await center(page, `[data-scene="${key}"]`);
-      await expect(page.locator(`[data-scene="${key}"] ${sel}`)).toHaveCount(n, { timeout: 10_000 });
+      await center(page, `.chart-block[data-scene="${key}"]`);
+      await expect(page.locator(`.chart-block[data-scene="${key}"] ${sel}`)).toHaveCount(n, { timeout: 10_000 });
     }
   });
 
   test('와플 그룹에 마우스를 올리면 설명 줄에 그 그룹, 다른 그룹은 흐려진다', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await center(page, '[data-scene="features"]');
-    const stage = page.locator('[data-scene="features"]');
+    await center(page, '.chart-block[data-scene="features"]');
+    const stage = page.locator('.chart-block[data-scene="features"]');
     const groups = stage.locator('.chart-group');
     await expect(groups).toHaveCount(6, { timeout: 10_000 });
     const detail = stage.locator('.chart-detail');
@@ -123,8 +123,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     // 예전 "누르면 설명 줄" 토글은 펼치기로 바뀌었다. 좁은 판에서도 피처 이름표가 판 밖으로 나가 페이지가 가로로 늘지 않는지 본다
     test('누르면 SHAP 벌떼로 펼치고, 다시 누르면 닫힌다 — 판 안, 가로 스크롤 없음', async ({ page }) => {
       await page.goto('/');
-      await center(page, '[data-scene="features"]');
-      const stage = page.locator('[data-scene="features"]');
+      await center(page, '.chart-block[data-scene="features"]');
+      const stage = page.locator('.chart-block[data-scene="features"]');
       const g = stage.locator('.chart-group').nth(0);
       await expect(g).toBeVisible({ timeout: 10_000 });
       await g.tap();
@@ -152,8 +152,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     test(`와플 설명 줄이 이름표와 겹치지 않는다 — ${label}(${w}×${h})`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(path);
-      await center(page, '[data-scene="features"]');
-      const stage = page.locator('[data-scene="features"]');
+      await center(page, '.chart-block[data-scene="features"]');
+      const stage = page.locator('.chart-block[data-scene="features"]');
       const groups = stage.locator('.chart-group');
       await expect(groups).toHaveCount(6, { timeout: 10_000 });
       await groups.nth(0).hover();
@@ -170,8 +170,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('차트 1: 마우스를 올리면 표시 상자, 조작 층 valuetext가 같은 문장, 떠나면 숨는다', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await center(page, '[data-scene="chartDepart"]');
-    const stage = page.locator('[data-scene="chartDepart"]');
+    await center(page, '.chart-block[data-scene="chartDepart"]');
+    const stage = page.locator('.chart-block[data-scene="chartDepart"]');
     const slider = stage.locator('[role="slider"]');
     await expect(slider).toBeAttached({ timeout: 10_000 });
     await expect(stage.locator('.chart-tip')).toHaveCount(0); // 처음엔 짚은 항목이 없다
@@ -200,8 +200,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('차트 1: 판 위에서 휠을 굴리면 페이지가 스크롤된다', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await center(page, '[data-scene="chartDepart"]');
-    const slider = page.locator('[data-scene="chartDepart"] [role="slider"]');
+    await center(page, '.chart-block[data-scene="chartDepart"]');
+    const slider = page.locator('.chart-block[data-scene="chartDepart"] [role="slider"]');
     await expect(slider).toBeAttached({ timeout: 10_000 });
     await slider.hover();
     const y0 = await page.evaluate(() => window.scrollY);
@@ -212,8 +212,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('차트 2: 처음부터 가장 싼 구간에 세로선과 표시 상자, 키보드로 옮긴다', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await center(page, '[data-scene="chartCurve"]');
-    const stage = page.locator('[data-scene="chartCurve"]');
+    await center(page, '.chart-block[data-scene="chartCurve"]');
+    const stage = page.locator('.chart-block[data-scene="chartCurve"]');
     const slider = stage.locator('[role="slider"]');
     await expect(slider).toBeAttached({ timeout: 10_000 });
     await expect(stage.locator('.chart-cursor')).toBeVisible();
@@ -237,8 +237,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('차트 4: Tab으로 조작 층에 초점, → 두 번이면 두 번째 항목', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await center(page, '[data-scene="chartCloud"]');
-    const stage = page.locator('[data-scene="chartCloud"]');
+    await center(page, '.chart-block[data-scene="chartCloud"]');
+    const stage = page.locator('.chart-block[data-scene="chartCloud"]');
     const slider = stage.locator('[role="slider"]');
     await expect(slider).toBeAttached({ timeout: 10_000 });
     await expect(slider).toHaveAttribute('aria-label', /값 살펴보기$/);
@@ -256,8 +256,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
     test('차트 1을 가볍게 누르면 표시 상자가 보이고, 손을 떼도 남는다', async ({ page }) => {
       await page.goto('/');
-      await center(page, '[data-scene="chartDepart"]');
-      const stage = page.locator('[data-scene="chartDepart"]');
+      await center(page, '.chart-block[data-scene="chartDepart"]');
+      const stage = page.locator('.chart-block[data-scene="chartDepart"]');
       await expect(stage.locator('[role="slider"]')).toBeAttached({ timeout: 10_000 });
       const plot = (await stage.locator('[data-plot]').boundingBox())!;
       await page.touchscreen.tap(plot.x + plot.width / 2, plot.y + plot.height / 2);
@@ -276,8 +276,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     test('영어 375px: 처음부터 떠 있는 차트 2 표시 상자가 판 안, 가로 스크롤 없음', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/en/');
-      await center(page, '[data-scene="chartCurve"]');
-      const stage = page.locator('[data-scene="chartCurve"]');
+      await center(page, '.chart-block[data-scene="chartCurve"]');
+      const stage = page.locator('.chart-block[data-scene="chartCurve"]');
       const tip = stage.locator('.chart-tip');
       await expect(tip).toBeVisible({ timeout: 10_000 });
       const t = (await tip.boundingBox())!, plot = (await stage.locator('[data-plot]').boundingBox())!;
@@ -291,8 +291,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     test.use({ viewport: { width: 1440, height: 900 } });
     const open = async (page: Page) => {
       await page.goto('/');
-      await center(page, '[data-scene="features"]');
-      const stage = page.locator('[data-scene="features"]');
+      await center(page, '.chart-block[data-scene="features"]');
+      const stage = page.locator('.chart-block[data-scene="features"]');
       await expect(stage.locator('.chart-group')).toHaveCount(6, { timeout: 10_000 });
       return stage;
     };
@@ -342,8 +342,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     for (const path of ['/', '/en/', '/ja/']) {
       test(`${path} 머리 줄과 색 범례가 겹치지 않고, 이름표가 판 안`, async ({ page }) => {
         await page.goto(path);
-        await center(page, '[data-scene="features"]');
-        const stage = page.locator('[data-scene="features"]');
+        await center(page, '.chart-block[data-scene="features"]');
+        const stage = page.locator('.chart-block[data-scene="features"]');
         await expect(stage.locator('.chart-group')).toHaveCount(6, { timeout: 10_000 });
         await stage.locator('.chart-group').nth(0).click();
         await expect(stage.locator('.chart-label.head')).toBeVisible();
@@ -362,7 +362,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       const stage = await open(page);
       await stage.locator('.chart-group').nth(0).click();
       await expect(stage.locator('.chart-label.feature').first()).toBeAttached();
-      const r = await new AxeBuilder({ page }).include('[data-scene="features"]').analyze();
+      const r = await new AxeBuilder({ page }).include('.chart-block[data-scene="features"]').analyze();
       expect(r.violations).toEqual([]);
     });
   });
@@ -370,8 +370,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('차트 데이터를 못 받으면 안내가 뜨고 글 카드는 그대로다', async ({ page }) => {
     await page.route('**/data/charts.*.json', (r) => r.abort());
     await page.goto('/');
-    await center(page, '[data-scene="chartDepart"]');
-    await expect(page.locator('[data-scene="chartDepart"] .chart-error')).toBeVisible({ timeout: 10_000 });
+    await center(page, '.chart-block[data-scene="chartDepart"]');
+    await expect(page.locator('.chart-block[data-scene="chartDepart"] .chart-error')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#chart-depart')).toBeVisible();
   });
 
@@ -380,8 +380,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('차트 데이터를 못 받아도 와플은 그리고, 누르면 펼치지 않고 알림에만 안내', async ({ page }) => {
     await page.route('**/data/charts.*.json', (r) => r.abort());
     await page.goto('/');
-    await center(page, '[data-scene="features"]');
-    const stage = page.locator('[data-scene="features"]');
+    await center(page, '.chart-block[data-scene="features"]');
+    const stage = page.locator('.chart-block[data-scene="features"]');
     const groups = stage.locator('.chart-group');
     await expect(groups).toHaveCount(6, { timeout: 10_000 });
     for (let i = 0; i < 6; i++) await expect(groups.nth(i)).toBeVisible();
@@ -396,13 +396,13 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('창 크기를 바꾸면 다시 배치한다(이름표가 판 안에 남는다)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await center(page, '[data-scene="chartCurve"]');
-    await expect(page.locator('[data-scene="chartCurve"] .chart-label.tick')).toHaveCount(11, { timeout: 10_000 });
+    await center(page, '.chart-block[data-scene="chartCurve"]');
+    await expect(page.locator('.chart-block[data-scene="chartCurve"] .chart-label.tick')).toHaveCount(11, { timeout: 10_000 });
     await page.setViewportSize({ width: 820, height: 900 });
-    const plot = page.locator('[data-scene="chartCurve"] [data-plot]');
+    const plot = page.locator('.chart-block[data-scene="chartCurve"] [data-plot]');
     await expect.poll(async () => {
       const p = (await plot.boundingBox())!;
-      const boxes = await page.locator('[data-scene="chartCurve"] .chart-label.tick').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right));
+      const boxes = await page.locator('.chart-block[data-scene="chartCurve"] .chart-label.tick').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right));
       return boxes.every((r) => r <= p.x + p.width + 2);
     }, { timeout: 5_000 }).toBe(true);
   });
@@ -413,7 +413,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       await page.setViewportSize({ width: w, height: h });
       await page.goto('/');
       for (const key of STAGES) {
-        const block = page.locator(`[data-scene="${key}"]`);
+        const block = page.locator(`.chart-block[data-scene="${key}"]`);
         await block.evaluate((n) => n.scrollIntoView({ block: 'start' }));
         const copy = block.locator('.chart-copy');
         await expect(copy).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -434,7 +434,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
   test('문단이 여러 개인 블록은 한 번에 하나만, 끝까지 가면 마지막 문단', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    const block = page.locator('[data-scene="chartCloud"]');
+    const block = page.locator('.chart-block[data-scene="chartCloud"]');
     const paras = block.locator('.chart-para');
     await expect(paras).toHaveCount(3);
     const { top, height } = await block.evaluate((n) => ({ top: n.getBoundingClientRect().top + window.scrollY, height: (n as HTMLElement).offsetHeight }));
@@ -458,7 +458,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(path);
       for (const key of STAGES) {
-        const block = page.locator(`[data-scene="${key}"]`);
+        const block = page.locator(`.chart-block[data-scene="${key}"]`);
         const { top, height } = await block.evaluate((n) => ({ top: n.getBoundingClientRect().top + window.scrollY, height: (n as HTMLElement).offsetHeight }));
         // 한 번에 목표 위치로 건너뛰면(큰 폭의 scrollTo) 헤드리스 브라우저가 이따금 scroll 이벤트를
         // 아예 안 보낼 때가 있어(자막 스크립트가 갱신될 기회를 못 얻는다) 위의 겹침 검사처럼 잘게 나눠
@@ -493,8 +493,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
 test('3D가 도중에 꺼지면 이미 불러온 판이 그 자리에서 2D로 그린다', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
-  await center(page, '[data-scene="chartCloud"]');
-  await expect(page.locator('[data-scene="chartCloud"] .chart-label').first()).toBeAttached({ timeout: 10_000 });
+  await center(page, '.chart-block[data-scene="chartCloud"]');
+  await expect(page.locator('.chart-block[data-scene="chartCloud"] .chart-label').first()).toBeAttached({ timeout: 10_000 });
   await page.evaluate(() => document.documentElement.setAttribute('data-3d', 'off'));
   // 판은 곧바로 그려지지만, 소프트웨어 렌더러(CI swiftshader)에서는 검사의 getImageData(GPU 캔버스 읽기) 한 번이
   // 몇 초씩 걸린다(CPU 4배 느리게 해서 0.8~4.3초 측정, 2026-09-28). 5초로는 CI에서 가끔 모자라 넉넉히 둔다
@@ -511,7 +511,8 @@ test.describe('3D 켜짐', () => {
 
   test('순서를 섞어 건너뛰어도 멈춘 차트의 배치로 바뀐다', async ({ page }) => {
     for (const key of ['chartCloud', 'features', 'chartModel', 'chartCurve', 'chartDepart']) {
-      await center(page, `[data-scene="${key}"]`);
+      // .chart-block: ④ 머리도 첫 판과 같은 data-scene(chartDepart)을 달아 [data-scene=…]만으로는 머리가 먼저 잡힌다
+      await center(page, `.chart-block[data-scene="${key}"]`);
       await expect(page.locator('html')).toHaveAttribute('data-chart', key, { timeout: 15_000 });
     }
   });
@@ -521,6 +522,20 @@ test.describe('3D 켜짐', () => {
     await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'problem', { timeout: 10_000 });
     await center(page, '.data-board');
     await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'dataBoard', { timeout: 10_000 });
+    await expect(page.locator('html')).not.toHaveAttribute('data-chart', /./);
+  });
+
+  // 섹션 머리(제목) 자리는 다음 블록의 장면 — 장면이 없으면 앞 차트 배치가 제목 위에 멈추거나(① 아래 틈 처리 전에는)
+  // ① 물결 줄로 되돌아갔다. ③ 와플 → ④ 제목은 지형을 거치지 않고 곧장 출발일 차트로 간다(2026-09-30)
+  test('③·④·⑤ 머리에서는 지형 → 출발일 차트 → 지형', async ({ page }) => {
+    await center(page, '#features-h');
+    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'model', { timeout: 10_000 });
+    await center(page, '.chart-block[data-scene="features"]');
+    await expect(page.locator('html')).toHaveAttribute('data-chart', 'features', { timeout: 15_000 });
+    await center(page, '#findings-h');
+    await expect(page.locator('html')).toHaveAttribute('data-chart', 'chartDepart', { timeout: 15_000 });
+    await center(page, '#validation-h');
+    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'model', { timeout: 10_000 });
     await expect(page.locator('html')).not.toHaveAttribute('data-chart', /./);
   });
 });

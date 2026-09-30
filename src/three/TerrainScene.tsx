@@ -126,6 +126,8 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       let h = -1; // -1 = 전환 계산 안 함
       let plane = -1; // 이륙 비행기 진행도 = 비행기 시계 값(시안 눈금). -1 = 여백 없음, 장면 기본값(첫 화면 0, 그 밖 1)
       let goal = -1;  // 스크롤로 정한 비행기 진행도(시계가 따라갈 목표)
+      // 활성 섹션이 없는 틈이 ①보다 위(머리말)인지 — #project 윗변이 아직 화면 가운데 아래에 있을 때만(pickScene intro)
+      let intro = false;
       const now = performance.now();
       if (html.classList.contains('hero-runway')) {
         // 활성 장면이 ①보다 뒤(②~)면 #project 윗변은 이미 y1을 한참 지났다 — 읽지 않고 1로 둔다.
@@ -135,6 +137,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
           const projectTop = document.getElementById('project')?.getBoundingClientRect().top;
           if (projectTop !== undefined) {
             const y1 = projectTop + window.scrollY - 0.2 * vh;
+            intro = projectTop > vh / 2;
             // 비행기는 내려앉기(0 → y0)와 전환(y0 → y1)을 한 눈금으로 잇는다 — 시안이 한 스크롤 안에서 둘을 이었다.
             // 스크롤은 목표일 뿐, 장면은 최대 속도로 따라가는 시계 값으로 정한다(빠른 휠에도 이륙·흩어짐이 보이게).
             // 시계가 멈춰 있다 움직이기 시작하면 직전 update가 오래전일 수 있어 한 프레임(1/60초)으로 센다.
@@ -160,7 +163,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       const followUntil = lastHandoff + 600;
       // 장면 고르기(scenes.ts pickScene): 여백이 있으면 첫 화면·머리말·①은 활성 섹션이 아니라 시계로 고른다
       const picked = pickScene({
-        active, plane, h, portrait: portrait.current, heroScroll: Math.min(1, window.scrollY / (0.9 * vh)),
+        active, plane, h, portrait: portrait.current, heroScroll: Math.min(1, window.scrollY / (0.9 * vh)), intro,
       });
       if (!picked) { writeHandoff(html, h); return; }
       let s: SceneState = picked;

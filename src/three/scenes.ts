@@ -68,8 +68,9 @@ export const SCENES: Record<SceneKey, SceneState> = {
   // ② 화면 2: 같은 지도를 멀리서 내려다보고 점을 흐리게 한다. 판 없는 보드의 작은 글자가 지도 점과 섞이지
   // 않게 하는 것이 이 장면의 목적이다(설계 §3.2, 2026-09-27)
   dataBoard: { ...base, camera: [0, 30, 14], target: [0, 0, 0], map: 1, dim: 0.32 }, // 0.16은 지도가 너무 흐려 보여 올림(2026-09-29 시안 B 선택)
-  // ③ 섹션 바탕(설계 2026-09-29 이야기 흐름 §3.4, 계획 7-2에서 자리 옮김): 섹션 전체(#features)의 장면이라 안쪽 그림 판
-  // 블록이 없는 자리(머리 h2, 블록 사이)에서만 쓰인다 — 장면이 없는 틈이면 3D가 마지막 차트 배치에 멈춰 글 위에 남았다.
+  // ③·⑤ 머리(설계 2026-09-29 이야기 흐름 §3.4, 계획 7-2에서 자리 옮김, 2026-09-30 섹션 전체 → 머리만): 제목 자리의 장면 —
+  // 장면이 없는 틈이면 3D가 마지막 차트 배치에 멈춰 글 위에 남았다. 섹션 전체에 두면 와플 아래 여백에서도 켜져 ③ → ④ 사이에
+  // 점이 지형을 한 번 거쳐 갔다.
   // 가격 지형을 조용히 보여 준다. limits 구도에서 잡음만 0.3으로 낮췄다: 0.5에서는 앞줄 흩어진 점이 글 끝에 걸쳐
   // 지저분했다(실제 GPU 눈 확인, 2026-09-30)
   model: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.3 },
@@ -158,14 +159,16 @@ function smooth(v: number) { return v * v * (3 - 2 * v); }
 // 여백이 있고 첫 화면·①·그 사이(머리말, 활성 섹션 없음)라면 활성 섹션이 아니라 시계로 고른다. 시계는 스크롤을 최대 속도로
 // 따라가 늦으므로, 활성 섹션이 이미 ①인데 시계는 아직 내려앉는 중(h 0)이거나 거꾸로 맨 위인데 시계는 아직 ①(h 1)일 수
 // 있다 — 활성 섹션대로 고르면 카메라가 ①로 튀었다가 공항으로 섞여 돌아온다. ①보다 뒤(차트 등)는 보통 길이다.
-// 활성 섹션도 전환도 여백도 없으면 null — 호출자가 지금 장면을 그대로 둔다
+// - intro: 활성 섹션이 없을 때 그 틈이 ①보다 위(머리말)인지. ① 아래의 틈(섹션 사이 여백, 장면 없는 제목)까지 머리말로
+//   보면 ①을 지난 뒤에도 틈마다 ① 물결 줄이 튀어나왔다(③ 와플 → ④ 제목에서 발견, 2026-09-30)
+// 활성 섹션도 전환도 없고 머리말 틈도 아니면 null — 호출자가 지금 장면을 그대로 둔다
 export function pickScene(o: {
   active: { key: SceneKey; progress: number } | null;
-  plane: number; h: number; portrait: boolean; heroScroll: number;
+  plane: number; h: number; portrait: boolean; heroScroll: number; intro: boolean;
 }): SceneState | null {
   const { active, plane, h, portrait } = o;
   const handoff = h > 0 && h < 1;
-  const runway = plane >= 0 && (!active || active.key === 'hero' || active.key === 'about');
+  const runway = plane >= 0 && (active ? active.key === 'hero' || active.key === 'about' : o.intro);
   // 공항 끝(hero 진행 1)과 ① 처음(about 진행 0) 사이. follow로 점·카메라가 시계를 바짝 따라간다
   if (handoff) return { ...blendScenes(sceneFor('hero', 1, portrait), sceneFor('about', 0, portrait), h), follow: true };
   if (runway) {
