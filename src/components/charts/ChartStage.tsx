@@ -190,6 +190,8 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     if (open < 0) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      // 다른 층(대화상자·메뉴 등)이 이미 이 Esc를 처리했다면 벌떼까지 같이 닫지 않는다 — 한 번의 Esc는 한 가지만 닫는다
+      if (e.defaultPrevented) return;
       const gi = openRef.current;
       setOpen(-1);
       say(strings.shap?.closed ?? '');
