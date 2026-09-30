@@ -22,6 +22,7 @@ test.describe('3D 켜짐', () => {
   // 위로 되돌리면 거꾸로 0(공항)으로 돌아간다. 진행도는 TerrainScene이 html data-handoff로 적는다
   // (hero-runway는 첫 프레임 뒤에 붙어 첫 스크롤 전에는 값이 없을 수 있다 — 그때도 장면은 공항 그대로)
   test('머리말을 지나는 동안 공항 → 지형 전환 도중이고, 되돌리면 거꾸로 간다', async ({ page }) => {
+    test.setTimeout(90_000); // 3D 켜짐 대기(최대 20초) + 최대 속도로 따라가는 장면을 세 번 기다린다(각 최대 15초)
     // 속성이 없을 때 Number(null) === 0이 되어 "0으로 돌아감"이 거짓으로 통과하지 않게, 없으면 NaN으로 읽는다
     // (NaN은 어떤 크기 비교도 통과하지 않는다). 끝값은 문자열로 비교한다
     const raw = () => page.locator('html').getAttribute('data-handoff');

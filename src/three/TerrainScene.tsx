@@ -128,10 +128,10 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
             // 비행기는 내려앉기(0 → y0)와 전환(y0 → y1)을 한 눈금으로 잇는다 — 시안이 한 스크롤 안에서 둘을 이었다.
             // 스크롤은 목표일 뿐, 장면은 최대 속도로 따라가는 시계 값으로 정한다(빠른 휠에도 이륙·흩어짐이 보이게).
             // 시계가 멈춰 있다 움직이기 시작하면 직전 update가 오래전일 수 있어 한 프레임(1/60초)으로 센다.
-            // 한 프레임이 길게 멈춰도(차트 준비 등) 장면이 한 번에 건너뛰지 않게 0.25초로 자른다 — 더 짧게 자르면
-            // 프레임이 느린 기기(초당 4~10장)에서 시계가 실제 시간보다 느려져 연출이 몇 배로 늘어진다
+            // 한 번에 건너뛰는 폭은 1초로 자른다(탭을 오래 숨겼다 돌아온 경우 등). 더 짧게 자르면 프레임이 느린 기기
+            // (초당 1~4장)에서 시계가 실제 시간보다 몇 배 느려져 연출이 한없이 늘어진다
             goal = takeoffProgress(window.scrollY, 0.9 * vh, y1);
-            const dt = ticking ? Math.min(0.25, (now - clockAt) / 1000) : 1 / 60;
+            const dt = ticking ? Math.min(1, (now - clockAt) / 1000) : 1 / 60;
             clock = stepPlaneClock(clock < 0 ? target.current.plane : clock, goal, dt);
             clockAt = now;
             plane = clock;
@@ -148,18 +148,24 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       if (handoff || (prevH >= 0 && h >= 0 && h !== prevH)) lastHandoff = now;
       prevH = h;
       const followUntil = lastHandoff + 600;
-      if (!active && !handoff) { writeHandoff(html, h); return; }
+      // 여백이 있고 첫 화면·①·그 사이(머리말)라면 장면은 스크롤 위치(활성 섹션)가 아니라 비행기 시계로 고른다.
+      // 시계는 스크롤보다 늦게 따라오므로, 활성 섹션이 이미 ①인데 시계는 아직 내려앉는 중(h 0)이거나 거꾸로 맨 위인데
+      // 시계는 아직 ①(h 1)일 수 있다 — 활성 섹션대로 고르면 카메라가 ①로 튀었다가 공항으로 섞여 돌아온다
+      const runway = plane >= 0 && (!active || active.key === 'hero' || active.key === 'about');
+      if (!active && !handoff && !runway) { writeHandoff(html, h); return; }
       let s: SceneState;
       if (handoff) {
         // 공항 끝(hero 진행 1)과 ① 처음(about 진행 0) 사이. follow로 점·카메라가 스크롤을 바짝 따라간다
         s = { ...blendScenes(sceneFor('hero', 1, portrait.current), sceneFor('about', 0, portrait.current), h), follow: true };
+      } else if (runway) {
+        // 내려앉기도 비행기 시계로 — 한 눈금이라 비행기 굴러가기와 카메라가 어긋나지 않는다
+        s = h <= 0
+          ? sceneFor('hero', runwayPhases(plane).land, portrait.current)
+          : sceneFor('about', active?.key === 'about' ? active.progress : 0, portrait.current);
       } else {
         const a = active!;
         // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
-        // 여백이 있으면(plane ≥ 0) 내려앉기도 비행기 시계로 — 한 눈금이라 비행기 굴러가기와 카메라가 어긋나지 않는다
-        const progress = a.key !== 'hero' ? a.progress
-          : plane >= 0 ? runwayPhases(plane).land : Math.min(1, window.scrollY / (0.9 * vh));
-        s = sceneFor(a.key, progress, portrait.current);
+        s = sceneFor(a.key, a.key === 'hero' ? Math.min(1, window.scrollY / (0.9 * vh)) : a.progress, portrait.current);
       }
       if (plane >= 0) {
         // 고개로 비행기를 살짝 따라간다(시안: 방향 차이의 35%, 높이 차이의 30%) — 멀어지는 비행기가 화면 구석으로
@@ -210,7 +216,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot, shift, followUntil };
       writeHandoff(html, h); // DOM 읽기(.chart-stage)가 모두 끝난 뒤에 쓴다
       // 전환 앞 절반(아직 공항에 가까울 때)만 마우스 시차를 둔다
-      parallax.current = handoff ? h < 0.5 : active?.key === 'hero';
+      parallax.current = handoff ? h < 0.5 : runway ? h <= 0 : active?.key === 'hero';
       setRunning(active?.key !== 'contact' && !document.hidden);
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
