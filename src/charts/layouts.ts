@@ -91,6 +91,21 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
 export const DEPART_TEXT = { charPx: 6.6, monthGapPx: 34 } as const;
 export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25 } as const;
 
+// 출발일 가로축의 월 이름(차트 1·③ 모델 구조가 같이 쓴다). X = 출발일 → 판 안 px, y = 이름표 줄 높이(px).
+// 앞 월 이름과 monthGapPx보다 가까우면 뺀다 — 첫 출발일(5월 중순)과 다음 달 첫 출발일이 붙어 있어 좁은 판에서 "MayJun"처럼 붙었다
+export function monthLabels(dates: string[], X: (iso: string) => number, month: (iso: string) => string, y: number, size: PlotSize): ChartLabel[] {
+  const out: ChartLabel[] = [];
+  let lastMonth = '', lastMonthX = -Infinity;
+  dates.forEach((iso) => {
+    if (iso.slice(0, 7) === lastMonth) return;
+    lastMonth = iso.slice(0, 7);
+    if (X(iso) - lastMonthX < DEPART_TEXT.monthGapPx) return;
+    lastMonthX = X(iso);
+    out.push({ type: 'text', x: X(iso) / size.w, y: y / size.h, text: month(iso), align: 'center', cls: 'month' });
+  });
+  return out;
+}
+
 export function departLayout(
   d: ChartsData, size: PlotSize,
   s: {
@@ -128,15 +143,7 @@ export function departLayout(
   });
   for (const v of [50, 25, 0, -25]) labels.push({ type: 'text', x: (gx0 - 6) / W, y: Y(v) / H, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: gx0 / W, y: (top * 0.35) / H, text: s.axis, align: 'start', cls: 'axis' });
-  // 월 이름: 앞 월 이름과 MONTH_GAP_PX보다 가까우면 뺀다 — 첫 출발일(5월 중순)과 다음 달 첫 출발일이 붙어 있어 좁은 판에서 "MayJun"처럼 붙었다
-  let lastMonth = '', lastMonthX = -Infinity;
-  d.dates.forEach((iso) => {
-    if (iso.slice(0, 7) === lastMonth) return;
-    lastMonth = iso.slice(0, 7);
-    if (X(iso) - lastMonthX < DEPART_TEXT.monthGapPx) return;
-    lastMonthX = X(iso);
-    labels.push({ type: 'text', x: X(iso) / W, y: (bottom + (gy1 - bottom) * 0.6) / H, text: s.month(iso), align: 'center', cls: 'month' });
-  });
+  labels.push(...monthLabels(d.dates, X, s.month, bottom + (gy1 - bottom) * 0.6, size));
   // 공휴일 이름표: 봉우리 바로 위. 옆 이름표와 가로로 겹치면 한 줄(13px) 위로 올린다 — 글자 폭은 배치 함수에서 잴 수 없어
   // 글자 수 × charPx로 어림한다(좁은 영어 판에서 Christmas·Seollal이 붙었다). 판 위로 나가지 않게 8px에서 멈춘다
   const placed: { x: number; y: number; half: number }[] = [];
@@ -364,7 +371,7 @@ function niceStep(span: number, n: number): number {
 }
 
 // 작고 빠른 시드 난수(점 좌우 흔들림이 매번 같게)
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
