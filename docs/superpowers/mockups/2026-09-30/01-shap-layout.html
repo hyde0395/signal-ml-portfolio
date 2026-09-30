@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>5-3c 벌떼 펼침 배치</title>
+<style>
+  body{margin:0;background:#02040A;color:#EEF3FF;font:14px/1.5 -apple-system,"Pretendard",sans-serif;padding:24px 32px 80px}
+  h1{font-size:20px;margin:0 0 4px} .sub{color:#8a94ad;margin:0 0 24px}
+  .opt{border:1px solid #1c2740;border-radius:10px;padding:16px 18px 18px;margin:0 0 28px;cursor:pointer;background:#050a16}
+  .opt.selected{border-color:#FFB547;box-shadow:0 0 0 1px #FFB547}
+  .opt h2{font-size:16px;margin:0 0 4px} .opt p{margin:0 0 12px;color:#9aa6c2}
+  .tag{font:600 12px ui-monospace,monospace;color:#FFB547;letter-spacing:.06em}
+  .screen{position:relative;width:1000px;max-width:100%;border:1px dashed #1c2740;border-radius:6px}
+  canvas{display:block;width:100%}
+  .cap{position:absolute;left:24px;right:24px;font-size:13px;color:#c5cde0}
+  .cap small{color:#7c87a3}
+  .pc{display:flex;gap:18px;margin-top:10px;font-size:13px} .pc div{flex:1} .pc b{color:#8FB8FF} .pc i{color:#ff9a8a;font-style:normal}
+</style></head><body>
+<h1>③ 와플 → SHAP 벌떼: 펼쳤을 때 어디에 그릴까</h1>
+<p class="sub">데스크톱 1440×900 기준 화면(판 46vh + 아래 자막 띠). "조회 통계(lookup)" 그룹(피처 13개)을 펼친 모습. 값은 예시 데이터. 마음에 드는 쪽을 누르세요.</p>
+
+<div class="opt" data-choice="a" onclick="pick(this)">
+  <div class="tag">A · 와플이 위로 작아지고, 그 아래 판 전체가 벌떼</div>
+  <h2>와플 6개가 판 맨 위 작은 줄로 줄어들고(고른 것만 밝게), 남은 판 전체에 벌떼</h2>
+  <p>자막 띠는 그대로. 벌떼 줄 높이가 넉넉하다(13줄 × 약 25px). 다른 그룹 작은 와플을 누르면 바로 바꿔 펼친다.</p>
+  <div class="screen"><canvas id="a"></canvas></div>
+  <div class="pc"><div><b>좋은 점</b> 판 안에서 끝나 자막·스크롤 구조를 안 건드림. 와플 → 벌떼 점 이동이 판 안에서 크게 보임</div><div><i>아쉬운 점</i> 와플 크기가 바뀌어 "와플이 그대로 흐려진다"와는 조금 다름</div></div>
+</div>
+
+<div class="opt" data-choice="b" onclick="pick(this)">
+  <div class="tag">B · 고른 와플은 제자리, 오른쪽에 벌떼</div>
+  <h2>고른 와플만 왼쪽에 남고 다른 와플은 흐려져 사라지며, 오른쪽 넓은 칸에 벌떼</h2>
+  <p>판 높이 전체를 벌떼가 쓴다(13줄 × 약 30px). 와플과 벌떼가 나란히 있어 "이 와플을 펼친 것"이 잘 보인다.</p>
+  <div class="screen"><canvas id="b"></canvas></div>
+  <div class="pc"><div><b>좋은 점</b> 벌떼가 가장 크다. 무엇을 펼쳤는지 분명</div><div><i>아쉬운 점</i> 다른 그룹으로 바꾸려면 닫고 다시 골라야 함(또는 흐린 와플을 남겨 둬야 함)</div></div>
+</div>
+
+<div class="opt" data-choice="c" onclick="pick(this)">
+  <div class="tag">C · 와플 줄은 그대로, 벌떼가 아래로 내려와 자막 띠를 덮음</div>
+  <h2>와플 6개는 제자리에서 흐려지고(고른 것만 밝게), 그 아래에서 자막 띠 자리까지 벌떼가 펼쳐짐</h2>
+  <p>펼친 동안 자막 글은 숨는다. 설계 문서 원래 말("다른 와플은 흐려진다")에 가장 가깝다.</p>
+  <div class="screen"><canvas id="c"></canvas></div>
+  <div class="pc"><div><b>좋은 점</b> 와플이 움직이지 않아 차분함. 다른 와플로 바로 바꾸기 쉬움</div><div><i>아쉬운 점</i> 자막 띠를 가려서 스크롤하며 읽던 글이 잠깐 사라짐. 휴대폰에선 자리가 모자람</div></div>
+</div>
+
+<script>
+const C={bg:'#02040A',dot:'#8FB8FF',amber:'#FFB547',tx:'#EEF3FF',mute:'#6f7a96'};
+const G=[{n:'조회 통계',g:46.8,c:13},{n:'범주형',g:26.0,c:5},{n:'공휴일',g:11.4,c:4,h:1},{n:'출발까지 일수',g:6.8,c:4},{n:'항공편',g:4.6,c:5},{n:'시장',g:1.2,c:2}];
+const F=['rd_med','rd_min','rd_max','rd_std','rah_med','rah_std','ra_med','ra_std','rm_med','rm_std','r_med','r_std','global_med'];
+const SP=[.30,.18,.16,.06,.14,.05,.10,.04,.08,.04,.07,.03,.02];
+function rng(s){return()=>{s=(s+0x6d2b79f5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+function nrm(r){return Math.sqrt(-2*Math.log(r()+1e-9))*Math.cos(2*Math.PI*r())}
+function lerp(a,b,t){const p=x=>[parseInt(x.slice(1,3),16),parseInt(x.slice(3,5),16),parseInt(x.slice(5,7),16)];const A=p(a),B=p(b);return`rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')})`}
+function setup(id,h){const cv=document.getElementById(id),w=1000,d=2;cv.width=w*d;cv.height=h*d;const x=cv.getContext('2d');x.scale(d,d);x.fillStyle=C.bg;x.fillRect(0,0,w,h);return{x,w,h}}
+function dot(x,cx,cy,r,col,a){x.globalAlpha=a;x.fillStyle=col;x.beginPath();x.arc(cx,cy,r,0,7);x.fill();x.globalAlpha=1}
+function text(x,s,cx,cy,col,al,sz,font){x.fillStyle=col||C.mute;x.textAlign=al||'left';x.font=`${sz||11}px ${font||'ui-monospace,monospace'}`;x.fillText(s,cx,cy)}
+function waffle(x,x0,y0,sq,g,state){const cell=sq/10,lit=Math.round(g.g);for(let k=0;k<100;k++){const on=k<lit;let col=on?(g.h?C.amber:C.dot):C.dot,a=on?.95:.13;if(state==='sel'&&on)col=C.amber;if(state==='dim')a*=.25;dot(x,x0+(k%10+.5)*cell,y0+(Math.floor(k/10)+.5)*cell,Math.max(.8,cell*.36),col,a)}}
+function glabel(x,cx,y,g,state,small){const a=state==='dim'?.35:1;x.globalAlpha=a;if(!small){text(x,g.g.toFixed(1)+'%',cx,y+18,state==='sel'?C.amber:C.tx,'center',18,'ui-monospace,monospace');text(x,g.n,cx,y+36,C.tx,'center',12,'-apple-system,sans-serif');text(x,g.c+'개',cx,y+52,C.mute,'center',11)}else{text(x,g.n,cx,y+12,state==='sel'?C.amber:C.tx,'center',10,'-apple-system,sans-serif')}x.globalAlpha=1}
+// 벌떼: 영역(x0,y0,w,h)에 13줄
+function swarm(x,X0,Y0,W,H,labelW){const r=rng(11),rowH=H/F.length,axX0=X0+labelW,axW=W-labelW-10,lim=.9;const X=v=>axX0+axW*(v+lim)/(2*lim);
+  // 0선
+  x.strokeStyle='rgba(238,243,255,.25)';x.setLineDash([2,3]);x.beginPath();x.moveTo(X(0),Y0);x.lineTo(X(0),Y0+H);x.stroke();x.setLineDash([]);
+  F.forEach((f,i)=>{const cy=Y0+rowH*(i+.5);text(x,f,axX0-8,cy+4,C.tx,'right',11);const used=new Map(),step=3.2;
+    for(let k=0;k<150;k++){const fv=r();let v=(fv-.5)*2*SP[i]+nrm(r)*SP[i]*.25;v=Math.max(-lim,Math.min(lim,v));const col=Math.round(X(v)/step);const n=used.get(col)||0;used.set(col,n+1);const off=Math.ceil(n/2)*step*(n%2?1:-1);if(Math.abs(off)>rowH*.45)continue;dot(x,col*step,cy+off,1.4,lerp('#5a8cff','#FFB547',fv),.85)}});
+  const by=Y0+H+14;text(x,'← 가격을 내림',axX0,by,C.mute,'left');text(x,'0',X(0),by,C.mute,'center');text(x,'가격을 올림 →',axX0+axW,by,C.mute,'right');
+  // 색 범례
+  const lx=X0+W-170,ly=Y0-14;for(let i=0;i<60;i++)dot(x,lx+i*1.6+30,ly,1.4,lerp('#5a8cff','#FFB547',i/59),.9);text(x,'값 낮음',lx+24,ly+4,C.mute,'right',10);text(x,'높음',lx+130,ly+4,C.mute,'left',10)}
+function caption(id,top,txt){const s=document.getElementById(id).parentElement;const d=document.createElement('div');d.className='cap';d.style.top=top+'px';d.innerHTML=txt;s.appendChild(d)}
+const PLOT_T=60,PLOT_H=414,SCREEN_H=900*1000/1440*1.0;
+// A
+(function(){const {x,w}=setup('a',640),top=40,ph=414;const n=6,chip=34,gap=110,x0=(w-(n*gap))/2;G.forEach((g,i)=>{const st=i===0?'sel':'dim';waffle(x,x0+i*gap+(gap-chip)/2,top,chip,g,st);glabel(x,x0+i*gap+gap/2,top+chip,g,st,1)});
+  text(x,'조회 통계 · 46.8% · 13개 피처 — 점 하나 = 예측 하나에서 이 피처가 가격을 움직인 정도',x0+10,top+80,C.tx,'left',12,'-apple-system,sans-serif');
+  swarm(x,x0,top+110,w-2*x0,ph-130,110);caption('a',540,'<b>피처 33개 · 6개 그룹</b><br><small>자막 띠(그대로) — 닫기: 다시 누르기 · Esc</small>')})();
+// B
+(function(){const {x,w}=setup('b',640),top=40,ph=414;const sq=150;waffle(x,40,top+60,sq,G[0],'sel');glabel(x,40+sq/2,top+60+sq,G[0],'sel');
+  G.slice(1).forEach((g,i)=>waffle(x,60+i*30,top+330,20,g,'dim'));text(x,'다른 그룹',40,top+320,C.mute,'left',10);
+  swarm(x,230,top+20,w-260,ph-40,110);caption('b',540,'<b>피처 33개 · 6개 그룹</b><br><small>자막 띠(그대로) — 닫기: 다시 누르기 · Esc</small>')})();
+// C
+(function(){const {x,w}=setup('c',640),top=40;const n=6,colW=(w-40)/n,sq=colW*.62;G.forEach((g,i)=>{const st=i===0?'sel':'dim';const x0=20+i*colW+(colW-sq)/2;waffle(x,x0,top,sq,g,st);glabel(x,x0+sq/2,top+sq,g,st)});
+  swarm(x,40,top+sq+90,w-80,330,110);text(x,'(자막 글은 펼친 동안 숨김)',w/2,630,C.mute,'center',11)})();
+function pick(el){document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');if(window.toggleSelect){}fetch('/events',{method:'POST',body:JSON.stringify({type:'click',choice:el.dataset.choice,text:el.querySelector('h2').textContent,timestamp:Date.now()})}).catch(()=>{})}
+</script>
+</body></html>
