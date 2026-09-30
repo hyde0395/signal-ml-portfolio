@@ -6,6 +6,8 @@
 - curve: 출발이 지난 편의 예약 곡선 8구간 평균·행 수(model_metrics.json의 bookingCurve와 같아야 한다)와
   관측 표본 4,000개(구간 번호, 같은 편 평균 대비 %). 점 개수는 데이터가 늘어도 고정이고, 재추출 때 새로 뽑는다(설계 §4).
 - shap: ③ 와플 펼치기(계획 5-3c) — 서비스 모델 XGBoost의 피처별 SHAP(×1000 정수)과 피처 값 순위(0~100), 표본 150개.
+- model: ③ 모델 구조 점(계획 7-2) — 인천→나리타 LCC 관측 표본(출발일마다 12개, 노선·등급 평균 대비 %×10)과
+  서비스 모델의 NeuralProphet 기준 가격(같은 평균 대비 %×10, 출발일별). 잔차는 사이트가 두 값으로 계산한다.
 - 개별 행의 가격은 내보내지 않는다(원본 비공개 원칙). 표본에도 %만 담는다.
 
 실행: npm run charts  (npm run terrain 뒤 — 출발일 목록이 지형과 같아야 3D 점 그래프가 지형 점을 출발일로 묶을 수 있다)
@@ -34,6 +36,10 @@ SEED = 7
 CURVE_TOLERANCE = 0.1         # 지표는 소수 첫째 자리, 사이트 값은 %×10 정수라 반올림 차이만 허용
 SHAP_SAMPLE = 150             # ③ SHAP 벌떼 표본 수(계획 5-3c) — 피처 33개 × 150점
 CATEGORICAL = ["origin", "destination", "route", "airline", "airline_class"]
+MODEL_ROUTE = "ICN_NRT"       # ③ 모델 구조 점(계획 7-2) — ⑤ 불확실성 구름과 같은 조합
+MODEL_CABIN = "LCC"
+MODEL_PER_DATE = 12           # 출발일마다 관측 점 개수(차트 1의 출발일 뭉치와 같은 12개)
+MODEL_RESID_HOT = 50.0        # 큰 잔차(|%|) — 사이트 src/charts/model.ts MODEL.residHot과 같은 값(출력 확인용)
 
 
 def depart_pct10(kept: pd.DataFrame, dates: list[str]) -> list[int]:
@@ -146,6 +152,39 @@ def compute_shap(kept: pd.DataFrame, size: int = SHAP_SAMPLE, seed: int = SEED) 
     if not np.allclose(contribs.sum(axis=1), pred, atol=1e-3):
         raise SystemExit("SHAP 합이 모델 출력과 다르다 — 인코딩 경로를 확인한다")
     return shap_block(contribs, enc, CATEGORICAL)
+
+
+def route_rows(kept: pd.DataFrame, route: str, cabin: str) -> pd.DataFrame:
+    """한 노선("ICN_NRT")·등급의 행."""
+    origin, dest = route.split("_")
+    return kept[(kept["origin"] == origin) & (kept["destination"] == dest) & (kept["airline_class"] == cabin)]
+
+
+def model_obs(sub: pd.DataFrame, dates: list[str], per_date: int = MODEL_PER_DATE, seed: int = SEED) -> dict:
+    """한 노선·등급 행(pct 열 있음) → 출발일마다 최대 per_date개 관측(charts.dates 번호, %×10), 출발일 순.
+    섞은 뒤 출발일마다 앞에서 자른다 — groupby().sample(n)은 행이 n보다 적은 날에 실패한다."""
+    index = {d: i for i, d in enumerate(dates)}
+    take = sub.sample(frac=1, random_state=seed).groupby("departure_date", sort=False).head(per_date)
+    take = take.assign(di=take["departure_date"].map(index)).sort_values("di", kind="stable")
+    return {"date": take["di"].astype(int).tolist(), "pct": (take["pct"] * 10).round().astype(int).tolist()}
+
+
+def baseline_pct10(base_price: dict[str, float], mean_price: float, dates: list[str]) -> list[int | None]:
+    """출발일별 기준 가격(원) → 노선·등급 평균 대비 %×10. 기준이 없거나 0 이하인 출발일은 None.
+    원 단위 값은 내보내지 않는다(데이터 공개 원칙) — 관측 %와 같은 평균으로 나눈 %만."""
+    out: list[int | None] = []
+    for d in dates:
+        b = base_price.get(d)
+        ok = b is not None and bool(np.isfinite(b)) and b > 0
+        out.append(int(round((b / mean_price - 1) * 1000)) if ok else None)
+    return out
+
+
+def model_block(sub: pd.DataFrame, dates: list[str], base_price: dict[str, float], route: str, cabin: str) -> dict:
+    """charts.json의 model. 평균은 add_route_class_pct가 붙인 base 열(그 노선·등급 정상 행의 평균) —
+    관측 %·지형 높이와 같은 기준이라 사이트가 두 %로 잔차를 바로 만든다."""
+    mean = float(sub["base"].iloc[0])
+    return {"route": route, "cabin": cabin, "base": baseline_pct10(base_price, mean, dates), "obs": model_obs(sub, dates)}
 
 
 def build_charts(raw: pd.DataFrame, as_of: str) -> dict:

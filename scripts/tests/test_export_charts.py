@@ -128,3 +128,51 @@ def test_check_shap_features_matches_fact_groups():
         ec.check_shap_features(["a", "b"], facts)
     with pytest.raises(SystemExit):
         ec.check_shap_features(["a", "b", "c", "d"], facts)
+
+
+# ③ 모델 구조 점(계획 7-2): 한 노선·등급의 관측 표본과 기준 가격 %
+def model_rows():
+    # 첫날 행 20개, 셋째 날 5개(표본보다 적다), 둘째 날은 다른 노선만. pct·base는 add_route_class_pct가 붙이는 열
+    rows = []
+    for i in range(20):
+        rows.append({"origin": "ICN", "destination": "NRT", "airline_class": "LCC", "departure_date": "2026-10-01",
+                     "pct": float(i), "base": 100_000.0})
+    for i in range(5):
+        rows.append({"origin": "ICN", "destination": "NRT", "airline_class": "LCC", "departure_date": "2026-10-03",
+                     "pct": -float(i), "base": 100_000.0})
+    for _ in range(3):
+        rows.append({"origin": "ICN", "destination": "KIX", "airline_class": "LCC", "departure_date": "2026-10-02",
+                     "pct": 0.0, "base": 90_000.0})
+    return pd.DataFrame(rows)
+
+
+MODEL_DATES = ["2026-10-01", "2026-10-02", "2026-10-03"]
+
+
+def test_route_rows_picks_one_route_and_cabin():
+    assert len(ec.route_rows(model_rows(), "ICN_NRT", "LCC")) == 25
+
+
+def test_model_obs_caps_per_date_sorted_by_date_index_and_is_seeded():
+    sub = ec.route_rows(model_rows(), "ICN_NRT", "LCC")
+    o = ec.model_obs(sub, MODEL_DATES, per_date=12, seed=3)
+    assert o["date"] == [0] * 12 + [2] * 5  # 날짜 번호는 charts.dates 안, 행이 적은 날은 있는 만큼
+    assert set(o["pct"][:12]) <= {i * 10 for i in range(20)}
+    assert sorted(o["pct"][12:]) == [-40, -30, -20, -10, 0]
+    assert ec.model_obs(sub, MODEL_DATES, per_date=12, seed=3) == o  # 시드가 같으면 같은 표본
+
+
+def test_baseline_pct10_is_pct_of_mean_and_none_when_missing():
+    got = ec.baseline_pct10({"a": 110_000.0, "b": float("nan"), "c": 0.0}, 100_000.0, ["a", "b", "c", "d"])
+    assert got == [100, None, None, None]
+
+
+def test_model_block_has_percent_only():
+    sub = ec.route_rows(model_rows(), "ICN_NRT", "LCC")
+    b = ec.model_block(sub, MODEL_DATES, {"2026-10-01": 95_000.0, "2026-10-03": 120_000.0}, "ICN_NRT", "LCC")
+    assert set(b) == {"route", "cabin", "base", "obs"} and set(b["obs"]) == {"date", "pct"}
+    assert (b["route"], b["cabin"]) == ("ICN_NRT", "LCC")
+    assert b["base"] == [-50, None, 200]
+    assert len(b["obs"]["date"]) == len(b["obs"]["pct"]) == 17
+    # 원 단위 값이 섞이지 않았는지: 모든 정수가 %×10 범위(±1000%) 안
+    assert all(isinstance(v, int) and abs(v) < 10_000 for v in b["obs"]["pct"] + [x for x in b["base"] if x is not None])
