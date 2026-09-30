@@ -430,7 +430,14 @@ html:not([data-3d="off"]) .chart-canvas { visibility: hidden; }
 .chart-group { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px;
   max-width: 180px; text-align: center; pointer-events: auto;
   cursor: pointer; /* iOS Safari는 cursor: pointer 같은 "누를 수 있어 보이는" 단서가 있어야 탭에서 click을
-    보내준다 — 누르기로 여닫는 설명 줄 토글(ChartStage groupHandlers onClick)이 이 click에 걸린다 */ }
+    보내준다 — 누르면 펼치기(ChartStage groupHandlers onClick → toggle)가 이 click에 걸린다 */ }
+/* ③ 와플 그룹 버튼 층(계획 5-3c): 판은 pointer-events: none이라 버튼만 받는다. 버튼 기본 모양은 지운다 */
+.chart-groups { position: absolute; inset: 0; pointer-events: none; }
+button.chart-group { background: none; border: 0; padding: 0; color: inherit; font: inherit; }
+.chart-group.is-mini { gap: 0; }
+.chart-group.is-mini .chart-group-pct, .chart-group.is-mini .chart-group-name { font-size: 0.7rem; }
+.chart-label.feature { color: var(--tx); }
+.chart-label.head { color: var(--tx); letter-spacing: 0.02em; }
 .chart-group-pct { font: 600 1.25rem var(--font-mono); }
 .chart-group.is-holiday .chart-group-pct { color: var(--amb); }
 .chart-group-name { font-weight: 600; font-size: 0.85rem; }

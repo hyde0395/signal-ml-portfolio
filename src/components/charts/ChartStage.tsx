@@ -7,6 +7,7 @@
 // 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 캔버스와 이름표는 aria-hidden이고, 같은 내용은 자막 띠(.chart-copy)의 요약 문단이 준다.
 // 강조(sel): ③ 와플은 마우스를 올린 그룹(설계 2026-09-28 §3), ④·⑤ 차트 1·2·4는 조작 층(role=slider)으로 짚은 항목(계획 5-3b).
 // 어느 쪽이든 강조 번호 하나를 저장소로 3D에 알리고 2D도 다시 그린다.
+// 펼침(open): ③ 와플 그룹 버튼을 누르면 그 그룹의 SHAP 벌떼 배치로 다시 배치한다(계획 5-3c). 펼친 동안은 펼친 그룹이 강조다.
 import type React from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ChartStrings } from '@/charts/build';
@@ -37,8 +38,14 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
   const [sel, setSel] = useState(-1);
   const lastLayout = useRef<ChartLayout | null>(null);
   const paint = useRef<(f: number) => void>(() => {});
-  const lastPointer = useRef('mouse');
   const selRef = useRef(-1);
+  // ③ 펼친 와플 그룹(−1 = 닫힘). 배치 함수(redraw)는 불러오기 effect 안에 있어 ref로 열어 두고 open이 바뀌면 부른다
+  const [open, setOpen] = useState(-1);
+  const openRef = useRef(-1);
+  const relayout = useRef<() => void>(() => {});
+  const [shapOk, setShapOk] = useState(false);
+  const [announce, setAnnounce] = useState('');
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const inited = useRef(false);
   // 터치: 누른 자리와 아직 끌기로 확정되지 않았는지(pending). 확정되면 dragging
   const touch = useRef<{ x: number; pending: boolean } | null>(null);
@@ -59,10 +66,11 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
         const mod = await import('@/charts/build');
         const loaded = await mod.loadFor(chartKey, dataVersion);
         if (!alive) return;
+        setShapOk(!!loaded.charts?.shap);
         redraw = () => {
           const r = pl.getBoundingClientRect(), s = st.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) return;
-          const layout = mod.buildLayout(chartKey, loaded, { w: r.width, h: r.height }, strings);
+          const layout = mod.buildLayout(chartKey, loaded, { w: r.width, h: r.height }, strings, openRef.current);
           // 판은 sticky(top: 0)라 고정된 동안 판 윗변 = 화면 맨 위다. 지금 스크롤 위치와 상관없이
           // "고정됐을 때의 화면 위치"를 넘기려고 판 안에서의 거리(r.top - s.top)를 쓴다
           publishChart(chartKey, {
@@ -75,7 +83,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
           // 새 배치의 항목 수가 줄었으면 짚은 번호가 범위 밖이 된다(aria-valuenow > valuemax) — 처음 강조로 되돌린다
           else if (layout.items && selRef.current >= layout.items.length) { selRef.current = layout.initial ?? -1; setSel(selRef.current); }
           setLay(layout);
-          draw(selRef.current);
+          draw(openRef.current >= 0 ? openRef.current : selRef.current);
         };
         // 2D 그리기만 따로 둔다 — 강조가 바뀔 때 배치를 다시 만들거나 3D에 다시 올리지 않고 2D만 다시 그린다
         const draw = (f: number) => {
@@ -99,6 +107,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
           pending = f;
           if (!pf) pf = requestAnimationFrame(() => { pf = 0; draw(pending); });
         };
+        relayout.current = redraw;
         redraw();
       } catch (e) {
         console.warn('차트를 불러오지 못했다', e);
@@ -123,14 +132,18 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
       if (rf) cancelAnimationFrame(rf);
       if (pf) cancelAnimationFrame(pf);
       paint.current = () => {};
+      relayout.current = () => {};
     };
   }, [chartKey, dataVersion, strings]);
 
+  // 펼친 동안(③)은 펼친 그룹이 강조 — 마우스 올리기(sel)는 닫힌 상태에서만 쓴다
+  const focusNow = open >= 0 ? open : sel;
   useEffect(() => {
     selRef.current = sel;
-    publishFocus(chartKey, sel);
-    paint.current(sel);
-  }, [sel, chartKey]);
+    publishFocus(chartKey, focusNow);
+    paint.current(focusNow);
+  }, [sel, focusNow, chartKey]);
+  useEffect(() => { openRef.current = open; relayout.current(); }, [open]);
 
   // 표시 상자 자리: 짚은 항목 위 TIP_GAP(자리가 없으면 아래), 좌우는 판 안으로 자른다. 상자 폭은 문장마다 달라 그린 뒤 잰다
   const cur = items && sel >= 0 ? items[sel] : undefined;
@@ -148,11 +161,32 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     return () => { alive = false; };
   }, []);
 
-  // 마우스·펜은 올리고 내리기, 손가락은 누를 때마다 켜고 끄기(손가락은 떼는 순간 pointerleave가 와서 바로 꺼지므로 무시한다)
+  const groups = labels.filter((l): l is Extract<ChartLabel, { type: 'group' }> => l.type === 'group');
+  const toggle = (gi: number) => {
+    if (!shapOk) { setFailed(true); return; } // SHAP 데이터를 못 받았으면 펼치지 않고 안내만
+    setSel(-1);
+    const next = openRef.current === gi ? -1 : gi;
+    setOpen(next);
+    setAnnounce(next >= 0 && strings.shap ? strings.shap.opened.replace('{v.name}', groups[gi]?.name ?? '') : strings.shap?.closed ?? '');
+  };
+  // Esc: 펼친 동안 어디에 초점이 있든 닫고, 초점을 그 그룹 버튼으로 돌려놓는다(화면이 튀지 않게 preventScroll)
+  useEffect(() => {
+    if (open < 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const gi = openRef.current;
+      setOpen(-1);
+      setAnnounce(strings.shap?.closed ?? '');
+      buttons.current[gi]?.focus({ preventScroll: true });
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, strings]);
+  // 마우스·펜은 올리면 설명 줄(닫힌 상태만), 누르기·Enter·Space(button의 click)는 모든 포인터에서 펼치기/닫기
   const groupHandlers = (gi: number) => ({
-    onPointerEnter: (e: React.PointerEvent) => { lastPointer.current = e.pointerType; if (e.pointerType !== 'touch') setSel(gi); },
+    onPointerEnter: (e: React.PointerEvent) => { if (e.pointerType !== 'touch' && openRef.current < 0) setSel(gi); },
     onPointerLeave: (e: React.PointerEvent) => { if (e.pointerType !== 'touch') setSel(-1); },
-    onClick: () => { if (lastPointer.current === 'touch') setSel((f) => (f === gi ? -1 : gi)); },
+    onClick: () => toggle(gi),
   });
 
   // 조작 층: 판 기준 가로 위치에서 가장 가까운 항목(항목 ≤ 180개라 차례로 본다)
@@ -216,34 +250,40 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
       <div ref={plot} className="chart-plot" data-plot>
         <canvas ref={canvas} className="chart-canvas" aria-hidden="true" />
         <div className="chart-labels" aria-hidden="true">
-          {(() => {
-            const groups = labels.filter((l): l is Extract<ChartLabel, { type: 'group' }> => l.type === 'group');
-            return labels.map((l, i) => {
-              const style = { left: `${l.x * 100}%`, top: `${l.y * 100}%` };
-              if (l.type === 'group') {
-                const gi = groups.indexOf(l);
-                const cls = `chart-group${l.holiday ? ' is-holiday' : ''}${sel === gi ? ' is-focus' : sel >= 0 ? ' is-dim' : ''}`;
-                return (
-                  <div key={l.id} className={cls} style={style} {...groupHandlers(gi)}>
-                    <span className="chart-group-pct">{l.pct}</span>
-                    <span className="chart-group-name">{l.name}</span>
-                    {/* compact(좁은 판): 개수 줄은 뺀다 — 설명 줄에 이미 있다(2026-09-28 §3 실측) */}
-                    {!l.compact && <span className="chart-group-count">{l.count}</span>}
-                  </div>
-                );
-              }
-              if (l.type === 'detail') {
-                const g = sel >= 0 ? groups[sel] : undefined;
-                return (
-                  <p key="detail" className="chart-detail" style={style}>
-                    {g && <><b>{g.name} · {g.pct} · {g.count}</b><span>{g.features.join(' · ')}</span></>}
-                  </p>
-                );
-              }
-              return <span key={i} className={`chart-label ${l.cls} align-${l.align}`} style={style}>{l.text}</span>;
-            });
-          })()}
+          {labels.map((l, i) => {
+            const style = { left: `${l.x * 100}%`, top: `${l.y * 100}%` };
+            if (l.type === 'group') return null; // 그룹 이름표는 아래 버튼 층에
+            if (l.type === 'detail') {
+              const g = sel >= 0 ? groups[sel] : undefined;
+              return (
+                <p key="detail" className="chart-detail" style={style}>
+                  {g && <><b>{g.name} · {g.pct} · {g.count}</b><span>{g.features.join(' · ')}</span></>}
+                </p>
+              );
+            }
+            return <span key={i} className={`chart-label ${l.cls} align-${l.align}`} style={style}>{l.text}</span>;
+          })}
         </div>
+        {/* ③ 와플 그룹 버튼(계획 5-3c): 축·눈금 글자가 낭독되지 않게 이름표 층(aria-hidden) 밖에 둔다 */}
+        {groups.length > 0 && (
+          <div className="chart-groups">
+            {groups.map((l, gi) => {
+              const cls = `chart-group${l.holiday ? ' is-holiday' : ''}${l.mini ? ' is-mini' : ''}${focusNow === gi ? ' is-focus' : focusNow >= 0 ? ' is-dim' : ''}`;
+              return (
+                <button key={l.id} ref={(el) => { buttons.current[gi] = el; }} type="button" className={cls}
+                  style={{ left: `${l.x * 100}%`, top: `${l.y * 100}%` }}
+                  aria-expanded={open === gi} aria-controls={`${chartKey}-shap`} aria-label={`${l.name} ${l.pct} · ${l.count}`}
+                  {...groupHandlers(gi)}>
+                  {/* mini(펼친 화면의 작은 와플): 넓은 판은 이름만, 좁은 판은 %만 */}
+                  {l.mini !== 'name' && <span className="chart-group-pct">{l.pct}</span>}
+                  {l.mini !== 'pct' && <span className="chart-group-name">{l.name}</span>}
+                  {/* compact(좁은 판): 개수 줄은 뺀다 — 설명 줄에 이미 있다(2026-09-28 §3 실측) */}
+                  {!l.compact && <span className="chart-group-count">{l.count}</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
         {chartKey === 'chartCurve' && cur && <div className="chart-cursor" aria-hidden="true" style={{ left: `${cur.x * 100}%` }} />}
         {cur && <div ref={tipEl} className="chart-tip" aria-hidden="true">{cur.text}</div>}
         {items && items.length > 0 && (
@@ -262,6 +302,13 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
         )}
         {/* 알림 영역은 처음부터 두고 글만 넣어야 화면 낭독기가 바뀐 것으로 읽는다 */}
         <p className="chart-error" role="status">{failed ? errorText : null}</p>
+        {/* ③ 펼친 SHAP 벌떼의 낭독용 요약. aria-controls가 늘 있는 id를 가리키도록 목록은 닫혀 있어도 둔다 */}
+        {chartKey === 'features' && (
+          <>
+            <ul id={`${chartKey}-shap`} className="sr-only">{(open >= 0 ? lay?.summary ?? [] : []).map((t) => <li key={t}>{t}</li>)}</ul>
+            <p className="sr-only" role="status">{announce}</p>
+          </>
+        )}
       </div>
     </div>
   );

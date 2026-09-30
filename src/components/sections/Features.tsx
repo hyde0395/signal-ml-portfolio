@@ -5,9 +5,10 @@
 // 목록(그룹 · % · 피처 이름)으로 둔다.
 import type React from 'react';
 import { ChartStage } from '../charts/ChartStage';
-import { getT } from '@/lib/content';
+import type { ShapTexts } from '@/charts/build';
+import { dictionaries, getT } from '@/lib/content';
 import { codeUrl, facts } from '@/lib/facts';
-import { formatValue, type Locale } from '@/lib/i18n';
+import { formatValue, prefill, type Locale } from '@/lib/i18n';
 import { eyebrow } from '@/lib/sections';
 
 export function Features({ locale }: { locale: Locale }) {
@@ -15,6 +16,10 @@ export function Features({ locale }: { locale: Locale }) {
   const groups = facts.model.featureGroups.map((g) => ({ id: g.id, gain: g.gain, features: g.features, name: t(`features.groups.${g.id}`) }));
   // 영어만 숫자와 단위 사이를 띄운다(13 features / 13개 / 13個)
   const countUnit = `${locale === 'en' ? ' ' : ''}${t('features.unit')}`;
+  // SHAP 문구는 {v.…}를 남긴 채 넘긴다(t()는 facts에서 찾다가 throw) — 배치 코드가 피처 값으로 채운다
+  const shap = Object.fromEntries(
+    Object.entries(dictionaries[locale].features.shap).map(([k, v]) => [k, prefill(v as string, facts, locale)]),
+  ) as ShapTexts;
   return (
     <section id="features" className="wrap" aria-labelledby="features-h">
       {/* 섹션 머리표·h2는 모델 카드로 옮겼다 — #features-h는 움직임 e2e가 쓰는 제목 리빌 대상이라 id를 그대로 둔다.
@@ -30,7 +35,7 @@ export function Features({ locale }: { locale: Locale }) {
         </a>
       </article>
       <article className="chart-block" data-scene="features" aria-labelledby="waffle-h" style={{ '--paras': 3 } as React.CSSProperties}>
-        <ChartStage chartKey="features" dataVersion={facts.dataVersion} strings={{ locale, holidays: {}, groups, countUnit }} errorText={t('charts.error')} />
+        <ChartStage chartKey="features" dataVersion={facts.dataVersion} strings={{ locale, holidays: {}, groups, countUnit, shap }} errorText={t('charts.error')} />
         <div className="chart-copy">
           <h3 id="waffle-h" className="display">{t('features.heading')}</h3>
           <ul className="sr-only">
