@@ -179,3 +179,81 @@ def test_model_block_has_percent_only():
     assert all(isinstance(v, int) and abs(v) <= 5000 for v in vals)
     prices = {round(p) for p in (100_000.0, 95_000.0, 120_000.0, 90_000.0)}
     assert not prices & set(vals)
+
+
+# ② 걸러내기(계획 8-1): 원본 행마다 걸린 규칙 번호와 표본
+def filter_raw():
+    def r(ts, price=150_000, dur=150, arr="10:30", day="2026-10-10", cls="LCC"):
+        return {"fetch_timestamp": ts, "origin": "ICN", "destination": "NRT", "airline": "JL", "airline_class": cls,
+                "departure_date": day, "price": price, "stops": 0, "duration_minutes": dur,
+                "departure_time_raw": f"{day} 08:00", "arrival_time_raw": f"{day} {arr}", "days_to_departure": 20}
+    return pd.DataFrame([
+        r("2026-09-20 10:00:00", price=100_000), r("2026-09-20 10:00:00", price=120_000),  # 통과 두 행(평균 110,000)
+        r("2026-09-20 11:00:00", dur=500, arr="16:20"),     # ① 400분 초과
+        r("2026-09-20 11:00:00", price=150),                # ① 가격 단위 누락
+        r("2026-09-20 12:00:00", arr="14:00"),              # ② 시각차 ≠ 소요
+        r("2026-09-20 13:00:00", dur=360, arr="14:00", price=330_000),  # ③ 직항인데 6시간
+        r("2026-09-20 14:00:00", dur=None),                 # ① 소요 없음 — 그릴 수 없어 표본에서 빠진다
+        r("2026-09-23 09:00:00"),                           # 기준일 뒤 — 아예 빠진다
+    ])
+
+
+def test_rule_codes_follow_pipeline_order():
+    raw = filter_raw()
+    cut = raw[pd.to_datetime(raw["fetch_timestamp"]) < pd.Timestamp("2026-09-23")]
+    assert ec.rule_codes(cut).tolist() == [0, 0, 1, 1, 2, 3, 1]
+
+
+def test_filter_block_percent_of_kept_mean_drops_missing_duration_and_is_seeded():
+    b = ec.filter_block(filter_raw(), "2026-09-22", size=100, seed=1)
+    assert set(b) == {"dur", "pct", "rule"}
+    assert sorted(b["rule"]) == [0, 0, 1, 1, 2, 3]            # 소요 없는 행·기준일 뒤 행은 없다
+    by_rule = dict(zip(b["pct"], b["rule"]))
+    assert by_rule[-91] == 0 and by_rule[91] == 0              # 100,000·120,000 → 평균 110,000 대비 −9.1%·+9.1%
+    assert by_rule[2000] == 3                                  # 330,000 → +200%
+    assert 500 in b["dur"] and 360 in b["dur"]
+    assert ec.filter_block(filter_raw(), "2026-09-22", size=100, seed=1) == b
+    assert not {100_000, 120_000, 330_000, 150} & set(b["pct"])  # 원 단위 값이 없다
+    assert len(ec.filter_block(filter_raw(), "2026-09-22", size=3, seed=1)["rule"]) == 3
+
+
+# ⑤ 검증 설계(계획 8-1): 수집 시각 순으로 정렬한 뒤 폴드 배정
+def split_kept():
+    rows = []
+    for i in range(60):
+        day = ["2026-10-01", "2026-10-02", "2026-10-03"][i % 3]
+        dest = "NRT" if i % 2 else "KIX"
+        rows.append({"fetch_timestamp": f"2026-09-{1 + i // 4:02d} 10:{i % 60:02d}:00", "origin": "ICN",
+                     "destination": dest, "departure_date": day})
+    return pd.DataFrame(rows).sample(frac=1, random_state=0)  # 수집 순서를 섞어 둔다 — 함수가 정렬해야 한다
+
+
+def test_split_block_matches_sklearn_folds_on_fetch_order():
+    from sklearn.model_selection import GroupKFold, KFold, TimeSeriesSplit
+    kept = split_kept()
+    b = ec.split_block(kept, ["2026-10-01", "2026-10-02", "2026-10-03"], size=1000, seed=1)
+    n = 60
+    assert len(b["fetch"]) == len(b["date"]) == len(b["kf"]) == len(b["gkf"]) == len(b["tss"]) == n
+    assert b["fetch"] == sorted(b["fetch"]) and b["fetch"][0] == 0 and b["fetchDays"] == b["fetch"][-1] + 1
+    # K-Fold(shuffle=False)는 연속 구간 — 정렬된 순서에서 폴드 번호가 줄지 않는다
+    assert b["kf"] == sorted(b["kf"]) and set(b["kf"]) == {0, 1, 2, 3, 4}
+    want = [-1] * n
+    for i, (_, te) in enumerate(TimeSeriesSplit(5).split(np.zeros(n))):
+        for j in te:
+            want[j] = i
+    assert b["tss"] == want and b["tss"].count(-1) == n - 5 * (n // 6)
+    # GroupKFold: 같은 노선·출발일 행은 같은 폴드
+    df = kept.assign(_ts=pd.to_datetime(kept["fetch_timestamp"])).sort_values("_ts", kind="stable")
+    g = (df["destination"] + df["departure_date"]).tolist()
+    seen = {}
+    for key, f in zip(g, b["gkf"]):
+        assert seen.setdefault(key, f) == f
+    assert b["show"] == {"kf": 2, "gkf": 0}
+    assert set(b["date"]) == {0, 1, 2}
+
+
+def test_split_block_samples_in_fetch_order_and_is_seeded():
+    kept = split_kept()
+    a = ec.split_block(kept, ["2026-10-01", "2026-10-02", "2026-10-03"], size=10, seed=3)
+    assert len(a["tss"]) == 10 and a["fetch"] == sorted(a["fetch"])
+    assert ec.split_block(kept, ["2026-10-01", "2026-10-02", "2026-10-03"], size=10, seed=3) == a

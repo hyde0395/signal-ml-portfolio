@@ -8,6 +8,10 @@
 - shap: ③ 와플 펼치기(계획 5-3c) — 서비스 모델 XGBoost의 피처별 SHAP(×1000 정수)과 피처 값 순위(0~100), 표본 150개.
 - model: ③ 모델 구조 점(계획 7-2) — 인천→나리타 LCC 관측 표본(출발일마다 12개, 노선·등급 평균 대비 %×10)과
   서비스 모델의 NeuralProphet 기준 가격(같은 평균 대비 %×10, 출발일별). 잔차는 사이트가 두 값으로 계산한다.
+- filter: ② 걸러내기(계획 8-1) — 기준일까지의 원본 행 표본 4,000개(실제 비율 그대로)의 소요 분, 정상 행의 노선·등급
+  평균 대비 %×10, 걸린 규칙 번호(0 통과, 1 단위·소요, 2 시각 불일치, 3 직항 확인).
+- split: ⑤ 검증 설계(계획 8-1) — 정상 행을 수집 시각 순으로 정렬해 K-Fold·GroupKFold·TimeSeriesSplit(각 5겹) 폴드를 전체에서
+  배정한 뒤 표본 4,000개의 수집일 번호·출발일 번호·폴드 번호. 모델 재학습은 없다.
 - 개별 행의 가격은 내보내지 않는다(원본 비공개 원칙). 표본에도 %만 담는다.
 
 실행: npm run charts  (npm run terrain 뒤 — 출발일 목록이 지형과 같아야 3D 점 그래프가 지형 점을 출발일로 묶을 수 있다)
@@ -26,7 +30,9 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import export_terrain as et  # noqa: E402  (export_facts를 거쳐 항공권 저장소를 sys.path에 넣는다)
 from export_demo import holiday_codes, load_holidays, quiet  # noqa: E402
-from export_facts import AIRFARE_ROOT, METRICS_PATH  # noqa: E402
+from export_facts import (  # noqa: E402
+    AIRFARE_ROOT, DURATION_MAX, METRICS_PATH, PRICE_FLOOR, drop_implausible_direct_flights, drop_inconsistent_flight_times,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_GZIP_BYTES = 150 * 1024   # 설계 §4 charts.json 예산
@@ -41,6 +47,9 @@ MODEL_ROUTE = "ICN_NRT"       # ③ 모델 구조 점(계획 7-2) — ⑤ 불확
 MODEL_CABIN = "LCC"
 MODEL_PER_DATE = 12           # 출발일마다 관측 점 개수(차트 1의 출발일 뭉치와 같은 12개)
 MODEL_RESID_HOT = 50.0        # 큰 잔차(|%|) — 사이트 src/charts/model.ts MODEL.residHot과 같은 값(출력 확인용)
+FILTER_SAMPLE = 4000          # ② 걸러내기 점 개수(계획 8-1) — 실제 비율 그대로라 규칙 ②는 10여 개뿐이다(부풀리지 않는다)
+SPLIT_SAMPLE = 4000           # ⑤ 검증 설계 점 개수
+N_FOLDS = 5                   # 항공권 저장소 tscv_eval_v2.py와 같은 5겹
 
 
 def depart_pct10(kept: pd.DataFrame, dates: list[str]) -> list[int]:
@@ -235,6 +244,72 @@ def compute_model(kept: pd.DataFrame, removed: pd.DataFrame, dates: list[str]) -
     return model_block(sub, dates, base, MODEL_ROUTE, MODEL_CABIN)
 
 
+def rule_codes(cut: pd.DataFrame) -> pd.Series:
+    """기준일까지 자른 원본 행마다 걸린 규칙 번호(0 통과, 1 단위·소요, 2 시각 불일치, 3 직항 확인).
+    export_facts.filter_steps·export_terrain.split_rows와 같은 순서 — 앞 규칙에 걸린 행은 뒤 규칙으로 세지 않는다."""
+    code = pd.Series(0, index=cut.index)
+    r1 = ~(cut["duration_minutes"].notna() & (cut["duration_minutes"] <= DURATION_MAX)) | (cut["price"] < PRICE_FLOOR)
+    code[r1] = 1
+    d1 = cut[~r1]
+    d2 = drop_inconsistent_flight_times(d1)
+    code[d1.index.difference(d2.index)] = 2
+    d3 = drop_implausible_direct_flights(d2)
+    code[d2.index.difference(d3.index)] = 3
+    return code
+
+
+def filter_block(raw: pd.DataFrame, as_of: str, size: int = FILTER_SAMPLE, seed: int = SEED) -> dict:
+    """② 걸러내기 표본. 가격은 정상 행의 노선·등급 평균 대비 %(지형과 같은 기준)로만 — 걸린 행도 같은 평균으로 잰다.
+    소요 시간이 없는 행은 가로 자리가 없어 뺀다(규칙별 행 수는 facts.data.filter가 따로 센다)."""
+    cutoff = pd.Timestamp(as_of) + pd.Timedelta(days=1)
+    cut = raw[pd.to_datetime(raw["fetch_timestamp"]) < cutoff].reset_index(drop=True)
+    code = rule_codes(cut)
+    base = cut[code == 0].groupby(et.ROUTE_CLASS)["price"].mean().rename("base")
+    x = cut.assign(rule=code).join(base, on=et.ROUTE_CLASS)
+    x = x[x["duration_minutes"].notna() & x["base"].notna()]
+    take = x.sample(n=min(size, len(x)), random_state=seed).sort_index()
+    pct = (take["price"] / take["base"] - 1) * 1000
+    return {
+        "dur": take["duration_minutes"].round().astype(int).tolist(),
+        "pct": pct.round().astype(int).tolist(),
+        "rule": take["rule"].astype(int).tolist(),
+    }
+
+
+def fold_ids(n: int, splitter, groups=None) -> np.ndarray:
+    """행마다 평가로 쓰인 폴드 번호. 한 번도 평가로 안 쓰인 행(TimeSeriesSplit의 첫 학습 구간)은 −1."""
+    out = np.full(n, -1)
+    for i, (_, te) in enumerate(splitter.split(np.zeros(n), groups=groups)):
+        out[te] = i
+    return out
+
+
+def split_block(kept: pd.DataFrame, dates: list[str], size: int = SPLIT_SAMPLE, seed: int = SEED, n_folds: int = N_FOLDS) -> dict:
+    """⑤ 검증 설계 표본. 항공권 저장소 tscv_eval_v2.py처럼 수집 시각으로 정렬한 뒤 폴드를 전체 행에서 배정하고 표본을 뽑는다.
+    그쪽은 sort_values 기본(안정 정렬 아님)이라 같은 시각 행 몇 개가 경계에서 다를 수 있다 — 그림에는 드러나지 않는다.
+    show: 판에 보여 줄 폴드 — K-Fold는 가운데(평가 구간 앞뒤가 모두 학습인 것이 보이게), GroupKFold는 첫 폴드."""
+    from sklearn.model_selection import GroupKFold, KFold, TimeSeriesSplit
+    df = kept.assign(_ts=pd.to_datetime(kept["fetch_timestamp"])).sort_values("_ts", kind="stable").reset_index(drop=True)
+    n = len(df)
+    groups = (df["origin"].astype(str) + "_" + df["destination"].astype(str) + "_"
+              + pd.to_datetime(df["departure_date"]).dt.strftime("%Y%m%d"))
+    kf = fold_ids(n, KFold(n_folds, shuffle=False))
+    gkf = fold_ids(n, GroupKFold(n_folds), groups)
+    tss = fold_ids(n, TimeSeriesSplit(n_folds))
+    fetch = (df["_ts"].dt.normalize() - df["_ts"].min().normalize()).dt.days.to_numpy()
+    idx = np.sort(np.random.default_rng(seed).choice(n, size=min(size, n), replace=False))
+    index = {d: i for i, d in enumerate(dates)}
+    return {
+        "fetch": fetch[idx].astype(int).tolist(),
+        "date": df["departure_date"].iloc[idx].map(index).astype(int).tolist(),
+        "kf": kf[idx].astype(int).tolist(),
+        "gkf": gkf[idx].astype(int).tolist(),
+        "tss": tss[idx].astype(int).tolist(),
+        "fetchDays": int(fetch.max()) + 1,
+        "show": {"kf": n_folds // 2, "gkf": 0},
+    }
+
+
 def main() -> None:
     metrics = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
     as_of = metrics["_meta"]["asOf"]
@@ -243,6 +318,8 @@ def main() -> None:
     kept, removed = et.split_rows(raw, as_of)
     charts["shap"] = compute_shap(kept)
     charts["model"] = compute_model(kept, removed, charts["dates"])
+    charts["filter"] = filter_block(raw, as_of)
+    charts["split"] = split_block(kept, charts["dates"])
     check_shap_features(charts["shap"]["features"], json.loads((ROOT / "data" / "facts.json").read_text(encoding="utf-8")))
     check_curve(charts["curve"], metrics)
     terrain = json.loads((ROOT / "public" / "data" / f"terrain.{as_of}.json").read_text(encoding="utf-8"))
@@ -264,6 +341,11 @@ def main() -> None:
     hot = sum(abs(r) >= MODEL_RESID_HOT for r in resid) / len(resid)
     print(f"model {m['route']}/{m['cabin']}: 관측 {len(resid)}개, 기준 {sum(b is not None for b in m['base'])}일, "
           f"|잔차| ≥ {MODEL_RESID_HOT:.0f}% {hot:.1%}")
+
+    f, sp = charts["filter"], charts["split"]
+    print(f"filter: 표본 {len(f['rule'])}개, 규칙별 {[f['rule'].count(r) for r in range(4)]}, "
+          f"960분 초과 {sum(d > 960 for d in f['dur'])}개 / split: 표본 {len(sp['tss'])}개, 수집 {sp['fetchDays']}일, "
+          f"TSS 첫 학습 구간 {sp['tss'].count(-1)}개")
 
 
 if __name__ == "__main__":
