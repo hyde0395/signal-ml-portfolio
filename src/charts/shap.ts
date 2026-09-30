@@ -11,10 +11,19 @@ export type ShapRow = { id: string; categorical: boolean; pct: number[]; f: numb
 // leadMinPx: 머리 줄에 설명 문장을 붙일 최소 판 폭 — 그보다 좁으면 오른쪽 색 범례와 겹친다(한국어·영어 1080px 판 어림)
 export const SHAP_LAYOUT = {
   wideMinPx: 560, leadMinPx: 1000,
+  // 좁은 판은 칸 폭의 0.6까지 — 아주 좁은 판에서도 이웃 작은 와플 사이에 틈이 남아 % 이름표가 붙어 보이지 않게
   mini: { wide: 44, narrow: 30 }, miniFrac: { wide: 0.12, narrow: 0.6 }, miniLabelPx: 18,
+  // 좁은 판은 범례가 머리 줄 아래 한 줄을 더 쓰므로(legendDropPx) 벌떼 시작을 그만큼 내린다
   headGap: 10, headPx: { wide: 18, narrow: 32 }, bottomPx: 34,
-  labelW: { wide: 150, narrow: 100 }, dot: { wide: 3, narrow: 2.2 }, gap: 0.4,
+  // 좁은 판 이름 칸: 가장 긴 피처 이름 is_kr_near_holiday가 9px 고정폭 글꼴로 약 97px
+  labelW: { wide: 150, narrow: 108 }, dot: { wide: 3, narrow: 2.2 }, gap: 0.4,
   clipQ: 0.98, minLim: 1, dirMinCorr: 0.2, legendDots: 24, legendW: 90,
+  // 좁은 판은 머리 줄과 범례가 한 줄에 안 들어가 범례를 한 줄 아래로 내린다
+  legendDropPx: 14,
+  // 범례 오른쪽 끝을 판 끝에서 띄우는 폭 — "높음" 글자가 범례 점 오른쪽에 붙을 자리
+  legendRightPx: 40,
+  // 판 아래에서 눈금 줄·방향 글 줄의 기준선 — bottomPx(34) 안에 두 줄이 들어간다
+  tickFromBottomPx: 22, dirFromBottomPx: 7,
 } as const;
 
 export const shapPct = (v: number) => Math.expm1(v / 1000) * 100;
@@ -35,8 +44,8 @@ export function shapRows(shap: ShapData, ids: string[]): ShapRow[] {
     const categorical = shap.categorical.includes(id);
     const meanAbs = pct.reduce((s, x) => s + Math.abs(x), 0) / pct.length;
     const r = categorical ? 0 : corr(f, pct);
-    const dir = categorical ? 'cat' : r >= SHAP_LAYOUT.dirMinCorr ? 'up' : r <= -SHAP_LAYOUT.dirMinCorr ? 'down' : 'mixed';
-    return { id, categorical, pct, f, meanAbs, dir } as ShapRow;
+    const dir: ShapRow['dir'] = categorical ? 'cat' : r >= SHAP_LAYOUT.dirMinCorr ? 'up' : r <= -SHAP_LAYOUT.dirMinCorr ? 'down' : 'mixed';
+    return { id, categorical, pct, f, meanAbs, dir };
   }).sort((a, b) => b.meanAbs - a.meanAbs);
 }
 
@@ -71,12 +80,12 @@ export function shapOpenLayout(
   const headY = sq + L.miniLabelPx + L.headGap;
   const headText = `${g.name} · ${s.gain(g.gain)} · ${s.count(g.features.length)}`;
   labels.push({ type: 'text', x: 0, y: headY / H, text: W >= L.leadMinPx ? `${headText} — ${s.lead}` : headText, align: 'start', cls: 'head' });
-  const legendY = wide ? headY : headY + 14;
+  const legendY = wide ? headY : headY + L.legendDropPx;
   const extra: P[] = [];
   if (rows.every((r) => r.categorical)) {
     labels.push({ type: 'text', x: 1, y: legendY / H, text: s.catNote, align: 'end', cls: 'tick' });
   } else {
-    const lx1 = W - 40, lx0 = lx1 - L.legendW;
+    const lx1 = W - L.legendRightPx, lx0 = lx1 - L.legendW;
     for (let i = 0; i < L.legendDots; i++) {
       const k = i / (L.legendDots - 1);
       extra.push([lx0 + (lx1 - lx0) * k, legendY, 3, 0.9, valTone(k * 100), -1]);
@@ -115,7 +124,7 @@ export function shapOpenLayout(
   for (let y = top; y <= bottom; y += 4) extra.push([X(0), y, 1.6, 0.28, TONE.text, -1]);
 
   // 축: 눈금(−lim·0·+lim) 한 줄 + 방향 글 한 줄
-  const tickY = H - 22, dirY = H - 7;
+  const tickY = H - L.tickFromBottomPx, dirY = H - L.dirFromBottomPx;
   labels.push({ type: 'text', x: ax0 / W, y: tickY / H, text: s.pct(-lim), align: 'start', cls: 'tick' });
   labels.push({ type: 'text', x: X(0) / W, y: tickY / H, text: s.pct(0), align: 'center', cls: 'tick' });
   labels.push({ type: 'text', x: ax1 / W, y: tickY / H, text: s.pct(lim), align: 'end', cls: 'tick' });
