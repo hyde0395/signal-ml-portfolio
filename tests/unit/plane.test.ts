@@ -27,11 +27,11 @@ describe('planeShape', () => {
     expect(span).toBeLessThan(63);
     expect(span / (RUNWAY.half * 2)).toBeCloseTo(1, 0);
   });
-  it('색은 점 파랑(1) 또는 흰색(3), 흩어짐 지연은 0..0.52', () => {
+  it('색은 점 파랑(1) 또는 흰색(3), 흩어짐 지연은 0..0.40', () => {
     for (const d of dots) {
       expect([1, 3]).toContain(d.tone);
       expect(d.delay).toBeGreaterThanOrEqual(0);
-      expect(d.delay).toBeLessThanOrEqual(0.52);
+      expect(d.delay).toBeLessThanOrEqual(0.4);
     }
     expect(dots.filter((d) => d.tone === 3).length).toBe(5);
   });
@@ -142,10 +142,11 @@ describe('planeScatter · planeFollow', () => {
     const maxDelay = Math.max(...planeShape().map((d) => d.delay));
     expect(maxDelay + PLANE.dotMove).toBeLessThanOrEqual(1);
   });
-  it('흩어짐: 0.26 전 0, 0.54 뒤 1, 사이 단조', () => {
+  it('흩어짐(계획 6-6 시안 C): 0.22 전 0, 0.62 뒤 1, 사이 단조', () => {
     expect(planeScatter(0.2)).toBe(0);
-    expect(planeScatter(0.4)).toBeCloseTo(0.5);
-    expect(planeScatter(0.6)).toBe(1);
+    expect(planeScatter(0.42)).toBeCloseTo(0.5);
+    expect(planeScatter(0.62)).toBe(1);
+    expect(planeScatter(0.3)).toBeLessThan(planeScatter(0.5));
   });
   it('따라가기: 서 있을 때 0, 오르는 동안 켜지고, 지형으로 넘어가면(p ≥ 0.72) 0 — ① 카메라 C는 그대로', () => {
     expect(planeFollow(0)).toBe(0);

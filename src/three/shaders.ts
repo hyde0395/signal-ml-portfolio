@@ -58,8 +58,10 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 // - isAir / p = mix(p, aAirport.xyz, ...): 공항은 불빛으로 배정된 점만 공항 자리로. uAirport가 1→0으로 줄면
 //   자기 지형 자리로 옮겨 간다
 // - isPlane / mi / bow / pq: 이륙 비행기 점(시안 A). 비행기 위 자리 = uPlane × 로컬 좌표, 점마다 지연(aAirStyle.w)만큼
-//   늦게 PLANE.dotMove(0.45) 동안(quart.out) 자기 지형·물결 자리(위에서 계산한 p)로 간다. 가는 동안 아래·앞으로 부푼 곡선
-//   (시안 bow: 아래 54m·앞 36m) — 빛이 흘러내리는 느낌. planeOn = 아직 비행기에 붙은 정도(1 − mi)로 vAir처럼 쓴다.
+//   늦게 PLANE.dotMove(0.6) 동안(quart.out) 자기 지형·물결 자리(위에서 계산한 p)로 간다. 가는 동안 아래·앞으로 부푼 곡선
+//   (시안 bow: 아래 54m·앞 36m) — 빛이 흘러내리는 느낌. planeOn = 아직 비행기 점 모양(크기·알파)을 쓰는 정도로 vAir처럼 쓴다.
+//   시안은 1 − mi였지만 떠나자마자 지형 점 모양(공항 장면에서는 거의 안 보임)으로 바뀌어 흩어짐이 안 보였다 —
+//   1 − mi³으로 날아가는 대부분 동안 비행기 점 모양을 지키다가 도착 무렵에 넘긴다(계획 6-6, 흩어짐 시안 C)
 //   uAirport와 상관없이 uPlaneGo만 따른다(첫 화면 밖에서는 늘 1이라 보통 점과 같다)
 // - 포인터 밀기·물결(설계 2026-09-25 §4.1, 계획 5-3a, gl_Position 바로 뒤): 장면 평면에 투영하지 않고 화면 공간(NDC)에서 민다.
 //   지형(xz)·지도·차트(z=0)·공항처럼 장면마다 평면이 달라도 식 하나로 되고, 셰이더가 짧다(3D 청크 여유).
@@ -67,7 +69,8 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 //   이동은 w를 곱해 클립 좌표에 더한다 — 원근 나눗셈 뒤 화면에서 정확히 그만큼 옮겨진다
 // - terrainPx: 지형은 거리에 따라 작아지고(20.0: 계획 3에서 점이 1~2px로 너무 작아 키운 값), 차트는 판 px 그대로다
 // - corePx: 공항 불빛 핵의 반지름 px(시안 core = clamp(5.5·size/거리, 0.6, 2.6)px). 조각 셰이더가 핵을 또렷하게,
-//   그 둘레를 시안 halo 곡선으로 칠한다(설계 2026-09-29 §8)
+//   그 둘레를 시안 halo 곡선으로 칠한다(설계 2026-09-29 §8). 비행기 점은 clamp(4.5/거리, 0.9, 1.9) × (1 + 0.8·bow) —
+//   멀리 간 비행기에서도 점이 1px 밑으로 안 줄고, 날아가는 한가운데서 1.8배로 커져 흩어짐이 읽힌다(계획 6-6. 시안 0.55~1.7, 커짐 없음)
 // - airPx: 스프라이트 지름 = 시안 번짐 지름(번짐 반지름 9·핵 → 18·핵, 큰 불빛(크기 배율 ≥ 1.5, 계류장 조명 4개)은
 //   16·핵 → 32·핵). 성능 검토(2026-09-28)로 12·핵까지 줄였었지만, 번짐이 스프라이트 가장자리(곡선 값 약 0.02)에서
 //   잘려 어두운 바닥 위에 테두리가 보였다(2026-09-29 실제 GPU 비교). 불빛 약 1,300개 중 가까운 몇십 개만 크다
@@ -90,7 +93,8 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 // - vEdge = mix(0.15, 0.38, uChart): 차트 점은 가장자리를 덜 흐려 또렷한 원으로(2D 대체 그림과 같게)
 // - on / haze / wave: 켜지는 순서(로딩 뒤 앞에서 뒤로) + 공기 원근(멀수록 흐림) + 신호 물결.
 //   중앙등은 ×0.7(시안), 창문 막대는 ×0.75(시안 fillRect 알파)
-// - planeA: 비행기 점 알파(시안): 붙어 있을 때 흰 점 1·파란 점 0.82, 떠나는 동안 0.8 → 0.25 → 0.8(성기어 보이게),
+// - planeA: 비행기 점 알파: 붙어 있을 때 흰 점 1·파란 점 0.82(시안), 떠나는 동안 0.9 → 1.0 → 0.9(계획 6-6 — 시안의
+//   0.8 → 0.25는 멀리서 흩어지는 점이 거의 사라져 떠나는 모습이 안 보였다),
 //   거리 흐림 1/(1 + 거리/70). 켜짐은 앞쪽 불빛(순서 0.1)과 함께
 // - vAlpha = mix(vAlpha * (1.0 - uAirport), ...): 공항 장면에서 불빛이 아닌 점은 숨긴다. 내려앉은 비행기 점(mi 1)도
 //   같은 규칙 — 시안처럼 바로 지형 점 밝기로 두면 머리말 글 뒤에 밝은 점이 먼저 모여 휴대폰 #intro-h 대비가
@@ -180,7 +184,7 @@ export const vertexShader = /* glsl */ `
     float bow = sin(mi * 3.14159);
     vec3 pq = mix((uPlane * vec4(aAirport.xyz, 1.0)).xyz, p, mi) - vec3(0.0, 0.54, 0.36) * bow;
     p = mix(p, pq, isPlane);
-    float planeOn = isPlane * (1.0 - mi);
+    float planeOn = isPlane * (1.0 - mi * mi * mi);
     p = mix(p, mix(aChartA, aChartB, uSlot) + vec3(0.0, uChartShift, 0.0), uChart);
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
@@ -207,7 +211,7 @@ export const vertexShader = /* glsl */ `
     float big = step(1.5, aAirStyle.z);
     float isWin = 1.0 - step(0.01, abs(aAirStyle.z - ${f(AIR_SIZE.win)}));
     float isCenter = 1.0 - step(0.01, abs(aAirStyle.z - ${f(AIR_SIZE.center)}));
-    float corePx = mix(clamp(5.5 * aAirStyle.z / dz, 0.6, 2.6), clamp(4.5 / dz, 0.55, 1.7), isPlane) * uDpr;
+    float corePx = mix(clamp(5.5 * aAirStyle.z / dz, 0.6, 2.6), clamp(4.5 / dz, 0.9, 1.9) * (1.0 + 0.8 * bow), isPlane) * uDpr;
     float airPx = corePx * mix(mix(18.0, 32.0, big), 11.0, isPlane);
     float barW = max(1.6, 60.0 / dz) * uDpr;
     float barH = max(1.0, 14.0 / dz) * uDpr;
@@ -236,7 +240,7 @@ export const vertexShader = /* glsl */ `
     float haze = 1.0 / (1.0 + dz / 52.0);
     float wave = aAirport.w < 0.0 ? 0.0 : exp(-pow((aAirport.w - uWave) / 90.0, 2.0));
     float airA = on * haze * (1.0 + wave * 2.2) * mix(1.0, 0.7, isCenter) * mix(1.0, 0.75, isWin);
-    float planeA = on * (mi > 0.0 ? mix(0.8, 0.25, bow) : (aAirStyle.y > 2.5 ? 1.0 : 0.82)) / (1.0 + dz / 70.0);
+    float planeA = on * (mi > 0.0 ? mix(0.9, 1.0, bow) : (aAirStyle.y > 2.5 ? 1.0 : 0.82)) / (1.0 + dz / 70.0);
     vAlpha = mix(vAlpha * (1.0 - uAirport), mix(airA, planeA, isPlane), vAir);
     vColor = mix(vColor, toSrgbTone(airTone(aAirStyle.y)), vAir);
     vEdge = mix(vEdge, 0.0, vAir);
