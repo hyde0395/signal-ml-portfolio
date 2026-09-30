@@ -93,11 +93,31 @@ describe('buildLayout', () => {
     const s = { locale: 'ko' as const, holidays: {}, groups, countUnit: '개', shap: shapTexts };
     const closed = buildLayout('features', { charts }, { w: 1080, h: 414 }, s);
     expect(closed.variant ?? '').toBe('');
-    const open = buildLayout('features', { charts }, { w: 1080, h: 414 }, s, 0);
-    expect(open.variant).toBe('open:0');
-    expect(open.summary).toHaveLength(groups[0].features.length);
-    expect(open.summary![0]).toMatch(/ (up|down|mixed|cat) \d+\.\d%$/);
+    // 실제 데이터로 모든 그룹 × 넓은 판·휴대폰 판 — 한 그룹만 보면 줄 많은 그룹이 판 밖으로 나가도 모른다
+    for (const size of [{ w: 1080, h: 414 }, { w: 358, h: 354 }]) {
+      groups.forEach((g, i) => {
+        const open = buildLayout('features', { charts }, size, s, i);
+        expect(open.variant).toBe(`open:${i}`);
+        expect(open.summary).toHaveLength(g.features.length);
+        expect(open.summary![0]).toMatch(/ (up|down|mixed|cat) \d+\.\d%$/);
+        for (let j = 0; j < open.n; j++) {
+          expect(open.x[j]).toBeGreaterThanOrEqual(0); expect(open.x[j]).toBeLessThanOrEqual(1);
+          expect(open.y[j]).toBeGreaterThanOrEqual(0); expect(open.y[j]).toBeLessThanOrEqual(1);
+        }
+        for (const l of open.labels) {
+          expect(l.x).toBeGreaterThanOrEqual(0); expect(l.x).toBeLessThanOrEqual(1);
+          expect(l.y).toBeGreaterThanOrEqual(0); expect(l.y).toBeLessThanOrEqual(1);
+        }
+      });
+    }
     expect(buildLayout('features', {}, { w: 1080, h: 414 }, s, 0).variant ?? '').toBe(''); // 데이터 없음 → 닫힌 와플
+  });
+
+  it('커밋된 charts.json의 SHAP 피처 = facts 와플 그룹 피처의 합집합', () => {
+    const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.json`, 'utf8')) as ChartsData;
+    const want = new Set(facts.model.featureGroups.flatMap((g) => g.features));
+    expect(new Set(charts.shap!.features)).toEqual(want);
+    expect(charts.shap!.features).toHaveLength(want.size);
   });
 
   // 표시 상자 문장: 서버에서 {v.…}가 남은 채 온 틀(charts.*.tip)을 짚은 항목 값으로 다 채운다(자리표시가 남지 않는다)
