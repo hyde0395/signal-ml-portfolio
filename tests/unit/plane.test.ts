@@ -139,6 +139,7 @@ describe('planePose', () => {
 
 describe('planeScatter · planeFollow', () => {
   it('도착 보장: 가장 늦은 점(지연 최대)도 흩어짐이 끝날 때(uPlaneGo 1) 제자리에 닿는다 — max(delay) + dotMove ≤ 1', () => {
+    // 계획 6-6(시안 C)은 지연 최대 0.40 + dotMove 0.6 = 딱 1.0이다 — 일부러 한도에 맞췄다(가장 늦은 점이 흩어짐 끝에 막 닿는다)
     const maxDelay = Math.max(...planeShape().map((d) => d.delay));
     expect(maxDelay + PLANE.dotMove).toBeLessThanOrEqual(1);
   });
@@ -195,6 +196,13 @@ describe('stepPlaneClock', () => {
     expect(stepPlaneClock(0.5, 0.51, 0.1, 0.28)).toBe(0.51);
     expect(stepPlaneClock(0.5, 0.49, 0.1, 0.28)).toBe(0.49);
     expect(stepPlaneClock(0.3, 0.3, 0.1)).toBe(0.3);
+  });
+  it('속도가 0·음수여도(잘못된 e2e 덮어쓰기 등) 멈추거나 거꾸로 가지 않고 아주 조금씩 목표로 간다', () => {
+    const a = stepPlaneClock(0.2, 1, 1, 0), b = stepPlaneClock(0.2, 1, 1, -5);
+    expect(a).toBeGreaterThan(0.2);
+    expect(a).toBeLessThan(0.2 + 1e-5);
+    expect(b).toBeGreaterThan(0.2);
+    expect(stepPlaneClock(0.8, 0, 1, 0)).toBeLessThan(0.8);
   });
   it('dt가 0이거나 음수면 그대로', () => {
     expect(stepPlaneClock(0.2, 1, 0)).toBe(0.2);

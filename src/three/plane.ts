@@ -81,8 +81,9 @@ export function takeoffProgress(scrollY: number, y0: number, y1: number): number
 
 // 비행기 시계 한 걸음: cur를 goal 쪽으로 dt초 동안 최대 rate만큼만 옮긴다(되감기도 같은 속도).
 // 감쇠(damp)와 달리 거리가 멀어도 빨라지지 않아서, 빠른 휠에도 이륙 장면을 건너뛰지 않는다
+// rate는 1e-6 밑으로 내리지 않는다 — 0·음수(잘못된 e2e 덮어쓰기 window.__planeRate 등)면 시계가 멈추거나 거꾸로 가 버린다
 export function stepPlaneClock(cur: number, goal: number, dt: number, rate: number = PLANE.maxRate): number {
-  const d = goal - cur, m = rate * Math.max(0, dt);
+  const d = goal - cur, m = Math.max(1e-6, rate) * Math.max(0, dt);
   return Math.abs(d) <= m ? goal : cur + Math.sign(d) * m;
 }
 
