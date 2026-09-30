@@ -89,7 +89,10 @@ def value_rank(col: pd.Series) -> list[int]:
     0/1 피처가 파랑/호박으로 갈리게(평균 순위면 다수 값이 중간 회색에 앉는다). 원값 대신 순위를 내보내
     원본을 공개하지 않고, 치우친 분포도 색이 고르게 퍼진다(설계 2026-09-30 §2).
     NaN은 가장 작은 값으로 둔다(순위 0, 나머지는 한 칸씩 위로) — 모델 입력의 NaN은 days_bucket_num의
-    D-0(당일 출발)뿐으로, pd.cut 첫 구간 (0, 7]보다 작아서 생긴다(XGBoost는 결측으로 그대로 받는다)."""
+    D-0(당일 출발)뿐으로, pd.cut 첫 구간 (0, 7]보다 작아서 생긴다(XGBoost는 결측으로 그대로 받는다).
+    표본 안에서 값이 하나뿐인 피처(예: global_med)는 크고 작음이 없으므로 범주형처럼 모두 50(중간색)."""
+    if col.nunique(dropna=False) <= 1:
+        return [50] * len(col)
     dense = col.rank(method="dense", na_option="top")
     n_distinct = int(dense.max()) if len(dense) else 1
     r = (dense - 1) / max(n_distinct - 1, 1) * 100

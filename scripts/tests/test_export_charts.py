@@ -88,7 +88,12 @@ def test_value_rank_spreads_distinct_values_evenly_0_to_100():
     # 0/1 피처의 다수 값이 중간(회색)이 아니라 양 끝(파랑/호박)으로 가야 한다
     assert ec.value_rank(pd.Series([5.0, 5.0, 9.0])) == [0, 0, 100]
     assert ec.value_rank(pd.Series([0.0, 0.0, 0.0, 1.0])) == [0, 0, 0, 100]
-    assert ec.value_rank(pd.Series([7.0])) == [0]
+
+
+def test_value_rank_gives_constant_feature_neutral_50():
+    # 값이 하나뿐인 피처(예: global_med)는 크고 작음이 없다 — 범주형처럼 중간색(50). 0이면 모두 파랑으로 칠해져 뜻이 생긴다
+    assert ec.value_rank(pd.Series([7.0])) == [50]
+    assert ec.value_rank(pd.Series([3.0, 3.0, 3.0])) == [50, 50, 50]
 
 
 def test_value_rank_puts_missing_values_lowest():
