@@ -94,9 +94,14 @@ export function animateBoard(board: HTMLElement): () => void {
       }
     }, i * BOARD.staggerMs));
   });
-  return () => {
+  const finish = () => {
     cancelled = true;
     timers.forEach((t) => window.clearTimeout(t));
     for (const f of flaps) reset(halves(f), f.dataset.c ?? ' ');
   };
+  // 위 예산 검사는 넘김과 넘김 사이에서만 돈다. 프레임이 거의 안 그려지면(소프트웨어 3D가 GPU를 붙잡은 CI, 저사양 기기)
+  // 50ms짜리 날개 애니메이션의 .finished가 몇 초씩 끝나지 않아 그 검사까지 가지 못하고 보드가 중간 글자에 멈췄다.
+  // 타이머는 프레임과 상관없이 돌므로, 예산 시각에 아직 넘기는 중인 칸을 한꺼번에 완성 글자로 끝낸다
+  timers.push(window.setTimeout(finish, BOARD.budgetMs));
+  return finish;
 }

@@ -22,11 +22,15 @@ test('보드: 노선별·합계 행 수를 완성값으로 읽는다', async ({ 
 });
 
 test('보드: 화면에 들어오면 넘어가고, 끝나면 칸 글자가 완성값이다', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
+  // 3D 판정이 끝나야(페이지 길이가 정해져야) 보드로 옮겨 간다. Backdrop은 마운트 뒤 SLOW_START_MS(20초)에 "off"로
+  // 판정을 끝내는데, 이 대기도 20초면 두 시계가 거의 같이 끝나 부하가 크면 한발 앞서 "pending"으로 실패했다.
+  // 앱이 보장하는 상한(20초)보다 넉넉히 기다린다
+  await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 30_000 });
   const board = page.locator('[data-board]');
   await board.scrollIntoViewIfNeeded();
-  // 연출 예산(board.ts budgetMs 4.2초) 안에 반드시 끝난다. 부하 여유를 두어 12초까지 기다린다
+  // 연출 예산(board.ts budgetMs 4.2초, 프레임과 상관없는 타이머) 안에 반드시 끝난다. 부하 여유를 두어 12초까지 기다린다
   await expect.poll(() => board.evaluate(settled), { timeout: 12_000 }).toBe(true);
 });
 
