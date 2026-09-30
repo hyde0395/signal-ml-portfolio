@@ -72,6 +72,8 @@ let runwayWatch: (() => void) | null = null;
 function setMode(mode: 'on' | 'off') {
   const d = document.documentElement;
   d.setAttribute('data-3d', mode);
+  // 3D가 꺼지면 여백을 새로 붙일 일이 없으니 기다리던 스크롤 감시를 바로 거둔다
+  if (mode === 'off' && runwayWatch) { window.removeEventListener('scroll', runwayWatch); runwayWatch = null; }
   // 히어로 아래 60vh 여백(.hero-stage, globals.css)은 원래 data-3d="on"에 그대로 매달아 뒀는데,
   // 그러면 나중에 fps 하락·GL 컨텍스트 끊김으로 3D가 off로 바뀔 때 여백이 함께 사라져 뒤 콘텐츠가
   // 화면에서 60vh만큼 위로 튄다(Safari는 스크롤 위치를 보정해 주지 않는다). 반대로 느린 회선이라
@@ -81,7 +83,7 @@ function setMode(mode: 'on' | 'off') {
   // 켜지는 순간 맨 위가 아니었다면(3D를 받는 몇 초 사이에 스크롤했거나, 새로고침이 스크롤 위치를 되살림)
   // 그 방문 내내 이륙·전환이 안 나왔다 — TerrainScene은 이 클래스가 있을 때만 그것들을 계산한다. 그래서 그때는
   // 스크롤을 지켜보다가 맨 위로 돌아오는 순간 붙인다. 맨 위에서는 여백이 히어로 아래(화면 밖)에 끼어들 뿐이라
-  // 보이는 것이 움직이지 않는다. 3D가 꺼지면(off) 여백을 새로 붙일 이유가 없으니 감시도 거둔다
+  // 보이는 것이 움직이지 않는다. 3D가 꺼지면(off) 감시를 바로 거둔다(위)
   if (mode !== 'on' || d.classList.contains('hero-runway')) return;
   if (window.scrollY < 10) { d.classList.add('hero-runway'); return; }
   if (runwayWatch) return;
