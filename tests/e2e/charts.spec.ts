@@ -1,7 +1,16 @@
 // ③ 와플·④ 차트 그림 판 e2e: 3D가 꺼지면 2D로 그리고 이름표를 붙인다, 와플 이름표에 마우스를 올리면 피처 이름,
 // 데이터를 못 받으면 안내, 창 크기를 바꾸면 다시 배치, 3D가 도중에 꺼지면 그 자리에서 2D로,
 // 3D가 켜져 있으면 스크롤한 차트로 배경 점 배치가 바뀐다(html[data-chart]) — 순서를 섞어 건너뛰어도 멈춘 차트.
+// ③ 와플 그룹을 누르면 SHAP 벌떼로 펼친다(계획 5-3c) — 누르기·키보드·Esc·그룹 바꾸기·axe·휴대폰.
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+
+// e2e(ESM)에서는 JSON 정적 import가 실패해 fs로 읽는다(board.spec.ts와 같은 방식). 피처 줄 개수의 기준
+const facts = JSON.parse(readFileSync(fileURLToPath(new URL('../../data/facts.json', import.meta.url)), 'utf-8')) as {
+  model: { featureGroups: { features: string[] }[] };
+};
 
 const STAGES = ['features', 'chartDepart', 'chartCurve', 'chartCloud'] as const;
 
@@ -65,27 +74,26 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
 
   test.describe('휴대폰 누르기', () => {
     test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
-    test('누르면 켜지고, 손을 떼도 남고, 다시 누르면 꺼진다', async ({ page }) => {
+    // 예전 "누르면 설명 줄" 토글은 펼치기로 바뀌었다. 좁은 판에서도 피처 이름표가 판 밖으로 나가 페이지가 가로로 늘지 않는지 본다
+    test('누르면 SHAP 벌떼로 펼치고, 다시 누르면 닫힌다 — 판 안, 가로 스크롤 없음', async ({ page }) => {
       await page.goto('/');
       await center(page, '[data-scene="features"]');
       const stage = page.locator('[data-scene="features"]');
-      const groups = stage.locator('.chart-group');
-      // 피처 개수가 가장 많은 그룹(lookup, facts.json 기준 첫 번째 그룹)을 눌러 — 설명 줄 글자가 가장
-      // 길어 여러 줄로 접히는 경우에도 판 안에, 다른 이름표와 겹치지 않는지 함께 확인한다
-      const g = groups.nth(0);
+      const g = stage.locator('.chart-group').nth(0);
       await expect(g).toBeVisible({ timeout: 10_000 });
-      const name = (await g.locator('.chart-group-name').textContent())!;
       await g.tap();
-      const detail = stage.locator('.chart-detail');
-      await expect(detail).toContainText(name);
-      await page.waitForTimeout(300);
-      await expect(detail).toContainText(name);
-      const d = (await detail.boundingBox())!, plot = (await stage.locator('[data-plot]').boundingBox())!;
-      const groupBoxes = await groups.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().bottom));
-      for (const bottom of groupBoxes) expect(d.y).toBeGreaterThanOrEqual(bottom - 1);
-      expect(d.y + d.height).toBeLessThanOrEqual(plot.y + plot.height + 2);
-      await g.tap();
-      await expect(detail).toBeEmpty();
+      await expect(g).toHaveAttribute('aria-expanded', 'true');
+      const feats = stage.locator('.chart-label.feature');
+      await expect(feats).toHaveCount(facts.model.featureGroups[0].features.length);
+      const plot = (await stage.locator('[data-plot]').boundingBox())!;
+      for (const b of await feats.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) {
+        expect(b.left).toBeGreaterThanOrEqual(plot.x - 1);
+        expect(b.bottom).toBeLessThanOrEqual(plot.y + plot.height + 2);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+      await stage.locator('.chart-group').nth(0).tap();
+      await expect(stage.locator('.chart-group').nth(0)).toHaveAttribute('aria-expanded', 'false');
+      await expect(feats).toHaveCount(0);
     });
   });
 
@@ -233,12 +241,110 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     });
   });
 
+  test.describe('③ SHAP 벌떼 펼치기', () => {
+    test.use({ viewport: { width: 1440, height: 900 } });
+    const open = async (page: Page) => {
+      await page.goto('/');
+      await center(page, '[data-scene="features"]');
+      const stage = page.locator('[data-scene="features"]');
+      await expect(stage.locator('.chart-group')).toHaveCount(6, { timeout: 10_000 });
+      return stage;
+    };
+
+    test('누르면 펼치고(피처 줄·요약·그림), Esc로 닫고 초점이 버튼으로', async ({ page }) => {
+      const stage = await open(page);
+      const b = stage.locator('.chart-group').nth(0);
+      // 버튼 이름은 눈에 보이는 순서(%, 이름, 개수)와 같게 — 낭독과 화면이 어긋나지 않도록
+      const [pct, name, count] = await Promise.all(['pct', 'name', 'count'].map((k) => b.locator(`.chart-group-${k}`).textContent()));
+      await expect(b).toHaveAttribute('aria-label', `${pct} ${name} · ${count}`);
+      await b.click();
+      await expect(b).toHaveAttribute('aria-expanded', 'true');
+      const n = facts.model.featureGroups[0].features.length;
+      await expect(stage.locator('.chart-label.feature')).toHaveCount(n);
+      await expect(stage.locator('#features-shap li')).toHaveCount(n);
+      await expect(stage.locator('p.sr-only[role="status"]')).not.toBeEmpty();
+      await expect(stage.locator('.chart-group')).toHaveCount(6); // 펼친 동안에도 작은 와플 줄로 남아 다른 그룹을 누를 수 있다
+      await expect.poll(() => painted(page, 'features')).toBe(true);
+      // 누른 버튼(판 안)에 초점이 있으니 Esc 뒤에도 그 버튼으로 돌아온다
+      await page.keyboard.press('Escape');
+      await expect(b).toHaveAttribute('aria-expanded', 'false');
+      await expect(stage.locator('.chart-label.feature')).toHaveCount(0);
+      await expect(b).toBeFocused();
+    });
+
+    test('키보드: Enter로 펼치고 Space로 닫는다', async ({ page }) => {
+      const stage = await open(page);
+      const b = stage.locator('.chart-group').nth(2);
+      await b.focus();
+      await page.keyboard.press('Enter');
+      await expect(b).toHaveAttribute('aria-expanded', 'true');
+      await expect(stage.locator('.chart-label.feature')).toHaveCount(facts.model.featureGroups[2].features.length);
+      await page.keyboard.press('Space');
+      await expect(b).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    test('펼친 채 다른 작은 와플을 누르면 그 그룹으로 바뀐다(한 번에 하나)', async ({ page }) => {
+      const stage = await open(page);
+      await stage.locator('.chart-group').nth(0).click();
+      await stage.locator('.chart-group').nth(3).click();
+      await expect(stage.locator('.chart-group').nth(3)).toHaveAttribute('aria-expanded', 'true');
+      await expect(stage.locator('.chart-group').nth(0)).toHaveAttribute('aria-expanded', 'false');
+      await expect(stage.locator('.chart-label.feature')).toHaveCount(facts.model.featureGroups[3].features.length);
+    });
+
+    // 머리 줄 길이가 언어마다 달라 같은 줄의 색 범례(눈금 글자)와 부딪히기 쉽다 — 세 언어 모두 본다
+    for (const path of ['/', '/en/', '/ja/']) {
+      test(`${path} 머리 줄과 색 범례가 겹치지 않고, 이름표가 판 안`, async ({ page }) => {
+        await page.goto(path);
+        await center(page, '[data-scene="features"]');
+        const stage = page.locator('[data-scene="features"]');
+        await expect(stage.locator('.chart-group')).toHaveCount(6, { timeout: 10_000 });
+        await stage.locator('.chart-group').nth(0).click();
+        await expect(stage.locator('.chart-label.head')).toBeVisible();
+        const head = (await stage.locator('.chart-label.head').boundingBox())!;
+        const ticks = await stage.locator('.chart-label.tick').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()));
+        const plot = (await stage.locator('[data-plot]').boundingBox())!;
+        for (const t of ticks) if (Math.abs(t.top - head.y) < 8) expect(t.left).toBeGreaterThanOrEqual(head.x + head.width);
+        for (const b of [...ticks, { left: head.x, right: head.x + head.width }]) {
+          expect(b.left).toBeGreaterThanOrEqual(plot.x - 1);
+          expect(b.right).toBeLessThanOrEqual(plot.x + plot.width + 1);
+        }
+      });
+    }
+
+    test('펼친 상태 axe 위반 없음', async ({ page }) => {
+      const stage = await open(page);
+      await stage.locator('.chart-group').nth(0).click();
+      await expect(stage.locator('.chart-label.feature').first()).toBeAttached();
+      const r = await new AxeBuilder({ page }).include('[data-scene="features"]').analyze();
+      expect(r.violations).toEqual([]);
+    });
+  });
+
   test('차트 데이터를 못 받으면 안내가 뜨고 글 카드는 그대로다', async ({ page }) => {
     await page.route('**/data/charts.*.json', (r) => r.abort());
     await page.goto('/');
     await center(page, '[data-scene="chartDepart"]');
     await expect(page.locator('[data-scene="chartDepart"] .chart-error')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#chart-depart')).toBeVisible();
+  });
+
+  // SHAP 데이터가 없어도 닫힌 와플은 멀쩡히 읽히므로 판 전체 오류(.chart-error)로 덮지 않는다 — 펼치지 않고
+  // 낭독기 알림(숨은 role=status)에만 안내한다. 펼칠 수 없는 버튼이라 aria-expanded도 달지 않는다
+  test('차트 데이터를 못 받아도 와플은 그리고, 누르면 펼치지 않고 알림에만 안내', async ({ page }) => {
+    await page.route('**/data/charts.*.json', (r) => r.abort());
+    await page.goto('/');
+    await center(page, '[data-scene="features"]');
+    const stage = page.locator('[data-scene="features"]');
+    const groups = stage.locator('.chart-group');
+    await expect(groups).toHaveCount(6, { timeout: 10_000 });
+    for (let i = 0; i < 6; i++) await expect(groups.nth(i)).toBeVisible();
+    await groups.nth(0).click();
+    const announce = stage.locator('p.sr-only[role="status"]');
+    await expect(announce).toHaveText('차트를 불러오지 못했습니다.');
+    await expect(stage.locator('.chart-label.feature')).toHaveCount(0);
+    await expect(stage.locator('.chart-error')).toBeEmpty();
+    await expect(groups.nth(0)).not.toHaveAttribute('aria-expanded', /./);
   });
 
   test('창 크기를 바꾸면 다시 배치한다(이름표가 판 안에 남는다)', async ({ page }) => {
