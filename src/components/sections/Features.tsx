@@ -2,7 +2,7 @@
 // 모델 카드는 글 카드(.chapter)로 모델 구조 문단을 보여 주고, 뒤에서 가격 지형 장면(model)이 조용히 돈다.
 // 와플은 그룹마다 점 100개 중 중요도만큼 켜지는 그림 판(ChartStage)이다(3D가 켜지면 배경 점이 그 자리에 모인다). 글은
 // 판 아래 자막 띠에 고정되고 세 칸을 차례로 보여 준다(설계 2026-09-28 §2). 화면 낭독기를 위해 같은 내용을 숨긴
-// 목록(그룹 · % · 피처 이름)으로 둔다.
+// 목록(그룹 · % · 피처 이름)으로 둔다. 그룹을 누르면(키보드는 Enter·Space) 그 그룹의 SHAP 벌떼로 펼쳐진다(계획 5-3c).
 import type React from 'react';
 import { ChartStage } from '../charts/ChartStage';
 import type { ShapTexts } from '@/charts/build';

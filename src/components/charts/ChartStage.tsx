@@ -4,7 +4,7 @@
 // 판이 화면 가까이 오면 데이터와 배치 코드를 불러와(import()) 배치를 만들고,
 // - 배치와 판의 고정 위치를 저장소(registry)에 올린다 → 3D가 켜져 있으면 배경 점이 그 자리로 모인다,
 // - 3D가 꺼져 있으면(data-3d="off") 같은 배치를 2D 캔버스에 그린다.
-// 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 캔버스와 이름표는 aria-hidden이고, 같은 내용은 자막 띠(.chart-copy)의 요약 문단이 준다.
+// 축·이름표는 두 경우 모두 HTML 글자로 겹친다. 캔버스와 이름표는 aria-hidden이고(③ 그룹 버튼만 예외 — 키보드·낭독 대상이라 이름표 층 밖에 둔다), 같은 내용은 자막 띠(.chart-copy)의 요약 문단이 준다.
 // 강조(sel): ③ 와플은 마우스를 올린 그룹(설계 2026-09-28 §3), ④·⑤ 차트 1·2·4는 조작 층(role=slider)으로 짚은 항목(계획 5-3b).
 // 어느 쪽이든 강조 번호 하나를 저장소로 3D에 알리고 2D도 다시 그린다.
 // 펼침(open): ③ 와플 그룹 버튼을 누르면 그 그룹의 SHAP 벌떼 배치로 다시 배치한다(계획 5-3c). 펼친 동안은 펼친 그룹이 강조다.
@@ -163,13 +163,17 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
 
   const groups = labels.filter((l): l is Extract<ChartLabel, { type: 'group' }> => l.type === 'group');
   const toggle = (gi: number) => {
-    if (!shapOk) { setFailed(true); return; } // SHAP 데이터를 못 받았으면 펼치지 않고 안내만
-    setSel(-1);
+    // SHAP 데이터가 없어도 와플은 멀쩡히 읽히므로 failed(판 전체를 덮는 오류 표시)로 가리지 않는다.
+    // 낭독기에만 한 번 알리고 펼치지는 않는다
+    if (!shapOk) { setAnnounce(errorText); return; }
     const next = openRef.current === gi ? -1 : gi;
+    // 열 때만 마우스 설명 줄을 비운다 — 닫을 때는 포인터가 아직 버튼 위일 수 있어 설명 줄을 그대로 둔다
+    if (next >= 0) setSel(-1);
     setOpen(next);
     setAnnounce(next >= 0 && strings.shap ? strings.shap.opened.replace('{v.name}', groups[gi]?.name ?? '') : strings.shap?.closed ?? '');
   };
-  // Esc: 펼친 동안 어디에 초점이 있든 닫고, 초점을 그 그룹 버튼으로 돌려놓는다(화면이 튀지 않게 preventScroll)
+  // Esc: 펼친 동안 어디에 초점이 있든 닫는다. 초점은 판 안(또는 body)에 있을 때만 그 그룹 버튼으로 돌려놓는다 —
+  // 독자가 스크롤해 판을 벗어났다면 초점을 화면 밖으로 끌어가지 않는다(preventScroll은 화면이 튀지 않게)
   useEffect(() => {
     if (open < 0) return;
     const onKey = (e: KeyboardEvent) => {
@@ -177,7 +181,8 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
       const gi = openRef.current;
       setOpen(-1);
       setAnnounce(strings.shap?.closed ?? '');
-      buttons.current[gi]?.focus({ preventScroll: true });
+      const ae = document.activeElement;
+      if (plot.current?.contains(ae) || ae === document.body) buttons.current[gi]?.focus({ preventScroll: true });
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -272,7 +277,8 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
               return (
                 <button key={l.id} ref={(el) => { buttons.current[gi] = el; }} type="button" className={cls}
                   style={{ left: `${l.x * 100}%`, top: `${l.y * 100}%` }}
-                  aria-expanded={open === gi} aria-controls={`${chartKey}-shap`} aria-label={`${l.name} ${l.pct} · ${l.count}`}
+                  aria-expanded={shapOk ? open === gi : undefined} aria-controls={shapOk ? `${chartKey}-shap` : undefined}
+                  aria-label={`${l.pct} ${l.name} · ${l.count}`}
                   {...groupHandlers(gi)}>
                   {/* mini(펼친 화면의 작은 와플): 넓은 판은 이름만, 좁은 판은 %만 */}
                   {l.mini !== 'name' && <span className="chart-group-pct">{l.pct}</span>}
