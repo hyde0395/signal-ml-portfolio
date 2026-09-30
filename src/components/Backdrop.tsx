@@ -66,6 +66,9 @@ class SceneBoundary extends Component<{ onFail: (reason: string) => void; childr
   }
 }
 
+// 맨 위로 돌아오기를 기다리는 스크롤 감시(아래 setMode). 한 번에 하나만 둔다
+let runwayWatch: (() => void) | null = null;
+
 function setMode(mode: 'on' | 'off') {
   const d = document.documentElement;
   d.setAttribute('data-3d', mode);
@@ -73,7 +76,22 @@ function setMode(mode: 'on' | 'off') {
   // 그러면 나중에 fps 하락·GL 컨텍스트 끊김으로 3D가 off로 바뀔 때 여백이 함께 사라져 뒤 콘텐츠가
   // 화면에서 60vh만큼 위로 튄다(Safari는 스크롤 위치를 보정해 주지 않는다). 반대로 느린 회선이라
   // 사용자가 이미 스크롤해 내려간 뒤에 3D가 켜지면, 이미 지나온 화면 중간에 여백이 새로 끼어들어도
-  // 내용이 튄다. 그래서 "3D가 맨 위(스크롤 10px 미만)에서 처음 켜질 때만" 여백을 붙박이 클래스로
-  // 켜고(html.hero-runway), 이후에는 data-3d가 off로 바뀌어도 절대 지우지 않는다
-  if (mode === 'on' && window.scrollY < 10) d.classList.add('hero-runway');
+  // 내용이 튄다. 그래서 "3D가 켜져 있고 맨 위(스크롤 10px 미만)일 때만" 여백을 붙박이 클래스로
+  // 켜고(html.hero-runway), 이후에는 data-3d가 off로 바뀌어도 절대 지우지 않는다.
+  // 켜지는 순간 맨 위가 아니었다면(3D를 받는 몇 초 사이에 스크롤했거나, 새로고침이 스크롤 위치를 되살림)
+  // 그 방문 내내 이륙·전환이 안 나왔다 — TerrainScene은 이 클래스가 있을 때만 그것들을 계산한다. 그래서 그때는
+  // 스크롤을 지켜보다가 맨 위로 돌아오는 순간 붙인다. 맨 위에서는 여백이 히어로 아래(화면 밖)에 끼어들 뿐이라
+  // 보이는 것이 움직이지 않는다. 3D가 꺼지면(off) 여백을 새로 붙일 이유가 없으니 감시도 거둔다
+  if (mode !== 'on' || d.classList.contains('hero-runway')) return;
+  if (window.scrollY < 10) { d.classList.add('hero-runway'); return; }
+  if (runwayWatch) return;
+  const watch = () => {
+    const on = d.getAttribute('data-3d') === 'on';
+    if (on && window.scrollY >= 10) return;
+    if (on) d.classList.add('hero-runway');
+    window.removeEventListener('scroll', watch);
+    runwayWatch = null;
+  };
+  runwayWatch = watch;
+  window.addEventListener('scroll', watch, { passive: true });
 }

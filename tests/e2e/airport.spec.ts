@@ -58,6 +58,24 @@ test('#project로 바로 들어오면(이미 스크롤된 채 3D 켜짐) 여백 
   await expect(page.locator('html')).not.toHaveClass(/hero-runway/);
 });
 
+// 3D가 켜질 때 맨 위가 아니었더라도(로딩 중 스크롤·새로고침이 스크롤 위치를 되살림) 나중에 맨 위로 돌아오면
+// 그때 여백 클래스가 붙어 이륙·전환이 다시 재생된다(Backdrop.tsx setMode). 맨 위에서는 히어로 아래에 여백이
+// 끼어들어도 보이는 것이 움직이지 않는다 — 첫 화면 제목 위치가 그대로인지도 본다
+test('맨 위가 아닐 때 3D가 켜져도, 맨 위로 돌아오면 여백 클래스가 붙는다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#project');
+  await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
+  test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 꺼진 환경');
+  await expect(page.locator('html')).not.toHaveClass(/hero-runway/);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.locator('html')).toHaveClass(/hero-runway/);
+  const title = await page.locator('.hero-title').boundingBox();
+  expect(title!.y).toBeGreaterThanOrEqual(0);
+  // 여백이 붙었으니 스크롤로 전환이 계산된다(data-handoff)
+  await page.locator('#intro').evaluate((n) => n.scrollIntoView({ block: 'center' }));
+  await expect.poll(() => page.locator('html').getAttribute('data-handoff')).not.toBeNull();
+});
+
 test('3D가 켜져도 첫 화면 제목 위치가 그대로다(여백은 화면 밖)', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
