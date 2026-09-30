@@ -34,6 +34,24 @@ describe('loadCharts', () => {
     bad.shap.v[0] = bad.shap.v[0].slice(1);
     await expect(loadCharts(v, as(vi.fn(() => ok(bad))))).rejects.toThrow();
   });
+  // ③ 모델 구조 점(계획 7-2): 기준 %는 출발일마다 하나, 관측 날짜 번호는 charts.dates 안
+  it('모델 구조: 기준 % 길이 = 출발일 수, 관측 날짜 번호가 출발일 범위 안', async () => {
+    const c = await loadCharts(v, as(vi.fn(() => ok(file('charts')))));
+    expect(c.model?.base).toHaveLength(c.dates.length);
+    expect(c.model?.obs.date.length).toBe(c.model?.obs.pct.length);
+    expect(c.model?.obs.date.every((i) => i >= 0 && i < c.dates.length)).toBe(true);
+  });
+  it('모델 구조: 기준 % 길이가 다르거나 관측 날짜 번호가 범위 밖이면 reject', async () => {
+    const short = file('charts');
+    short.model.base = short.model.base.slice(1);
+    await expect(loadCharts(v, as(vi.fn(() => ok(short))))).rejects.toThrow();
+    const out = file('charts');
+    out.model.obs.date[0] = out.dates.length;
+    await expect(loadCharts(v, as(vi.fn(() => ok(out))))).rejects.toThrow();
+    const uneven = file('charts');
+    uneven.model.obs.pct = uneven.model.obs.pct.slice(1);
+    await expect(loadCharts(v, as(vi.fn(() => ok(uneven))))).rejects.toThrow();
+  });
   it('404면 reject', async () => {
     await expect(loadCharts(v, as(vi.fn(() => Promise.resolve(new Response('no', { status: 404 })))))).rejects.toThrow();
   });

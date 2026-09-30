@@ -24,11 +24,21 @@ export const chartsSchema = z.object({
     v: z.array(ints),
     f: z.array(ints),
   }).optional(),
+  // ③ 모델 구조 점(계획 7-2): 한 노선·등급의 NeuralProphet 기준(출발일별 %×10, 없는 날 null)과 관측 표본(출발일 번호, %×10).
+  // 없어도 받아들인다 — 다른 차트는 이 블록이 필요 없다(모델 구조 판만 오류 안내를 띄운다)
+  model: z.object({
+    route: z.string(),
+    cabin: z.string(),
+    base: z.array(z.number().int().nullable()),
+    obs: z.object({ date: ints, pct: ints }),
+  }).optional(),
 })
   .refine((c) => c.depart.pct.length === c.dates.length && c.depart.holiday.length === c.dates.length, '출발일 배열 길이가 서로 다르다')
   .refine((c) => c.curve.sample.bin.length === c.curve.sample.pct.length, '표본 배열 길이가 서로 다르다')
   .refine((c) => !c.shap || (c.shap.v.length === c.shap.features.length && c.shap.f.length === c.shap.features.length
-    && [...c.shap.v, ...c.shap.f].every((r) => r.length === c.shap!.n)), 'SHAP 배열 모양이 다르다');
+    && [...c.shap.v, ...c.shap.f].every((r) => r.length === c.shap!.n)), 'SHAP 배열 모양이 다르다')
+  .refine((c) => !c.model || (c.model.base.length === c.dates.length && c.model.obs.date.length === c.model.obs.pct.length
+    && c.model.obs.date.every((i) => i >= 0 && i < c.dates.length)), '모델 구조 배열 모양이 다르다');
 export type ChartsData = z.infer<typeof chartsSchema>;
 
 // 불확실성 구름은 데모 데이터에서 한 조합만 쓴다(설계 §3.4 차트 4 — 기준일 인천→나리타 LCC)
