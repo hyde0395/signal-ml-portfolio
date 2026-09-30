@@ -1,6 +1,6 @@
 // 장면 표: 섹션·블록마다 카메라 위치와 셰이더 uniform 목표값을 정한다.
 // 캔버스는 이 값으로 "부드럽게 다가가기"만 하므로, 연출을 바꾸려면 이 표만 고치면 된다.
-export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'model' | 'features' | 'chartDepart' | 'chartCurve'
+export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
   | 'bubble' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
 
 export type SceneState = {
@@ -66,10 +66,8 @@ export const SCENES: Record<SceneKey, SceneState> = {
   // ② 화면 2: 같은 지도를 멀리서 내려다보고 점을 흐리게 한다. 판 없는 보드의 작은 글자가 지도 점과 섞이지
   // 않게 하는 것이 이 장면의 목적이다(설계 §3.2, 2026-09-27)
   dataBoard: { ...base, camera: [0, 30, 14], target: [0, 0, 0], map: 1, dim: 0.32 }, // 0.16은 지도가 너무 흐려 보여 올림(2026-09-29 시안 B 선택)
-  // ③ 모델 카드(설계 2026-09-29 이야기 흐름 §3.4): 문단이 "출발일별 가격 흐름"을 말하므로 가격 지형을 조용히 보여 준다.
-  // 새 점 연출 없이 카메라 자리만 — limits 구도에서 잡음만 0.3으로 낮췄다: 0.5에서는 앞줄 흩어진 점이 글 끝에 걸쳐
-  // 지저분했다(실제 GPU 눈 확인, 2026-09-30)
-  model: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.3 },
+  // ③ 모델 구조(계획 7-2): 옛 지형 장면 model 자리. 이제 그림 판 블록이라 점이 관측 → 기준 선 → 잔차로 모인다
+  chartModel: { ...base, ...CHART },
   features: { ...base, ...CHART },
   chartDepart: { ...base, ...CHART },
   chartCurve: { ...base, ...CHART },
@@ -103,10 +101,6 @@ const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']
   // limits·demo·contact처럼 목표점을 −3까지 내려 문단 영역을 완전히 벗어나게 한다(벡터는 그대로 유지)
   bubble: { camera: [7, 3.5, 17], target: [0, -3, 0] },
   validation: { camera: [0, 22, 0.1], target: [0, 0, 0] },
-  // 모델 카드도 글이 아래쪽이라 limits와 같은 이유로 지형을 화면 위쪽 절반에 둔다. 다만 모델 카드는 머리표 바로 아래에
-  // 긴 문단이 붙어 limits 값(목표점 y −3)으로는 지형 앞줄이 첫 문단 위를 지나갔다(실제 GPU 390×844 p99 4.44:1,
-  // 2026-09-30) — y를 2 더 내린다(벡터는 그대로)
-  model: { camera: [0, 7, 26], target: [0, -5, 0] },
   limits: { camera: [0, 9, 26], target: [0, -3, 0] },
   demo: { camera: [0, 13, 30], target: [0, -3, 0] },
   contact: { camera: [0, 13, 30], target: [0, -3, 0] },
