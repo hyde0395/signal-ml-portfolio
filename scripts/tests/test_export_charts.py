@@ -89,6 +89,11 @@ def test_value_rank_spreads_0_to_100_with_ties_averaged():
     assert ec.value_rank(pd.Series([7.0])) == [0]
 
 
+def test_value_rank_puts_missing_values_lowest():
+    # days_bucket_num은 D-0(당일 출발)이 첫 구간 (0, 7] 밖이라 NaN — 가장 작은 값으로 둔다
+    assert ec.value_rank(pd.Series([float("nan"), 2.0, 1.0])) == [0, 100, 50]
+
+
 def test_shap_block_scales_contribs_ranks_values_and_fixes_categorical():
     enc = pd.DataFrame({"days": [1.0, 3.0, 2.0], "route": [0.0, 2.0, 1.0]})
     contribs = np.array([[0.1234, -0.05, 9.0], [-0.2, 0.0004, 9.0], [0.0, 0.01, 9.0]])  # 마지막 열 = bias

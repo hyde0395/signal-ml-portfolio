@@ -86,9 +86,11 @@ def check_curve(curve: dict, metrics: dict) -> None:
 
 def value_rank(col: pd.Series) -> list[int]:
     """피처 값 → 표본 안 순위 백분위(0~100, 같은 값은 평균 순위). 원값 대신 순위를 내보내
-    원본을 공개하지 않고, 치우친 분포도 색이 고르게 퍼지게 한다(설계 2026-09-30 §2)."""
+    원본을 공개하지 않고, 치우친 분포도 색이 고르게 퍼지게 한다(설계 2026-09-30 §2).
+    NaN은 가장 작은 값으로 둔다 — 모델 입력의 NaN은 days_bucket_num의 D-0(당일 출발)뿐으로,
+    pd.cut 첫 구간 (0, 7]보다 작아서 생긴다(XGBoost는 결측으로 그대로 받는다)."""
     n = len(col)
-    r = (col.rank(method="average") - 1) / max(n - 1, 1) * 100
+    r = (col.rank(method="average", na_option="top") - 1) / max(n - 1, 1) * 100
     return [int(x) for x in r.round().astype(int)]
 
 
@@ -111,6 +113,34 @@ def check_shap_features(names: list[str], facts: dict) -> None:
     if set(names) != want or len(names) != len(want):
         raise SystemExit(f"SHAP 피처가 facts.json 그룹과 다르다 — 모델에만 {sorted(set(names) - want)}, "
                          f"facts에만 {sorted(want - set(names))}")
+
+
+def compute_shap(kept: pd.DataFrame, size: int = SHAP_SAMPLE, seed: int = SEED) -> dict:
+    """기준일까지의 정상 행에 학습 때와 같은 피처 함수를 붙이고 표본을 뽑아, 서비스 모델(v2_predictor.pkl)의
+    XGBoost로 TreeSHAP을 계산한다(재학습 없음). 항공권 저장소 src/models/shap_analysis.py와 같은 경로:
+    lookup → 전처리 → booster.predict(pred_contribs=True). shap.TreeExplainer는 XGBoost 2.x base_score
+    파싱 버그가 있어 쓰지 않는다(그쪽 주석). 모델 로드는 약 17초, NeuralProphet 로그는 quiet()로 막는다."""
+    import xgboost as xgb
+    from export_demo import quiet
+    from src.models.feature_importance import load_pkl_model
+    from src.models.tscv_eval_v2 import (add_days_features, add_jp_holiday_features,
+                                         add_kr_holiday_features, add_market_features)
+
+    df = kept.copy()
+    for step in (add_market_features, add_jp_holiday_features, add_kr_holiday_features, add_days_features):
+        df = step(df)
+    df["route"] = df["origin"].astype(str) + "_" + df["destination"].astype(str)
+    df["departure_date"] = pd.to_datetime(df["departure_date"])
+    take = df.sample(n=min(size, len(df)), random_state=seed).reset_index(drop=True)
+    with quiet():
+        model, names, predictor = load_pkl_model()
+        enc = pd.DataFrame(predictor.preprocessor.transform(predictor._apply_lookup(take)), columns=names)
+    contribs = model.get_booster().predict(xgb.DMatrix(enc.values), pred_contribs=True)
+    # 기여의 합 = 모델 출력(log 잔차)이어야 한다 — 인코딩 경로가 서비스와 어긋나면 여기서 멈춘다
+    pred = model.predict(enc.values)
+    if not np.allclose(contribs.sum(axis=1), pred, atol=1e-3):
+        raise SystemExit("SHAP 합이 모델 출력과 다르다 — 인코딩 경로를 확인한다")
+    return shap_block(contribs, enc, CATEGORICAL)
 
 
 def build_charts(raw: pd.DataFrame, as_of: str) -> dict:
@@ -136,6 +166,9 @@ def main() -> None:
     as_of = metrics["_meta"]["asOf"]
     raw = pd.read_csv(AIRFARE_ROOT / "data" / "raw" / "flight_prices.csv")
     charts = build_charts(raw, as_of)
+    kept, _ = et.split_rows(raw, as_of)
+    charts["shap"] = compute_shap(kept)
+    check_shap_features(charts["shap"]["features"], json.loads((ROOT / "data" / "facts.json").read_text(encoding="utf-8")))
     check_curve(charts["curve"], metrics)
     terrain = json.loads((ROOT / "public" / "data" / f"terrain.{as_of}.json").read_text(encoding="utf-8"))
     if terrain["dates"] != charts["dates"]:
@@ -147,7 +180,8 @@ def main() -> None:
     out = ROOT / "public" / "data" / f"charts.{as_of}.json"
     out.write_bytes(body)
     print(f"{out.name}: 출발일 {len(charts['dates'])}개, 이름표 {[l['code'] for l in charts['labels']]}, "
-          f"표본 {len(charts['curve']['sample']['pct'])}개, gzip {size:,}B")
+          f"표본 {len(charts['curve']['sample']['pct'])}개, gzip {size:,}B"
+          f", SHAP {len(charts['shap']['features'])}×{charts['shap']['n']}")
 
 
 if __name__ == "__main__":
