@@ -28,32 +28,52 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
   - 운영 확인이면 `https://signal-ml.vercel.app` + 해당 섹션
 - 이미 정해진 결정은 다시 묻지 않는다. 질문은 한 번에 하나, 선택지와 추천을 준다
 
-## 현재 상태 (2026-09-30 저녁, 맥북)
+## 현재 상태 (2026-10-01 새벽, 맥미니 → 다음은 맥북)
 
 운영 https://signal-ml.vercel.app (아직 `noindex`) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개, main = 운영, PR = Vercel 미리보기) · CI: 타입 검사 → 단위 테스트 → 빌드 → 용량 검사 → e2e(desktop·mobile, axe).
 
-**병합·배포된 것**: 계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5·7-1·5-3c·7-2·6-6과 작은 문제 정리(PR #1~#21). PR #21: 섹션 사이 장면 틈(③ 와플 → ④ 제목에서 점이 지형·① 물결 줄을 거쳐 가던 것) — 장면 없는 틈은 ①보다 위일 때만 머리말로 보고, ③·⑤ 머리 `model`·④ 머리 `chartDepart`. 계획서는 `docs/superpowers/plans/`, 설계는 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점).
+**병합·배포된 것**: 계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5·7-1·5-3c·7-2·6-6·8-1과 작은 문제 정리(PR #1~#22). 계획서는 `docs/superpowers/plans/`, 설계는 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점).
 
-**진행 중**: 계획 8-1(⑤ 검증 설계·② 걸러내기 점 연출, 브랜치 `feat/validation-filter-dots`, 설계 `docs/superpowers/specs/2026-09-30-validation-filter-dots-design.md`) — PR #22 확인 대기. 6-6(PR #20) 결과는 설계 `docs/superpowers/specs/2026-09-29-hero-project-handoff-design.md` "추가 (계획 6-6)" — 로딩 중 스크롤하면 이륙이 꺼지던 버그(3D가 켜진 뒤 맨 위로 오면 `hero-runway`를 켬), 첫 화면 → ① 연출 최대 속도(`PLANE.maxRate` 0.28/s, 스크롤 자체는 그대로, `#`·옆 목차 이동은 즉시), 흩어짐 시안 C. e2e는 `window.__planeRate`로 연출을 빨리 돌려 CI에서도 이륙 흐름을 검사한다.
+**열린 PR·브랜치·worktree: 없음**(맥미니에서 모두 병합·정리함, main = `4fa4f7d` 이후).
 
-## 다음 할 일 (맥미니부터)
+최근에 끝난 것(2026-09-30~10-01, 맥미니)
+- **PR #21 섹션 사이 장면 틈**: ③ 와플 → ④ 제목에서 점이 가격 지형 → ① 물결 줄을 거쳐 출발일 차트로 가던 것. 원인 두 가지 — (1) `pickScene`이 활성 장면이 없는 틈을 모두 머리말로 봐서 ① 아래 틈마다 ① 물결 줄이 튀어나옴 → 틈이 ①보다 위(`#project` 윗변이 화면 가운데 아래)일 때만 머리말(`intro` 인자), (2) ③ `model` 장면이 섹션 전체에 걸려 와플 아래 여백에서 켜짐 → 머리에만. 이제 ③·⑤ 머리 = `model`, ④ 머리 = `chartDepart`(와플에서 곧장 출발일 판으로). e2e 선택자는 머리와 겹치지 않게 `.chart-block[data-scene=…]`·`article[data-scene]`
+- **PR #22 계획 8-1(⑤ 검증 설계·② 걸러내기 점 연출)**: 설계 `docs/superpowers/specs/2026-09-30-validation-filter-dots-design.md`(끝 "구현 결과"), 시안 `docs/superpowers/mockups/2026-09-30/`
+  - ② 지도와 보드 사이 걸러내기 판 `chartFilter`(`src/charts/filter.ts`): 소요 시간 × 노선·등급 평균 대비 %, 자막 세 칸 = 모은 행 → 규칙 ①·②(단위·소요 5,742 + 시각 불일치 826) 켜짐 → 떨어짐 → 규칙 ③(직항인데 경유만큼 9,387) 상자·떨어짐 + 행 수 258,829 → 242,874 플립. 960분 초과는 "960+" 칸
+  - ⑤ 차트 3 아래 검증 설계 판 `chartSplit`(`src/charts/split.ts`, 머리표 `EVALUATION`): 수집일 × 출발일, K-Fold(가운데 시간 구간이 평가 — 항공권 저장소 KFold는 `shuffle=False`라 무작위가 아님) → GroupKFold(노선+출발일) → TimeSeriesSplit(폴드 1/5 → 5/5가 1.2초마다 저절로). 판 위 R²·MAE 플립. 평가 방식 표는 판 뒤 표 카드(블록 종류 `table`, 장면 `validation`)
+  - 그림 판 공통: `ChartStage`에 작은 단계 `subs`·`subMs`(`src/components/charts/subTimer.ts`, 판이 화면 밖이면 멈춤·다시 들어오면 처음부터, 움직임 줄이기면 바로 마지막), `data-sub`, 수치 이름표(`stat`·`statSm`)는 플립. 판 폭 820px 미만은 좁은 배치(수치가 판 위쪽)
+  - 데이터: facts `data.filter`(규칙별 행 수), `codeLinks.paths.filter`, charts.json `filter`·`split`(gzip 39.6KB/150KB). 크기: 초기 JS 143.8KB/150KB, 3D 청크 249.4KB/280KB
 
-1. **문구 검토(사용자)**: 5-3c(`features.shap.*`)·7-2(`features.structure.*` 자막 칸)·8-1(`data.filter.*`·`charts.validation.*`) 한국어 확인, 영·일은 Claude 초안 → 사용자·검수자
-2. **점 연출**: 검증 설계·걸러내기는 8-1로 끝남. 남은 것은 연락처 점 글자(`CHOI HALIM`)·데모 강조 — 사용자가 두 섹션을 다시 만든 뒤에. (② 수집 커버리지 그림은 하지 않기로 함. 모델 구조는 7-2로 끝남)
-3. **차트 3을 예측 대 실제 산점도로**(별도 계획, 무거움): TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성(R² 0.84)의 예측값이 필요 — NeuralProphet를 폴드마다 다시 학습(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음, 몇십 분). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
-4. **연락처·데모 섹션**: 사용자가 나중에 다시 만든다(2026-09-29) — 그 전까지 공들이지 않는다
-5. **공개 전 준비(사용자 작업 위주, 스펙 §14)**
+## 다음 할 일 (맥북부터)
+
+0. **맥북 시작**: 저장소 `~/dev/untitled folder/signal-ml-portfolio`에서 `git switch main && git pull --ff-only` → `git fetch --prune` → `gh pr list`(비어 있어야 함) → `npm ci` → `npx playwright install chromium`. 맥북에 옛 worktree(`../signal-ml-portfolio-*`)가 남아 있으면 `git worktree prune`/`git worktree list`로 확인해 정리한다
+   - 첫 확인: 운영 https://signal-ml.vercel.app 에서 ③ 와플 → ④ 제목(점이 곧장 출발일 차트로), ② 지도 아래 걸러내기 판, ⑤ 차트 3 아래 검증 설계 판(세 번째 칸에서 폴드가 5/5까지)을 스크롤해 본다. 이상하면 그것부터
+1. **문구 검토(사용자)** — 한국어 확인 후 영·일 초안을 사용자·검수자에게
+   - 5-3c `features.shap.*`, 7-2 `features.structure.*`, 8-1 `data.filter.*`·`charts.validation.*`(body1~3·tagKf/tagGkf/tagTss·legend*·axis*·alt)
+   - 8-1 검토에서 나온 영·일 용어 맞추기 후보(기존 문구·표 이름과 통일): en `data.filter.axisY` "vs. route/cabin mean" → "vs. route-and-class average", en `tagKf` "upper reference" → "reference upper bound", en `data.filter.body1` "placed by" → "plotted by", en `charts.validation.body2` "service setup" → "service configuration", ja `tagGkf` "初めて見る出発日" → "未知の出発日"(표와 같게), ja `legendUnused` "未使用" → "まだ未使用", ja `data.filter.heading` → "エラー行の除去", ja `charts.validation.body2` "学習とサービスの不一致" → "学習と提供の不一致"
+   - `charts.validation.body3`의 "다섯 번 / five times / 五回"는 폴드 수(`scripts/export_charts.py` `N_FOLDS`)와 손으로 맞춘 글자다(숫자 금지 규칙 때문에 글자로 씀)
+2. **8-1 뒤 남은 작은 것(검토에서 미룬 것, 급하지 않음)**
+   - `ChartStage` 작은 단계 타이머의 IntersectionObserver에 `threshold`가 없어 판이 조금만 보여도 시작한다(위로 거슬러 올 때 TSS가 조금 일찍 시작) — 필요하면 `threshold: 0.5`
+   - `globals.css` `.keyDot`·`.keyDim` 점 색이 `#8FB8FF` 글자 그대로 → `var(--dot)`로
+   - 가로 넘침 e2e(1024·768)는 영어만 — 일본어 820~1024px도 한 번 확인하면 좋다
+   - `Charts.tsx` `splitStrings`가 ④에서도 만들어진다(해 없음), `axis${…'Y'}` 특례
+   - `npm run facts`가 `data/facts.json`의 `site` 줄을 여러 줄로 바꿔 쓴다 — 돌린 뒤 diff에서 `site`만 바뀌었으면 되돌린다
+3. **점 연출**: 검증 설계·걸러내기(8-1)·모델 구조(7-2)는 끝남. 남은 것은 연락처 점 글자(`CHOI HALIM`)·데모 강조 — 사용자가 두 섹션을 다시 만든 뒤에. (② 수집 커버리지 그림은 하지 않기로 함)
+4. **차트 3을 예측 대 실제 산점도로**(별도 계획, 무거움): TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성(R² 0.84)의 예측값이 필요 — NeuralProphet를 폴드마다 다시 학습(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음, 몇십 분). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면. 8-1의 `split_block`(폴드 배정)을 재사용할 수 있다
+5. **연락처·데모 섹션**: 사용자가 나중에 다시 만든다(2026-09-29) — 그 전까지 공들이지 않는다
+6. **공개 전 준비(사용자 작업 위주, 스펙 §14)**
    - 이력서 PDF 3개 `public/resume/{ko,en,ja}.pdf`(내려받을 때 `CHOI_HALIM_resume_<언어>.pdf`) — 파일이 생기면 "준비 중"이 자동으로 링크가 된다
    - 문구 검토 전체(ko 사용자, en 사용자, ja 검수자 — 학과 일본어명 포함, 데모 문구 포함)
    - LinkedIn: `data/facts.json` `contact.linkedin`(비면 버튼 숨김)
-   - 공개용 항공권 저장소: 만들면 `facts.json` `codeLinks.baseUrl`만 바꾼다(그 전까지 "코드 보기" 404는 의도된 상태, 커밋 이메일 noreply)
+   - 공개용 항공권 저장소: 만들면 `facts.json` `codeLinks.baseUrl`만 바꾼다(그 전까지 "코드 보기" 404는 의도된 상태, 커밋 이메일 noreply). 8-1에서 `codeLinks.paths.filter`(`src/processing/features.py`)가 늘었다
    - Vercel → Analytics에서 Web Analytics 켜기. 옛 주소 `signal-ml-portfolio.vercel.app`(404)을 리디렉트로 살릴지(Domains)
-6. **공개 전환**: `src/lib/site.ts` `LAUNCHED = true`(noindex·robots Disallow 해제). 사용자가 정한다
-7. **성능 최적화(맨 마지막, effort high 이상, 별도 계획서)**: 연출·화질·점 개수·접근성 100·CLS 0은 그대로 두고 수치만. 배포 미리보기에서 Lighthouse 모바일 3회 중앙값으로 전후 비교
-   - 목표: 성능 ko·en·ja ≥90(마지막 측정 ko 87 · en 92 · ja 84~89), TBT ≤200ms, LCP ≤2.0s, 초기 JS 여유(지금 약 143KB/150KB)
-   - 후보: 3D 시작 더 늦추기·점 구름 만들기 Web Worker·`scheduler.yield()`, 번들 분석(`@next/bundle-analyzer`) 뒤 첫 화면 밖 코드 `import()`, 3D 청크(약 250KB/280KB) zod 제거·three 이름 가져오기, `terrain.json` 이진화, ja 글꼴, 대체 이미지 AVIF, DPR·저프레임 문턱(화질은 데스크톱 기준 — 줄이기 전에 사용자와). 되돌린 것: `experimental.inlineCss`
-8. **알고 있는 작은 것**: `hero.webp` 작은 불빛이 실제보다 조금 흐림, ② 보드 해안선이 "ROWS" 뒤 몇 화소 4.2:1, 5-3c 3D 전환 도중 그룹을 빠르게 바꾸면 점이 튈 수 있음(슬롯 두 벌 구조), 4-2의 `flip.ts` 코드 포인트 분할(지금 문제없음)
-9. 재학습으로 수치가 바뀌면: `npm run facts` → `terrain` → `demo` → `charts`(SHAP·모델 구조 포함, 모델 로드) → `build` → `fallbacks` → `og` → 커밋(README)
+7. **공개 전환**: `src/lib/site.ts` `LAUNCHED = true`(noindex·robots Disallow 해제). 사용자가 정한다
+8. **성능 최적화(맨 마지막, effort high 이상, 별도 계획서)**: 연출·화질·점 개수·접근성 100·CLS 0은 그대로 두고 수치만. 배포 미리보기에서 Lighthouse 모바일 3회 중앙값으로 전후 비교
+   - 목표: 성능 ko·en·ja ≥90(마지막 측정 ko 87 · en 92 · ja 84~89, 8-1 전), TBT ≤200ms, LCP ≤2.0s, 초기 JS 여유(지금 143.8KB/150KB — 8-1 뒤에도 같음)
+   - 후보: 3D 시작 더 늦추기·점 구름 만들기 Web Worker·`scheduler.yield()`, 번들 분석(`@next/bundle-analyzer`) 뒤 첫 화면 밖 코드 `import()`, 3D 청크(249.4KB/280KB) zod 제거·three 이름 가져오기, `terrain.json` 이진화, ja 글꼴, 대체 이미지 AVIF, DPR·저프레임 문턱(화질은 데스크톱 기준 — 줄이기 전에 사용자와). 되돌린 것: `experimental.inlineCss`
+9. **알고 있는 작은 것**: `hero.webp` 작은 불빛이 실제보다 조금 흐림, ② 보드 해안선이 "ROWS" 뒤 몇 화소 4.2:1, 5-3c 3D 전환 도중 그룹을 빠르게 바꾸면 점이 튈 수 있음(슬롯 두 벌 구조), 4-2의 `flip.ts` 코드 포인트 분할(지금 문제없음)
+   - **테스트 주의**: (1) `terrain.spec.ts` 화소 대비 `[data-scene="bubble"] > p` 2.05:1은 맥미니 로컬에서만 실패(main에서도 같음, CI는 통과). (2) CI 휴대폰 3D e2e("순서를 섞어 건너뛰어도…")가 소프트웨어 렌더러 저프레임으로 도중에 `data-3d="off"`가 되어 가끔 실패 → `gh run rerun <id> --failed`. (3) e2e는 꼭 `tests/e2e/*.spec.ts` 전부 돌린다 — PR #21에서 `site.spec.ts`를 빼먹어 CI에서 걸렸다
+10. 재학습으로 수치가 바뀌면: `npm run facts` → `terrain` → `demo` → `charts`(SHAP·모델 구조·걸러내기·검증 설계 포함, 모델 로드) → `build` → `fallbacks` → `og` → 커밋(README)
 
 **운영 측정 기록(4-2 뒤, Lighthouse 모바일)**: 성능 ko 87 · en 92 · ja 84~89, LCP 1.5 / 1.3 / 2.2~2.4s, CLS 0, TBT 350~500ms, 접근성 100. 배포 직후 첫 측정은 CDN이 차가워 낮게 나온다 — 한 번 더 잰다. 로컬 `npm run lighthouse`는 전후 비교에만.
 
@@ -65,6 +85,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 4. Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test` · `npm run build` · `npm run size` · `npm run e2e`
 5. 데이터 스크립트(`npm run facts|terrain|map|demo|charts|pytest`)만 항공권 저장소가 필요하다(사이트 빌드·테스트는 커밋된 JSON만 씀)
    - 항공권 저장소 `~/Documents/airfare-forecasting-ml`는 iCloud 동기화, `.venv`는 기기마다 깨진다. **그 `.venv`를 지우거나 다시 만들지 않는다**(삭제가 다른 기기로 동기화된다)
+   - 맥미니에는 `~/.venvs/airfare-py311`이 없고(2026-10-01 확인), `scripts/py.sh`가 항공권 저장소 `.venv`로 넘어가 잘 돌았다(pandas 2.3.3·scikit-learn). 맥북에는 있다
    - 기기마다 iCloud 밖에 `~/.venvs/airfare-py311`: `brew install python@3.11` → `"$(brew --prefix python@3.11)/bin/python3.11" -m venv ~/.venvs/airfare-py311` → `~/.venvs/airfare-py311/bin/pip install -r ~/Documents/airfare-forecasting-ml/requirements.txt pytest`. `scripts/py.sh`가 AIRFARE_PYTHON → `~/.venvs/airfare-py311` → 저장소 `.venv` 순서로 고른다(맥북에는 있음, 맥미니는 확인)
    - 모델을 돌리기 전에 그쪽 CLAUDE.md의 iCloud 워밍 절차를 따른다(`npm run charts`는 SHAP·모델 구조 때문에 모델을 불러온다, 약 20초)
 6. `.superpowers/`(시안)·`.lighthouse/`는 git에 없다. 설계 시안 중 남길 것은 `docs/superpowers/mockups/`에 복사해 커밋한다
@@ -91,7 +112,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - 머리말(계획 6-5, 번호·옆 목차 없음): "가격은 매일 흔들립니다. / 대부분은 잡음이고, 그 안에 몇 개의 신호가 있습니다." + 작게 "점 하나는 실제로 수집한 가격 하나입니다." — 이 화면을 지나는 동안 공항 불빛이 스크롤에 묶여 ①의 은은한 물결 줄(카메라 C)로 옮겨 간다
 1. `01 — PROJECT`: 큰 질문 + 설명 + 숫자 4개(노선·수집 개월·피처·예측 구간)
 2. `02 — DATA COLLECTION`: 두 화면 사이에 걸러내기 판(계획 8-1, `chartFilter`: 소요 시간 × 가격 산점도, 자막 세 칸마다 규칙 ①·② → ③이 적용되며 걸린 점이 호박색으로 켜졌다 떨어지고 행 수가 242,874로 플립) — (1) 수집 라인 4단계 + 한·일 지도, (2) 판 없는 공항 플립 보드(왕복 3줄 + TOTAL, 약 1.8초·튕김 — 모션 규칙 예외, 2026-09-29 사용자 요청으로 느리게) + 흐려진 지도
-3. `03 — MODEL & FEATURES`(계획 7-1·7-2): 머리 "모델 구조"(h2) → 모델 구조 그림 판(`chartModel`, 계획 7-2): 자막 네 칸(모은 가격 → NeuralProphet 기준 가격 → XGBoost가 벗어난 몫을 배움 + 흐름 줄 → Optuna·분위수 구간·SHAP)에 맞춰 인천→나리타 LCC 관측 점이 세 단계로 옮겨 간다(관측 → 기준 가격 점선 → 선이 0 점선으로 펴지고 점은 잔차 높이로, 큰 잔차 호박색). 섹션 바탕 장면은 가격 지형 `model`(블록 사이 틈) → 피처 33개·6개 그룹 점 와플(`h3`, 5-2에서 배경 점이 와플로 모임). 와플 그룹을 누르면(또는 초점 후 Enter/Space) SHAP 벌떼로 펼쳐진다 — 위에 작은 와플 줄, 아래 그 그룹 피처별 벌떼(가로 = SHAP %, 색 = 피처 값 순위), 다시 누르기·Esc로 닫기(계획 5-3c)
+3. `03 — MODEL & FEATURES`(계획 7-1·7-2): 머리 "모델 구조"(h2) → 모델 구조 그림 판(`chartModel`, 계획 7-2): 자막 네 칸(모은 가격 → NeuralProphet 기준 가격 → XGBoost가 벗어난 몫을 배움 + 흐름 줄 → Optuna·분위수 구간·SHAP)에 맞춰 인천→나리타 LCC 관측 점이 세 단계로 옮겨 간다(관측 → 기준 가격 점선 → 선이 0 점선으로 펴지고 점은 잔차 높이로, 큰 잔차 호박색). 머리 장면은 가격 지형 `model`(PR #21부터 섹션 전체가 아니라 머리에만) → 피처 33개·6개 그룹 점 와플(`h3`, 5-2에서 배경 점이 와플로 모임). 와플 그룹을 누르면(또는 초점 후 Enter/Space) SHAP 벌떼로 펼쳐진다 — 위에 작은 와플 줄, 아래 그 그룹 피처별 벌떼(가로 = SHAP %, 색 = 피처 값 순위), 다시 누르기·Esc로 닫기(계획 5-3c)
 4. `04 — FINDINGS`(계획 7-1, 제목 "데이터가 보여 준 것"): 출발일 점 그래프 + 요일 평균(계획 6-4) · 구간별 분포 벌떼(U자)
 5. `05 — VALIDATION`(계획 7-1, 제목 "모델 검증"): R² 거품 · 검증 설계 판(계획 8-1, `chartSplit`, 머리표 `EVALUATION`: 수집일 × 출발일 점, 자막 칸마다 K-Fold → GroupKFold → TimeSeriesSplit 평가 점이 호박색, TSS 칸은 폴드 1/5 → 5/5가 1.2초마다 저절로, 판 위 R²·MAE 플립) + 평가 방식 표 카드 · 예측 불확실성 구름 · 한계(차트 장면에서는 배경 점이 차트로 모임)
 - 데모, 연락처(탑승권 카드 + 개인 소개)
