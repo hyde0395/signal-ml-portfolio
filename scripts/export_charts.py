@@ -258,7 +258,9 @@ def main() -> None:
           f"표본 {len(charts['curve']['sample']['pct'])}개, gzip {size:,}B"
           f", SHAP {len(charts['shap']['features'])}×{charts['shap']['n']}")
     m = charts["model"]
-    resid = [((1 + o / 1000) / (1 + m["base"][d] / 1000) - 1) * 100 for d, o in zip(m["obs"]["date"], m["obs"]["pct"])]
+    # 기준이 없는 출발일의 관측은 잔차를 만들 수 없으니 요약에서 뺀다(None이면 계산이 TypeError)
+    resid = [((1 + o / 1000) / (1 + m["base"][d] / 1000) - 1) * 100
+             for d, o in zip(m["obs"]["date"], m["obs"]["pct"]) if m["base"][d] is not None]
     hot = sum(abs(r) >= MODEL_RESID_HOT for r in resid) / len(resid)
     print(f"model {m['route']}/{m['cabin']}: 관측 {len(resid)}개, 기준 {sum(b is not None for b in m['base'])}일, "
           f"|잔차| ≥ {MODEL_RESID_HOT:.0f}% {hot:.1%}")
