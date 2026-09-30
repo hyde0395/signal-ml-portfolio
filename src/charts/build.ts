@@ -2,8 +2,10 @@
 // (초기 JS 150KB). 날짜·금액 글자는 방문자 언어(Intl)로 만든다 — 문구 파일이 아니라 형식이라 숫자 규칙과 무관.
 import { loadCharts, loadCloud, type ChartsData, type CloudData } from './data';
 import { cloudLayout, departLayout, swarmLayout, waffleLayout, type FeatureGroupInput, type PlotSize } from './layouts';
+import { filterLayout } from './filter';
 import { modelLayout } from './model';
 import { shapOpenLayout } from './shap';
+import { splitLayout, type SplitMethod } from './split';
 import type { ChartKey, ChartLayout } from './types';
 import { interpolate, type Locale } from '@/lib/i18n';
 
@@ -28,6 +30,11 @@ export type ChartStrings = {
   tip?: string;
   // 출발일 표시 상자의 공휴일 조각 틀(charts.depart.tipHoliday, {v.name}). 공휴일 코드는 공휴일 ±3일을 표시하므로 "무렵"으로 쓴다
   tipHoliday?: string;
+  axisX?: string;                   // 가로축 이름(걸러내기·검증 설계, 계획 8-1)
+  box?: string;                     // 걸러내기 규칙 ③ 상자 이름표
+  rowsRaw?: string; rowsKept?: string; // 걸러내기 행 수 글자("258,829 ROWS") — 서버가 facts로 만든다(문구에 숫자 금지)
+  legend?: [string, string, string]; // 검증 설계 범례: 학습·평가·아직 안 씀
+  methods?: readonly [SplitMethod, SplitMethod, SplitMethod]; // 검증 설계 판 위 수치(K-Fold·GroupKFold·TSS)
 };
 export type Loaded = { charts?: ChartsData; cloud?: CloudData };
 
@@ -57,8 +64,9 @@ const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}
 const signedInt = (v: number) => signed(Math.round(v));
 const MONDAY = Date.UTC(2024, 0, 1); // 2024-01-01은 월요일
 
-// open: ③ 펼친 와플 그룹 번호(−1 = 닫힘). step: 단계가 있는 판(③ 모델 구조)의 지금 단계 = 자막 문단 번호(ChartStage가 자른다)
-export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: ChartStrings, open = -1, step = 0): ChartLayout {
+// open: ③ 펼친 와플 그룹 번호(−1 = 닫힘). step: 단계가 있는 판(③ 모델 구조·② 걸러내기·⑤ 검증 설계)의 지금 단계 = 자막 문단 번호.
+// sub: 단계 안 작은 단계(계획 8-1 — ChartStage 타이머가 올린다)
+export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: ChartStrings, open = -1, step = 0, sub = 0): ChartLayout {
   const holiday = (code: string) => s.holidays[code] ?? code;
   // 문장 틀이 없으면(와플 등) 빈 문장 — 이 경우 조작 층도 문장을 쓰지 않는다
   const tip = (v: Record<string, string | number>) => (s.tip ? interpolate(s.tip, { v }, s.locale) : '');
@@ -112,8 +120,20 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
         tip: (v) => tip({ date: dayOf(v.date), price: money.format(v.price), lo: money.format(v.lo), hi: money.format(v.hi) }),
       });
     }
-    // Task 6이 실제 case로 바꾼다(계획 8-1)
-    default:
-      throw new Error(`배치가 없다: ${key}`);
+    case 'chartFilter': {
+      const num = new Intl.NumberFormat(s.locale);
+      return filterLayout(loaded.charts!, size, step, sub, {
+        axisX: s.axisX ?? '', axisY: s.axis ?? '', box: s.box ?? '', rowsRaw: s.rowsRaw ?? '', rowsKept: s.rowsKept ?? '',
+        minutes: (v) => num.format(v), pct: signed,
+      });
+    }
+    case 'chartSplit': {
+      const mo = new Intl.DateTimeFormat(s.locale, { month: 'short', timeZone: 'UTC' });
+      const empty = { name: '', r2: '', mae: '', tag: '' };
+      return splitLayout(loaded.charts!, size, step, sub, {
+        month: (iso) => mo.format(new Date(`${iso}T00:00:00Z`)),
+        axisX: s.axisX ?? '', axisY: s.axis ?? '', legend: s.legend ?? ['', '', ''], methods: s.methods ?? [empty, empty, empty],
+      });
+    }
   }
 }

@@ -136,6 +136,34 @@ describe('buildLayout', () => {
     expect(buildLayout('chartModel', { charts }, { w: 1080, h: 414 }, s).variant).toBe('stage:0'); // step 기본 0
   });
 
+  it('chartFilter: 실제 데이터에서 (단계, sub)마다 점 개수 같음, 이름표 판 안, 마지막에 걸러낸 행 수', () => {
+    const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.json`, 'utf8')) as ChartsData;
+    const s = { locale: 'ko' as const, holidays: {}, axis: 'AX', axisResid: 'RES', line: 'LINE' };
+    const fs = { ...s, axisX: '소요', box: '상자', rowsRaw: 'RAW', rowsKept: 'KEPT' };
+    const size = { w: 1080, h: 414 };
+    const Ls = [[0, 0], [1, 0], [1, 1], [2, 0], [2, 1]].map(([st, sb]) => buildLayout('chartFilter', { charts }, size, fs, -1, st, sb));
+    expect(new Set(Ls.map((l) => l.n)).size).toBe(1);
+    expect(Ls[4].labels[0]).toMatchObject({ text: 'KEPT' });
+    for (const L of Ls) for (const l of L.labels) { expect(l.x).toBeGreaterThanOrEqual(0); expect(l.x).toBeLessThanOrEqual(1); }
+    // 규칙 ③(직항 확인) 점은 대부분 상자 안(215~400분)이다 — 실제 데이터 모양 확인
+    const f = charts.filter!;
+    const r3 = f.dur.filter((_, i) => f.rule[i] === 3);
+    expect(r3.filter((m) => m >= 215 && m <= 400).length / r3.length).toBeGreaterThan(0.95);
+  });
+  it('chartSplit: 실제 데이터에서 TSS sub마다 평가 점 수가 비슷하다(각 폴드 약 1/6)', () => {
+    const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.json`, 'utf8')) as ChartsData;
+    const s = { locale: 'ko' as const, holidays: {}, axis: 'AX', axisResid: 'RES', line: 'LINE' };
+    const m = { name: 'X', r2: 'R', mae: 'M', tag: 'T' };
+    const ss = { ...s, axisX: '수집일', legend: ['a', 'b', 'c'] as [string, string, string], methods: [m, m, m] as const };
+    const size = { w: 1080, h: 414 };
+    for (let sb = 0; sb < 5; sb++) {
+      const L = buildLayout('chartSplit', { charts }, size, ss, -1, 2, sb);
+      const test = Array.from(L.tone).filter((t) => t === 2).length;
+      expect(test / L.n).toBeGreaterThan(0.12);
+      expect(test / L.n).toBeLessThan(0.22);
+    }
+  });
+
   it('커밋된 charts.json의 SHAP 피처 = facts 와플 그룹 피처의 합집합', () => {
     const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.json`, 'utf8')) as ChartsData;
     const want = new Set(facts.model.featureGroups.flatMap((g) => g.features));

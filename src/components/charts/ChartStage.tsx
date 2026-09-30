@@ -9,15 +9,21 @@
 // 어느 쪽이든 강조 번호 하나를 저장소로 3D에 알리고 2D도 다시 그린다.
 // 펼침(open): ③ 와플 그룹 버튼을 누르면 그 그룹의 SHAP 벌떼 배치로 다시 배치한다(계획 5-3c). 펼친 동안은 펼친 그룹이 강조다.
 // 단계(step): stages를 주면(③ 모델 구조, 계획 7-2) 자막 스크립트가 블록에 적는 지금 문단(data-para)을 따라 단계를 바꿔 다시 배치한다.
+// 작은 단계(sub): subs를 주면(② 걸러내기·⑤ 검증 설계, 계획 8-1) 한 단계 안에서 sub가 subMs마다 저절로 올라가 마지막에서 멈춘다.
+// 판이 화면 밖이면 멈추고 다시 들어오면 처음부터, 움직임 줄이기면 바로 마지막. 수치 이름표(stat·statSm)는 글자가 바뀌면 플립
 import type React from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ChartStrings } from '@/charts/build';
 import { publishChart, setFocus as publishFocus } from '@/charts/registry';
 import type { ChartKey, ChartLabel, ChartLayout } from '@/charts/types';
+import { flip } from '@/motion/flip';
+import { startSubs } from './subTimer';
 
 // label: 조작 층의 aria-label(차트 제목 + " · " + charts.touch), hint: 짚은 항목이 없을 때의 valuetext(charts.touchHint).
 // 항목이 있는 차트(1·2·4)만 쓴다. stages: 단계 수(문단 번호가 이보다 크면 마지막 단계에 머문다). 없으면 단계 없음
-type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string; label?: string; hint?: string; stages?: number };
+type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string; label?: string; hint?: string; stages?: number;
+  subs?: readonly number[]; subMs?: number;
+};
 
 // 판이 화면 아래 800px 안으로 들어오면 미리 불러온다(스크롤해 도착했을 때 이미 그려져 있도록)
 const LOAD_MARGIN = '800px 0px';
@@ -28,7 +34,7 @@ const TIP_GAP = 12;
 // 단계 바뀜을 이만큼 가라앉은 뒤에 적용한다 — 자막을 빨리 훑을 때마다 setStep하면 3D 슬롯이 전환 도중 덮어써져 점이 튄다
 const STAGE_DEBOUNCE_MS = 150;
 
-export function ChartStage({ chartKey, dataVersion, strings, errorText, label, hint, stages }: Props) {
+export function ChartStage({ chartKey, dataVersion, strings, errorText, label, hint, stages, subs, subMs }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const plot = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -49,6 +55,11 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
   // 지금 단계(stages가 있을 때만 0 이상). 배치 함수가 ref로 읽는다 — open과 같은 방식
   const [step, setStep] = useState(0);
   const stepRef = useRef(0);
+  // 지금 작은 단계. 배치 함수가 ref로 읽는다. 단계 effect가 먼저 정한 뒤 한 번만 다시 배치한다 — 옛 sub로 한 번, 새 sub로
+  // 또 한 번 배치하면 3D 슬롯이 두 번 바뀌어 점이 튄다
+  const [sub, setSub] = useState(0);
+  const subRef = useRef(0);
+  const subsKey = subs?.join(',') ?? '';
   const [shapOk, setShapOk] = useState(false);
   const [announce, setAnnounce] = useState('');
   // 같은 문장을 다시 넣으면 알림 영역 내용이 바뀌지 않아 낭독기가 다시 읽지 않는다(데이터 없음 버튼을 거듭 누를 때).
@@ -88,7 +99,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
         redraw = () => {
           const r = pl.getBoundingClientRect(), s = st.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) return;
-          const layout = mod.buildLayout(chartKey, loaded, { w: r.width, h: r.height }, strings, openRef.current, stepRef.current);
+          const layout = mod.buildLayout(chartKey, loaded, { w: r.width, h: r.height }, strings, openRef.current, stepRef.current, subRef.current);
           // 판은 sticky(top: 0)라 고정된 동안 판 윗변 = 화면 맨 위다. 지금 스크롤 위치와 상관없이
           // "고정됐을 때의 화면 위치"를 넘기려고 판 안에서의 거리(r.top - s.top)를 쓴다
           publishChart(chartKey, {
@@ -176,11 +187,32 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     mo.observe(block, { attributes: true, attributeFilter: ['data-para'] });
     return () => { mo.disconnect(); clearTimeout(timer); };
   }, [stages]);
+  // 단계가 바뀌면: sub를 처음(움직임 줄이기면 마지막)으로 먼저 정하고 한 번만 다시 배치한 뒤, 그 단계에 sub가 여럿이면 타이머를 건다.
+  // 판이 화면 밖이면 타이머를 멈추고, 다시 들어오면 그 단계 처음부터
   useEffect(() => {
-    if (stepRef.current === step) return;
+    const count = subs?.[step] ?? 1;
+    let reduced = true;
+    try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { /* 없으면 줄인 쪽 */ }
+    const first = reduced ? count - 1 : 0;
+    const changed = stepRef.current !== step || subRef.current !== first;
     stepRef.current = step;
-    relayout.current();
-  }, [step]);
+    subRef.current = first;
+    setSub(first);
+    if (changed) relayout.current();
+    const el = stage.current;
+    if (count <= 1 || reduced || !subMs || !el) return;
+    let timer: ReturnType<typeof startSubs> | null = null;
+    const set = (n: number) => { if (subRef.current === n) return; subRef.current = n; setSub(n); relayout.current(); };
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) { timer?.stop(); return; }
+      if (timer) timer.restart();
+      else timer = startSubs({ count, ms: subMs, reduced: false, set, setTimeout: window.setTimeout.bind(window) as typeof setTimeout, clearTimeout: window.clearTimeout.bind(window) });
+    });
+    io.observe(el);
+    return () => { io.disconnect(); timer?.stop(); };
+    // subs는 서버에서 온 배열이라 렌더마다 새 배열일 수 있어 글자로 비교한다(subsKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, subsKey, subMs]);
 
   // 표시 상자 자리: 짚은 항목 위 TIP_GAP(자리가 없으면 아래), 좌우는 판 안으로 자른다. 상자 폭은 문장마다 달라 그린 뒤 잰다
   const cur = items && sel >= 0 ? items[sel] : undefined;
@@ -290,7 +322,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
   };
 
   return (
-    <div ref={stage} className="chart-stage" data-stage={stages ? step : undefined}>
+    <div ref={stage} className="chart-stage" data-stage={stages ? step : undefined} data-sub={subs ? sub : undefined}>
       <div ref={plot} className="chart-plot" data-plot>
         <canvas ref={canvas} className="chart-canvas" aria-hidden="true" />
         <div className="chart-labels" aria-hidden="true">
@@ -305,7 +337,9 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
                 </p>
               );
             }
-            return <span key={i} className={`chart-label ${l.cls} align-${l.align}`} style={style}>{l.text}</span>;
+            const cls = `chart-label ${l.cls} align-${l.align}`;
+            if (l.cls === 'stat' || l.cls === 'statSm') return <FlipLabel key={i} text={l.text} className={cls} style={style} />;
+            return <span key={i} className={cls} style={style}>{l.text}</span>;
           })}
         </div>
         {/* ③ 와플 그룹 버튼(계획 5-3c): 축·눈금 글자가 낭독되지 않게 이름표 층(aria-hidden) 밖에 둔다 */}
@@ -357,4 +391,15 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
       </div>
     </div>
   );
+}
+
+// 판 위 수치(stat·statSm): 글자가 바뀌면 플립으로 넘긴다(motion/flip — 움직임 줄이기면 바로 바뀐다). 이름표 층이 aria-hidden이라
+// 낭독은 자막 띠의 요약 문단이 맡는다
+function FlipLabel({ text, className, style }: { text: string; className: string; style: React.CSSProperties }) {
+  const el = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!el.current) return;
+    return flip(el.current, text);
+  }, [text]);
+  return <span ref={el} className={className} style={style} />;
 }

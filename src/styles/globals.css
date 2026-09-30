@@ -446,6 +446,15 @@ button.chart-group { background: none; border: 0; padding: 0; color: inherit; fo
 .chart-group.is-mini .chart-group-pct, .chart-group.is-mini .chart-group-name { font-size: 0.7rem; }
 .chart-label.feature { color: var(--tx); }
 .chart-label.head { color: var(--tx); letter-spacing: 0.02em; }
+/* 판 위 수치(계획 8-1): 큰 수치(R², 행 수)와 작은 줄. 규칙 목록은 적용 전 흐리게, 적용되면 호박색. 범례는 앞에 그 색 점 */
+.chart-label.stat { font: 600 26px var(--font-mono); color: var(--tx); letter-spacing: -0.01em; }
+.chart-label.statSm { font: 500 13px var(--font-mono); color: var(--tx); letter-spacing: 0.04em; }
+.chart-label.rule { color: var(--mute); letter-spacing: 0.04em; }
+.chart-label.ruleOn { color: var(--amb); letter-spacing: 0.04em; }
+.chart-label:is(.keyDot, .keyAmber, .keyDim):not(:empty)::before { content: '●'; margin-right: 6px; }
+.chart-label.keyDot::before { color: #8FB8FF; }
+.chart-label.keyAmber::before { color: var(--amb); }
+.chart-label.keyDim::before { color: #8FB8FF; opacity: 0.35; }
 .chart-group-pct { font: 600 1.25rem var(--font-mono); }
 .chart-group.is-holiday .chart-group-pct { color: var(--amb); }
 .chart-group-name { font-weight: 600; font-size: 0.85rem; }
@@ -493,5 +502,7 @@ html.has-captions .chart-para:not(.is-on) { pointer-events: none; }
   .chart-plot { top: 9vh; height: 42vh; }
   .chart-copy { top: 55vh; max-width: none; }
   .chart-label { font-size: 9px; }
+  .chart-label.stat { font-size: 17px; }
+  .chart-label.statSm { font-size: 10px; }
   .chart-group-pct { font-size: 1rem; }
 }
