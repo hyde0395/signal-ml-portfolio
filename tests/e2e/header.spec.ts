@@ -115,3 +115,27 @@ test.describe('좁은 휴대폰에서 언어 안내 판과 겹침', () => {
     expect(hintBox.y + hintBox.height).toBeLessThanOrEqual(bannerBox.y);
   });
 });
+
+// 가장 좁은 휴대폰(320px)에서도 상단 바가 한 줄이다. /en/은 "Resume coming soon"이 길어 예전에는 이력서 글자가
+// 두 줄로 꺾였다. 한 줄이면 세 덩어리의 세로 가운데가 같고, 어느 덩어리도 글줄 두 개만큼 높지 않다
+test.describe('320px 좁은 화면', () => {
+  test.use({ viewport: { width: 320, height: 640 } });
+  for (const path of ['/', '/en/', '/ja/']) {
+    test(`${path} 상단 바가 한 줄이다`, async ({ page }) => {
+      await page.goto(path);
+      const boxes = await header(page).evaluate((h) => {
+        const line = h.querySelector('.brand')!.getBoundingClientRect().height;
+        return { line, parts: [...h.querySelectorAll('.brand, .lang-switch, .header-resume')].map((e) => {
+          const r = e.getBoundingClientRect();
+          return { name: e.className, mid: r.top + r.height / 2, h: r.height, right: r.right };
+        }) };
+      });
+      expect(boxes.parts).toHaveLength(3);
+      for (const p of boxes.parts) {
+        expect(p.h, `${p.name} 높이`).toBeLessThan(boxes.line * 2);
+        expect(Math.abs(p.mid - boxes.parts[0].mid), `${p.name} 세로 가운데`).toBeLessThanOrEqual(2);
+        expect(p.right, `${p.name} 오른쪽 끝이 화면 안`).toBeLessThanOrEqual(320);
+      }
+    });
+  }
+});

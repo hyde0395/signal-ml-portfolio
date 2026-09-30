@@ -93,6 +93,9 @@ html[data-header="hidden"] .brand, html[data-header="peek"] .brand { opacity: 0;
 html[data-header] .site-header:focus-within { opacity: 1; transform: none; }
 html[data-header] .site-header:focus-within .header-actions { pointer-events: auto; }
 @media (max-width: 767px) { .site-header { padding-block: 16px; } .header-actions { gap: 16px; } }
+/* 320px 폭의 /en/은 "Resume coming soon"(18자)이 들어갈 자리가 약 40px 모자라 두 줄로 꺾였다. 글자 크기와 문구는 그대로 두고
+   자간(0.22em은 글자마다 약 2.4px)과 덩어리 사이 간격만 줄여 한 줄에 넣는다 — 짧은 이력서 문구 키는 따로 없다 */
+@media (max-width: 360px) { .site-header { letter-spacing: 0.12em; gap: 8px; } .header-actions { gap: 12px; } }
 @media (prefers-reduced-motion: reduce) { .site-header, .brand { transition: none; } }
 /* 알약 버튼 — 지금은 Contact 섹션의 이력서 링크(ResumeLink 기본값)가 쓴다 */
 .pill { font: 600 0.8rem var(--font-mono); color: var(--tx); background: none; border: 1px solid var(--line); border-radius: 999px;
@@ -329,7 +332,10 @@ html[data-3d="on"] .data-board > :is(p, a) { text-shadow: 0 0 6px #02040A, 0 0 2
    767px 이하는 목적지·상태 두 열을 아예 숨기므로(아래 미디어쿼리) 19px로 더 작게 잡아도 된다. */
 .board-housing { --flap-w: 32px; --flap-h: 48px; --flap-f: 30px; --green: #6FE3A5;
   position: relative; margin-block: 32px; max-width: none; }
-.board { padding: 8px 0 12px; overflow-x: auto; }
+/* position: relative — 휴대폰에서 STATUS 머리글을 sr-only(position: absolute)로 감추는데, 기준 상자가 스크롤 상자 바깥
+   (.board-housing)이면 그 머리글이 가로 스크롤에 잘리지 않고 페이지 밖으로 삐져나가 320px 화면에서 페이지 폭이 339px로
+   넓어졌다(휴대폰 브라우저가 화면을 축소해 상단 바까지 오른쪽으로 밀림). 기준을 스크롤 상자로 두면 그 안에서 잘린다 */
+.board { position: relative; padding: 8px 0 12px; overflow-x: auto; }
 .board-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px;
   padding-bottom: 14px; margin-bottom: 6px; border-bottom: 1px solid rgba(255, 181, 71, 0.35); }
 .board-title { color: var(--amb); font-size: 1.6rem; font-weight: 700; letter-spacing: 0.12em; }
