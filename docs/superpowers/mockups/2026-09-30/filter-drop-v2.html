@@ -1,0 +1,99 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>② 걸러내기 시안 v2</title>
+<style>
+body{margin:0;background:#02040A;color:#EEF3FF;font-family:Pretendard,system-ui,sans-serif;padding:28px 36px 60px}
+h2{font-family:'Space Grotesk',system-ui;font-weight:700;letter-spacing:-.03em;margin:0 0 6px}
+.sub{color:#9aa6c0;margin:0 0 22px;font-size:14px;line-height:1.6}
+.opt{border:1px solid #1c2740;border-radius:10px;margin-bottom:22px;cursor:pointer;overflow:hidden;background:linear-gradient(#02040A,#0B1426)}
+.opt.selected{border-color:#FFB547;box-shadow:0 0 0 1px #FFB547}
+.head{display:flex;gap:14px;align-items:baseline;padding:14px 18px 0;flex-wrap:wrap}
+.letter{font-family:'IBM Plex Mono',monospace;color:#FFB547;font-weight:600}
+.head h3{margin:0;font-size:17px}
+.head p{margin:0;color:#9aa6c0;font-size:13px}
+canvas{display:block;width:100%;height:auto}
+</style></head><body>
+<h2>② 걸러내기 — 지도 없이</h2>
+<p class="sub">세 필터 규칙(항공권 저장소 기준): ① 소요 400분 초과·가격 3만 원 미만(단위 누락) ② 출발·도착 시각차 ≠ 소요 시간(엉뚱한 편) ③ 직항인데 경유 수준 소요 시간(9,387행).<br>
+규칙이 하나씩 적용되며 걸린 행이 호박색 → 떨어져 나가고, 끝에 행 수가 258,829 → 242,874로 바뀝니다(약 8초 반복). <b>시안의 점 분포는 모양을 보이기 위한 가짜 값</b>이고, 실제는 추출 데이터로 그립니다.</p>
+
+<div class="opt" data-choice="a" onclick="toggleSelect(this)"><div class="head"><span class="letter">A</span><h3>소요 시간 × 가격 산점도</h3><p>행을 소요 시간(가로)·가격(세로, 평균 대비 %)에 뿌리고, 규칙 선이 하나씩 그어지며 선 밖 점이 떨어진다. "왜 오류인지"가 보인다 — 직항인데 소요 시간이 긴 무리가 따로 떨어져 있다</p></div><canvas id="a" width="1800" height="800"></canvas></div>
+
+<div class="opt" data-choice="b" onclick="toggleSelect(this)"><div class="head"><span class="letter">B</span><h3>체(sieve) 세 단</h3><p>위에서 행 점이 비처럼 내려오고, 규칙 세 단을 지날 때마다 걸린 점이 호박색으로 옆으로 튕겨 떨어진다. 통과한 점은 바닥에 쌓인다. 추상적이지만 파이프라인 느낌</p></div><canvas id="b" width="1800" height="800"></canvas></div>
+
+<div class="opt" data-choice="c" onclick="toggleSelect(this)"><div class="head"><span class="letter">C</span><h3>노선별 행 막대 (점 1개 = 100행)</h3><p>② 보드처럼 노선 줄마다 점 막대. 규칙을 적용하는 세로 훑기선이 지나가면 걸린 점이 떨어지고 막대가 줄어든다. 하네다 노선(직항 오매칭이 몰린 곳)이 눈에 띄게 줄어든다</p></div><canvas id="c" width="1800" height="800"></canvas></div>
+
+<script>
+const W=1800,H=800,BLUE='143,184,255',AMB='255,181,71',DIM='154,166,192';
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){return Math.sqrt(-2*Math.log(r()+1e-9))*Math.cos(2*Math.PI*r())}
+const ease=t=>t<0?0:t>1?1:1-Math.pow(2,-10*t);
+const RULES=['DURATION · UNIT','TIME MISMATCH','DIRECT CHECK'];
+const LOOP=8.5;
+// 규칙 k의 시작 시각
+const RS=[1.0,2.8,4.6];
+function counter(g,x,y,v,label,hot){g.font='600 44px "IBM Plex Mono",monospace';g.fillStyle=hot?'#FFB547':'#EEF3FF';g.textAlign='left';g.fillText(v.toLocaleString('en-US'),x,y);g.font='13px "IBM Plex Mono",monospace';g.fillStyle='#9aa6c0';g.fillText(label,x,y+24)}
+function countAt(t){return t<7.0?258829:242874}
+function ruleLabel(g,x,y,k,t){const on=t>=RS[k];g.font='13px "IBM Plex Mono",monospace';g.fillStyle=on?'#FFB547':'rgba(154,166,192,.5)';g.textAlign='left';g.fillText((on?'● ':'○ ')+'RULE '+(k+1)+' · '+RULES[k],x,y)}
+
+// ---- A 산점도
+(function(){const g=document.getElementById('a').getContext('2d');const r=rng(5);
+const L=160,R=W-420,T=90,B=H-110;const xOf=d=>L+(d-60)/(480-60)*(R-L);const yOf=p=>B-(p+80)/(280+80)*(B-T);
+const P=[];
+for(let i=0;i<2600;i++){const kind=r();let d,p,rule=-1;
+ if(kind<0.60){d=130+gauss(r)*12;p=gauss(r)*28}               // 정상 직항
+ else if(kind<0.93){d=220+gauss(r)*60;p=-10+gauss(r)*30}       // 정상 경유(stops>0)
+ else if(kind<0.965){d=240+Math.abs(gauss(r))*70;p=150+gauss(r)*45;rule=2}  // 직항인데 경유 소요 → 규칙3
+ else if(kind<0.975){d=130+gauss(r)*14;p=gauss(r)*30;rule=1}  // 시각차 불일치 → 규칙2(겉보기 정상)
+ else {if(r()<.6){d=410+r()*60;p=gauss(r)*40}else{d=140+gauss(r)*30;p=-72+r()*4}rule=0} // 규칙1
+ P.push({x:xOf(Math.min(475,Math.max(62,d))),y:yOf(Math.min(275,Math.max(-78,p))),rule,vx:(r()-.5)*40})}
+function f(ts){const t=(ts/1000)%LOOP;g.clearRect(0,0,W,H);
+ // 축
+ g.strokeStyle='rgba(154,166,192,.25)';g.beginPath();g.moveTo(L,B);g.lineTo(R,B);g.moveTo(L,T);g.lineTo(L,B);g.stroke();
+ g.font='12px "IBM Plex Mono",monospace';g.fillStyle='#9aa6c0';g.textAlign='center';[60,120,180,240,300,360,420,480].forEach(d=>g.fillText(d+'m',xOf(d),B+20));
+ g.textAlign='right';[-50,0,100,200].forEach(p=>g.fillText((p>0?'+':'')+p+'%',L-10,yOf(p)+4));
+ g.textAlign='left';g.fillText('소요 시간 →',R-90,B+44);g.save();g.translate(L-70,T+20);g.fillText('가격 (노선·등급 평균 대비) ↑',0,0);g.restore();
+ // 규칙 선
+ const a1=ease((t-RS[0])/.5);if(a1>0){g.strokeStyle='rgba(255,181,71,'+.8*a1+')';g.setLineDash([5,6]);g.beginPath();g.moveTo(xOf(400),T);g.lineTo(xOf(400),B);g.moveTo(L,yOf(-68));g.lineTo(R,yOf(-68));g.stroke();g.setLineDash([])}
+ const a3=ease((t-RS[2])/.5);if(a3>0){g.strokeStyle='rgba(255,181,71,'+.8*a3+')';g.setLineDash([5,6]);g.strokeRect(xOf(195),yOf(270),xOf(470)-xOf(195),yOf(60)-yOf(270));g.setLineDash([]);g.fillStyle='rgba(255,181,71,'+a3+')';g.font='12px "IBM Plex Mono",monospace';g.textAlign='left';g.fillText('stops=0 인데 경유 소요',xOf(200),yOf(270)-8)}
+ P.forEach(p=>{let x=p.x,y=p.y,c=BLUE,a=.8;if(p.rule>=0){const s=RS[p.rule];if(t>=s){c=AMB;const fall=Math.max(0,t-s-.6);if(fall>0){y+=300*fall*fall;x+=p.vx*fall;a=Math.max(0,.9-fall*.7)}}}g.fillStyle='rgba('+c+','+a+')';g.fillRect(x-2,y-2,4,4)});
+ g.save();g.beginPath();g.rect(0,0,W,H);g.restore();
+ for(let k=0;k<3;k++)ruleLabel(g,R+50,T+30+k*28,k,t);
+ counter(g,R+50,B-40,countAt(t),t<7?'RAW ROWS':'FILTERED ROWS',t>=7);requestAnimationFrame(f)}requestAnimationFrame(f)})();
+
+// ---- B 체
+(function(){const g=document.getElementById('b').getContext('2d');const r=rng(9);
+const cx=W*0.42,wid=620,Y=[260,400,540],FLOOR=H-60;const rates=[0.011,0.0145,0.036];
+let last=0;const P=[];let pile=0;const cols=new Array(120).fill(0);
+function spawn(){const rr=r();let rule=-1;if(rr<rates[0])rule=0;else if(rr<rates[0]+rates[1])rule=1;else if(rr<rates[0]+rates[1]+rates[2])rule=2;P.push({x:cx-wid/2+r()*wid,y:40+r()*20,vy:120+r()*60,rule,out:0,vx:0})}
+function f(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;for(let i=0;i<14;i++)spawn();g.clearRect(0,0,W,H);
+ Y.forEach((y,k)=>{g.strokeStyle='rgba(255,181,71,.55)';g.setLineDash([6,6]);g.beginPath();g.moveTo(cx-wid/2-20,y);g.lineTo(cx+wid/2+20,y);g.stroke();g.setLineDash([]);g.font='13px "IBM Plex Mono",monospace';g.fillStyle='#FFB547';g.textAlign='left';g.fillText('RULE '+(k+1)+' · '+RULES[k],cx+wid/2+40,y+4)});
+ for(let i=P.length-1;i>=0;i--){const p=P[i];const py=p.y;p.y+=p.vy*dt;
+  if(p.out){p.vy+=500*dt;p.x+=p.vx*dt;p.a=(p.a??1)-dt*.8;if(p.a<=0||p.y>H){P.splice(i,1);continue}g.fillStyle='rgba('+AMB+','+p.a+')';g.fillRect(p.x-2,p.y-2,4,4);continue}
+  if(p.rule>=0&&py<Y[p.rule]&&p.y>=Y[p.rule]){p.out=1;p.vx=(p.x<cx?-1:1)*(160+r()*120);p.vy=-60}
+  if(p.y>=FLOOR-2){const c=Math.floor((p.x-(cx-wid/2))/wid*cols.length);if(c>=0&&c<cols.length)cols[c]++;P.splice(i,1);pile++;continue}
+  const near=p.rule>=0&&Y[p.rule]-p.y<40;g.fillStyle='rgba('+(near?AMB:BLUE)+',.85)';g.fillRect(p.x-1.8,p.y-1.8,3.6,3.6)}
+ // 바닥 더미
+ const mx=Math.max(1,...cols);g.fillStyle='rgba('+BLUE+',.55)';cols.forEach((v,c)=>{const h=Math.min(60,v/mx*60);g.fillRect(cx-wid/2+c*wid/cols.length,FLOOR-h,wid/cols.length-1,h)});
+ if(mx>900)cols.fill(0);
+ g.font='12px "IBM Plex Mono",monospace';g.fillStyle='#9aa6c0';g.textAlign='center';g.fillText('RAW ROWS ↓',cx,28);
+ counter(g,70,H-90,242874,'FILTERED ROWS · 258,829 RAW',false);requestAnimationFrame(f)}requestAnimationFrame(f)})();
+
+// ---- C 노선별 막대
+(function(){const g=document.getElementById('c').getContext('2d');const r=rng(13);
+const routes=[['ICN → NRT / NRT → ICN',1182,[.009,.004,.004]],['ICN → KIX / KIX → ICN',1126,[.009,.004,.003]],['ICN → HND / HND → ICN',280,[.012,.02,.30]]];
+const L=440,s=10,cols=120,T=150,rowH=180;
+const rows=routes.map(([name,n,rt],ri)=>{const pts=[];for(let i=0;i<n;i++){const u=r();let rule=-1;if(u<rt[0])rule=0;else if(u<rt[0]+rt[1])rule=1;else if(u<rt[0]+rt[1]+rt[2])rule=2;pts.push({i,rule,vx:(r()-.5)*30})}
+ const keep=pts.filter(p=>p.rule<0);keep.forEach((p,k)=>p.k=k);return{name,pts,n,keep:keep.length}});
+function f(ts){const t=(ts/1000)%LOOP;g.clearRect(0,0,W,H);
+ rows.forEach((row,ri)=>{const y0=T+ri*rowH;g.font='15px "IBM Plex Mono",monospace';g.fillStyle='#EEF3FF';g.textAlign='left';g.fillText(row.name,70,y0+14);
+  const pack=ease((t-6.2)/.8);const shown=t<6.6?row.n:row.keep;g.font='13px "IBM Plex Mono",monospace';g.fillStyle=t>=6.6?'#FFB547':'#9aa6c0';g.fillText((shown*100).toLocaleString('en-US')+' ROWS',70,y0+38);
+  row.pts.forEach(p=>{let x=L+(p.i%cols)*s,y=y0+Math.floor(p.i/cols)*s,c=BLUE,a=.85;
+   if(p.rule>=0){const sweepX=L+((t-RS[p.rule])/1.2)*cols*s;if(t>=RS[p.rule]&&x<sweepX){c=AMB;const fall=Math.max(0,(t-RS[p.rule])-(x-L)/(cols*s)*1.2-.35);if(fall>0){y+=260*fall*fall;x+=p.vx*fall;a=Math.max(0,.9-fall*.8)}}}
+   else{const nx=L+(p.k%cols)*s,ny=y0+Math.floor(p.k/cols)*s;x+=(nx-x)*pack;y+=(ny-y)*pack}
+   g.fillStyle='rgba('+c+','+a+')';g.fillRect(x,y,6,6)})});
+ // 훑기선
+ for(let k=0;k<3;k++){const u=(t-RS[k])/1.2;if(u>=0&&u<=1){const x=L+u*cols*s;g.strokeStyle='rgba(255,181,71,.8)';g.beginPath();g.moveTo(x,T-20);g.lineTo(x,T+rowH*3-40);g.stroke()}}
+ for(let k=0;k<3;k++)ruleLabel(g,L,T-50+k*0,k,t)||0;
+ g.clearRect(L-2,T-70,1300,30);let lx=L;for(let k=0;k<3;k++){ruleLabel(g,lx,T-50,k,t);lx+=380}
+ g.font='12px "IBM Plex Mono",monospace';g.fillStyle='#9aa6c0';g.textAlign='right';g.fillText('● = 100 ROWS',L+cols*s,T+rowH*3-20);
+ counter(g,70,H-60,countAt(t),t<7?'TOTAL · RAW':'TOTAL · FILTERED',t>=7);requestAnimationFrame(f)}requestAnimationFrame(f)})();
+</script></body></html>
