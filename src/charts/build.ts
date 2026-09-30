@@ -2,10 +2,14 @@
 // (초기 JS 150KB). 날짜·금액 글자는 방문자 언어(Intl)로 만든다 — 문구 파일이 아니라 형식이라 숫자 규칙과 무관.
 import { loadCharts, loadCloud, type ChartsData, type CloudData } from './data';
 import { cloudLayout, departLayout, swarmLayout, waffleLayout, type FeatureGroupInput, type PlotSize } from './layouts';
+import { shapOpenLayout } from './shap';
 import type { ChartKey, ChartLayout } from './types';
 import { interpolate, type Locale } from '@/lib/i18n';
 
 export { drawLayout } from './draw2d';
+
+// ③ SHAP 벌떼 문구(content features.shap). row*·opened는 {v.name}·{v.pct} 자리표시를 남긴 채 넘어온다
+export type ShapTexts = { lead: string; down: string; up: string; low: string; high: string; catNote: string; rowUp: string; rowDown: string; rowMixed: string; rowCat: string; opened: string; closed: string };
 
 export type ChartStrings = {
   locale: Locale;
@@ -14,6 +18,7 @@ export type ChartStrings = {
   weekdayTitle?: string;            // 요일 평균 제목(출발일만)
   groups?: FeatureGroupInput[];     // 와플(③)만
   countUnit?: string;               // "개" / " features" / "個"
+  shap?: ShapTexts;                 // 와플(③)만 — 펼친 SHAP 벌떼
   // 표시 상자 문장 틀(charts.<id>.tip, 차트 1·2·4). {v.…}가 채워지지 않은 채 서버에서 넘어온다 — 여기서 짚은 항목 값으로 채운다
   tip?: string;
   // 출발일 표시 상자의 공휴일 조각 틀(charts.depart.tipHoliday, {v.name}). 공휴일 코드는 공휴일 ±3일을 표시하므로 "무렵"으로 쓴다
@@ -29,7 +34,8 @@ function once<T>(key: string, f: () => Promise<T>): Promise<T> {
 }
 
 export async function loadFor(key: ChartKey, dataVersion: string): Promise<Loaded> {
-  if (key === 'features') return {};
+  // 와플은 닫힌 상태에 데이터가 필요 없다 — charts.json을 못 받아도 와플은 그리고 펼치기만 막는다(ChartStage)
+  if (key === 'features') return { charts: await once(`charts:${dataVersion}`, () => loadCharts(dataVersion)).catch(() => undefined) };
   if (key === 'chartCloud') return { cloud: await once(`cloud:${dataVersion}`, () => loadCloud(dataVersion)) };
   return { charts: await once(`charts:${dataVersion}`, () => loadCharts(dataVersion)) };
 }
@@ -39,7 +45,8 @@ const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}
 const signedInt = (v: number) => signed(Math.round(v));
 const MONDAY = Date.UTC(2024, 0, 1); // 2024-01-01은 월요일
 
-export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: ChartStrings): ChartLayout {
+// open: ③ 펼친 와플 그룹 번호(−1 = 닫힘)
+export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: ChartStrings, open = -1): ChartLayout {
   const holiday = (code: string) => s.holidays[code] ?? code;
   // 문장 틀이 없으면(와플 등) 빈 문장 — 이 경우 조작 층도 문장을 쓰지 않는다
   const tip = (v: Record<string, string | number>) => (s.tip ? interpolate(s.tip, { v }, s.locale) : '');
@@ -47,8 +54,18 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
   const day = new Intl.DateTimeFormat(s.locale, { month: 'short', day: 'numeric', weekday: 'short', timeZone: 'UTC' });
   const dayOf = (iso: string) => day.format(new Date(`${iso}T00:00:00Z`));
   switch (key) {
-    case 'features':
-      return waffleLayout(s.groups ?? [], size, { pct: (v) => `${v.toFixed(1)}%`, count: (n) => `${n}${s.countUnit ?? ''}` });
+    case 'features': {
+      const gain = (v: number) => `${v.toFixed(1)}%`, count = (n: number) => `${n}${s.countUnit ?? ''}`;
+      const shap = loaded.charts?.shap, T = s.shap, groups = s.groups ?? [];
+      if (open >= 0 && open < groups.length && shap && T) {
+        const tpl = { up: T.rowUp, down: T.rowDown, mixed: T.rowMixed, cat: T.rowCat };
+        return shapOpenLayout(groups, open, shap, size, {
+          gain, count, pct: signed, lead: T.lead, down: T.down, up: T.up, low: T.low, high: T.high, catNote: T.catNote,
+          row: (r) => interpolate(tpl[r.dir], { v: { name: r.id, pct: `${r.meanAbs.toFixed(1)}%` } }, s.locale),
+        });
+      }
+      return waffleLayout(groups, size, { pct: gain, count });
+    }
     case 'chartDepart': {
       const wd = new Intl.DateTimeFormat(s.locale, { weekday: 'short', timeZone: 'UTC' });
       const mo = new Intl.DateTimeFormat(s.locale, { month: 'short', timeZone: 'UTC' });

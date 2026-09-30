@@ -1,4 +1,5 @@
 // 2D 그리기와 키별 조립 검사: 점마다 원 하나, 색 번호 → 색, 키별로 알맞은 배치 함수를 부른다.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildLayout } from '@/charts/build';
 import { drawLayout, TONE_COLOR, toneColor } from '@/charts/draw2d';
@@ -68,6 +69,20 @@ describe('buildLayout', () => {
     const L = buildLayout('features', {}, { w: 1080, h: 414 }, { locale: 'en', holidays: {}, groups, countUnit: ' features' });
     expect(L.n).toBe(600);
     expect(L.labels[0]).toMatchObject({ type: 'group', count: `${groups[0].features.length} features` });
+  });
+
+  it('와플: open이 있으면 SHAP 벌떼 배치, 없거나 SHAP 데이터가 없으면 닫힌 와플', () => {
+    const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.json`, 'utf8')) as ChartsData;
+    const groups = facts.model.featureGroups.map((g) => ({ id: g.id, gain: g.gain, features: g.features, name: g.id }));
+    const shapTexts = { lead: 'L', down: 'D', up: 'U', low: 'lo', high: 'hi', catNote: 'C', rowUp: '{v.name} up {v.pct}', rowDown: '{v.name} down {v.pct}', rowMixed: '{v.name} mixed {v.pct}', rowCat: '{v.name} cat {v.pct}', opened: '{v.name}', closed: 'x' };
+    const s = { locale: 'ko' as const, holidays: {}, groups, countUnit: '개', shap: shapTexts };
+    const closed = buildLayout('features', { charts }, { w: 1080, h: 414 }, s);
+    expect(closed.variant ?? '').toBe('');
+    const open = buildLayout('features', { charts }, { w: 1080, h: 414 }, s, 0);
+    expect(open.variant).toBe('open:0');
+    expect(open.summary).toHaveLength(groups[0].features.length);
+    expect(open.summary![0]).toMatch(/ (up|down|mixed|cat) \d+\.\d%$/);
+    expect(buildLayout('features', {}, { w: 1080, h: 414 }, s, 0).variant ?? '').toBe(''); // 데이터 없음 → 닫힌 와플
   });
 
   // 표시 상자 문장: 서버에서 {v.…}가 남은 채 온 틀(charts.*.tip)을 짚은 항목 값으로 다 채운다(자리표시가 남지 않는다)
