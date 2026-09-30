@@ -1,5 +1,6 @@
-// ③ 모델과 피처(설계 2026-09-25 §3.3, 2026-09-29 이야기 흐름 §3.1): 모델 카드 → 점 와플.
-// 모델 카드는 글 카드(.chapter)로 모델 구조 문단을 보여 주고, 뒤에서 가격 지형 장면(model)이 조용히 돈다.
+// ③ 모델과 피처(설계 2026-09-25 §3.3, 2026-09-29 이야기 흐름 §3.1): 모델 구조 → 점 와플.
+// 모델 구조는 그림 판 블록(계획 7-2): 자막 칸이 바뀔 때마다 인천→나리타 LCC 관측 점이 모은 가격 → NeuralProphet 기준 가격 선 →
+// 기준에서 벗어난 몫(XGBoost)으로 옮겨 간다(src/charts/model.ts). 넷째 칸(Optuna·분위수·SHAP)은 셋째 단계 그대로.
 // 와플은 그룹마다 점 100개 중 중요도만큼 켜지는 그림 판(ChartStage)이다(3D가 켜지면 배경 점이 그 자리에 모인다). 글은
 // 판 아래 자막 띠에 고정되고 세 칸을 차례로 보여 준다(설계 2026-09-28 §2). 화면 낭독기를 위해 같은 내용을 숨긴
 // 목록(그룹 · % · 피처 이름)으로 둔다. 그룹을 누르면(키보드는 Enter·Space) 그 그룹의 SHAP 벌떼로 펼쳐진다(계획 5-3c).
@@ -22,17 +23,39 @@ export function Features({ locale }: { locale: Locale }) {
   ) as ShapTexts;
   return (
     <section id="features" className="wrap" aria-labelledby="features-h">
-      {/* 섹션 머리표·h2는 모델 카드로 옮겼다 — #features-h는 움직임 e2e가 쓰는 제목 리빌 대상이라 id를 그대로 둔다.
-          카드 article에는 이름을 따로 달지 않는다: h2가 이미 섹션 이름이라 같은 이름이 두 번 낭독된다 */}
-      <article className="chapter model-card" data-scene="model">
+      {/* 섹션 머리표·h2는 ④·⑤처럼 블록 위 머리(.charts-head)에 둔다 — #features-h는 움직임 e2e가 쓰는 제목 리빌 대상이라 id를 그대로 둔다.
+          모델 구조 블록에는 이름을 따로 달지 않는다: h2가 이미 이 블록의 이름이라 같은 이름이 두 번 낭독된다 */}
+      <div className="charts-head">
         <p className="eyebrow" data-flip-on-enter>{eyebrow('features')}</p>
         <h2 id="features-h" className="display" data-reveal>{t('features.structure.heading')}</h2>
-        <p>{t('features.structure.body1')}</p>
-        <p>{t('features.structure.body2')}</p>
-        <p className="muted mono data-tools model-flow">{t('features.structure.flow')}</p>
-        <a className="code-link mono" href={codeUrl('model')} target="_blank" rel="noopener noreferrer">
-          {t('common.codeLink')} ↗
-        </a>
+      </div>
+      <article className="chart-block" data-scene="chartModel" style={{ '--paras': 4 } as React.CSSProperties}>
+        <ChartStage
+          chartKey="chartModel"
+          dataVersion={facts.dataVersion}
+          stages={3}
+          strings={{
+            locale, holidays: {},
+            axis: t('features.structure.axis'), axisResid: t('features.structure.axisResid'), line: t('features.structure.line'),
+          }}
+          errorText={t('charts.error')}
+        />
+        <div className="chart-copy">
+          <p className="sr-only">{t('features.structure.alt')}</p>
+          {/* 네 칸: 모은 가격 → 기준 가격 → 벗어난 몫(+ 흐름 줄) → 튜닝·구간·SHAP. 앞 세 칸이 점 단계와 짝이다 */}
+          <div className="chart-paras">
+            <div className="chart-para"><p>{t('features.structure.step1')}</p></div>
+            <div className="chart-para"><p>{t('features.structure.step2')}</p></div>
+            <div className="chart-para">
+              <p>{t('features.structure.step3')}</p>
+              <p className="muted mono data-tools model-flow">{t('features.structure.flow')}</p>
+            </div>
+            <div className="chart-para"><p>{t('features.structure.body2')}</p></div>
+          </div>
+          <a className="code-link mono" href={codeUrl('model')} target="_blank" rel="noopener noreferrer">
+            {t('common.codeLink')} ↗
+          </a>
+        </div>
       </article>
       <article className="chart-block" data-scene="features" aria-labelledby="waffle-h" style={{ '--paras': 3 } as React.CSSProperties}>
         <ChartStage chartKey="features" dataVersion={facts.dataVersion} strings={{ locale, holidays: {}, groups, countUnit, shap }} errorText={t('charts.error')} />

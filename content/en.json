@@ -167,9 +167,15 @@
   "features": {
     "structure": {
       "heading": "Model structure",
-      "body1": "For each route, NeuralProphet learns how the average fare moves across departure dates (trend and weekly cycle), and scaling it by each cabin class's price level gives a base price. XGBoost then uses {model.featureCount} features to learn how far the actual fare sits from that base on a log scale; adding the two gives the prediction.",
+      "step1": "Incheon→Narita LCC fares, collected for each departure date. Even flights leaving on the same day spread out depending on when they were bought.",
+      "step2": "For each route, NeuralProphet learns how the average fare moves across departure dates (trend and weekly cycle), and scaling it by each cabin class's price level gives a base price.",
+      "step3": "XGBoost then uses {model.featureCount} features to learn how far the actual fare sits from that base on a log scale; adding the two gives the prediction.",
       "body2": "The XGBoost settings are the best of {model.optunaTrials} Optuna trials on time-ordered validation. Separate lower and upper quantile models trained on the same residual give the prediction interval, and SHAP splits each prediction into per-feature contributions.",
-      "flow": "Base price (NeuralProphet per route × cabin level) + deviation (XGBoost, log scale) = prediction"
+      "flow": "Base price (NeuralProphet per route × cabin level) + deviation (XGBoost, log scale) = prediction",
+      "axis": "vs. route-and-class average",
+      "axisResid": "vs. base price",
+      "line": "Base price",
+      "alt": "Dot chart of Incheon→Narita LCC fares: departure dates across, price versus the route-and-class average up the side. First the fares collected for each departure date are scattered; then the NeuralProphet base price runs through them as a line, following the slow rise and fall over the months and the weekly cycle. Finally the line is flattened, leaving only each fare's deviation from the base, which is what XGBoost learns."
     },
     "serve": "Streamlit · Plotly · pytest ({model.testFiles} test files)",
     "heading": "{model.featureCount} FEATURES",

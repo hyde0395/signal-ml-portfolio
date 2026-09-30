@@ -167,9 +167,15 @@
   "features": {
     "structure": {
       "heading": "모델 구조",
-      "body1": "노선마다 NeuralProphet이 출발일별 평균 가격의 흐름(추세와 요일 주기)을 배우고, 등급별 가격 수준을 곱해 기준 가격을 만듭니다. XGBoost는 피처 {model.featureCount}개로 실제 가격이 이 기준에서 얼마나 벗어나는지를 로그 단위로 배우고, 둘을 더한 값이 예측가입니다.",
+      "step1": "출발일마다 모은 인천→나리타 LCC 가격입니다. 같은 날 떠나는 편도 언제 샀느냐에 따라 흩어집니다.",
+      "step2": "노선마다 NeuralProphet이 출발일별 평균 가격의 흐름(추세와 요일 주기)을 배우고, 등급별 가격 수준을 곱해 기준 가격을 만듭니다.",
+      "step3": "XGBoost는 피처 {model.featureCount}개로 실제 가격이 이 기준에서 얼마나 벗어나는지를 로그 단위로 배우고, 둘을 더한 값이 예측가입니다.",
       "body2": "XGBoost 설정은 Optuna로 {model.optunaTrials}번 시도해 시간순 검증에서 가장 좋은 것을 골랐습니다. 같은 잔차에 아래쪽·위쪽 분위수 모델을 따로 학습해 예측 구간을 내고, 피처별 기여는 SHAP으로 나눠 봅니다.",
-      "flow": "기준 가격 (노선별 NeuralProphet × 등급 수준) + 벗어난 몫 (XGBoost, 로그 단위) = 예측가"
+      "flow": "기준 가격 (노선별 NeuralProphet × 등급 수준) + 벗어난 몫 (XGBoost, 로그 단위) = 예측가",
+      "axis": "노선·등급 평균 대비",
+      "axisResid": "기준 가격 대비",
+      "line": "기준 가격",
+      "alt": "인천→나리타 LCC 가격 점 그래프. 가로는 출발일, 세로는 노선·등급 평균 대비 가격입니다. 먼저 출발일마다 모은 가격이 흩어져 있고, 다음에 NeuralProphet 기준 가격이 몇 달에 걸친 오르내림과 요일 주기를 따라 선으로 지나갑니다. 마지막에 선을 평평하게 펴면 점마다 기준에서 벗어난 몫만 남고, XGBoost가 이 몫을 배웁니다."
     },
     "serve": "Streamlit · Plotly · pytest(테스트 파일 {model.testFiles}개)",
     "heading": "{model.featureCount} FEATURES",

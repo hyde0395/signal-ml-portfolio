@@ -167,9 +167,15 @@
   "features": {
     "structure": {
       "heading": "モデルの構成",
-      "body1": "路線ごとに NeuralProphet が出発日別の平均価格の流れ（トレンドと曜日の周期）を学び、クラスごとの価格水準を掛けて基準価格を作ります。XGBoost は {model.featureCount} 個の特徴量で、実際の価格がこの基準からどれだけずれるかを対数で学び、両者を足したものが予測価格です。",
+      "step1": "出発日ごとに集めた仁川→成田 LCC の価格です。同じ日に出発する便でも、いつ買ったかによって散らばります。",
+      "step2": "路線ごとに NeuralProphet が出発日別の平均価格の流れ（トレンドと曜日の周期）を学び、クラスごとの価格水準を掛けて基準価格を作ります。",
+      "step3": "XGBoost は {model.featureCount} 個の特徴量で、実際の価格がこの基準からどれだけずれるかを対数で学び、両者を足したものが予測価格です。",
       "body2": "XGBoost の設定は Optuna で {model.optunaTrials} 回試し、時系列順の検証で最も良いものを選びました。同じ残差に下側・上側の分位点モデルを別に学習して予測区間を出し、特徴量ごとの寄与は SHAP で分けて見ます。",
-      "flow": "基準価格（路線別 NeuralProphet × クラス水準）+ ずれ（XGBoost・対数）= 予測価格"
+      "flow": "基準価格（路線別 NeuralProphet × クラス水準）+ ずれ（XGBoost・対数）= 予測価格",
+      "axis": "路線・クラス平均比",
+      "axisResid": "基準価格比",
+      "line": "基準価格",
+      "alt": "仁川→成田 LCC の価格の点グラフ。横が出発日、縦が路線・クラス平均との差です。まず出発日ごとに集めた価格が散らばり、次に NeuralProphet の基準価格が、数か月にわたる上下と曜日の周期に沿って線として通ります。最後に線を平らにすると、点ごとに基準からのずれだけが残り、XGBoost がこのずれを学びます。"
     },
     "serve": "Streamlit · Plotly · pytest（テストファイル{model.testFiles}件）",
     "heading": "{model.featureCount} FEATURES",
