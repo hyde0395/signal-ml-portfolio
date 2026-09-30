@@ -4,96 +4,76 @@ ML 엔지니어 포트폴리오 사이트. 사이트 브랜드는 **SIGNAL**.
 
 Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용 개발자 포트폴리오**. 목표 포지션은 **ML 엔지니어**.
 
-## 현재 상태 (2026-09-30, 5-3c 병합·배포 — 이륙 연출 고치기 진행 중)
+## 새 세션 시작할 때 (맥미니·맥북을 오가며 작업한다)
 
-계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5·7-1·5-3c와 PR #12(첫 화면 SIGNAL·상단 바·보드 속도·지도 밝기)·PR #14(② 수집 규칙 문구)가 모두 main에 병합되어 운영 사이트에 배포돼 있다. **진행 중 1개**: 첫 화면 이륙 연출 고치기(브랜치 `plan-6-6-takeoff`, worktree `signal-ml-portfolio-takeoff`, 작업 중 — 로딩 중 스크롤하면 이륙이 안 되던 버그, 연출 최대 속도, 흩어짐 또렷하게). 남은 것은 그 작업 병합, 공개 전 준비.
+사용자는 **맥미니와 맥북을 번갈아** 쓴다(2026-09-30 기준: 이후 작업은 맥미니, 다음 날은 맥북 — 계속 옮겨 다닌다). 그래서 **한 기기에만 남는 것은 없어야 한다**.
 
-- 운영: https://signal-ml.vercel.app (아직 `noindex` — 공개 전환 전). 옛 주소 `signal-ml-portfolio.vercel.app`은 이제 404 — 필요하면 Vercel Settings → Domains에서 새 주소로 넘기는 리디렉트로 다시 더한다(사용자 작업)
-- GitHub: https://github.com/hyde0395/signal-ml-portfolio (공개), main = 운영, PR = Vercel 미리보기
-- CI(GitHub Actions): 타입 검사 → 단위 테스트 → 빌드 → 용량 검사 → e2e(desktop·mobile, axe)
+1. `git switch main && git pull --ff-only` → `git fetch --prune` → `gh pr list`로 열린 PR 확인 → `npm ci`(의존성이 바뀌었을 수 있다)
+2. 이 파일의 "현재 상태"·"다음 할 일"을 읽고, 이미 정한 결정은 다시 묻지 않는다
+3. 저장소 위치: 맥북 `~/dev/untitled folder/signal-ml-portfolio`, 맥미니 `~/dev/signal-ml-portfolio`(경로만 다르다)
+4. 기기별 준비물(처음 한 번): 아래 "다른 컴퓨터에서 이어서 하기"
 
-| 계획 | 내용 | 계획서 | 상태 |
-|---|---|---|---|
-| 1 기반 | 텍스트 사이트, 3개 언어, 테스트, CI, 배포 | `docs/superpowers/plans/2026-09-23-plan-1-foundation.md` | ✅ |
-| 3 3D 지형 | 점 지형, 지도 장면, 예약 곡선, 대체 이미지 | `2026-09-23-plan-3-terrain.md` | ✅ |
-| 2 데모 | 미리 계산한 예측 데모, 3-5 예측 구간 띠 | `2026-09-24-plan-2-demo.md` | ✅ PR #1 |
-| 4-1 성능·공유 | 초기 JS 분리, 용량 검사, OG 이미지, Web Analytics, 첫 화면 CLS 0 | `2026-09-24-plan-4-1-performance.md` | ✅ PR #2·#3 |
-| 4-2 연출·성능 | 3D 판정 대기(LCP), 로딩 화면, 플립 글자판, 제목 리빌, Lenis | `2026-09-24-plan-4-2-motion.md` | ✅ PR #4 |
-| 5-1 구조 개편 | 섹션 목록, ①~④ 새 섹션, 플립 보드, 옆 목차, 개인 소개 이동 | `2026-09-25-plan-5-1-structure.md` | ✅ PR #5 (2026-09-27 병합·배포) |
-| 5-2 차트 | ② 두 화면·판 없는 보드, ③ 점 와플, ④ 점 달력·구간별 벌떼·불확실성 구름, 배경 점 → 차트 | `2026-09-27-plan-5-2-charts.md` | ✅ PR #6 (2026-09-28 병합·배포) |
-| 6-1 배치 정리 | 글·차트 자막 방식, 글 뒤 판 제거(장면 구도·비네트), 와플 설명 한 줄 | `2026-09-28-plan-6-1-layout.md` | ✅ PR #7 (2026-09-28 병합·배포) |
-| 6-2 밤의 공항 | 공항 첫 화면(불빛 → 지형), NOW BOARDING 로딩 | `2026-09-28-plan-6-2-night-airport.md` | ✅ PR #8 (2026-09-28 병합·배포) |
-| 6-3 첫 화면 다듬기 | 배경 #02040A, 점 D(안 타게·거리 흐림·sRGB 색), 상단 바 E(내리면 숨김·올리면 오른쪽), SCROLL 표시 | `2026-09-28-plan-6-3-polish.md` | ✅ PR #9 (2026-09-29 병합·배포) |
-| 5-3a 점 반응 | 배경 점이 마우스 주위로 비켜남(차트는 약하게), 휴대폰은 가볍게 누른 곳에 물결 | `2026-09-29-plan-5-3a-pointer.md` | ✅ PR #10 (2026-09-29 병합·배포) |
-| 6-4 지도·출발일 | 지도 가는 실선, 차트 1 점 그래프 + 요일 평균, 공휴일 이름표 4개 | `2026-09-29-plan-6-4-map-depart.md` | ✅ PR #11 (2026-09-29 병합·배포) |
-| 첫 화면·상단 바·보드·지도 | 첫 화면 SIGNAL만(이름·역할은 연락처로), 상단 바 브랜드 깜빡임 수정, 보드 플립 느리게(약 1.8초), ② 보드 지도 밝기 0.16 → 0.32 | — | ✅ PR #12 (2026-09-29 병합·배포) |
-| 5-3b 차트 만지기 | 차트 1·2·4 마우스·터치·키보드로 값 짚기, 표시 상자, 슬롯 튐 수정 | `2026-09-29-plan-5-3b-chart-touch.md` | ✅ PR #13 (2026-09-29 병합·배포) |
-| ② 수집 규칙 문구 | 실제 수집 일정(가까운 출발일 수·금·일 매일, 중간 3일 순환, 먼 출발일 일요일) | — | ✅ PR #14 (2026-09-29 병합·배포) |
-| 6-5 첫 화면 → ① 전환 | 첫 화면 → ① 전환·SIGNAL 머리말·점 비행기·공항 시안 맞춤·① 물결 | `2026-09-29-plan-6-5-hero-handoff.md` | ✅ PR #15 (2026-09-29 병합·배포) |
-| 7-1 이야기 흐름 | ③ 모델 카드, ④ FINDINGS / ⑤ VALIDATION | `2026-09-29-plan-7-1-story-flow.md` | ✅ PR #16 (2026-09-30 병합·배포) |
-| 5-3c SHAP 벌떼 | ③ 와플 눌러 SHAP 벌떼(작은 와플 줄 + 피처별 벌떼, 값 색), Esc 닫기 | `2026-09-30-plan-5-3c-shap-swarm.md` | ✅ PR #17 (2026-09-30 병합·배포) |
-| 7-2 모델 구조 점 연출 | ③ 모델 카드 → 그림 판: 인천→나리타 LCC 관측 점이 모은 가격 → NeuralProphet 기준 선 → 잔차(XGBoost 몫)로, 자막 칸에 맞춰 세 단계 | `2026-09-30-plan-7-2-model-dots.md` | 🔄 PR 확인 대기 |
+**기기를 떠나기 전(세션 끝)**: 작업 브랜치는 모두 push, 열린 PR 번호·남은 일을 이 파일 "현재 상태"에 적고 main에 올린다. git worktree·`.superpowers/`(시안)·Claude 메모리는 **기기마다 따로**라 다른 기기에서는 보이지 않는다 — 필요한 내용은 이 파일이나 `docs/`에 남긴다.
 
-5-3c 결과는 설계 문서 `docs/superpowers/specs/2026-09-30-shap-swarm-design.md` "구현 결과 (계획 5-3c)". 별도 작업 폴더(`~/dev/untitled folder/signal-ml-portfolio-5-3c`, git worktree)는 지워도 된다(7-1·6-5 폴더도).
+## 작업 방식
 
-**5-1 마무리 검사 (2026-09-25, `npm run size`)**: 초기 JS gzip 139.5KB/150KB(ko·en·ja 동일), 3D 청크 239.7KB/250KB, `terrain.json` 53.1KB/300KB, `demo.json` 21.7KB/500KB, `band.json` 0.6KB/50KB. 단위 테스트 201개·e2e 120개·pytest 42개 모두 통과.
+- 새 기능: `superpowers:brainstorming`(시각 결정은 시안) → `superpowers:writing-plans` → 실행(subagent-driven-development). 브랜치(가능하면 git worktree `../signal-ml-portfolio-<이름>`) → PR → CI 통과 → 사용자 확인 → main에 fast-forward 병합 → 운영 확인
+- **동시에 할 수 있는 일은 에이전트를 병렬로 돌리는 것을 먼저 권한다**(2026-09-30 사용자 요청). 기준: 파일이 겹치지 않는 묶음(예: 파이썬 추출 / 배치 코드 / 3D 셰이더 / 문구)이나 서로 다른 브랜치(worktree)의 일. 규칙:
+  - 같은 폴더에서 여러 에이전트가 돌면 각자 자기 파일만 건드리고 `git add <경로>`로만 올린다(`git add -A` 금지)
+  - 무거운 브라우저 테스트(e2e, 헤드 있는 크로미움)는 **동시에 한두 개까지만**. 2026-09-30에 에이전트 셋이 e2e를 동시에 돌려 부하 평균 약 39 → 3D 판정 시간 초과·에이전트 멈춤이 났다. `uptime`으로 부하를 보고, e2e 포트는 `E2E_PORT=<빈 포트>`로 나눈다(기본 4173, 로컬은 떠 있는 서버를 재사용하므로 다른 worktree의 `out/`을 테스트할 수 있다)
+  - 에이전트 결과는 보고만 믿지 않고 스크린샷을 직접 보고, 명세·품질 검토 에이전트(읽기 전용)를 따로 돌린다
+- **사용자에게 확인을 부탁할 때는 반드시 볼 수 있는 링크를 함께 준다**(새 세션에서 자주 빠뜨림 — 2026-09-30 사용자 지적):
+  - PR이면 PR 주소와 **Vercel 미리보기 주소**(`gh pr checks <번호>`의 Vercel 줄, 또는 PR 댓글의 Preview 링크)와 "어디를 눌러/스크롤해 보면 되는지"
+  - 비주얼 컴패니언 시안이면 서버 주소(`http://localhost:<포트>`). 서버는 30분 쉬면 꺼지므로 보여 주기 직전에 `state/server-info`를 확인하고, 꺼졌으면 다시 켠 뒤 새 주소를 준다(또는 `open <html 파일>`로 브라우저에서 바로 연다)
+  - 운영 확인이면 `https://signal-ml.vercel.app` + 해당 섹션
+- 이미 정해진 결정은 다시 묻지 않는다. 질문은 한 번에 하나, 선택지와 추천을 준다
 
-**운영 측정 (4-2 병합 뒤, Lighthouse 모바일)**: 성능 ko 87 · en 92 · ja 84~89, LCP 1.5 / 1.3 / 2.2~2.4s, CLS 0, TBT 350~500ms, 접근성 100. 초기 JS gzip 139.3KB/150KB, 3D 청크 240.8KB/250KB. 배포 직후 첫 측정은 CDN이 차가워 크게 낮게 나온다(ja 53) — 한 번 더 잰다. 로컬 `npm run lighthouse`는 캐시 없는 서버·소프트웨어 3D라 늘 낮게 나오므로 전후 비교에만 쓴다.
+## 현재 상태 (2026-09-30 저녁, 맥북)
 
-## 다음 세션에서 할 일 (순서대로)
+운영 https://signal-ml.vercel.app (아직 `noindex`) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개, main = 운영, PR = Vercel 미리보기) · CI: 타입 검사 → 단위 테스트 → 빌드 → 용량 검사 → e2e(desktop·mobile, axe).
 
-0. **첫 화면 이륙 연출 고치기**(브랜치 `plan-6-6-takeoff`) — 버그: 3D가 켜지는 순간 스크롤이 10px 이상이면 `hero-runway`가 안 붙어 이륙·전환이 그 방문 내내 꺼짐 → 맨 위로 오면 켜기(사용자 선택). 빨리 스크롤해도 연출은 최대 속도로 천천히 따라오기(사용자 선택, 스크롤 자체는 그대로). 흩어지는 점을 더 또렷하게(시안 비교 중). 5-3c 알려진 한계(3D 전환 도중 그룹을 빠르게 바꾸면 점이 튈 수 있음)는 설계 문서 "구현 결과 (계획 5-3c)"
-1. **알려진 작은 것·흔들리는 e2e**
-   - 알려진 작은 것(6-3): `/en/` 320px 폭에서 상단 바 두 줄, 글자 2배에서 언어 안내 띠와 SCROLL 표시 겹칠 수 있음, `hero.webp` 작은 불빛이 실제보다 조금 흐림
-   - 흔들리는 e2e: `board.spec` "화면에 들어오면 넘어가고…"(main에서도 가끔), `terrain.spec` "글 뒤 배경이 4.5:1 대비를 지킨다(화소 검사)"(전체 e2e를 한꺼번에 돌릴 때 드물게 — 따로 돌리면 통과). 실패하면 한 번 다시 돌려 본다
-2. **연락처·데모 섹션은 나중에 사용자가 다시 만든다**(2026-09-29) — 지금은 그 두 섹션에 공들이지 않는다
-3. **점 연출 아이디어**(미정, 추천 순서 2 → 5 → 3. ② 수집 커버리지 그림은 하지 않기로 함 — 수집 규칙은 문장으로, PR #14)
-   1. ② 걸러내기(오류 행이 떨어져 나감)
-   2. ~~모델 구조~~ → 계획 7-2로 구현(PR 확인 대기)
-   3. 검증 설계(시간순 블록, 학습/평가 창이 밀려 감)
-   4. 데모(고른 노선 궤적·출발일 기둥이 밝아짐)
-   5. 연락처(점이 모여 `CHOI HALIM` 점 글자 — 첫 화면에서 이름을 뺀 것과 짝)
-4. **사이트 주소는 `signal-ml.vercel.app`** ✅(2026-09-29 사용자 선택). 2026-09-30 운영 확인 끝: ko·en·ja 모두 canonical·hreflang·OG 주소가 `signal-ml.vercel.app`, `noindex`와 `robots.txt` Disallow는 그대로 켜져 있음, 옛 주소 `signal-ml-portfolio.vercel.app`은 404. 필요하면 Domains에서 옛 주소를 리디렉트로 다시 더하기(사용자 작업)
-5. **② 보드 화면 지도는 시안 B(0.32)로 반영됨**(PR #12) — 데스크톱에서 해안선이 열 이름 "ROWS" 뒤를 지나는 몇 화소가 4.2:1(95% 기준으로는 6:1 이상). 알고 있는 작은 것
-6. **별도 계획: 차트 3을 예측 대 실제 산점도로** — TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성(R² 0.84)의 예측값이 필요해 NeuralProphet를 폴드마다 다시 학습해야 한다(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음, 몇십 분 걸릴 수 있음). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
-7. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
-   - 이력서 PDF 3개: `public/resume/{ko,en,ja}.pdf` (내려받을 때 `CHOI_HALIM_resume_<언어>.pdf`). 파일이 생기면 헤더·연락처의 "준비 중"이 자동으로 링크가 된다
-   - 문구 검토: 한국어는 사용자, 영어는 사용자, 일본어는 사용자가 섭외한 검수자(학과 일본어명 포함). 데모 문구(`content/*.json`의 `demo`)도 포함
-   - LinkedIn 주소: `data/facts.json`의 `contact.linkedin` (비어 있으면 버튼 숨김)
-   - 공개용 항공권 저장소: 만들면 `facts.json`의 `codeLinks.baseUrl`만 바꾼다(그 전까지 "코드 보기" 404는 의도된 상태). 그 저장소도 커밋 이메일 noreply
-   - Vercel 대시보드 → 프로젝트 → Analytics에서 Web Analytics 켜기
-9. **공개 전환**: 위가 끝나면 `src/lib/site.ts`의 `LAUNCHED = true` (noindex·`robots.txt` Disallow 해제). 사용자가 정한다
-10. **성능 최적화 계획 (맨 마지막에, effort high 이상에서만 — 2026-09-29 사용자 요청)**: 다른 기능 작업이 모두 끝난 뒤 별도 계획서(`superpowers:writing-plans`)로 한다. 원칙: 지금 연출·화질·점 개수·접근성 100·CLS 0을 그대로 두고 수치만 올린다. 바꿀 때마다 운영과 같은 조건(배포 미리보기, Lighthouse 모바일 3회 중앙값)으로 전후를 잰다
-   - 목표: Lighthouse 모바일 성능 ko·en·ja 모두 ≥90(지금 ko 87 · en 92 · ja 84~89), TBT ≤200ms, LCP ≤2.0s, 초기 JS 여유 확보(지금 142KB/150KB로 거의 찼다)
-   - 메인 스레드(TBT): 3D 시작을 첫 입력·스크롤 뒤나 `requestIdleCallback`으로 더 늦추기, 지형 점 구름 만들기를 Web Worker로, 긴 작업을 `scheduler.yield()`로 쪼개기, GSAP·Lenis 초기화를 첫 스크롤 근처로
-   - 초기 JS: 번들 분석(`@next/bundle-analyzer`)으로 초기 청크 구성을 보고, 첫 화면에 안 보이는 것(차트 조작 층·보드 연출 등)을 `import()`로 옮기기
-   - 3D 청크(249.8KB/280KB — 한도는 2026-09-29에 250→280KB로 올림): 줄일 수 있는 양 어림(먼저 번들 분석기로 실제 구성을 잰다) — zod → 손으로 쓴 검증 약 10~15KB, three를 이름으로 가져오기 약 0~40KB(R3F가 three 전체를 끌어와 불확실), R3F를 빼고 three 직접 약 60~100KB(큰 재작성). 셰이더·장면 코드 중복 정리
-   - 첫 화면 채우기 비용: 공항 불빛 스프라이트(핵 × 18, 계류장 조명 × 32) + 데스크톱 DPR 2 — 화질은 데스크톱 기준(사용자 결정)이라 줄이기 전에 GPU 프레임 시간을 재고 사용자와 정한다
-   - 데이터: `terrain.json`을 이진(Float32·양자화 Uint16) 파일로 바꿔 파싱 시간·용량 줄이기, 필요한 JSON만 섹션 가까이에서 불러오기
-   - 글꼴·이미지: ja의 렌더 지연(Noto Sans JP 조각 크기·preload 확인), 대체 이미지(`hero.webp`·챕터 WebP)를 AVIF + 화면 크기별로
-   - GPU: 화면 밖·탭 숨김 때 렌더 멈춤 재확인, 저프레임 단계 하향 문턱 조정, DPR 상한 재검토
-   - 이미 시험해서 되돌린 것: `experimental.inlineCss`(HTML이 커져 ko·ja 악화, 스펙 §8.2)
-11. **남은 개선 (급하지 않음)**
-   - 계획 4-2 최종 검토의 작은 지적(`flip.ts`는 글자를 코드 포인트 단위로 나눔, 리빌은 제목 안쪽 마크업을 지움 — 지금 제목은 모두 글자만이라 문제없음)
-14. 재학습으로 수치가 바뀌면: `npm run facts` → `npm run terrain` → `npm run demo` → `npm run charts` → `npm run build` → `npm run fallbacks` → `npm run og` → 커밋(README 참고)
+**병합·배포된 것**: 계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5·7-1·5-3c·7-2(PR #1~#18). 계획서는 `docs/superpowers/plans/`, 설계는 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점).
 
-**작업 방식**: 새 기능은 `superpowers:brainstorming`(필요하면) → `superpowers:writing-plans` → 사용자가 고른 실행 방식(지금까지는 subagent-driven-development). 브랜치 → PR → CI 통과 → 사용자 확인 → main에 fast-forward 병합 → 운영 확인. 이미 정해진 결정은 다시 묻지 않는다.
+**진행 중(맥북에서 마무리)**
+- **PR #19 `fix-small-polish`**: 320px 상단 바 한 줄, 글자 200%에서 언어 안내 판·SCROLL 겹침, 흔들리던 e2e 4개(보드 플립·옆 목차는 실제 버그였음). 사용자가 병합 요청 — #18 위로 rebase 뒤 CI 재실행 중(휴대폰 "3D 켜짐 · 순서를 섞어 건너뛰어도…" 1건 실패 → 재실행으로 흔들림인지 확인)
+- **PR #20 `plan-6-6-takeoff`**: 첫 화면 이륙 연출 — ① 버그(3D가 켜지는 순간 스크롤 10px 이상이면 `hero-runway`가 안 붙어 이륙·전환이 그 방문 내내 꺼짐 → 3D가 켜진 뒤 맨 위로 오면 켬), ② 연출 최대 속도(스크롤은 그대로, 첫 화면 → ① 전체가 초당 0.28 진행 이하로 따라옴 — 휠 한 번에 약 3.4초), ③ 흩어짐 시안 C(더 일찍·오래·넓게, 날아가는 점 밝고 크게). 검토 뒤 수정 중: 옆 목차·주소(#project) 이동은 연출 건너뛰고 즉시 도착, CI에서 이륙 e2e가 실제로 돌게(테스트 전용 속도), 작은 정리. 끝나면 사용자 확인 → 병합
 
-## 다른 컴퓨터(맥미니·맥북)에서 이어서 하기
+맥북의 git worktree(`signal-ml-portfolio-5-3c`·`-7-1`·`-6-5`·`-tweaks`·`-7-2`·`-polish`·`-takeoff`)는 병합 뒤 `git worktree remove`로 지운다.
 
-1. 받기: 처음이면 `git clone git@github.com:hyde0395/signal-ml-portfolio.git ~/dev/signal-ml-portfolio`, 이미 있으면 `git switch main && git pull --ff-only`
-2. **커밋 이메일을 이 저장소에 설정** (clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
-3. **push는 SSH 원격으로** 한다(`git remote -v`가 `git@github.com:…`인지 확인, 아니면 `git remote set-url origin git@github.com:hyde0395/signal-ml-portfolio.git`). HTTPS(gh 토큰)는 `workflow` 권한이 없어 `.github/workflows/`를 바꾸는 push가 거절된다(`gh auth refresh -s workflow`로 권한을 더하는 방법도 있다)
+## 다음 할 일 (진행 중 두 PR이 끝난 뒤, 맥미니부터)
+
+1. **문구 검토(사용자)**: 5-3c(`features.shap.*`)·7-2(`features.structure.*` 자막 칸) 한국어 확인, 영·일은 Claude 초안 → 사용자·검수자
+2. **점 연출 아이디어 — 다음 추천: "검증 설계"**(⑤ VALIDATION, 시간순 블록에서 학습/평가 창이 밀려 가는 점 연출 — TimeSeriesSplit을 눈으로). 그다음 ② 걸러내기(오류 행이 떨어져 나감). 연락처 점 글자(`CHOI HALIM`)·데모 강조는 사용자가 두 섹션을 다시 만든 뒤에. (② 수집 커버리지 그림은 하지 않기로 함. 모델 구조는 7-2로 끝남)
+3. **차트 3을 예측 대 실제 산점도로**(별도 계획, 무거움): TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성(R² 0.84)의 예측값이 필요 — NeuralProphet를 폴드마다 다시 학습(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음, 몇십 분). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
+4. **연락처·데모 섹션**: 사용자가 나중에 다시 만든다(2026-09-29) — 그 전까지 공들이지 않는다
+5. **공개 전 준비(사용자 작업 위주, 스펙 §14)**
+   - 이력서 PDF 3개 `public/resume/{ko,en,ja}.pdf`(내려받을 때 `CHOI_HALIM_resume_<언어>.pdf`) — 파일이 생기면 "준비 중"이 자동으로 링크가 된다
+   - 문구 검토 전체(ko 사용자, en 사용자, ja 검수자 — 학과 일본어명 포함, 데모 문구 포함)
+   - LinkedIn: `data/facts.json` `contact.linkedin`(비면 버튼 숨김)
+   - 공개용 항공권 저장소: 만들면 `facts.json` `codeLinks.baseUrl`만 바꾼다(그 전까지 "코드 보기" 404는 의도된 상태, 커밋 이메일 noreply)
+   - Vercel → Analytics에서 Web Analytics 켜기. 옛 주소 `signal-ml-portfolio.vercel.app`(404)을 리디렉트로 살릴지(Domains)
+6. **공개 전환**: `src/lib/site.ts` `LAUNCHED = true`(noindex·robots Disallow 해제). 사용자가 정한다
+7. **성능 최적화(맨 마지막, effort high 이상, 별도 계획서)**: 연출·화질·점 개수·접근성 100·CLS 0은 그대로 두고 수치만. 배포 미리보기에서 Lighthouse 모바일 3회 중앙값으로 전후 비교
+   - 목표: 성능 ko·en·ja ≥90(마지막 측정 ko 87 · en 92 · ja 84~89), TBT ≤200ms, LCP ≤2.0s, 초기 JS 여유(지금 약 143KB/150KB)
+   - 후보: 3D 시작 더 늦추기·점 구름 만들기 Web Worker·`scheduler.yield()`, 번들 분석(`@next/bundle-analyzer`) 뒤 첫 화면 밖 코드 `import()`, 3D 청크(약 250KB/280KB) zod 제거·three 이름 가져오기, `terrain.json` 이진화, ja 글꼴, 대체 이미지 AVIF, DPR·저프레임 문턱(화질은 데스크톱 기준 — 줄이기 전에 사용자와). 되돌린 것: `experimental.inlineCss`
+8. **알고 있는 작은 것**: `hero.webp` 작은 불빛이 실제보다 조금 흐림, ② 보드 해안선이 "ROWS" 뒤 몇 화소 4.2:1, 5-3c 3D 전환 도중 그룹을 빠르게 바꾸면 점이 튈 수 있음(슬롯 두 벌 구조), 4-2의 `flip.ts` 코드 포인트 분할(지금 문제없음)
+9. 재학습으로 수치가 바뀌면: `npm run facts` → `terrain` → `demo` → `charts`(SHAP·모델 구조 포함, 모델 로드) → `build` → `fallbacks` → `og` → 커밋(README)
+
+**운영 측정 기록(4-2 뒤, Lighthouse 모바일)**: 성능 ko 87 · en 92 · ja 84~89, LCP 1.5 / 1.3 / 2.2~2.4s, CLS 0, TBT 350~500ms, 접근성 100. 배포 직후 첫 측정은 CDN이 차가워 낮게 나온다 — 한 번 더 잰다. 로컬 `npm run lighthouse`는 전후 비교에만.
+
+## 다른 컴퓨터(맥미니·맥북)에서 이어서 하기 — 기기별 처음 한 번
+
+1. 받기: 처음이면 `git clone git@github.com:hyde0395/signal-ml-portfolio.git ~/dev/signal-ml-portfolio`
+2. **커밋 이메일**(clone으로 안 따라온다): `git config user.email "55799748+hyde0395@users.noreply.github.com"` · `git config user.name hyde0395`
+3. **push는 SSH 원격으로**(`git remote -v`가 `git@github.com:…`). HTTPS(gh 토큰)는 `workflow` 권한이 없어 `.github/workflows/`를 바꾸는 push가 거절된다(`gh auth refresh -s workflow`). 맥미니는 SSH 키가 GitHub에 없어 HTTPS로 push했었다 — workflow 파일을 바꿀 일이 생기면 먼저 키를 등록한다
 4. Node 24(`.nvmrc`) → `npm ci` → `npx playwright install chromium` → `npm test` · `npm run build` · `npm run size` · `npm run e2e`
-5. 데이터 스크립트(`npm run facts|terrain|map|demo|charts|pytest`)만 항공권 저장소가 필요하다. 사이트 빌드·테스트에는 필요 없다(JSON은 커밋되어 있음)
-   - 항공권 저장소 `~/Documents/airfare-forecasting-ml`는 iCloud로 동기화되지만 `.venv`는 기기마다 깨진다. **그 `.venv`를 지우거나 다시 만들지 않는다**(삭제가 다른 기기로 동기화된다)
-   - 대신 기기마다 iCloud 밖에 `~/.venvs/airfare-py311`을 만든다: `brew install python@3.11` → `"$(brew --prefix python@3.11)/bin/python3.11" -m venv ~/.venvs/airfare-py311` → `~/.venvs/airfare-py311/bin/pip install -r ~/Documents/airfare-forecasting-ml/requirements.txt pytest`. `scripts/py.sh`가 AIRFARE_PYTHON → `~/.venvs/airfare-py311` → 항공권 저장소 `.venv` 순서로 고른다(맥북에는 2026-09-24에 만들어 둠)
-   - 모델을 돌리기 전에 그쪽 CLAUDE.md의 iCloud 워밍 절차를 따른다
-6. `.superpowers/`(비주얼 컴패니언 시안, 작업 기록)와 `.lighthouse/`는 git에 없다. Claude 메모리(`~/.claude/projects/…`)도 기기마다 따로다 — 필요한 규칙은 모두 이 파일에 있다
-7. 맥북에서는 이 저장소가 `~/dev/untitled folder/signal-ml-portfolio`에 clone되어 있다(맥미니는 `~/dev/signal-ml-portfolio`). 경로만 다르고 내용은 같다
-8. **맥북에서 이어받기(2026-09-28)**: `git switch main && git pull --ff-only` → `npm ci`(5-2에서 새 의존성은 없지만 한 번 돌린다). 맥미니는 SSH 키가 GitHub에 등록돼 있지 않아 HTTPS로 push했다(workflow 파일을 바꾸지 않아 문제없었음)
+5. 데이터 스크립트(`npm run facts|terrain|map|demo|charts|pytest`)만 항공권 저장소가 필요하다(사이트 빌드·테스트는 커밋된 JSON만 씀)
+   - 항공권 저장소 `~/Documents/airfare-forecasting-ml`는 iCloud 동기화, `.venv`는 기기마다 깨진다. **그 `.venv`를 지우거나 다시 만들지 않는다**(삭제가 다른 기기로 동기화된다)
+   - 기기마다 iCloud 밖에 `~/.venvs/airfare-py311`: `brew install python@3.11` → `"$(brew --prefix python@3.11)/bin/python3.11" -m venv ~/.venvs/airfare-py311` → `~/.venvs/airfare-py311/bin/pip install -r ~/Documents/airfare-forecasting-ml/requirements.txt pytest`. `scripts/py.sh`가 AIRFARE_PYTHON → `~/.venvs/airfare-py311` → 저장소 `.venv` 순서로 고른다(맥북에는 있음, 맥미니는 확인)
+   - 모델을 돌리기 전에 그쪽 CLAUDE.md의 iCloud 워밍 절차를 따른다(`npm run charts`는 SHAP·모델 구조 때문에 모델을 불러온다, 약 20초)
+6. `.superpowers/`(시안)·`.lighthouse/`는 git에 없다. 설계 시안 중 남길 것은 `docs/superpowers/mockups/`에 복사해 커밋한다
 
-**CI에서 가끔 보는 일시 오류**: 빌드 중 `Can't resolve '@vercel/turbopack-next/internal/font/google/font'` — Google Fonts를 못 받아서다. 코드 문제가 아니므로 실패한 작업만 다시 돌린다(`gh run rerun <id> --failed`).
+**CI 일시 오류**: 빌드 중 `Can't resolve '@vercel/turbopack-next/internal/font/google/font'`(Google Fonts 못 받음) → `gh run rerun <id> --failed`.
 
 ## 확정된 결정
 
@@ -241,7 +221,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 - 사용자와는 **한국어**로 대화한다. 설명은 쉬운 말로 하고, 전문 용어는 풀어서 쓴다.
 - 질문은 한 번에 하나씩, 가능하면 선택지를 준다.
-- 시각적인 결정은 비주얼 컴패니언으로 보여준다. 서버는 `--project-dir ~/dev/signal-ml-portfolio`로 시작한다(폴더 이동으로 포트가 바뀔 수 있으니 새 URL을 사용자에게 알려준다).
+- 시각적인 결정은 비주얼 컴패니언으로 보여준다. 서버는 `--project-dir <이 기기의 저장소 경로>`로 시작하고, **보여 줄 때마다 주소(`http://localhost:<포트>`)를 함께 준다**(30분 쉬면 꺼진다 — 위 "작업 방식" 참고). 남길 시안은 `docs/superpowers/mockups/<날짜>/`에 복사해 커밋한다(`.superpowers/`는 기기마다 따로다).
 - 이 프로젝트는 iCloud 밖(`~/dev/…`)에 둔다. 항공권 저장소(`~/Documents/airfare-forecasting-ml`)는 iCloud 안이라, 추출 스크립트를 돌리기 전에 그쪽 CLAUDE.md의 워밍 절차를 확인한다. `.superpowers/`는 `.gitignore`에 있다.
 - **코드 주석 (사용자 요청 2026-09-23)**: 코드에 한국어 주석을 단다. 파일마다 맨 위에 무엇을 하는 파일인지 한두 줄, 그리고 이유가 드러나지 않는 로직에는 "왜 이렇게 했는지"를 적는다. 코드를 한 줄씩 그대로 옮겨 적는 주석은 달지 않는다. 계획서 코드와 구현 에이전트 지시에도 이 규칙을 넣는다.
 - **커밋 이메일**: 이 저장소는 GitHub noreply(`55799748+hyde0395@users.noreply.github.com`)로 커밋한다. 개인 이메일이 git 기록에 남으면 사이트의 이메일 숨김이 무의미해진다. 새 기기에서 clone하면 다시 설정한다. 나중에 만들 공개용 항공권 저장소에도 똑같이 적용한다.
