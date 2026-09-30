@@ -162,7 +162,17 @@
       "daily": "毎日収集",
       "total": "合計"
     },
-    "tools": "Python · requests · tenacity · yfinance · workalendar"
+    "tools": "Python · requests · tenacity · yfinance · workalendar",
+    "filter": {
+      "heading": "エラーの除去",
+      "body1": "集めた{data.rawRows}行を所要時間と価格で並べました。すべて直行便なので、ほとんどが一か所に狭くまとまっています。",
+      "body2": "所要時間が{data.filter.durationMax}分を超える行や価格の単位が抜けた行{data.filter.unit}件と、出発・到着時刻と所要時間が合わない行{data.filter.mismatch}件を除きました。",
+      "body3": "直行便と表示されていても乗り継ぎ並みに時間がかかる行{data.filter.direct}件も除きました。ほとんどが羽田路線でした。残りは{data.filteredRows}行です。",
+      "axisX": "所要時間(分)",
+      "axisY": "路線・クラス平均比",
+      "boxLabel": "直行便なのに乗り継ぎ並み",
+      "alt": "元の{data.rawRows}行を所要時間と価格で並べた点グラフです。通常の直行便は狭くまとまり、所要時間が長すぎる行や価格単位が抜けた行{data.filter.unit}件、時刻が合わない行{data.filter.mismatch}件、乗り継ぎ並みに長い直行便{data.filter.direct}件が順に抜けて{data.filteredRows}行が残ります。"
+    }
   },
   "features": {
     "structure": {
@@ -234,8 +244,18 @@
     },
     "validation": {
       "heading": "検証設計",
-      "body1": "同じモデルを三つの方法で評価しました。運用と同じ条件のTimeSeriesSplitを代表値として使います。",
-      "body2": "GroupKFoldで未知の出発日を評価すると、新しい出発日ではlookup統計量がデフォルト値になってしまう学習・提供間の不一致が見つかりました。未知の出発日では、lookupを含めたサービス構成がR² {model.gkfWithLookup.r2}、MAE {model.gkfWithLookup.mae}ウォンで、lookupなしのときより悪化しました。lookup構成{model.lookupVariants}通りをそれぞれ再チューニングして比較しました。",
+      "body1": "K-Foldは中ほどの期間を評価に取り分け、その前後をすべて学習に使います。未来に集めた価格で過去を当てることになるため、スコアが最も高く出ます。参考の上限としてだけ見ます。",
+      "body2": "GroupKFoldは路線・出発日ごとまとめて評価に取り分けます。初めて見る出発日ではlookup統計が既定値に落ちる、学習とサービスの不一致がここで見つかりました。lookupを入れたサービス構成はR² {model.gkfWithLookup.r2}、MAE {model.gkfWithLookup.mae}ウォンでlookupなしより悪く、lookup構成{model.lookupVariants}通りをそれぞれ再チューニングして比べました。",
+      "body3": "TimeSeriesSplitは過去だけで学習し、すぐ次の期間を評価します。境界を五回動かしながら測ります。運用と同じ条件なので代表値として使います。",
+      "tagKf": "参考の上限",
+      "tagGkf": "初めて見る出発日・lookupなし",
+      "tagTss": "運用基準",
+      "axisX": "収集日",
+      "axisY": "出発日",
+      "legendTrain": "学習",
+      "legendTest": "評価",
+      "legendUnused": "未使用",
+      "alt": "収集した行を収集日と出発日で並べた点グラフです。K-Foldは中ほどの期間を評価に取り分けて前後がすべて学習(R² {model.kfold.r2})、GroupKFoldは路線・出発日単位で評価行が散らばり(R² {model.gkfNoLookup.r2}、lookupなし)、TimeSeriesSplitは過去だけを学習してすぐ次の期間を評価する境界を五回動かします(R² {model.tss.r2})。",
       "table": {
         "caption": "評価方法別の性能",
         "method": "評価方法",

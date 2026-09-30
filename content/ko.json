@@ -162,7 +162,17 @@
       "daily": "매일 수집",
       "total": "합계"
     },
-    "tools": "Python · requests · tenacity · yfinance · workalendar"
+    "tools": "Python · requests · tenacity · yfinance · workalendar",
+    "filter": {
+      "heading": "오류 걸러내기",
+      "body1": "모은 {data.rawRows}행을 소요 시간과 가격으로 놓았습니다. 모두 직항이라 대부분 한곳에 좁게 모여 있습니다.",
+      "body2": "소요 시간이 {data.filter.durationMax}분을 넘거나 가격 단위가 빠진 행 {data.filter.unit}개, 출발·도착 시각과 소요 시간이 맞지 않는 행 {data.filter.mismatch}개를 뺐습니다.",
+      "body3": "직항으로 표시됐지만 경유 여정만큼 오래 걸리는 행 {data.filter.direct}개도 뺐습니다. 대부분 하네다 노선이었습니다. 남은 행은 {data.filteredRows}개입니다.",
+      "axisX": "소요 시간(분)",
+      "axisY": "노선·등급 평균 대비",
+      "boxLabel": "직항인데 경유만큼 걸림",
+      "alt": "원본 {data.rawRows}행을 소요 시간과 가격으로 놓은 점 그림입니다. 정상 직항은 좁게 모여 있고, 소요 시간이 너무 길거나 가격 단위가 빠진 행 {data.filter.unit}개, 시각이 맞지 않는 행 {data.filter.mismatch}개, 직항인데 경유만큼 걸리는 행 {data.filter.direct}개가 차례로 빠져 {data.filteredRows}행이 남습니다."
+    }
   },
   "features": {
     "structure": {
@@ -234,8 +244,18 @@
     },
     "validation": {
       "heading": "검증 설계",
-      "body1": "같은 모델을 세 가지 방식으로 평가했습니다. 운영과 같은 조건인 TimeSeriesSplit을 대표값으로 씁니다.",
-      "body2": "GroupKFold로 처음 보는 출발일을 평가하자, 새 출발일에서는 lookup 통계가 기본값으로 떨어지는 학습·서비스 불일치가 드러났습니다. 처음 보는 출발일에서는 lookup을 넣은 서비스 구성이 R² {model.gkfWithLookup.r2}, MAE {model.gkfWithLookup.mae}원으로 lookup이 없을 때보다 나빴습니다. lookup 구성 {model.lookupVariants}가지를 각각 다시 튜닝해 비교했습니다.",
+      "body1": "K-Fold는 가운데 시간 구간을 평가로 떼고 앞뒤를 모두 학습에 씁니다. 미래에 모은 가격으로 과거를 맞히는 셈이라 점수가 가장 높게 나옵니다. 참고용 상한으로만 봅니다.",
+      "body2": "GroupKFold는 노선·출발일을 통째로 평가로 뗍니다. 처음 보는 출발일에서는 lookup 통계가 기본값으로 떨어지는 학습·서비스 불일치가 여기서 드러났습니다. lookup을 넣은 서비스 구성은 R² {model.gkfWithLookup.r2}, MAE {model.gkfWithLookup.mae}원으로 lookup이 없을 때보다 나빴고, lookup 구성 {model.lookupVariants}가지를 각각 다시 튜닝해 비교했습니다.",
+      "body3": "TimeSeriesSplit은 과거로만 배우고 바로 다음 구간을 평가합니다. 경계를 다섯 번 옮겨 가며 잽니다. 운영과 같은 조건이라 대표값으로 씁니다.",
+      "tagKf": "참고 상한",
+      "tagGkf": "처음 보는 출발일 · lookup 없이",
+      "tagTss": "운영 기준",
+      "axisX": "수집일",
+      "axisY": "출발일",
+      "legendTrain": "학습",
+      "legendTest": "평가",
+      "legendUnused": "아직 안 씀",
+      "alt": "수집한 행을 수집일과 출발일로 놓은 점 그림입니다. K-Fold는 가운데 시간 구간을 평가로 떼어 앞뒤가 모두 학습이고(R² {model.kfold.r2}), GroupKFold는 노선·출발일 단위로 평가 행이 흩어지며(R² {model.gkfNoLookup.r2}, lookup 없이), TimeSeriesSplit은 과거만 학습하고 바로 다음 구간을 평가하는 경계를 다섯 번 옮깁니다(R² {model.tss.r2}).",
       "table": {
         "caption": "평가 방식별 성능",
         "method": "평가 방식",

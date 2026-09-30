@@ -28,5 +28,12 @@ describe('차트 문구', () => {
     it(`${locale}: 그림 판 블록(depart·curve·band)마다 요약 문단이 있다`, () => {
       for (const id of ['depart', 'curve', 'band']) expect(c[id].alt, id).toBeTruthy();
     });
+    it(`${locale}: 걸러내기·검증 설계 판 문구(계획 8-1)가 모두 있다`, () => {
+      const f = (dictionaries[locale].data as unknown as Record<string, Record<string, string>>).filter;
+      for (const k of ['heading', 'body1', 'body2', 'body3', 'axisX', 'axisY', 'boxLabel', 'alt']) expect(f[k], `data.filter.${k}`).toBeTruthy();
+      for (const k of ['heading', 'body1', 'body2', 'body3', 'tagKf', 'tagGkf', 'tagTss', 'axisX', 'axisY', 'legendTrain', 'legendTest', 'legendUnused', 'alt']) {
+        expect(c.validation[k], `charts.validation.${k}`).toBeTruthy();
+      }
+    });
   }
 });

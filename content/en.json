@@ -162,7 +162,17 @@
       "daily": "Collected daily",
       "total": "Total"
     },
-    "tools": "Python · requests · tenacity · yfinance · workalendar"
+    "tools": "Python · requests · tenacity · yfinance · workalendar",
+    "filter": {
+      "heading": "Filtering out errors",
+      "body1": "Here are the {data.rawRows} collected rows, placed by flight time and price. They are all nonstop flights, so most sit in one narrow cluster.",
+      "body2": "I removed {data.filter.unit} rows that took longer than {data.filter.durationMax} minutes or had a missing price unit, and {data.filter.mismatch} rows whose departure and arrival times did not match the flight time.",
+      "body3": "I also removed {data.filter.direct} rows marked as nonstop that took as long as a connecting itinerary. Most were on Haneda routes. {data.filteredRows} rows remain.",
+      "axisX": "Flight time (min)",
+      "axisY": "vs. route/cabin mean",
+      "boxLabel": "Nonstop, but as long as a connection",
+      "alt": "A dot chart of the {data.rawRows} raw rows by flight time and price. Normal nonstop flights form a narrow cluster. {data.filter.unit} rows with overly long flight times or missing price units, {data.filter.mismatch} rows with mismatched times, and {data.filter.direct} nonstop rows as long as a connection drop out in turn, leaving {data.filteredRows} rows."
+    }
   },
   "features": {
     "structure": {
@@ -234,8 +244,18 @@
     },
     "validation": {
       "heading": "Validation design",
-      "body1": "I evaluated the same model three ways. TimeSeriesSplit, which matches production conditions, is the headline figure.",
-      "body2": "Evaluating on unseen departure dates with GroupKFold revealed a train/serve mismatch — on a new departure date, lookup statistics fall back to a default value. On those unseen departure dates, the lookup-enabled service configuration scored R² {model.gkfWithLookup.r2} and MAE ₩{model.gkfWithLookup.mae} — worse than without lookup. I retuned and compared {model.lookupVariants} lookup configurations.",
+      "body1": "K-Fold holds out a block of time in the middle and trains on everything before and after it. It predicts the past using prices collected in the future, so it scores highest. I treat it only as an upper reference.",
+      "body2": "GroupKFold holds out whole route and departure-date groups. This exposed a train/serve mismatch: for unseen departure dates, the lookup statistics fall back to defaults. With lookups, the service setup scored R² {model.gkfWithLookup.r2} and MAE ₩{model.gkfWithLookup.mae}, worse than without them, so I retuned {model.lookupVariants} lookup setups and compared them.",
+      "body3": "TimeSeriesSplit trains only on the past and tests on the next block. The boundary moves forward five times. It matches production, so it is the headline number.",
+      "tagKf": "upper reference",
+      "tagGkf": "unseen departure dates · no lookup",
+      "tagTss": "production baseline",
+      "axisX": "Collection date",
+      "axisY": "Departure date",
+      "legendTrain": "Train",
+      "legendTest": "Test",
+      "legendUnused": "Not used yet",
+      "alt": "A dot chart of collected rows by collection date and departure date. K-Fold holds out a middle block of time and trains on both sides (R² {model.kfold.r2}); GroupKFold scatters test rows by route and departure date (R² {model.gkfNoLookup.r2}, no lookup); TimeSeriesSplit trains only on the past and moves the test boundary forward five times (R² {model.tss.r2}).",
       "table": {
         "caption": "Performance by evaluation method",
         "method": "Evaluation method",
