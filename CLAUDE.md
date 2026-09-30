@@ -32,15 +32,14 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 운영 https://signal-ml.vercel.app (아직 `noindex`) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개, main = 운영, PR = Vercel 미리보기) · CI: 타입 검사 → 단위 테스트 → 빌드 → 용량 검사 → e2e(desktop·mobile, axe).
 
-**병합·배포된 것**: 계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5·7-1·5-3c·7-2(PR #1~#18). 계획서는 `docs/superpowers/plans/`, 설계는 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점).
+**병합·배포된 것**: 계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5·7-1·5-3c·7-2와 작은 문제 정리(PR #1~#19). 계획서는 `docs/superpowers/plans/`, 설계는 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점).
 
 **진행 중(맥북에서 마무리)**
-- **PR #19 `fix-small-polish`**: 320px 상단 바 한 줄, 글자 200%에서 언어 안내 판·SCROLL 겹침, 흔들리던 e2e 4개(보드 플립·옆 목차는 실제 버그였음). 사용자가 병합 요청 — #18 위로 rebase 뒤 CI 재실행 중(휴대폰 "3D 켜짐 · 순서를 섞어 건너뛰어도…" 1건 실패 → 재실행으로 흔들림인지 확인)
 - **PR #20 `plan-6-6-takeoff`**: 첫 화면 이륙 연출 — ① 버그(3D가 켜지는 순간 스크롤 10px 이상이면 `hero-runway`가 안 붙어 이륙·전환이 그 방문 내내 꺼짐 → 3D가 켜진 뒤 맨 위로 오면 켬), ② 연출 최대 속도(스크롤은 그대로, 첫 화면 → ① 전체가 초당 0.28 진행 이하로 따라옴 — 휠 한 번에 약 3.4초), ③ 흩어짐 시안 C(더 일찍·오래·넓게, 날아가는 점 밝고 크게). 검토 뒤 수정 중: 옆 목차·주소(#project) 이동은 연출 건너뛰고 즉시 도착, CI에서 이륙 e2e가 실제로 돌게(테스트 전용 속도), 작은 정리. 끝나면 사용자 확인 → 병합
 
-맥북의 git worktree(`signal-ml-portfolio-5-3c`·`-7-1`·`-6-5`·`-tweaks`·`-7-2`·`-polish`·`-takeoff`)는 병합 뒤 `git worktree remove`로 지운다.
+맥북에 남은 git worktree: `signal-ml-portfolio-takeoff`(PR #20, 병합 뒤 `git worktree remove`), `signal-ml-portfolio-tweaks`(옛 브랜치 `plan-6-5-intro`, main에 없는 커밋 1개 `72b321f` 머리말 화면 — 6-5에서 다른 방식으로 이미 들어가 있어 필요 없을 가능성이 크다. 사용자 확인 뒤 지운다)
 
-## 다음 할 일 (진행 중 두 PR이 끝난 뒤, 맥미니부터)
+## 다음 할 일 (PR #20이 끝난 뒤, 맥미니부터)
 
 1. **문구 검토(사용자)**: 5-3c(`features.shap.*`)·7-2(`features.structure.*` 자막 칸) 한국어 확인, 영·일은 Claude 초안 → 사용자·검수자
 2. **점 연출 아이디어 — 다음 추천: "검증 설계"**(⑤ VALIDATION, 시간순 블록에서 학습/평가 창이 밀려 가는 점 연출 — TimeSeriesSplit을 눈으로). 그다음 ② 걸러내기(오류 행이 떨어져 나감). 연락처 점 글자(`CHOI HALIM`)·데모 강조는 사용자가 두 섹션을 다시 만든 뒤에. (② 수집 커버리지 그림은 하지 않기로 함. 모델 구조는 7-2로 끝남)
