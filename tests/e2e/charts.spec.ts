@@ -12,7 +12,7 @@ const facts = JSON.parse(readFileSync(fileURLToPath(new URL('../../data/facts.js
   model: { featureGroups: { features: string[] }[] };
 };
 
-const STAGES = ['features', 'chartDepart', 'chartCurve', 'chartCloud'] as const;
+const STAGES = ['chartModel', 'features', 'chartDepart', 'chartCurve', 'chartCloud'] as const;
 
 async function painted(page: Page, key: string) {
   return page.locator(`[data-scene="${key}"] .chart-canvas`).evaluate((c: HTMLCanvasElement) => {
@@ -37,6 +37,52 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       await expect(page.locator(`[data-scene="${key}"]`).locator('.chart-label, .chart-group').first()).toBeAttached();
     });
   }
+
+  // ③ 모델 구조 점(계획 7-2): 판이 고정된 스크롤 구간을 문단 수(4)로 나눈 자리마다 단계가 바뀐다 — 넷째 칸은 3단계 그대로
+  test.describe('③ 모델 구조', () => {
+    // 블록 안 고정 구간의 f 위치(0 = 판이 막 고정됨, 1 = 풀리기 직전)로 스크롤한다
+    const scrollInto = (page: Page, f: number) => page.locator('[data-scene="chartModel"]').evaluate((el, f) => {
+      const r = el.getBoundingClientRect();
+      window.scrollTo(0, window.scrollY + r.top + (r.height - window.innerHeight) * f);
+    }, f);
+
+    for (const [label, w, h] of [['데스크톱', 1440, 900], ['휴대폰', 390, 844]] as const) {
+      test(`${label}: 문단이 바뀌면 점 단계가 바뀌고 2D로 다시 그린다, 이름표는 판 안, 가로 스크롤 없음`, async ({ page }) => {
+        await page.setViewportSize({ width: w, height: h });
+        await page.goto('/');
+        const block = page.locator('[data-scene="chartModel"]');
+        const stage = block.locator('.chart-stage');
+        const axis = block.locator('.chart-label.axis');
+        for (const [f, n, para] of [[0.1, '0', 0], [0.37, '1', 1], [0.62, '2', 2], [0.9, '2', 3]] as const) {
+          await scrollInto(page, f);
+          await expect(stage).toHaveAttribute('data-stage', n, { timeout: 10_000 });
+          await expect(block.locator('.chart-para').nth(para)).toHaveClass(/is-on/);
+          await expect.poll(() => painted(page, 'chartModel'), { timeout: 10_000 }).toBe(true);
+          await expect(axis).toHaveText(n === '2' ? '기준 가격 대비' : '노선·등급 평균 대비');
+          await expect(block.locator('.chart-label.head')).toHaveCount(n === '0' ? 0 : 1);
+          const plot = (await block.locator('[data-plot]').boundingBox())!;
+          for (const b of await block.locator('.chart-label').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) {
+            expect(b.left).toBeGreaterThanOrEqual(plot.x - 1);
+            expect(b.right).toBeLessThanOrEqual(plot.x + plot.width + 1);
+            expect(b.top).toBeGreaterThanOrEqual(plot.y - 1);
+            expect(b.bottom).toBeLessThanOrEqual(plot.y + plot.height + 1);
+          }
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+        // 조작 층 없음(보기 전용), 낭독기용 요약 문단은 있다
+        await expect(block.locator('[role="slider"]')).toHaveCount(0);
+        await expect(block.locator('.chart-copy .sr-only')).not.toBeEmpty();
+      });
+    }
+
+    test('axe 위반 없음(3단계)', async ({ page }) => {
+      await page.goto('/');
+      await scrollInto(page, 0.62);
+      await expect(page.locator('[data-scene="chartModel"] .chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
+      const r = await new AxeBuilder({ page }).include('#features').analyze();
+      expect(r.violations).toEqual([]);
+    });
+  });
 
   test('이름표 개수: 출발일 눈금 4 + 요일 이름·값 14, 벌떼 구간 8 + 눈금 3, 와플 그룹 6', async ({ page }) => {
     await page.goto('/');
@@ -464,7 +510,7 @@ test.describe('3D 켜짐', () => {
   });
 
   test('순서를 섞어 건너뛰어도 멈춘 차트의 배치로 바뀐다', async ({ page }) => {
-    for (const key of ['chartCloud', 'features', 'chartCurve', 'chartDepart']) {
+    for (const key of ['chartCloud', 'features', 'chartModel', 'chartCurve', 'chartDepart']) {
       await center(page, `[data-scene="${key}"]`);
       await expect(page.locator('html')).toHaveAttribute('data-chart', key, { timeout: 15_000 });
     }

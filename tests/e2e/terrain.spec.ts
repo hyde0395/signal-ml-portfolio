@@ -157,9 +157,9 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     // 판 없는 보드: 머리줄과 열 이름(--mute·#8a96b3 글자라 0.72로 엄격하게)이 흐려진 지도 위에서도 읽혀야 한다
     ['.data-board .board-head', 0.72],
     ['.data-board .board-table thead', 0.72],
-    // ③ 모델 카드(설계 2026-09-29 이야기 흐름 §3.4): 가격 지형(model 장면) 위 첫 문단과 흐름 줄(작은 --mute라 0.72로 엄격하게)
-    ['[data-scene="model"] > p:not(.eyebrow)', 1],
-    ['.model-flow', 0.72],
+    // ③ 머리(계획 7-2): 모델 구조 판이 들어오기 전, 와플 판이 빠져나간 뒤의 자리 위에 뜬다. 모델 구조 글은 자막 띠라
+    // 점이 오지 않는다(차트 2 문단과 같은 이유로 따로 재지 않는다)
+    ['#features-h', 1],
     // 차트 3(bubble)·LIMITS(limits): 글 뒤 판이 없어진 카드형 챕터의 첫 본문 문단(코드 리뷰 2026-09-28)
     ['[data-scene="bubble"] > p:not(.eyebrow)', 1],
     ['[data-scene="limits"] > p:not(.eyebrow)', 1],

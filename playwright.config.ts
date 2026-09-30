@@ -2,9 +2,12 @@
 // 배포와 같은 정적 파일 서빙 환경에서 테스트한다.
 import { defineConfig, devices } from '@playwright/test';
 
+// E2E_PORT: 여러 작업 폴더(worktree)가 동시에 e2e를 돌릴 때 서로의 out/ 서버를 재사용하지 않게 포트를 바꾼다(기본 4173)
+const PORT = Number(process.env.E2E_PORT ?? 4173);
+
 export default defineConfig({
   testDir: 'tests/e2e',
-  use: { baseURL: 'http://localhost:4173' },
+  use: { baseURL: `http://localhost:${PORT}` },
   projects: [
     {
       name: 'desktop',
@@ -18,5 +21,5 @@ export default defineConfig({
     },
   ],
   // out/ 폴더를 정적 서버로 서빙한다. CI가 아니면 이미 떠 있는 서버를 재사용한다.
-  webServer: { command: 'npx serve out -l 4173 --no-clipboard', port: 4173, reuseExistingServer: !process.env.CI },
+  webServer: { command: `npx serve out -l ${PORT} --no-clipboard`, port: PORT, reuseExistingServer: !process.env.CI },
 });
