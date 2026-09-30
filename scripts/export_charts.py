@@ -85,12 +85,14 @@ def check_curve(curve: dict, metrics: dict) -> None:
 
 
 def value_rank(col: pd.Series) -> list[int]:
-    """피처 값 → 표본 안 순위 백분위(0~100, 같은 값은 평균 순위). 원값 대신 순위를 내보내
-    원본을 공개하지 않고, 치우친 분포도 색이 고르게 퍼지게 한다(설계 2026-09-30 §2).
-    NaN은 가장 작은 값으로 둔다 — 모델 입력의 NaN은 days_bucket_num의 D-0(당일 출발)뿐으로,
-    pd.cut 첫 구간 (0, 7]보다 작아서 생긴다(XGBoost는 결측으로 그대로 받는다)."""
-    n = len(col)
-    r = (col.rank(method="average", na_option="top") - 1) / max(n - 1, 1) * 100
+    """피처 값 → 표본 안 조밀 순위를 0~100으로 편 값. 같은 값은 같은 순위, 서로 다른 값 사이를 고르게 —
+    0/1 피처가 파랑/호박으로 갈리게(평균 순위면 다수 값이 중간 회색에 앉는다). 원값 대신 순위를 내보내
+    원본을 공개하지 않고, 치우친 분포도 색이 고르게 퍼진다(설계 2026-09-30 §2).
+    NaN은 가장 작은 값으로 둔다(순위 0, 나머지는 한 칸씩 위로) — 모델 입력의 NaN은 days_bucket_num의
+    D-0(당일 출발)뿐으로, pd.cut 첫 구간 (0, 7]보다 작아서 생긴다(XGBoost는 결측으로 그대로 받는다)."""
+    dense = col.rank(method="dense", na_option="top")
+    n_distinct = int(dense.max()) if len(dense) else 1
+    r = (dense - 1) / max(n_distinct - 1, 1) * 100
     return [int(x) for x in r.round().astype(int)]
 
 

@@ -83,15 +83,18 @@ def test_build_charts_shape():
     assert set(c["curve"]["sample"]) == {"bin", "pct"}
 
 
-def test_value_rank_spreads_0_to_100_with_ties_averaged():
+def test_value_rank_spreads_distinct_values_evenly_0_to_100():
     assert ec.value_rank(pd.Series([10.0, 30.0, 20.0])) == [0, 100, 50]
-    assert ec.value_rank(pd.Series([5.0, 5.0, 9.0])) == [25, 25, 100]
+    # 0/1 피처의 다수 값이 중간(회색)이 아니라 양 끝(파랑/호박)으로 가야 한다
+    assert ec.value_rank(pd.Series([5.0, 5.0, 9.0])) == [0, 0, 100]
+    assert ec.value_rank(pd.Series([0.0, 0.0, 0.0, 1.0])) == [0, 0, 0, 100]
     assert ec.value_rank(pd.Series([7.0])) == [0]
 
 
 def test_value_rank_puts_missing_values_lowest():
     # days_bucket_num은 D-0(당일 출발)이 첫 구간 (0, 7] 밖이라 NaN — 가장 작은 값으로 둔다
     assert ec.value_rank(pd.Series([float("nan"), 2.0, 1.0])) == [0, 100, 50]
+    assert ec.value_rank(pd.Series([float("nan"), float("nan"), 7.0, 7.0])) == [0, 0, 100, 100]
 
 
 def test_shap_block_scales_contribs_ranks_values_and_fixes_categorical():
