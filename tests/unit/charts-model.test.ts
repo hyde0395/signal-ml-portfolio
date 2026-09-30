@@ -2,6 +2,7 @@
 // 1단계 공휴일 호박색, 2단계 기준 선이 밝아진다, 3단계 선이 한 높이(0)로 펴져 끊기고 큰 잔차만 호박색, variant.
 import { describe, expect, it } from 'vitest';
 import type { ChartsData } from '@/charts/data';
+import { DEPART } from '@/charts/layouts';
 import { MODEL, modelLayout, residualPct } from '@/charts/model';
 import { TONE, type ChartLabel, type ChartLayout } from '@/charts/types';
 
@@ -16,7 +17,7 @@ const data = {
   model: {
     route: 'ICN_NRT', cabin: 'LCC',
     base: [0, 400, -100, null, 200],
-    obs: { date: [0, 0, 1, 1, 2, 3, 4], pct: [100, -50, 900, 300, -600, 50, 1500] },
+    obs: { date: [0, 0, 1, 1, 2, 3, 4], pct: [100, -50, 900, 200, -600, 50, 1500] },
   },
 } as unknown as ChartsData;
 const S = { month: (iso: string) => iso.slice(5, 7), pct: (v: number) => `${v}%`, axis: 'AX', axisResid: 'RES', line: 'LINE' };
@@ -61,9 +62,16 @@ describe('modelLayout', () => {
     expect(at(3).variant).toBe('stage:2');
     expect(at(-1).variant).toBe('stage:0');
   });
-  it('1단계: 공휴일 무렵 출발일의 관측만 호박색, 선 점은 안 보인다', () => {
+  it('1단계: 공휴일 무렵이면서 높은(≥ DEPART.hotPct) 관측만 호박색, 선 점은 안 보인다', () => {
     const l = L[0], o = obsStart(l);
-    for (let k = 0; k < OBS; k++) expect(l.tone[o + k] === TONE.amber).toBe(data.model!.obs.date[k] === 1);
+    for (let k = 0; k < OBS; k++) {
+      const hot = data.model!.obs.date[k] === 1 && data.model!.obs.pct[k] / 10 >= DEPART.hotPct;
+      expect(l.tone[o + k] === TONE.amber).toBe(hot);
+    }
+    // 공휴일 무렵이지만 낮은 점(20%)과 공휴일이 아닌 높은 점(150%)은 호박색이 아니다
+    expect(l.tone[o + 3]).not.toBe(TONE.amber);
+    expect(l.tone[o + 6]).not.toBe(TONE.amber);
+    expect(l.tone[o + 2]).toBe(TONE.amber);
     for (let i = lineStart(l); i < l.n; i++) expect(l.alpha[i]).toBe(0);
   });
   it('2단계: 관측은 흐려지고 선 점이 밝게, 선은 기준 %를 따라 오르내린다', () => {

@@ -2,7 +2,7 @@
 // 0 모은 가격(노선·등급 평균 대비 %) → 1 NeuralProphet 기준 가격 선 → 2 기준에서 벗어난 몫(잔차 %, XGBoost가 배우는 것).
 // 세 단계의 점 순서·개수·group이 같아야 3D에서 같은 지형 점이 단계 사이를 옮겨 다닌다(variant가 바뀌면 반대 슬롯, chartTargets.pickSlot).
 import type { ChartsData } from './data';
-import { monthLabels, mulberry32, Pts, utc, type PlotSize } from './layouts';
+import { DEPART, monthLabels, mulberry32, Pts, utc, type PlotSize } from './layouts';
 import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './types';
 
 // lo·hi: 세로 %범위 — 관측의 1~99번째 백분위(약 −61~+108%)가 들어간다. 밖의 점(1~2%)은 그 단계에서 숨긴다(알파 0) —
@@ -49,8 +49,9 @@ export function modelLayout(d: ChartsData, size: PlotSize, stage: number, s: Mod
     const x = Math.min(1, Math.max(0, (X(d.dates[di]) + jx) / W));
     const o = m.obs.pct[k] / 10, b = m.base[di];
     if (st < 2) {
-      const hol = d.depart.holiday[di] !== null;
-      p.add(x, Y(o) / H, dot, !inRange(o) ? 0 : st === 0 ? 0.6 : 0.2, hol ? TONE.amber : TONE.dot, di);
+      // 호박색 = 공휴일 무렵(±3일) 출발일의 높은 관측 — ④ 차트 1(departLayout)과 같은 규칙·같은 임계값(DEPART.hotPct). 사용자 결정 2026-09-30
+      const hot = d.depart.holiday[di] !== null && o >= DEPART.hotPct;
+      p.add(x, Y(o) / H, dot, !inRange(o) ? 0 : st === 0 ? 0.6 : 0.2, hot ? TONE.amber : TONE.dot, di);
     } else if (b === null) {
       p.add(x, Y(o) / H, dot, 0, TONE.dot, di); // 기준이 없는 날은 잔차를 그릴 수 없다(지금 데이터엔 없다)
     } else {
