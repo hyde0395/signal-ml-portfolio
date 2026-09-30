@@ -4,9 +4,9 @@ ML 엔지니어 포트폴리오 사이트. 사이트 브랜드는 **SIGNAL**.
 
 Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용 개발자 포트폴리오**. 목표 포지션은 **ML 엔지니어**.
 
-## 현재 상태 (2026-09-30, 7-1 병합·배포 — 다음 세션은 5-3c부터)
+## 현재 상태 (2026-09-30, 5-3c PR 올림 — 확인·병합 대기)
 
-계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5와 PR #12(첫 화면 SIGNAL·상단 바·보드 속도·지도 밝기)·PR #14(② 수집 규칙 문구)가 모두 main에 병합되어 운영 사이트에 배포돼 있다. **진행 중 1개**: 7-1(이야기 흐름 — ③ 모델 카드, ④ FINDINGS / ⑤ VALIDATION, 브랜치 `plan-7-1-story`, PR 올림 — 확인·병합 대기). 남은 것은 7-1 병합, 5-3c, 공개 전 준비.
+계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5·7-1과 PR #12(첫 화면 SIGNAL·상단 바·보드 속도·지도 밝기)·PR #14(② 수집 규칙 문구)가 모두 main에 병합되어 운영 사이트에 배포돼 있다. **진행 중 2개**: 5-3c(③ 와플 → SHAP 벌떼, 브랜치 `plan-5-3c-shap`, worktree `signal-ml-portfolio-5-3c`, PR 올림 — 확인·병합 대기), 첫 화면 이륙 연출 고치기(브랜치 `plan-6-6-takeoff`, worktree `signal-ml-portfolio-takeoff`, 작업 중). 남은 것은 두 작업 병합, 공개 전 준비.
 
 - 운영: https://signal-ml.vercel.app (아직 `noindex` — 공개 전환 전). 옛 주소 `signal-ml-portfolio.vercel.app`은 이제 404 — 필요하면 Vercel Settings → Domains에서 새 주소로 넘기는 리디렉트로 다시 더한다(사용자 작업)
 - GitHub: https://github.com/hyde0395/signal-ml-portfolio (공개), main = 운영, PR = Vercel 미리보기
@@ -31,8 +31,9 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | ② 수집 규칙 문구 | 실제 수집 일정(가까운 출발일 수·금·일 매일, 중간 3일 순환, 먼 출발일 일요일) | — | ✅ PR #14 (2026-09-29 병합·배포) |
 | 6-5 첫 화면 → ① 전환 | 첫 화면 → ① 전환·SIGNAL 머리말·점 비행기·공항 시안 맞춤·① 물결 | `2026-09-29-plan-6-5-hero-handoff.md` | ✅ PR #15 (2026-09-29 병합·배포) |
 | 7-1 이야기 흐름 | ③ 모델 카드, ④ FINDINGS / ⑤ VALIDATION | `2026-09-29-plan-7-1-story-flow.md` | ✅ PR #16 (2026-09-30 병합·배포) |
+| 5-3c SHAP 벌떼 | ③ 와플 눌러 SHAP 벌떼(작은 와플 줄 + 피처별 벌떼, 값 색), Esc 닫기 | `2026-09-30-plan-5-3c-shap-swarm.md` | PR 올림 — 확인·병합 대기 |
 
-7-1은 PR 확인 → 병합이 남았다(아래 "다음 세션에서 할 일" 0번). 결과는 설계 문서 `docs/superpowers/specs/2026-09-29-story-flow-design.md` "구현 결과 (계획 7-1)". 별도 작업 폴더(`~/dev/untitled folder/signal-ml-portfolio-7-1`, git worktree)는 병합 뒤 지워도 된다(6-5 폴더도).
+5-3c는 PR 확인 → 병합이 남았다(아래 "다음 세션에서 할 일" 0번). 결과는 설계 문서 `docs/superpowers/specs/2026-09-30-shap-swarm-design.md` "구현 결과 (계획 5-3c)". 별도 작업 폴더(`~/dev/untitled folder/signal-ml-portfolio-5-3c`, git worktree)는 병합 뒤 지워도 된다(7-1·6-5 폴더도).
 
 **5-1 마무리 검사 (2026-09-25, `npm run size`)**: 초기 JS gzip 139.5KB/150KB(ko·en·ja 동일), 3D 청크 239.7KB/250KB, `terrain.json` 53.1KB/300KB, `demo.json` 21.7KB/500KB, `band.json` 0.6KB/50KB. 단위 테스트 201개·e2e 120개·pytest 42개 모두 통과.
 
@@ -40,11 +41,8 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 다음 세션에서 할 일 (순서대로)
 
-0. **★ 다음 세션 첫 작업: 계획 5-3c(와플 → SHAP 벌떼)** — 아래 1번. 사용자가 2026-09-30에 "다음 세션에서 벌떼 펼치기부터"라고 정함. 작업 방식: `superpowers:brainstorming`(필요하면 벌떼 모양 시안) → `superpowers:writing-plans` → subagent-driven-development, 새 worktree(예: `signal-ml-portfolio-5-3c`, 브랜치 `plan-5-3c-shap`)에서. 데스크톱 우선
-1. **계획 5-3c — ③ 와플 눌러 SHAP 벌떼로 펼치기**(다음 작업, 계획서부터 `superpowers:writing-plans`). 와플은 이제 ③ MODEL & FEATURES 안 모델 카드 뒤의 블록(`h3#waffle-h`, `data-scene="features"` 그대로)
-   - SHAP 추출 가능 확인(2026-09-29): 모델 입력이 피처 33개 그대로(범주형도 한 열), 항공권 저장소 `src/models/shap_analysis.py`처럼 `v2_predictor.pkl` + `booster.predict(pred_contribs=True)`(재학습 없음), 모델 로드 약 17초. 값은 log-잔차 단위라 표시할 때 `exp(v)−1`로 %. 피처 33개 × 표본 약 150개를 `charts.json`의 `shap`으로. 범주형 피처(노선·항공사)는 값 색 대신 중간색
-   - 와플을 누르거나 초점 후 Enter/Space → 그 그룹 피처별 벌떼(가로 = SHAP, 색 = 피처 값), 다른 와플 흐리게, Esc·다시 누르기로 닫기, 한 번에 하나. 5-3b에서 강조 번호(`hl`)를 일반화해 두었으니 그 위에 얹는다
-   - 와플 그룹 이름표는 아직 `aria-hidden`(5-3b는 차트 1·2·4만 조작 층) — 키보드 초점을 줄 때 접근성 구조를 다시 짠다
+0. **5-3c PR 확인·병합** — ③ 와플 → SHAP 벌떼(브랜치 `plan-5-3c-shap`). 사용자가 미리보기에서 확인 → fast-forward 병합 → 운영 확인. 결과·알려진 한계(3D 전환 도중 그룹을 빠르게 바꾸면 점이 튈 수 있음)는 설계 문서 "구현 결과 (계획 5-3c)"
+1. **알려진 작은 것·흔들리는 e2e**
    - 알려진 작은 것(6-3): `/en/` 320px 폭에서 상단 바 두 줄, 글자 2배에서 언어 안내 띠와 SCROLL 표시 겹칠 수 있음, `hero.webp` 작은 불빛이 실제보다 조금 흐림
    - 흔들리는 e2e: `board.spec` "화면에 들어오면 넘어가고…"(main에서도 가끔), `terrain.spec` "글 뒤 배경이 4.5:1 대비를 지킨다(화소 검사)"(전체 e2e를 한꺼번에 돌릴 때 드물게 — 따로 돌리면 통과). 실패하면 한 번 다시 돌려 본다
 2. **연락처·데모 섹션은 나중에 사용자가 다시 만든다**(2026-09-29) — 지금은 그 두 섹션에 공들이지 않는다
@@ -54,7 +52,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    3. 검증 설계(시간순 블록, 학습/평가 창이 밀려 감)
    4. 데모(고른 노선 궤적·출발일 기둥이 밝아짐)
    5. 연락처(점이 모여 `CHOI HALIM` 점 글자 — 첫 화면에서 이름을 뺀 것과 짝)
-4. **사이트 주소는 `signal-ml.vercel.app`**(2026-09-29 사용자 선택, 응답 확인 2026-09-30). README·CLAUDE.md 주소는 계획 7-1에서 고쳤다. 남은 것: 운영에서 canonical·OG 주소가 새 주소인지 확인(`siteUrl()`은 `VERCEL_PROJECT_PRODUCTION_URL`), 옛 주소는 404라 필요하면 Domains에서 리디렉트로 다시 더하기(사용자 작업)
+4. **사이트 주소는 `signal-ml.vercel.app`** ✅(2026-09-29 사용자 선택). 2026-09-30 운영 확인 끝: ko·en·ja 모두 canonical·hreflang·OG 주소가 `signal-ml.vercel.app`, `noindex`와 `robots.txt` Disallow는 그대로 켜져 있음, 옛 주소 `signal-ml-portfolio.vercel.app`은 404. 필요하면 Domains에서 옛 주소를 리디렉트로 다시 더하기(사용자 작업)
 5. **② 보드 화면 지도는 시안 B(0.32)로 반영됨**(PR #12) — 데스크톱에서 해안선이 열 이름 "ROWS" 뒤를 지나는 몇 화소가 4.2:1(95% 기준으로는 6:1 이상). 알고 있는 작은 것
 6. **별도 계획: 차트 3을 예측 대 실제 산점도로** — TimeSeriesSplit 폴드별 예측값과 제거 행 9,387개를 포함한 옛 구성(R² 0.84)의 예측값이 필요해 NeuralProphet를 폴드마다 다시 학습해야 한다(항공권 저장소 `run_tscv`는 예측값을 돌려주지 않음, 몇십 분 걸릴 수 있음). 그때까지 차트 3은 지형 위 제거 레이어가 떨어지는 장면
 7. **공개 전 준비 (사용자 작업 위주, 스펙 §14)**
@@ -116,7 +114,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - 머리말(계획 6-5, 번호·옆 목차 없음): "가격은 매일 흔들립니다. / 대부분은 잡음이고, 그 안에 몇 개의 신호가 있습니다." + 작게 "점 하나는 실제로 수집한 가격 하나입니다." — 이 화면을 지나는 동안 공항 불빛이 스크롤에 묶여 ①의 은은한 물결 줄(카메라 C)로 옮겨 간다
 1. `01 — PROJECT`: 큰 질문 + 설명 + 숫자 4개(노선·수집 개월·피처·예측 구간)
 2. `02 — DATA COLLECTION`: 두 화면 — (1) 수집 라인 4단계 + 한·일 지도, (2) 판 없는 공항 플립 보드(왕복 3줄 + TOTAL, 약 1.8초·튕김 — 모션 규칙 예외, 2026-09-29 사용자 요청으로 느리게) + 흐려진 지도
-3. `03 — MODEL & FEATURES`(계획 7-1): 모델 카드 "모델 구조"(노선별 NeuralProphet 기준 가격 + XGBoost 로그 잔차, Optuna, 분위수 구간, SHAP — 뒤에 가격 지형 장면 `model`) → 피처 33개·6개 그룹 점 와플(`h3`, 5-2에서 배경 점이 와플로 모임, 5-3c에서 눌러 SHAP 벌떼로 펼치기)
+3. `03 — MODEL & FEATURES`(계획 7-1): 모델 카드 "모델 구조"(노선별 NeuralProphet 기준 가격 + XGBoost 로그 잔차, Optuna, 분위수 구간, SHAP — 뒤에 가격 지형 장면 `model`) → 피처 33개·6개 그룹 점 와플(`h3`, 5-2에서 배경 점이 와플로 모임). 와플 그룹을 누르면(또는 초점 후 Enter/Space) SHAP 벌떼로 펼쳐진다 — 위에 작은 와플 줄, 아래 그 그룹 피처별 벌떼(가로 = SHAP %, 색 = 피처 값 순위), 다시 누르기·Esc로 닫기(계획 5-3c)
 4. `04 — FINDINGS`(계획 7-1, 제목 "데이터가 보여 준 것"): 출발일 점 그래프 + 요일 평균(계획 6-4) · 구간별 분포 벌떼(U자)
 5. `05 — VALIDATION`(계획 7-1, 제목 "모델 검증"): R² 거품 · 평가 방식 표(블록 머리표 `EVALUATION`) · 예측 불확실성 구름 · 한계(차트 장면에서는 배경 점이 차트로 모임)
 - 데모, 연락처(탑승권 카드 + 개인 소개)
@@ -142,7 +140,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
   - `export_terrain.py`: 원본 CSV + 항공권 저장소의 필터 함수(`src/processing/features.py`를 import해 재사용) → `terrain.json`
   - `export_demo.py`: `v2_predictor.pkl` + `recommend_action()` → `demo.json`
   - `export_facts.py`: 사이트에 나오는 모든 수치를 한 곳에 → `facts.json` (항공권 저장소 CLAUDE.md 기준)
-  - `export_charts.py`: 출발일별 %·공휴일 이름표·예약 곡선 8구간·관측 표본 4,000개 → `charts.json`(④ 점 달력·구간별 벌떼. 불확실성 구름은 `demo.json`을 그대로 쓴다)
+  - `export_charts.py`: 출발일별 %·공휴일 이름표·예약 곡선 8구간·관측 표본 4,000개 + SHAP 33 × 150(`v2_predictor.pkl`의 `pred_contribs`, 피처 값은 0~100 순위) → `charts.json`(④ 점 달력·구간별 벌떼, ③ SHAP 벌떼. 불확실성 구름은 `demo.json`을 그대로 쓴다)
 - **지형 (2026-09-23 실제 데이터로 수정, 스펙 §5.2·5.2.1)**
   - 높이 = **노선·등급 평균 대비 %** (같은 편 기준은 공휴일 봉우리를 지워서 바꿈)
   - **신호 + 잡음 두 겹**: 칸 평균 약 2,070개(밝은 점) + 칸×노선×등급 약 24,500개(흐린 점). 데이터는 대각선 띠 모양
