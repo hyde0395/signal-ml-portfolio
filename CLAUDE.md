@@ -4,7 +4,7 @@ ML 엔지니어 포트폴리오 사이트. 사이트 브랜드는 **SIGNAL**.
 
 Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용 개발자 포트폴리오**. 목표 포지션은 **ML 엔지니어**.
 
-## 현재 상태 (2026-09-30, 7-1 PR 올림 — 사용자 확인 대기)
+## 현재 상태 (2026-09-30, 7-1 병합·배포 — 다음 세션은 5-3c부터)
 
 계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5와 PR #12(첫 화면 SIGNAL·상단 바·보드 속도·지도 밝기)·PR #14(② 수집 규칙 문구)가 모두 main에 병합되어 운영 사이트에 배포돼 있다. **진행 중 1개**: 7-1(이야기 흐름 — ③ 모델 카드, ④ FINDINGS / ⑤ VALIDATION, 브랜치 `plan-7-1-story`, PR 올림 — 확인·병합 대기). 남은 것은 7-1 병합, 5-3c, 공개 전 준비.
 
@@ -30,7 +30,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | 5-3b 차트 만지기 | 차트 1·2·4 마우스·터치·키보드로 값 짚기, 표시 상자, 슬롯 튐 수정 | `2026-09-29-plan-5-3b-chart-touch.md` | ✅ PR #13 (2026-09-29 병합·배포) |
 | ② 수집 규칙 문구 | 실제 수집 일정(가까운 출발일 수·금·일 매일, 중간 3일 순환, 먼 출발일 일요일) | — | ✅ PR #14 (2026-09-29 병합·배포) |
 | 6-5 첫 화면 → ① 전환 | 첫 화면 → ① 전환·SIGNAL 머리말·점 비행기·공항 시안 맞춤·① 물결 | `2026-09-29-plan-6-5-hero-handoff.md` | ✅ PR #15 (2026-09-29 병합·배포) |
-| 7-1 이야기 흐름 | ③ 모델 카드, ④ FINDINGS / ⑤ VALIDATION | `2026-09-29-plan-7-1-story-flow.md` | ✅ PR #16 대기 |
+| 7-1 이야기 흐름 | ③ 모델 카드, ④ FINDINGS / ⑤ VALIDATION | `2026-09-29-plan-7-1-story-flow.md` | ✅ PR #16 (2026-09-30 병합·배포) |
 
 7-1은 PR 확인 → 병합이 남았다(아래 "다음 세션에서 할 일" 0번). 결과는 설계 문서 `docs/superpowers/specs/2026-09-29-story-flow-design.md` "구현 결과 (계획 7-1)". 별도 작업 폴더(`~/dev/untitled folder/signal-ml-portfolio-7-1`, git worktree)는 병합 뒤 지워도 된다(6-5 폴더도).
 
@@ -40,7 +40,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 ## 다음 세션에서 할 일 (순서대로)
 
-0. **★ 7-1 PR #16 확인·병합** — 미리보기(브랜치 주소 `https://signal-ml-git-plan-7-1-story-hyde-0395s-projects.vercel.app`)에서 사용자 확인(③ 모델 카드 문구, ⑤ 머리 구간 3D, 옆 목차 5칸) → main에 fast-forward 병합 → 운영 확인. 영·일 모델 문구는 Claude 초안(공개 전 문구 검토 때 검수)
+0. **★ 다음 세션 첫 작업: 계획 5-3c(와플 → SHAP 벌떼)** — 아래 1번. 사용자가 2026-09-30에 "다음 세션에서 벌떼 펼치기부터"라고 정함. 작업 방식: `superpowers:brainstorming`(필요하면 벌떼 모양 시안) → `superpowers:writing-plans` → subagent-driven-development, 새 worktree(예: `signal-ml-portfolio-5-3c`, 브랜치 `plan-5-3c-shap`)에서. 데스크톱 우선
 1. **계획 5-3c — ③ 와플 눌러 SHAP 벌떼로 펼치기**(다음 작업, 계획서부터 `superpowers:writing-plans`). 와플은 이제 ③ MODEL & FEATURES 안 모델 카드 뒤의 블록(`h3#waffle-h`, `data-scene="features"` 그대로)
    - SHAP 추출 가능 확인(2026-09-29): 모델 입력이 피처 33개 그대로(범주형도 한 열), 항공권 저장소 `src/models/shap_analysis.py`처럼 `v2_predictor.pkl` + `booster.predict(pred_contribs=True)`(재학습 없음), 모델 로드 약 17초. 값은 log-잔차 단위라 표시할 때 `exp(v)−1`로 %. 피처 33개 × 표본 약 150개를 `charts.json`의 `shap`으로. 범주형 피처(노선·항공사)는 값 색 대신 중간색
    - 와플을 누르거나 초점 후 Enter/Space → 그 그룹 피처별 벌떼(가로 = SHAP, 색 = 피처 값), 다른 와플 흐리게, Esc·다시 누르기로 닫기, 한 번에 하나. 5-3b에서 강조 번호(`hl`)를 일반화해 두었으니 그 위에 얹는다
