@@ -94,8 +94,9 @@ html[data-header] .site-header:focus-within { opacity: 1; transform: none; }
 html[data-header] .site-header:focus-within .header-actions { pointer-events: auto; }
 @media (max-width: 767px) { .site-header { padding-block: 16px; } .header-actions { gap: 16px; } }
 /* 320px 폭의 /en/은 "Resume coming soon"(18자)이 들어갈 자리가 약 40px 모자라 두 줄로 꺾였다. 글자 크기와 문구는 그대로 두고
-   자간(0.22em은 글자마다 약 2.4px)과 덩어리 사이 간격만 줄여 한 줄에 넣는다 — 짧은 이력서 문구 키는 따로 없다 */
-@media (max-width: 360px) { .site-header { letter-spacing: 0.12em; gap: 8px; } .header-actions { gap: 12px; } }
+   자간(0.22em은 글자마다 약 2.4px)과 덩어리 사이 간격만 줄여 한 줄에 넣는다 — 짧은 이력서 문구 키는 따로 없다.
+   0.12em은 macOS에서 딱 맞았지만 Linux(CI) 글자 폭에서는 다시 꺾여, 약 20px 여유가 남는 0.06em으로 둔다 */
+@media (max-width: 360px) { .site-header { letter-spacing: 0.06em; gap: 8px; } .header-actions { gap: 10px; } }
 @media (prefers-reduced-motion: reduce) { .site-header, .brand { transition: none; } }
 /* 알약 버튼 — 지금은 Contact 섹션의 이력서 링크(ResumeLink 기본값)가 쓴다 */
 .pill { font: 600 0.8rem var(--font-mono); color: var(--tx); background: none; border: 1px solid var(--line); border-radius: 999px;
