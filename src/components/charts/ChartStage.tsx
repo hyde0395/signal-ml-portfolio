@@ -45,6 +45,15 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
   const relayout = useRef<() => void>(() => {});
   const [shapOk, setShapOk] = useState(false);
   const [announce, setAnnounce] = useState('');
+  // 같은 문장을 다시 넣으면 알림 영역 내용이 바뀌지 않아 낭독기가 다시 읽지 않는다(데이터 없음 버튼을 거듭 누를 때).
+  // 한 번 비운 뒤 다음 프레임에 넣어 매번 "바뀐 것"으로 만든다
+  const sayFrame = useRef(0);
+  const say = (text: string) => {
+    cancelAnimationFrame(sayFrame.current);
+    setAnnounce('');
+    sayFrame.current = requestAnimationFrame(() => setAnnounce(text));
+  };
+  useEffect(() => () => cancelAnimationFrame(sayFrame.current), []);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const inited = useRef(false);
   // 터치: 누른 자리와 아직 끌기로 확정되지 않았는지(pending). 확정되면 dragging
@@ -168,12 +177,12 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
   const toggle = (gi: number) => {
     // SHAP 데이터가 없어도 와플은 멀쩡히 읽히므로 failed(판 전체를 덮는 오류 표시)로 가리지 않는다.
     // 낭독기에만 한 번 알리고 펼치지는 않는다
-    if (!shapOk) { setAnnounce(errorText); return; }
+    if (!shapOk) { say(errorText); return; }
     const next = openRef.current === gi ? -1 : gi;
     // 열 때만 마우스 설명 줄을 비운다 — 닫을 때는 포인터가 아직 버튼 위일 수 있어 설명 줄을 그대로 둔다
     if (next >= 0) setSel(-1);
     setOpen(next);
-    setAnnounce(next >= 0 && strings.shap ? strings.shap.opened.replace('{v.name}', groups[gi]?.name ?? '') : strings.shap?.closed ?? '');
+    say(next >= 0 && strings.shap ? strings.shap.opened.replace('{v.name}', groups[gi]?.name ?? '') : strings.shap?.closed ?? '');
   };
   // Esc: 펼친 동안 어디에 초점이 있든 닫는다. 초점은 판 안(또는 body)에 있을 때만 그 그룹 버튼으로 돌려놓는다 —
   // 독자가 스크롤해 판을 벗어났다면 초점을 화면 밖으로 끌어가지 않는다(preventScroll은 화면이 튀지 않게)
@@ -183,7 +192,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
       if (e.key !== 'Escape') return;
       const gi = openRef.current;
       setOpen(-1);
-      setAnnounce(strings.shap?.closed ?? '');
+      say(strings.shap?.closed ?? '');
       const ae = document.activeElement;
       if (plot.current?.contains(ae) || ae === document.body) buttons.current[gi]?.focus({ preventScroll: true });
     };
