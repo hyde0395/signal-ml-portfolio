@@ -5,6 +5,7 @@
 - labels: 점 그래프의 봉우리 위에 이름을 붙일 공휴일. 공휴일(코드)마다 가장 비싼 출발일을 고르고, 그 값이 큰 순으로 4개.
 - curve: 출발이 지난 편의 예약 곡선 8구간 평균·행 수(model_metrics.json의 bookingCurve와 같아야 한다)와
   관측 표본 4,000개(구간 번호, 같은 편 평균 대비 %). 점 개수는 데이터가 늘어도 고정이고, 재추출 때 새로 뽑는다(설계 §4).
+- shap: ③ 와플 펼치기(계획 5-3c) — 서비스 모델 XGBoost의 피처별 SHAP(×1000 정수)과 피처 값 순위(0~100), 표본 150개.
 - 개별 행의 가격은 내보내지 않는다(원본 비공개 원칙). 표본에도 %만 담는다.
 
 실행: npm run charts  (npm run terrain 뒤 — 출발일 목록이 지형과 같아야 3D 점 그래프가 지형 점을 출발일로 묶을 수 있다)
@@ -31,6 +32,8 @@ SAMPLE_CLIP = 40.0            # 표본 %는 ±40에서 자른다(화면은 ±22�
 TOP_LABELS = 4                # 점 그래프에서 봉우리 바로 위에 이름을 붙이므로 한글날까지(설계 2026-09-29 §2)
 SEED = 7
 CURVE_TOLERANCE = 0.1         # 지표는 소수 첫째 자리, 사이트 값은 %×10 정수라 반올림 차이만 허용
+SHAP_SAMPLE = 150             # ③ SHAP 벌떼 표본 수(계획 5-3c) — 피처 33개 × 150점
+CATEGORICAL = ["origin", "destination", "route", "airline", "airline_class"]
 
 
 def depart_pct10(kept: pd.DataFrame, dates: list[str]) -> list[int]:
@@ -79,6 +82,35 @@ def check_curve(curve: dict, metrics: dict) -> None:
     got = [m / 10 for m in curve["mean"]]
     if len(got) != len(want) or any(abs(g - w) > CURVE_TOLERANCE for g, w in zip(got, want)):
         raise SystemExit(f"예약 곡선 구간 평균이 model_metrics.json과 다르다 — 사이트 {got}, 지표 {want}")
+
+
+def value_rank(col: pd.Series) -> list[int]:
+    """피처 값 → 표본 안 순위 백분위(0~100, 같은 값은 평균 순위). 원값 대신 순위를 내보내
+    원본을 공개하지 않고, 치우친 분포도 색이 고르게 퍼지게 한다(설계 2026-09-30 §2)."""
+    n = len(col)
+    r = (col.rank(method="average") - 1) / max(n - 1, 1) * 100
+    return [int(x) for x in r.round().astype(int)]
+
+
+def shap_block(contribs: np.ndarray, enc: pd.DataFrame, categorical: list[str]) -> dict:
+    """pred_contribs 결과(행 = 표본, 열 = 피처 + 마지막 bias)와 인코딩된 입력 → charts.json의 shap.
+    SHAP은 log 잔차 단위라 ×1000 정수로 줄인다(사이트가 exp(v/1000)−1로 %를 만든다).
+    범주형은 인코딩 번호의 크고 작음에 뜻이 없으므로 순위 대신 50(중간색)으로 둔다."""
+    names = list(enc.columns)
+    if contribs.shape != (len(enc), len(names) + 1):
+        raise ValueError(f"pred_contribs 모양 {contribs.shape} ≠ ({len(enc)}, {len(names) + 1})")
+    cat = [c for c in names if c in categorical]
+    v = [[int(round(float(x) * 1000)) for x in contribs[:, j]] for j in range(len(names))]
+    f = [[50] * len(enc) if c in cat else value_rank(enc[c]) for c in names]
+    return {"n": len(enc), "features": names, "categorical": cat, "v": v, "f": f}
+
+
+def check_shap_features(names: list[str], facts: dict) -> None:
+    """모델 입력 피처 = facts.json 와플 그룹 피처의 합집합인지 — 다르면 와플 그룹을 펼칠 때 줄이 빠진다."""
+    want = {f for g in facts["model"]["featureGroups"] for f in g["features"]}
+    if set(names) != want or len(names) != len(want):
+        raise SystemExit(f"SHAP 피처가 facts.json 그룹과 다르다 — 모델에만 {sorted(set(names) - want)}, "
+                         f"facts에만 {sorted(want - set(names))}")
 
 
 def build_charts(raw: pd.DataFrame, as_of: str) -> dict:

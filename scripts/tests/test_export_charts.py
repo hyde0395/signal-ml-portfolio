@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -80,3 +81,37 @@ def test_build_charts_shape():
     assert c["depart"]["holiday"][1] is not None  # 10-03 개천절(±3일)
     assert c["curve"]["bins"][0] == [1, 3]
     assert set(c["curve"]["sample"]) == {"bin", "pct"}
+
+
+def test_value_rank_spreads_0_to_100_with_ties_averaged():
+    assert ec.value_rank(pd.Series([10.0, 30.0, 20.0])) == [0, 100, 50]
+    assert ec.value_rank(pd.Series([5.0, 5.0, 9.0])) == [25, 25, 100]
+    assert ec.value_rank(pd.Series([7.0])) == [0]
+
+
+def test_shap_block_scales_contribs_ranks_values_and_fixes_categorical():
+    enc = pd.DataFrame({"days": [1.0, 3.0, 2.0], "route": [0.0, 2.0, 1.0]})
+    contribs = np.array([[0.1234, -0.05, 9.0], [-0.2, 0.0004, 9.0], [0.0, 0.01, 9.0]])  # 마지막 열 = bias
+    b = ec.shap_block(contribs, enc, ["route", "airline"])
+    assert b == {
+        "n": 3,
+        "features": ["days", "route"],
+        "categorical": ["route"],
+        "v": [[123, -200, 0], [-50, 0, 10]],
+        "f": [[0, 100, 50], [50, 50, 50]],
+    }
+
+
+def test_shap_block_rejects_shape_mismatch():
+    enc = pd.DataFrame({"a": [1.0, 2.0]})
+    with pytest.raises(ValueError):
+        ec.shap_block(np.zeros((2, 3)), enc, [])
+
+
+def test_check_shap_features_matches_fact_groups():
+    facts = {"model": {"featureGroups": [{"features": ["a", "b"]}, {"features": ["c"]}]}}
+    ec.check_shap_features(["c", "a", "b"], facts)
+    with pytest.raises(SystemExit):
+        ec.check_shap_features(["a", "b"], facts)
+    with pytest.raises(SystemExit):
+        ec.check_shap_features(["a", "b", "c", "d"], facts)
