@@ -1,7 +1,7 @@
 // 2D 그리기와 키별 조립 검사: 점마다 원 하나, 색 번호 → 색, 키별로 알맞은 배치 함수를 부른다.
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { buildLayout } from '@/charts/build';
+import { describe, expect, it, vi } from 'vitest';
+import { buildLayout, loadFor } from '@/charts/build';
 import { drawLayout, TONE_COLOR, toneColor } from '@/charts/draw2d';
 import { TONE, TONE_VAL, VAL_LO, valTone, type ChartLayout } from '@/charts/types';
 import type { ChartsData, CloudData } from '@/charts/data';
@@ -60,6 +60,21 @@ describe('drawLayout', () => {
     expect(toneColor(TONE_VAL + 100)).toBe('#ffb547');
     expect(toneColor(TONE_VAL + 50)).toBe('#ada1a3'); // (#5A8CFF + #FFB547) / 2, 반올림
     expect(toneColor(TONE.dot)).toBe(TONE_COLOR[TONE.dot]);
+  });
+});
+
+describe('loadFor', () => {
+  it('features: charts.json을 못 받아도 와플은 그리되(charts 없음) 오류는 경고로 남긴다', async () => {
+    const err = new Error('offline');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(err));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await expect(loadFor('features', 'load-fail-test')).resolves.toEqual({ charts: undefined });
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('SHAP'), err);
+    } finally {
+      warn.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 });
 

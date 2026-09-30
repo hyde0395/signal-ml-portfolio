@@ -35,7 +35,14 @@ function once<T>(key: string, f: () => Promise<T>): Promise<T> {
 
 export async function loadFor(key: ChartKey, dataVersion: string): Promise<Loaded> {
   // 와플은 닫힌 상태에 데이터가 필요 없다 — charts.json을 못 받아도 와플은 그리고 펼치기만 막는다(ChartStage)
-  if (key === 'features') return { charts: await once(`charts:${dataVersion}`, () => loadCharts(dataVersion)).catch(() => undefined) };
+  if (key === 'features') {
+    const charts = await once(`charts:${dataVersion}`, () => loadCharts(dataVersion)).catch((e: unknown) => {
+      // 조용히 삼키면 펼치기가 왜 안 되는지(네트워크·스키마 불일치) 알 길이 없다 — 동작은 그대로 두고 흔적만 남긴다
+      console.warn('SHAP 데이터를 불러오지 못했다 — 와플만 그린다', e);
+      return undefined;
+    });
+    return { charts };
+  }
   if (key === 'chartCloud') return { cloud: await once(`cloud:${dataVersion}`, () => loadCloud(dataVersion)) };
   return { charts: await once(`charts:${dataVersion}`, () => loadCharts(dataVersion)) };
 }
