@@ -32,6 +32,14 @@ export const chartsSchema = z.object({
     base: z.array(z.number().int().nullable()),
     obs: z.object({ date: ints, pct: ints }),
   }).optional(),
+  // ② 걸러내기(계획 8-1): 원본 행 표본의 소요 분, 정상 행 노선·등급 평균 대비 %×10, 걸린 규칙(0 통과·1 단위·소요·2 시각 불일치·3 직항 확인)
+  filter: z.object({ dur: ints, pct: ints, rule: ints }).optional(),
+  // ⑤ 검증 설계(계획 8-1): 수집일 번호, 출발일 번호(dates), 평가로 쓰인 폴드(K-Fold·GroupKFold 0..4, TSS −1..4), 판에 보여 줄 폴드
+  split: z.object({
+    fetch: ints, date: ints, kf: ints, gkf: ints, tss: ints,
+    fetchDays: z.number().int().positive(),
+    show: z.object({ kf: z.number().int().min(0).max(4), gkf: z.number().int().min(0).max(4) }),
+  }).optional(),
 })
   .refine((c) => c.depart.pct.length === c.dates.length && c.depart.holiday.length === c.dates.length, '출발일 배열 길이가 서로 다르다')
   .refine((c) => c.curve.sample.bin.length === c.curve.sample.pct.length, '표본 배열 길이가 서로 다르다')
@@ -40,7 +48,18 @@ export const chartsSchema = z.object({
   .refine((c) => !c.model || (c.model.base.length === c.dates.length && c.model.obs.date.length === c.model.obs.pct.length
     && c.model.obs.date.every((i) => i >= 0 && i < c.dates.length)), '모델 구조 배열 모양이 다르다')
   // 기준이 전부 null이면 기준 가격 선을 그릴 수 없다(model.ts가 known[0]을 읽는다) — 그릴 때 죽지 않고 불러올 때 막는다
-  .refine((c) => !c.model || c.model.base.some((b) => b !== null), '모델 구조 기준 가격이 하나도 없다');
+  .refine((c) => !c.model || c.model.base.some((b) => b !== null), '모델 구조 기준 가격이 하나도 없다')
+  .refine((c) => !c.filter || (c.filter.dur.length === c.filter.pct.length && c.filter.rule.length === c.filter.dur.length
+    && c.filter.rule.every((r) => r >= 0 && r <= 3)), '걸러내기 배열 모양이 다르다')
+  .refine((c) => {
+    const s = c.split;
+    if (!s) return true;
+    const n = s.fetch.length;
+    return [s.date, s.kf, s.gkf, s.tss].every((a) => a.length === n)
+      && s.date.every((i) => i >= 0 && i < c.dates.length)
+      && s.fetch.every((f) => f >= 0 && f < s.fetchDays)
+      && [...s.kf, ...s.gkf].every((f) => f >= 0 && f <= 4) && s.tss.every((f) => f >= -1 && f <= 4);
+  }, '검증 설계 배열 모양이 다르다');
 export type ChartsData = z.infer<typeof chartsSchema>;
 
 // 불확실성 구름은 데모 데이터에서 한 조합만 쓴다(설계 §3.4 차트 4 — 기준일 인천→나리타 LCC)

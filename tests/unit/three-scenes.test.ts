@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, handoffProgress, HERO_FOV, horizonFrac, isChartScene, pickScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 import { runwayPhases } from '@/three/plane';
 
-const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'bubble',
-  'validation', 'chartCloud', 'limits', 'demo', 'contact'];
-const CHARTS: SceneKey[] = ['chartModel', 'features', 'chartDepart', 'chartCurve', 'chartCloud'];
+const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'chartFilter', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'bubble',
+  'chartSplit', 'validation', 'chartCloud', 'limits', 'demo', 'contact'];
+const CHARTS: SceneKey[] = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud'];
 
 describe('SCENES', () => {
   it('모든 키가 있다', () => expect(Object.keys(SCENES).sort()).toEqual([...KEYS].sort()));
@@ -16,7 +16,7 @@ describe('SCENES', () => {
   it('제거 레이어는 bubble에서만', () => {
     for (const k of KEYS) expect(SCENES[k].removed, k).toBe(k === 'bubble' ? 1 : 0);
   });
-  it('차트 장면 다섯 개(③ 모델 구조 chartModel 포함, 계획 7-2)만 chart = 1이고, 정면(z축)에서 CHART_DISTANCE만큼 떨어져 원점을 본다', () => {
+  it('차트 장면 일곱 개(② 걸러내기·⑤ 검증 설계 포함, 계획 8-1)만 chart = 1이고, 정면(z축)에서 CHART_DISTANCE만큼 떨어져 원점을 본다', () => {
     for (const k of KEYS) expect(isChartScene(k), k).toBe(CHARTS.includes(k));
     for (const k of CHARTS) {
       expect(SCENES[k].camera).toEqual([0, 0, CHART_DISTANCE]);

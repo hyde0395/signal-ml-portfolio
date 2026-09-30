@@ -112,5 +112,8 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
         tip: (v) => tip({ date: dayOf(v.date), price: money.format(v.price), lo: money.format(v.lo), hi: money.format(v.hi) }),
       });
     }
+    // Task 6이 실제 case로 바꾼다(계획 8-1)
+    default:
+      throw new Error(`배치가 없다: ${key}`);
   }
 }

@@ -1,8 +1,8 @@
 // ③ 와플·④·⑤ 차트의 공통 타입(설계 2026-09-25 §3.3·§3.4·§4, 2026-09-27 개정). 의존성이 없어 어디서 불러도 가볍다.
 // 좌표는 "그림 판"(data-plot) 안의 정규화 좌표다: x 0=왼쪽 1=오른쪽, y 0=위 1=아래(화면과 같은 방향).
 // 같은 배치를 2D 캔버스(3D가 꺼졌을 때)와 3D 점(켜졌을 때)이 함께 쓴다.
-// chartModel: ③ 모델 구조 점(계획 7-2)
-export type ChartKey = 'features' | 'chartModel' | 'chartDepart' | 'chartCurve' | 'chartCloud';
+// chartModel: ③ 모델 구조 점(계획 7-2), chartFilter: ② 걸러내기·chartSplit: ⑤ 검증 설계(계획 8-1)
+export type ChartKey = 'features' | 'chartModel' | 'chartDepart' | 'chartCurve' | 'chartCloud' | 'chartFilter' | 'chartSplit';
 
 // 색 번호: 셰이더(three/shaders.ts toneColor)와 2D 그리기(draw2d.ts)가 같은 번호를 쓴다
 export const TONE = { dot: 1, amber: 2, text: 3 } as const;
@@ -20,7 +20,10 @@ export const FOCUS_DIM = 0.25;
 export const CHART_FOCUS_DIM = 0.45;
 
 export type ChartLabel =
-  | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end'; cls: 'tick' | 'axis' | 'month' | 'holiday' | 'feature' | 'head' }
+  // stat·statSm: 판 위 수치(글자가 바뀌면 플립, 계획 8-1). rule·ruleOn: 걸러내기 규칙 목록(아직/적용됨).
+  // keyDot·keyAmber·keyDim: 범례(앞에 그 색 점)
+  | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end';
+      cls: 'tick' | 'axis' | 'month' | 'holiday' | 'feature' | 'head' | 'stat' | 'statSm' | 'rule' | 'ruleOn' | 'keyDot' | 'keyAmber' | 'keyDim' }
   // compact: 좁은 판(휴대폰)에서는 개수를 빼고 pct·이름 두 줄만 보여준다 — 개수는 설명 줄에도 있다(2026-09-28 실측)
   // mini: 펼친 SHAP 화면의 작은 와플 이름표(계획 5-3c) — 넓은 판은 이름만, 좁은 판은 %만
   | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean; compact: boolean; mini?: 'name' | 'pct' }

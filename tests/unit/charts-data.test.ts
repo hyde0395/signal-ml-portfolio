@@ -1,7 +1,7 @@
 // 차트 데이터 읽기 검사: 실제 생성 파일(charts·demo)이 스키마를 통과하고, 404·길이 불일치는 reject.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { CLOUD_SERIES, loadCharts, loadCloud } from '@/charts/data';
+import { chartsSchema, CLOUD_SERIES, loadCharts, loadCloud } from '@/charts/data';
 import { facts } from '@/lib/facts';
 
 const v = facts.dataVersion;
@@ -75,5 +75,29 @@ describe('loadCloud', () => {
     const demo = file('demo');
     demo.series[CLOUD_SERIES] = null;
     await expect(loadCloud(v, as(vi.fn(() => ok(demo))))).rejects.toThrow();
+  });
+});
+
+describe('charts.json filter·split(계획 8-1)', () => {
+  const base = () => file('charts');
+  const withBlocks = () => ({
+    ...base(),
+    filter: { dur: [150, 500], pct: [10, -20], rule: [0, 1] },
+    split: { fetch: [0, 3], date: [0, 1], kf: [0, 4], gkf: [2, 0], tss: [-1, 4], fetchDays: 4, show: { kf: 2, gkf: 0 } },
+  });
+  it('형식이 맞으면 받는다, 없어도 받는다', () => {
+    expect(() => chartsSchema.parse(withBlocks())).not.toThrow();
+    const { filter: _f, split: _s, ...rest } = withBlocks();
+    expect(() => chartsSchema.parse(rest)).not.toThrow();
+  });
+  it('filter 길이가 다르거나 규칙 번호가 0~3 밖이면 막는다', () => {
+    expect(() => chartsSchema.parse({ ...withBlocks(), filter: { dur: [1], pct: [1, 2], rule: [0] } })).toThrow();
+    expect(() => chartsSchema.parse({ ...withBlocks(), filter: { dur: [1], pct: [1], rule: [4] } })).toThrow();
+  });
+  it('split 출발일 번호가 dates 밖이거나 폴드가 범위 밖이면 막는다', () => {
+    const b = withBlocks();
+    expect(() => chartsSchema.parse({ ...b, split: { ...b.split, date: [0, 9999] } })).toThrow();
+    expect(() => chartsSchema.parse({ ...b, split: { ...b.split, tss: [-2, 0] } })).toThrow();
+    expect(() => chartsSchema.parse({ ...b, split: { ...b.split, fetch: [0, 4] } })).toThrow(); // fetchDays 4면 0..3
   });
 });

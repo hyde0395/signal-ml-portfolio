@@ -2,8 +2,8 @@
 // 캔버스는 이 값으로 "부드럽게 다가가기"만 하므로, 연출을 바꾸려면 이 표만 고치면 된다.
 import { runwayPhases } from './plane';
 
-export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'model' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
-  | 'bubble' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
+export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'chartFilter' | 'model' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
+  | 'bubble' | 'chartSplit' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
 
 export type SceneState = {
   camera: [number, number, number];
@@ -68,6 +68,8 @@ export const SCENES: Record<SceneKey, SceneState> = {
   // ② 화면 2: 같은 지도를 멀리서 내려다보고 점을 흐리게 한다. 판 없는 보드의 작은 글자가 지도 점과 섞이지
   // 않게 하는 것이 이 장면의 목적이다(설계 §3.2, 2026-09-27)
   dataBoard: { ...base, camera: [0, 30, 14], target: [0, 0, 0], map: 1, dim: 0.32 }, // 0.16은 지도가 너무 흐려 보여 올림(2026-09-29 시안 B 선택)
+  // ② 걸러내기(계획 8-1): 점이 소요 시간 × 가격 산점도로 모이고 규칙마다 걸린 점이 떨어진다
+  chartFilter: { ...base, ...CHART },
   // ③·⑤ 머리(설계 2026-09-29 이야기 흐름 §3.4, 계획 7-2에서 자리 옮김, 2026-09-30 섹션 전체 → 머리만): 제목 자리의 장면 —
   // 장면이 없는 틈이면 3D가 마지막 차트 배치에 멈춰 글 위에 남았다. 섹션 전체에 두면 와플 아래 여백에서도 켜져 ③ → ④ 사이에
   // 점이 지형을 한 번 거쳐 갔다.
@@ -81,6 +83,8 @@ export const SCENES: Record<SceneKey, SceneState> = {
   chartCurve: { ...base, ...CHART },
   // 차트 3: 제거 레이어가 높이 떠 있다가 떨어진다(drop은 sceneFor가 진행도로 채움)
   bubble: { ...base, camera: [2, 9, 17], target: [-5, 2.5, 0], removed: 1 },
+  // ⑤ 검증 설계(계획 8-1): 점이 수집일 × 출발일로 모이고 평가 방식마다 학습·평가 색이 바뀐다
+  chartSplit: { ...base, ...CHART },
   validation: { ...base, camera: [-5, 22, 0.1], target: [-5, 0, 0], noise: 0.5 },
   chartCloud: { ...base, ...CHART },
   limits: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.7 },
