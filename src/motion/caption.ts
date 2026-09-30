@@ -57,6 +57,9 @@ export function startCaptions(doc: Document): () => void {
       const paras = copy.querySelectorAll<HTMLElement>('.chart-para');
       const on = activeParagraph(r.top, r.height, vh, paras.length);
       paras.forEach((p, i) => p.classList.toggle('is-on', i === on));
+      // 지금 문단 번호를 블록에도 적는다 — 단계가 있는 그림 판(③ 모델 구조, 계획 7-2)이 이것을 지켜보다 점 배치를 바꾼다.
+      // 바뀔 때만 쓴다(매 스크롤 프레임마다 쓰면 판의 MutationObserver가 헛돈다)
+      if (block.dataset.para !== String(on)) block.dataset.para = String(on);
     }
   };
   const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
@@ -73,6 +76,7 @@ export function startCaptions(doc: Document): () => void {
       copy?.style.removeProperty('opacity');
       copy?.style.removeProperty('top');
       block.querySelectorAll('.chart-para').forEach((p) => p.classList.remove('is-on'));
+      delete block.dataset.para;
     }
   };
 }

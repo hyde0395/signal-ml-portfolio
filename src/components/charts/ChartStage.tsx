@@ -8,6 +8,7 @@
 // 강조(sel): ③ 와플은 마우스를 올린 그룹(설계 2026-09-28 §3), ④·⑤ 차트 1·2·4는 조작 층(role=slider)으로 짚은 항목(계획 5-3b).
 // 어느 쪽이든 강조 번호 하나를 저장소로 3D에 알리고 2D도 다시 그린다.
 // 펼침(open): ③ 와플 그룹 버튼을 누르면 그 그룹의 SHAP 벌떼 배치로 다시 배치한다(계획 5-3c). 펼친 동안은 펼친 그룹이 강조다.
+// 단계(step): stages를 주면(③ 모델 구조, 계획 7-2) 자막 스크립트가 블록에 적는 지금 문단(data-para)을 따라 단계를 바꿔 다시 배치한다.
 import type React from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ChartStrings } from '@/charts/build';
@@ -15,8 +16,8 @@ import { publishChart, setFocus as publishFocus } from '@/charts/registry';
 import type { ChartKey, ChartLabel, ChartLayout } from '@/charts/types';
 
 // label: 조작 층의 aria-label(차트 제목 + " · " + charts.touch), hint: 짚은 항목이 없을 때의 valuetext(charts.touchHint).
-// 항목이 있는 차트(1·2·4)만 쓴다
-type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string; label?: string; hint?: string };
+// 항목이 있는 차트(1·2·4)만 쓴다. stages: 단계 수(문단 번호가 이보다 크면 마지막 단계에 머문다). 없으면 단계 없음
+type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string; label?: string; hint?: string; stages?: number };
 
 // 판이 화면 아래 800px 안으로 들어오면 미리 불러온다(스크롤해 도착했을 때 이미 그려져 있도록)
 const LOAD_MARGIN = '800px 0px';
@@ -25,7 +26,7 @@ const TOUCH_SLOP_PX = 8;
 // 표시 상자와 짚은 항목 사이 간격(px)
 const TIP_GAP = 12;
 
-export function ChartStage({ chartKey, dataVersion, strings, errorText, label, hint }: Props) {
+export function ChartStage({ chartKey, dataVersion, strings, errorText, label, hint, stages }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const plot = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -43,6 +44,9 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
   const [open, setOpen] = useState(-1);
   const openRef = useRef(-1);
   const relayout = useRef<() => void>(() => {});
+  // 지금 단계(stages가 있을 때만 0 이상). 배치 함수가 ref로 읽는다 — open과 같은 방식
+  const [step, setStep] = useState(0);
+  const stepRef = useRef(0);
   const [shapOk, setShapOk] = useState(false);
   const [announce, setAnnounce] = useState('');
   // 같은 문장을 다시 넣으면 알림 영역 내용이 바뀌지 않아 낭독기가 다시 읽지 않는다(데이터 없음 버튼을 거듭 누를 때).
@@ -82,7 +86,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
         redraw = () => {
           const r = pl.getBoundingClientRect(), s = st.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) return;
-          const layout = mod.buildLayout(chartKey, loaded, { w: r.width, h: r.height }, strings, openRef.current);
+          const layout = mod.buildLayout(chartKey, loaded, { w: r.width, h: r.height }, strings, openRef.current, stepRef.current);
           // 판은 sticky(top: 0)라 고정된 동안 판 윗변 = 화면 맨 위다. 지금 스크롤 위치와 상관없이
           // "고정됐을 때의 화면 위치"를 넘기려고 판 안에서의 거리(r.top - s.top)를 쓴다
           publishChart(chartKey, {
@@ -156,6 +160,23 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     paint.current(focusNow);
   }, [sel, focusNow, chartKey]);
   useEffect(() => { openRef.current = open; relayout.current(); }, [open]);
+
+  // 단계: 블록의 data-para(motion/caption.ts)가 바뀔 때만 읽는다. 스크롤마다 다시 배치하지 않고 단계가 바뀔 때만 —
+  // 새 배치의 variant(stage:n)가 바뀌어 3D는 반대 슬롯으로 옮겨 간다(chartTargets.pickSlot)
+  useEffect(() => {
+    const block = stages ? stage.current?.closest<HTMLElement>('.chart-block') : null;
+    if (!stages || !block) return;
+    const read = () => setStep(Math.min(stages - 1, Math.max(0, Number(block.dataset.para) || 0)));
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(block, { attributes: true, attributeFilter: ['data-para'] });
+    return () => mo.disconnect();
+  }, [stages]);
+  useEffect(() => {
+    if (stepRef.current === step) return;
+    stepRef.current = step;
+    relayout.current();
+  }, [step]);
 
   // 표시 상자 자리: 짚은 항목 위 TIP_GAP(자리가 없으면 아래), 좌우는 판 안으로 자른다. 상자 폭은 문장마다 달라 그린 뒤 잰다
   const cur = items && sel >= 0 ? items[sel] : undefined;
@@ -265,7 +286,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
   };
 
   return (
-    <div ref={stage} className="chart-stage">
+    <div ref={stage} className="chart-stage" data-stage={stages ? step : undefined}>
       <div ref={plot} className="chart-plot" data-plot>
         <canvas ref={canvas} className="chart-canvas" aria-hidden="true" />
         <div className="chart-labels" aria-hidden="true">
