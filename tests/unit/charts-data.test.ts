@@ -23,6 +23,17 @@ describe('loadCharts', () => {
     bad.depart.pct = bad.depart.pct.slice(1);
     await expect(loadCharts(v, as(vi.fn(() => ok(bad))))).rejects.toThrow();
   });
+  it('SHAP 표본: 피처 33개 × n, 값 순위 0~100', async () => {
+    const c = await loadCharts(v, as(vi.fn(() => ok(file('charts')))));
+    expect(c.shap?.features).toHaveLength(33);
+    expect(c.shap?.v.every((r) => r.length === c.shap!.n)).toBe(true);
+    expect(c.shap?.f.flat().every((x) => x >= 0 && x <= 100)).toBe(true);
+  });
+  it('SHAP 줄 길이가 n과 다르면 reject', async () => {
+    const bad = file('charts');
+    bad.shap.v[0] = bad.shap.v[0].slice(1);
+    await expect(loadCharts(v, as(vi.fn(() => ok(bad))))).rejects.toThrow();
+  });
   it('404면 reject', async () => {
     await expect(loadCharts(v, as(vi.fn(() => Promise.resolve(new Response('no', { status: 404 })))))).rejects.toThrow();
   });

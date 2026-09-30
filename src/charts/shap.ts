@@ -1,11 +1,11 @@
 // ③ 와플 펼치기 → SHAP 벌떼 배치(계획 5-3c, 설계 2026-09-30 §3.2 배치 A). 펼치면 와플 6개가 판 위 작은 줄로 줄고,
 // 남은 판에 펼친 그룹의 피처마다 가로줄 하나 — 점 하나 = 표본 예측 하나에서 그 피처가 가격을 움직인 %.
 // layouts.ts와 같은 순수 함수라 2D 대체 그림과 3D 점이 같은 결과를 쓴다.
+import type { ChartsData } from './data';
 import { Pts, WAFFLE, type FeatureGroupInput, type PlotSize } from './layouts';
 import { FOCUS_DIM, TONE, valTone, type ChartLabel, type ChartLayout } from './types';
 
-// charts.json의 shap 블록 모양(Task 5 스키마가 생기면 그 타입으로 바꾼다)
-export type ShapData = { n: number; features: string[]; categorical: string[]; v: number[][]; f: number[][] };
+export type ShapData = NonNullable<ChartsData['shap']>;
 export type ShapRow = { id: string; categorical: boolean; pct: number[]; f: number[]; meanAbs: number; dir: 'up' | 'down' | 'mixed' | 'cat' };
 
 // leadMinPx: 머리 줄에 설명 문장을 붙일 최소 판 폭 — 그보다 좁으면 오른쪽 색 범례와 겹친다(한국어·영어 1080px 판 어림)

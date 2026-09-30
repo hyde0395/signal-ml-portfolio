@@ -16,9 +16,19 @@ export const chartsSchema = z.object({
     n: ints.length(8),
     sample: z.object({ bin: ints, pct: ints }),
   }),
+  // ③ SHAP 벌떼(계획 5-3c). 없어도 받아들인다 — 와플은 닫힌 상태에 데이터가 필요 없고, 펼치기만 안 된다
+  shap: z.object({
+    n: z.number().int().positive(),
+    features: z.array(z.string()).min(1),
+    categorical: z.array(z.string()),
+    v: z.array(ints),
+    f: z.array(ints),
+  }).optional(),
 })
   .refine((c) => c.depart.pct.length === c.dates.length && c.depart.holiday.length === c.dates.length, '출발일 배열 길이가 서로 다르다')
-  .refine((c) => c.curve.sample.bin.length === c.curve.sample.pct.length, '표본 배열 길이가 서로 다르다');
+  .refine((c) => c.curve.sample.bin.length === c.curve.sample.pct.length, '표본 배열 길이가 서로 다르다')
+  .refine((c) => !c.shap || (c.shap.v.length === c.shap.features.length && c.shap.f.length === c.shap.features.length
+    && [...c.shap.v, ...c.shap.f].every((r) => r.length === c.shap!.n)), 'SHAP 배열 모양이 다르다');
 export type ChartsData = z.infer<typeof chartsSchema>;
 
 // 불확실성 구름은 데모 데이터에서 한 조합만 쓴다(설계 §3.4 차트 4 — 기준일 인천→나리타 LCC)
