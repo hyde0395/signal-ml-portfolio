@@ -34,7 +34,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   const shiftKey = useRef<ChartKey | null>(null); // 점 이동량(shift)을 잴 판의 차트 — 차트를 벗어나도 마지막 것을 유지
   const chartState = useRef<{ key: ChartKey | null; entry: ChartEntry | null; slot: 0 | 1 }>({ key: null, entry: null, slot: 0 });
   // 마지막으로 슬롯에 써 넣은 차트 — chartState.key와 달리 지형으로 나가도 지우지 않는다(chartTargets.ts pickSlot)
-  const lastWritten = useRef<{ key: ChartKey | null; slot: 0 | 1 }>({ key: null, slot: 0 });
+  const lastWritten = useRef<{ key: ChartKey | null; variant: string; slot: 0 | 1 }>({ key: null, variant: '', slot: 0 });
 
   useEffect(() => {
     loadSceneData(dataVersion).then(setData).catch((e) => onFail(`data: ${e.message}`));
@@ -155,13 +155,14 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       const entry = chartKey ? getChart(chartKey) : undefined;
       const cs = chartState.current;
       if (chartKey && entry && cloud && (cs.key !== chartKey || cs.entry !== entry)) {
-        // 다른 차트면(사이에 지형 장면을 거쳤어도) 반대 슬롯에 쓰고 그쪽으로 옮겨 간다
-        const slot = pickSlot(lastWritten.current, chartKey);
+        // 다른 차트거나 같은 차트의 배치 종류(variant)가 바뀌면(사이에 지형 장면을 거쳤어도) 반대 슬롯에 쓰고 그쪽으로 옮겨 간다
+        const variant = entry.layout.variant ?? '';
+        const slot = pickSlot(lastWritten.current, chartKey, variant);
         const assign = assignPoints(entry.layout.group, entry.layout.n, cloud.date, cloud.kind);
         const { pos, style, hl } = slotBuffers(entry, assign, cloud.terrain, CHART_DISTANCE, CHART_FOV);
         slots.current.pending = { slot, pos, style, hl };
         chartState.current = { key: chartKey, entry, slot };
-        lastWritten.current = { key: chartKey, slot };
+        lastWritten.current = { key: chartKey, variant, slot };
         document.documentElement.dataset.chart = chartKey;
       }
       if (!chartKey) {

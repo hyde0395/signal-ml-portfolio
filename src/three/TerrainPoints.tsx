@@ -138,6 +138,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     uDpr: { value: 1 },
     uDot: { value: new THREE.Color('#8FB8FF') },
     uAmber: { value: new THREE.Color('#FFB547') },
+    uValLo: { value: new THREE.Color('#5A8CFF') }, // charts/types.ts VAL_LO
     uText: { value: new THREE.Color('#EEF3FF') },
     // 초기값이 목표와 같아야 첫 프레임에 지형이 번쩍 보이지 않는다(공항 장면으로 시작하면 1)
     uAirport: { value: target.current?.airport ?? 0 },

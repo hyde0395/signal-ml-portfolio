@@ -72,7 +72,9 @@ export function slotBuffers(entry: ChartEntry, assign: Int32Array, terrain: Floa
 // 새 차트 배치를 쓸 슬롯. last는 마지막으로 슬롯에 써 넣은 차트로, 지형 장면으로 나가도 지우지 않는다 —
 // 지우면 uChart가 1→0으로 줄어드는 동안(앞 차트가 아직 보이는 동안) 다른 차트에 들어올 때 보이는 슬롯을
 // 덮어써 점이 한 번에 튄다. 다른 차트면 반대 슬롯, 같은 차트(다시 들어옴·창 크기 변경)면 같은 슬롯.
-export function pickSlot(last: { key: ChartKey | null; slot: 0 | 1 }, next: ChartKey): 0 | 1 {
-  if (last.key === null || last.key === next) return last.slot;
+// 같은 차트라도 배치 종류(ChartLayout.variant — ③ 와플 펼침 상태)가 바뀌면 반대 슬롯에 써서 uSlot이 옮겨 가는 동안
+// 점이 옛 자리에서 새 자리로 움직이게 한다(계획 5-3c). 창 크기 변경은 종류가 같아 같은 슬롯.
+export function pickSlot(last: { key: ChartKey | null; variant?: string; slot: 0 | 1 }, next: ChartKey, variant = ''): 0 | 1 {
+  if (last.key === null || (last.key === next && (last.variant ?? '') === variant)) return last.slot;
   return last.slot === 0 ? 1 : 0;
 }

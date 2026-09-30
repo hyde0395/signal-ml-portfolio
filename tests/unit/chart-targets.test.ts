@@ -82,4 +82,12 @@ describe('pickSlot', () => {
     expect(pickSlot({ key: 'chartDepart', slot: 1 }, 'chartDepart')).toBe(1);
     expect(pickSlot({ key: 'chartDepart', slot: 0 }, 'chartDepart')).toBe(0);
   });
+  it('같은 차트라도 배치 종류(variant)가 바뀌면 반대 슬롯 — 와플 펼치기·닫기·그룹 바꾸기에 점이 옮겨 간다', () => {
+    expect(pickSlot({ key: 'features', variant: '', slot: 0 }, 'features', 'open:2')).toBe(1);
+    expect(pickSlot({ key: 'features', variant: 'open:2', slot: 1 }, 'features', 'open:3')).toBe(0);
+    expect(pickSlot({ key: 'features', variant: 'open:2', slot: 1 }, 'features', '')).toBe(0);
+  });
+  it('같은 종류의 다시 배치(창 크기 변경)는 같은 슬롯', () => {
+    expect(pickSlot({ key: 'features', variant: 'open:2', slot: 1 }, 'features', 'open:2')).toBe(1);
+  });
 });

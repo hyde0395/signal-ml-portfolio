@@ -43,7 +43,8 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 // - uRipple: 휴대폰 물결 (x, y = 누른 곳 NDC, z = 누른 뒤 흐른 초, 없으면 음수)
 // - vAir: 이 점이 지금 공항 불빛으로 그려지는 정도(조각 셰이더가 모양을 바꾼다)
 //
-// toneColor: 색 번호 1 점 파랑, 2 호박, 3 글자색(src/charts/types.ts TONE과 같은 순서)
+// toneColor: 색 번호 1 점 파랑, 2 호박, 3 글자색(src/charts/types.ts TONE과 같은 순서),
+// 10~110 = 값 색(계획 5-3c SHAP 벌떼, charts/types.ts TONE_VAL) — uValLo → uAmber 보간
 // airTone: 공항 색 번호(airport.ts AIR_TONE) 1 파랑, 2 호박, 3 흰색, 4 따뜻한 흰색
 // toSrgbTone: 선형 → sRGB(정확한 sRGB 전달 함수). three는 THREE.Color('#…') uniform을 선형 값으로 바꿔 넣는데,
 //   우리 ShaderMaterial 출력은 sRGB로 되돌려지지 않아 점이 디자인 토큰(sRGB)보다 어둡게(짙은 파랑·주황) 찍혔다
@@ -136,6 +137,7 @@ export const vertexShader = /* glsl */ `
   uniform float uDpr;
   uniform vec3 uDot;
   uniform vec3 uAmber;
+  uniform vec3 uValLo;
   uniform vec3 uText;
   uniform float uAirport;
   uniform float uLightT;
@@ -155,7 +157,7 @@ export const vertexShader = /* glsl */ `
   varying float vPx;
   varying vec3 vShape;
 
-  vec3 toneColor(float t) { return t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot); }
+  vec3 toneColor(float t) { return t > 9.5 ? mix(uValLo, uAmber, clamp((t - 10.0) / 100.0, 0.0, 1.0)) : t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot); }
   vec3 airTone(float t) { return t > 3.5 ? uWarm : (t > 2.5 ? uText : (t > 1.5 ? uAmber : uDot)); }
   vec3 toSrgbTone(vec3 c) {
     c = max(c, vec3(0.0));
