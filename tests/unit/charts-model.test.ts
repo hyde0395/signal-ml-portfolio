@@ -68,7 +68,7 @@ describe('modelLayout', () => {
   });
   it('2단계: 관측은 흐려지고 선 점이 밝게, 선은 기준 %를 따라 오르내린다', () => {
     const l = L[1], o = obsStart(l);
-    for (let k = 0; k < OBS; k++) expect(l.alpha[o + k]).toBeLessThan(L[0].alpha[o + k]);
+    for (let k = 0; k < OBS; k++) if (L[0].alpha[o + k] > 0) expect(l.alpha[o + k]).toBeLessThan(L[0].alpha[o + k]);
     const ys = new Set<number>();
     for (let i = lineStart(l); i < l.n; i++) { expect(l.alpha[i]).toBeGreaterThan(0.9); ys.add(l.y[i]); }
     expect(ys.size).toBeGreaterThan(3);
@@ -102,6 +102,14 @@ describe('modelLayout', () => {
     expect(texts(L[1]).some((t) => t.text === 'LINE')).toBe(true);
     expect(texts(L[2]).some((t) => t.text === 'LINE')).toBe(true);
     for (const l of L) for (const t of texts(l)) { expect(t.x).toBeGreaterThanOrEqual(0); expect(t.x).toBeLessThanOrEqual(1); expect(t.y).toBeGreaterThanOrEqual(0); expect(t.y).toBeLessThanOrEqual(1); }
+  });
+  it('세로 범위(MODEL.lo~hi) 밖 점은 가장자리에 쌓지 않고 숨긴다', () => {
+    const o = obsStart(L[0]), last = OBS - 1; // 마지막 관측 = +150% — 범위 밖
+    expect(data.model!.obs.pct[last] / 10).toBeGreaterThan(MODEL.hi);
+    expect(L[0].alpha[o + last]).toBe(0);
+    for (let k = 0; k < last; k++) expect(L[0].alpha[o + k]).toBeGreaterThan(0);
+    // 3단계는 잔차 기준: +150%와 기준 +20% → 잔차 약 +108%, 범위 안이라 보인다
+    expect(L[2].alpha[o + last]).toBeGreaterThan(0);
   });
   it('조작 항목이 없다(보기 전용)', () => {
     for (const l of L) expect(l.items).toBeUndefined();
