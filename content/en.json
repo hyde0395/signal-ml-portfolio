@@ -184,7 +184,21 @@
       "market": "Market"
     },
     "lookupNote": "Lookup importance is inflated because it shares route and airline information. On unseen departure dates these statistics fall back to defaults — something the validation step uncovered.",
-    "hint": "Hover over a group (tap on phones) to see its feature names."
+    "hint": "Hover over a group to see its feature names; click it to expand SHAP values per feature (Esc closes).",
+    "shap": {
+      "lead": "One dot = how much this feature moved the price in one prediction",
+      "down": "← lowers price",
+      "up": "raises price →",
+      "low": "low value",
+      "high": "high",
+      "catNote": "Categorical features have no value colour",
+      "rowUp": "{v.name}: average effect ±{v.pct}; higher values raise the price",
+      "rowDown": "{v.name}: average effect ±{v.pct}; higher values lower the price",
+      "rowMixed": "{v.name}: average effect ±{v.pct}; no consistent direction",
+      "rowCat": "{v.name}: average effect ±{v.pct}; categorical",
+      "opened": "Expanded SHAP values for {v.name}",
+      "closed": "Closed SHAP values"
+    }
   },
   "common": {
     "codeLink": "View code"
