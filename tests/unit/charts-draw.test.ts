@@ -1,8 +1,8 @@
 // 2D 그리기와 키별 조립 검사: 점마다 원 하나, 색 번호 → 색, 키별로 알맞은 배치 함수를 부른다.
 import { describe, expect, it } from 'vitest';
 import { buildLayout } from '@/charts/build';
-import { drawLayout, TONE_COLOR } from '@/charts/draw2d';
-import { TONE, type ChartLayout } from '@/charts/types';
+import { drawLayout, TONE_COLOR, toneColor } from '@/charts/draw2d';
+import { TONE, TONE_VAL, VAL_LO, valTone, type ChartLayout } from '@/charts/types';
 import type { ChartsData, CloudData } from '@/charts/data';
 import { dictionaries } from '@/lib/content';
 import { facts } from '@/lib/facts';
@@ -48,6 +48,17 @@ describe('drawLayout', () => {
     expect(rounded[0]).toEqual({ color: TONE_COLOR[TONE.dot], alpha: 0.2 });
     expect(rounded[1]).toEqual({ color: TONE_COLOR[TONE.amber], alpha: 0.8 });
     expect(rounded[2]).toEqual({ color: TONE_COLOR[TONE.dot], alpha: 0.8 });
+  });
+
+  it('값 색 번호(10~110)는 파랑 → 호박 보간, 범위 밖은 자른다', () => {
+    expect(valTone(0)).toBe(TONE_VAL);
+    expect(valTone(100)).toBe(TONE_VAL + 100);
+    expect(valTone(140)).toBe(TONE_VAL + 100);
+    expect(valTone(-3)).toBe(TONE_VAL);
+    expect(toneColor(TONE_VAL)).toBe(VAL_LO.toLowerCase());
+    expect(toneColor(TONE_VAL + 100)).toBe('#ffb547');
+    expect(toneColor(TONE_VAL + 50)).toBe('#ada1a3'); // (#5A8CFF + #FFB547) / 2, 반올림
+    expect(toneColor(TONE.dot)).toBe(TONE_COLOR[TONE.dot]);
   });
 });
 

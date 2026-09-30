@@ -5,6 +5,11 @@ export type ChartKey = 'features' | 'chartDepart' | 'chartCurve' | 'chartCloud';
 
 // 색 번호: 셰이더(three/shaders.ts toneColor)와 2D 그리기(draw2d.ts)가 같은 번호를 쓴다
 export const TONE = { dot: 1, amber: 2, text: 3 } as const;
+// 값 색(계획 5-3c SHAP 벌떼): 색 번호 TONE_VAL + 0~100 = 피처 값 순위. 낮음 VAL_LO(파랑) → 높음 호박.
+// 새 속성을 늘리지 않으려고 색 번호를 넓혀 쓴다 — 셰이더 toneColor와 draw2d.toneColor가 같은 규칙
+export const TONE_VAL = 10;
+export const VAL_LO = '#5A8CFF';
+export const valTone = (rank: number) => TONE_VAL + Math.round(Math.min(100, Math.max(0, rank)));
 
 // ③ 와플 강조(설계 2026-09-28 §3): 강조 그룹은 호박색, 다른 와플 그룹은 알파 × FOCUS_DIM. 2D 그리기(draw2d.ts)와
 // 3D 셰이더(three/shaders.ts, 유니폼 uFocusDim)가 ChartLayout.focusDim을 통해 이 숫자를 같이 쓴다
@@ -14,9 +19,10 @@ export const FOCUS_DIM = 0.25;
 export const CHART_FOCUS_DIM = 0.45;
 
 export type ChartLabel =
-  | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end'; cls: 'tick' | 'axis' | 'month' | 'holiday' }
+  | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end'; cls: 'tick' | 'axis' | 'month' | 'holiday' | 'feature' | 'head' }
   // compact: 좁은 판(휴대폰)에서는 개수를 빼고 pct·이름 두 줄만 보여준다 — 개수는 설명 줄에도 있다(2026-09-28 실측)
-  | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean; compact: boolean }
+  // mini: 펼친 SHAP 화면의 작은 와플 이름표(계획 5-3c) — 넓은 판은 이름만, 좁은 판은 %만
+  | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean; compact: boolean; mini?: 'name' | 'pct' }
   // ③ 와플 설명 줄의 자리(왼쪽 위 기준). 내용은 그림 판이 강조 그룹에 따라 채운다(설계 2026-09-28 §3)
   | { type: 'detail'; x: number; y: number };
 
@@ -41,6 +47,10 @@ export type ChartLayout = {
   labels: ChartLabel[];
   items?: ChartItem[]; // 짚을 항목(차트 1·2·4만). 없으면 조작 층을 두지 않는다
   initial?: number;    // 처음 강조 번호(차트 2 = 가장 싼 구간). 없으면 −1
+  // 배치 종류 표식(계획 5-3c). 같은 차트라도 이 값이 바뀌면 3D가 반대 슬롯에 써서 점이 옮겨 간다(chartTargets.pickSlot).
+  // 없으면 '' — 창 크기 변경처럼 같은 종류의 다시 배치는 같은 슬롯
+  variant?: string;
+  summary?: string[]; // 화면 낭독기용 요약 문장(펼친 SHAP 벌떼의 피처별 한 줄)
 };
 
 // 판이 고정(sticky, top: 0)된 동안의 화면 위치(px)와 그때의 뷰포트 크기
