@@ -118,6 +118,25 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       });
     }
+    // 8-1 최종 검토: 옆 칸 이름표가 판 밖으로 나가 가로 스크롤이 생기던 문제(영어가 가장 길다)
+    for (const [w, h] of [[1024, 768], [768, 1024]] as const) {
+      test(`en ${w}×${h}: 마지막 단계에서 이름표가 판 안, 가로 스크롤 없음`, async ({ page }) => {
+        await page.setViewportSize({ width: w, height: h });
+        await page.goto('/en/');
+        for (const key of ['chartFilter', 'chartSplit']) {
+          await scrollInto(page, key, 0.85);
+          const block = page.locator(`.chart-block[data-scene="${key}"]`);
+          await expect(block.locator('.chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
+          const m = await block.evaluate((el) => {
+            const plot = el.querySelector('.chart-stage')!.getBoundingClientRect();
+            const over = [...el.querySelectorAll('.chart-label')].map((n) => ({ t: n.textContent, r: n.getBoundingClientRect().right - plot.right })).filter((o) => o.r > 1);
+            return { over, sw: document.documentElement.scrollWidth, iw: window.innerWidth };
+          });
+          expect(m.over, key).toEqual([]);
+          expect(m.sw).toBeLessThanOrEqual(m.iw);
+        }
+      });
+    }
     test('axe 위반 없음(두 블록·표 카드)', async ({ page }) => {
       await page.goto('/');
       await scrollInto(page, 'chartSplit', 0.8);

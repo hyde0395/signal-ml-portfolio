@@ -449,7 +449,14 @@ button.chart-group { background: none; border: 0; padding: 0; color: inherit; fo
 /* 판 위 수치(계획 8-1): 큰 수치(R², 행 수)와 작은 줄. 규칙 목록은 적용 전 흐리게, 적용되면 호박색. 범례는 앞에 그 색 점 */
 .chart-label.stat { font: 600 26px var(--font-mono); color: var(--tx); letter-spacing: -0.01em; }
 .chart-label.statSm { font: 500 13px var(--font-mono); color: var(--tx); letter-spacing: 0.04em; }
+/* 옆 칸 이름표는 판 오른쪽 끝에서 줄바꿈한다: 절대 위치 요소의 폭은 남은 공간까지라, nowrap만 풀면 판 밖으로 안 나간다(8-1) */
+.chart-label:is(.stat, .statSm, .rule, .ruleOn, .note) { white-space: normal; }
+.chart-label.note { color: var(--amb); letter-spacing: 0.04em; }
 .chart-label.rule { color: var(--mute); letter-spacing: 0.04em; }
+/* 규칙 목록: 색만으로 구분하지 않게 적용됨 ●(호박), 아직 ○(흐림) 표시(설계 §4.1) */
+.chart-label:is(.rule, .ruleOn):not(:empty)::before { margin-right: 6px; }
+.chart-label.rule::before { content: '○'; }
+.chart-label.ruleOn::before { content: '●'; }
 .chart-label.ruleOn { color: var(--amb); letter-spacing: 0.04em; }
 .chart-label:is(.keyDot, .keyAmber, .keyDim):not(:empty)::before { content: '●'; margin-right: 6px; }
 .chart-label.keyDot::before { color: #8FB8FF; }

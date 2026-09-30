@@ -69,7 +69,7 @@ describe('splitLayout', () => {
   it('좁은 판: 세로축 이름이 수치 줄(설명·FOLD)과 범례 사이에 따로 있다', () => {
     const L = splitLayout(data, { w: 358, h: 354 }, 2, 4, S);
     const y = (pred: (l: ReturnType<typeof splitLayout>['labels'][number]) => boolean) => L.labels.find(pred)!.y * 354;
-    const tag = y((l) => l.type === 'text' && l.cls === 'ruleOn');
+    const tag = y((l) => l.type === 'text' && l.cls === 'note');
     const axisY = y((l) => l.type === 'text' && l.text === '출발일');
     const legend = y((l) => l.type === 'text' && l.cls === 'keyDot');
     expect(axisY - tag).toBeGreaterThanOrEqual(14);

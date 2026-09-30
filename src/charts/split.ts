@@ -8,7 +8,9 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 
 // subs: TSS 단계만 폴드 5개를 저절로 넘긴다(사용자 결정 2026-09-30, 약 1.2초). jitterPx: 같은 날 수집·같은 출발일 점이
 // 한 점에 겹치지 않게 조금 흔든다(시드 고정 — 단계가 바뀌어도 자리 그대로). unusedA: 아직 안 쓴(미래) 점의 알파
-export const SPLIT = { stages: 3, subs: [1, 1, 5], subMs: 1200, wideMinPx: 560, jitterPx: 1.6, seed: 5, unusedA: 0.2 } as const;
+// wideMinPx 820: 옆 칸(0.78W)이 영어 문구까지 담으려면 판이 820px는 돼야 한다. 그보다 좁으면 옆 칸이 판 밖으로 나가
+// 페이지 가로 스크롤이 생겼다(8-1 최종 검토). 820 이상에서 긴 꼬리표는 CSS가 판 오른쪽 끝에서 줄바꿈한다.
+export const SPLIT = { stages: 3, subs: [1, 1, 5], subMs: 1200, wideMinPx: 820, jitterPx: 1.6, seed: 5, unusedA: 0.2 } as const;
 
 export type SplitMethod = { name: string; r2: string; mae: string; tag: string };
 export type SplitTexts = {
@@ -60,7 +62,7 @@ export function splitLayout(d: ChartsData, size: PlotSize, stage: number, sub: n
   labels.push({ type: 'text', x: sx / W, y: sy / H, text: m.name, align: 'start', cls: 'statSm' });
   labels.push({ type: 'text', x: sx / W, y: (sy + lh) / H, text: m.r2, align: 'start', cls: 'stat' });
   labels.push({ type: 'text', x: (wide ? sx : sx + W * 0.42) / W, y: (wide ? sy + lh * 2 : sy + lh) / H, text: m.mae, align: 'start', cls: 'statSm' });
-  labels.push({ type: 'text', x: sx / W, y: (wide ? sy + lh * 3 : sy + lh * 2) / H, text: m.tag, align: 'start', cls: 'ruleOn' });
+  labels.push({ type: 'text', x: sx / W, y: (wide ? sy + lh * 3 : sy + lh * 2) / H, text: m.tag, align: 'start', cls: 'note' });
   labels.push({ type: 'text', x: (wide ? sx : sx + W * 0.42) / W, y: (wide ? sy + lh * 4 : sy + lh * 2) / H, text: st === 2 ? `FOLD ${sb + 1} / ${SPLIT.subs[2]}` : '', align: 'start', cls: 'statSm' });
   // 범례: 셋째(아직 안 씀)는 TSS에서만 글자 — 개수는 늘 같게 둔다(이름표 순서가 단계 사이에 흔들리지 않게)
   const ky = wide ? H * 0.72 : top - 30; // 좁은 판: 수치 세 줄 아래에 범례 → 축 이름 순서로 두어 설명 줄과 겹치지 않게

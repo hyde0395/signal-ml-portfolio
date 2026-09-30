@@ -20,10 +20,10 @@ export const FOCUS_DIM = 0.25;
 export const CHART_FOCUS_DIM = 0.45;
 
 export type ChartLabel =
-  // stat·statSm: 판 위 수치(글자가 바뀌면 플립, 계획 8-1). rule·ruleOn: 걸러내기 규칙 목록(아직/적용됨).
+  // stat·statSm: 판 위 수치(글자가 바뀌면 플립, 계획 8-1). rule·ruleOn: 걸러내기 규칙 목록(아직/적용됨). note: 호박색 짧은 설명(상자 이름·방식 꼬리표, 줄바꿈 허용).
   // keyDot·keyAmber·keyDim: 범례(앞에 그 색 점)
   | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end';
-      cls: 'tick' | 'axis' | 'month' | 'holiday' | 'feature' | 'head' | 'stat' | 'statSm' | 'rule' | 'ruleOn' | 'keyDot' | 'keyAmber' | 'keyDim' }
+      cls: 'tick' | 'axis' | 'month' | 'holiday' | 'feature' | 'head' | 'stat' | 'statSm' | 'rule' | 'ruleOn' | 'note' | 'keyDot' | 'keyAmber' | 'keyDim' }
   // compact: 좁은 판(휴대폰)에서는 개수를 빼고 pct·이름 두 줄만 보여준다 — 개수는 설명 줄에도 있다(2026-09-28 실측)
   // mini: 펼친 SHAP 화면의 작은 와플 이름표(계획 5-3c) — 넓은 판은 이름만, 좁은 판은 %만
   | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean; compact: boolean; mini?: 'name' | 'pct' }

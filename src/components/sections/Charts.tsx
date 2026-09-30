@@ -66,7 +66,8 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
   // ⑤ 검증 설계 판 위 수치(계획 8-1): 방식 이름(공통 영어)·R²·MAE·짧은 설명. 표와 같은 facts 값
   const num = (v: number) => formatValue(v, undefined, locale);
   const unit = t('charts.validation.table.maeUnit');
-  const method = (name: string, sc: { r2: number; mae: number }, tag: string) => ({ name, r2: `R² ${num(sc.r2)}`, mae: `MAE ${num(sc.mae)}${unit}`, tag });
+  // 영어 단위(KRW)는 글자라 숫자와 띄운다. ko "원"·ja "ウォン"은 붙여 쓴다
+  const method = (name: string, sc: { r2: number; mae: number }, tag: string) => ({ name, r2: `R² ${num(sc.r2)}`, mae: `MAE ${num(sc.mae)}${locale === 'en' ? ' ' : ''}${unit}`, tag });
   const splitStrings = {
     axisX: t('charts.validation.axisX'),
     legend: [t('charts.validation.legendTrain'), t('charts.validation.legendTest'), t('charts.validation.legendUnused')] as [string, string, string],

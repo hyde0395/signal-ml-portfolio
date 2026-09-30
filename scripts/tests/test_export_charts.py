@@ -204,6 +204,14 @@ def test_rule_codes_follow_pipeline_order():
     assert ec.rule_codes(cut).tolist() == [0, 0, 1, 1, 2, 3, 1]
 
 
+def test_rule_codes_nan_price_gets_rule_1():
+    # 가격이 비어 있는 행은 통과가 아니라 규칙 1(export_facts의 >= 기준과 같게)
+    raw = filter_raw()
+    cut = raw[pd.to_datetime(raw["fetch_timestamp"]) < pd.Timestamp("2026-09-23")].copy()
+    cut.loc[cut.index[0], "price"] = np.nan
+    assert ec.rule_codes(cut).tolist()[0] == 1
+
+
 def test_filter_block_percent_of_kept_mean_drops_missing_duration_and_is_seeded():
     b = ec.filter_block(filter_raw(), "2026-09-22", size=100, seed=1)
     assert set(b) == {"dur", "pct", "rule"}

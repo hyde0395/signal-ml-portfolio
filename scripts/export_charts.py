@@ -248,7 +248,7 @@ def rule_codes(cut: pd.DataFrame) -> pd.Series:
     """기준일까지 자른 원본 행마다 걸린 규칙 번호(0 통과, 1 단위·소요, 2 시각 불일치, 3 직항 확인).
     export_facts.filter_steps·export_terrain.split_rows와 같은 순서 — 앞 규칙에 걸린 행은 뒤 규칙으로 세지 않는다."""
     code = pd.Series(0, index=cut.index)
-    r1 = ~(cut["duration_minutes"].notna() & (cut["duration_minutes"] <= DURATION_MAX)) | (cut["price"] < PRICE_FLOOR)
+    r1 = ~(cut["duration_minutes"].notna() & (cut["duration_minutes"] <= DURATION_MAX)) | ~(cut["price"] >= PRICE_FLOOR)
     code[r1] = 1
     d1 = cut[~r1]
     d2 = drop_inconsistent_flight_times(d1)

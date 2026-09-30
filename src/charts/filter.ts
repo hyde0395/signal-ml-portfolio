@@ -9,8 +9,9 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 // 아래라 960에서 자르고 넘는 행은 칸 안에 흩어 둔다(가장자리에 세로 줄로 붙지 않게). lo·hi: 세로 %, 밖은 알파 0(7-2 규칙).
 // ruleMin: 규칙 ① 소요 상한(facts data.filter.durationMax와 같은 400분). boxFrom: 규칙 ③ 상자 왼쪽 — 노선별 직항 p05 최댓값
 // 150분 + 여유 65분(항공권 저장소 constants.py). subs: 단계마다 작은 단계 수(켜짐 → 떨어짐), subMs: 그 간격
+// wideMinPx 820: 옆 칸(0.76W)의 "258,829 ROWS"·규칙 이름이 판 안에 들어가는 최소 폭(768px에서 7px 넘쳤다, 8-1 최종 검토)
 export const FILTER = {
-  stages: 3, subs: [1, 2, 2], subMs: 700, wideMinPx: 560,
+  stages: 3, subs: [1, 2, 2], subMs: 700, wideMinPx: 820,
   x0: 60, x1: 960, over: 0.05, lo: -90, hi: 300, ruleMin: 400, boxFrom: 215, seed: 11,
 } as const;
 const RULES = ['RULE 1 · DURATION · UNIT', 'RULE 2 · TIME MISMATCH', 'RULE 3 · DIRECT CHECK'];
@@ -79,6 +80,6 @@ export function filterLayout(d: ChartsData, size: PlotSize, stage: number, sub: 
   for (const v of [200, 100, 0, -50]) labels.push({ type: 'text', x: (gx0 - 6) / W, y: Y(v) / H, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: gx0 / W, y: (top * 0.45) / H, text: s.axisY, align: 'start', cls: 'axis' });
   labels.push({ type: 'text', x: gxMain / W, y: (bottom + (H - bottom) * 0.85) / H, text: s.axisX, align: 'end', cls: 'axis' });
-  if (st === 2) labels.push({ type: 'text', x: bx0 / W, y: Math.max(8, top - 10) / H, text: s.box, align: 'start', cls: 'ruleOn' });
+  if (st === 2) labels.push({ type: 'text', x: bx0 / W, y: Math.max(8, top - 10) / H, text: s.box, align: 'start', cls: 'note' });
   return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), variant: `stage:${st}:${sb}` };
 }
