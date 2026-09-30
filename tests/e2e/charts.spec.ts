@@ -10,9 +10,10 @@ import { expect, test, type Page } from '@playwright/test';
 // e2e(ESM)에서는 JSON 정적 import가 실패해 fs로 읽는다(board.spec.ts와 같은 방식). 피처 줄 개수의 기준
 const facts = JSON.parse(readFileSync(fileURLToPath(new URL('../../data/facts.json', import.meta.url)), 'utf-8')) as {
   model: { featureGroups: { features: string[] }[] };
+  data: { filteredRows: number };
 };
 
-const STAGES = ['chartModel', 'features', 'chartDepart', 'chartCurve', 'chartCloud'] as const;
+const STAGES = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud'] as const;
 
 async function painted(page: Page, key: string) {
   return page.locator(`.chart-block[data-scene="${key}"] .chart-canvas`).evaluate((c: HTMLCanvasElement) => {
@@ -80,6 +81,48 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       await scrollInto(page, 0.62);
       await expect(page.locator('.chart-block[data-scene="chartModel"] .chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
       const r = await new AxeBuilder({ page }).include('#features').analyze();
+      expect(r.violations).toEqual([]);
+    });
+  });
+
+  // 계획 8-1: 자막 칸이 바뀌면 단계, 단계 안에서는 sub가 저절로(움직임 줄이기 = 이 describe는 바로 마지막 sub)
+  test.describe('② 걸러내기·⑤ 검증 설계', () => {
+    const scrollInto = (page: Page, key: string, f: number) => page.locator(`.chart-block[data-scene="${key}"]`).evaluate((el, f) => {
+      const r = el.getBoundingClientRect();
+      window.scrollTo(0, window.scrollY + r.top + (r.height - window.innerHeight) * f);
+    }, f);
+    for (const [label, w, h] of [['1440', 1440, 900], ['390', 390, 844]] as const) {
+      test(`${label}: 걸러내기 단계 0 → 1 → 2, 마지막에 걸러낸 행 수, 가로 스크롤 없음`, async ({ page }) => {
+        await page.setViewportSize({ width: w, height: h });
+        await page.goto('/');
+        const stage = page.locator('.chart-block[data-scene="chartFilter"] .chart-stage');
+        for (const [f, n] of [[0.12, '0'], [0.45, '1'], [0.8, '2']] as const) {
+          await scrollInto(page, 'chartFilter', f);
+          await expect(stage).toHaveAttribute('data-stage', n, { timeout: 10_000 });
+        }
+        await expect(stage).toHaveAttribute('data-sub', '1');
+        const kept = new Intl.NumberFormat('ko').format(facts.data.filteredRows);
+        await expect(stage.locator('.chart-label.stat').first()).toContainText(kept);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      });
+      test(`${label}: 검증 설계 단계 0 → 1 → 2, TSS는 바로 FOLD 5 / 5`, async ({ page }) => {
+        await page.setViewportSize({ width: w, height: h });
+        await page.goto('/');
+        const stage = page.locator('.chart-block[data-scene="chartSplit"] .chart-stage');
+        for (const [f, n] of [[0.12, '0'], [0.45, '1'], [0.8, '2']] as const) {
+          await scrollInto(page, 'chartSplit', f);
+          await expect(stage).toHaveAttribute('data-stage', n, { timeout: 10_000 });
+        }
+        await expect(stage).toHaveAttribute('data-sub', '4');
+        await expect(stage.locator('.chart-label.statSm', { hasText: 'FOLD 5 / 5' })).toBeAttached();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      });
+    }
+    test('axe 위반 없음(두 블록·표 카드)', async ({ page }) => {
+      await page.goto('/');
+      await scrollInto(page, 'chartSplit', 0.8);
+      await expect(page.locator('.chart-block[data-scene="chartSplit"] .chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
+      const r = await new AxeBuilder({ page }).include('#data').include('#validation').analyze();
       expect(r.violations).toEqual([]);
     });
   });
@@ -510,7 +553,7 @@ test.describe('3D 켜짐', () => {
   });
 
   test('순서를 섞어 건너뛰어도 멈춘 차트의 배치로 바뀐다', async ({ page }) => {
-    for (const key of ['chartCloud', 'features', 'chartModel', 'chartCurve', 'chartDepart']) {
+    for (const key of ['chartCloud', 'chartFilter', 'features', 'chartSplit', 'chartModel', 'chartCurve', 'chartDepart']) {
       // .chart-block: ④ 머리도 첫 판과 같은 data-scene(chartDepart)을 달아 [data-scene=…]만으로는 머리가 먼저 잡힌다
       await center(page, `.chart-block[data-scene="${key}"]`);
       await expect(page.locator('html')).toHaveAttribute('data-chart', key, { timeout: 15_000 });

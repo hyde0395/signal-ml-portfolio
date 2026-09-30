@@ -39,7 +39,7 @@ test.describe('움직임 줄이기', () => {
     // (Motion.tsx가 움직임 줄이기에서는 run.ts를 아예 안 불러와 검사할 "완료 신호"가 없다 — 부재를 확인하는 유일한 방법은 시간 경과)
     await page.waitForTimeout(1500);
     await expect(page.locator('.reveal-word')).toHaveCount(0);
-    await expect(page.locator('#data .eyebrow')).toHaveText('02 — DATA COLLECTION');
+    await expect(page.locator('#data .eyebrow').first()).toHaveText('02 — DATA COLLECTION');
   });
 });
 
