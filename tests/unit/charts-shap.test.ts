@@ -80,12 +80,13 @@ describe('shapOpenLayout', () => {
     const swarm: number[] = [];
     for (let i = 0; i < L.n; i++) if (L.hl[i] === -1 && L.tone[i] >= TONE_VAL) swarm.push(i);
     expect(swarm.length).toBeGreaterThan(250); // 2줄 × 150 중 98% 범위 밖·넘침을 빼고
-    const seen = new Set<string>();
-    for (const i of swarm) {
-      const key = `${Math.round(L.x[i] * W * 10)}:${Math.round(L.y[i] * H * 10)}`;
-      expect(seen.has(key)).toBe(false);
-      seen.add(key);
+    // 같은 자리만 막으면 반쯤 겹친 점을 놓친다 — 점 중심 사이 거리가 점 지름 이상이어야 한다(px, 모든 짝 = 같은 줄 포함)
+    let minD = Infinity;
+    for (let a = 0; a < swarm.length; a++) for (let b = a + 1; b < swarm.length; b++) {
+      const i = swarm[a], j = swarm[b];
+      minD = Math.min(minD, Math.hypot((L.x[i] - L.x[j]) * W, (L.y[i] - L.y[j]) * H));
     }
+    expect(minD).toBeGreaterThanOrEqual(SHAP_LAYOUT.dot.wide - 1e-3);
     inside(L);
   });
   it('이름표: 작은 와플 그룹 4 + 피처 이름 2(줄 순서대로 위에서 아래) + 머리 줄 + 범례 + 축', () => {
