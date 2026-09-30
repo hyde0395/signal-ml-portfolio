@@ -1,7 +1,8 @@
+// @vitest-environment jsdom
 // 자막 띠 계산 검사: 글 상자가 띠로 들어오며 밝아지고, 고정되면 1, 떠나며 빨리 흐려진다.
 // 문단 번호는 판이 고정된 구간을 문단 수로 나눠 정하고, 끝까지 가면 마지막 문단이다.
-import { describe, expect, it } from 'vitest';
-import { activeParagraph, captionOpacity, stickTopFor } from '@/motion/caption';
+import { describe, expect, it, vi } from 'vitest';
+import { activeParagraph, captionOpacity, startCaptions, stickTopFor } from '@/motion/caption';
 
 describe('captionOpacity', () => {
   const vh = 1000, stick = 610;
@@ -51,5 +52,35 @@ describe('activeParagraph', () => {
   });
   it('블록이 화면보다 짧아도 0으로 나누지 않는다', () => {
     expect(activeParagraph(0, 800, vh, 3)).toBe(0);
+  });
+});
+
+// 블록의 data-para: 단계가 있는 판(계획 7-2)이 지켜보는 값이라, 바뀔 때만 쓰고 떼어 낼 때 지워야 한다
+describe('startCaptions data-para', () => {
+  it('문단이 바뀔 때만 data-para를 쓰고, 떼어 내면 지운다', () => {
+    document.body.innerHTML = '<section class="chart-block"><div class="chart-copy">'
+      + '<p class="chart-para">a</p><p class="chart-para">b</p></div></section>';
+    const block = document.querySelector<HTMLElement>('.chart-block')!;
+    let top = 0;
+    // jsdom은 레이아웃이 없다 — 블록 위치·높이를 직접 주고, 프레임 예약은 바로 실행한다
+    block.getBoundingClientRect = () => ({ top, height: 3000, bottom: top + 3000 } as DOMRect);
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 1; });
+    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true });
+    const mo = new MutationObserver(() => {});
+    mo.observe(block, { attributes: true, attributeFilter: ['data-para'] });
+
+    const stop = startCaptions(document);
+    expect(block.dataset.para).toBe('0');
+    top = -1500; // 고정 구간(2000)의 3/4 → 둘째 문단
+    window.dispatchEvent(new Event('scroll'));
+    expect(block.dataset.para).toBe('1');
+    top = -1600; // 같은 문단 안 — 다시 쓰지 않는다
+    window.dispatchEvent(new Event('scroll'));
+    expect(mo.takeRecords()).toHaveLength(2); // 0 쓰기, 1 쓰기 — 그 뒤 스크롤은 쓰기 없음
+
+    stop();
+    expect('para' in block.dataset).toBe(false);
+    mo.disconnect();
+    vi.unstubAllGlobals();
   });
 });
