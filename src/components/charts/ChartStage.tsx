@@ -25,6 +25,8 @@ const LOAD_MARGIN = '800px 0px';
 const TOUCH_SLOP_PX = 8;
 // 표시 상자와 짚은 항목 사이 간격(px)
 const TIP_GAP = 12;
+// 단계 바뀜을 이만큼 가라앉은 뒤에 적용한다 — 자막을 빨리 훑을 때마다 setStep하면 3D 슬롯이 전환 도중 덮어써져 점이 튄다
+const STAGE_DEBOUNCE_MS = 150;
 
 export function ChartStage({ chartKey, dataVersion, strings, errorText, label, hint, stages }: Props) {
   const stage = useRef<HTMLDivElement>(null);
@@ -167,10 +169,12 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     const block = stages ? stage.current?.closest<HTMLElement>('.chart-block') : null;
     if (!stages || !block) return;
     const read = () => setStep(Math.min(stages - 1, Math.max(0, Number(block.dataset.para) || 0)));
+    let timer = 0;
+    // 처음 단계는 바로 적용하고(로드 직후 지연 없이), 이후 바뀜만 디바운스한다
     read();
-    const mo = new MutationObserver(read);
+    const mo = new MutationObserver(() => { clearTimeout(timer); timer = window.setTimeout(read, STAGE_DEBOUNCE_MS); });
     mo.observe(block, { attributes: true, attributeFilter: ['data-para'] });
-    return () => mo.disconnect();
+    return () => { mo.disconnect(); clearTimeout(timer); };
   }, [stages]);
   useEffect(() => {
     if (stepRef.current === step) return;
