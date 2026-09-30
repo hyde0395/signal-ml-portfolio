@@ -31,7 +31,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 | ② 수집 규칙 문구 | 실제 수집 일정(가까운 출발일 수·금·일 매일, 중간 3일 순환, 먼 출발일 일요일) | — | ✅ PR #14 (2026-09-29 병합·배포) |
 | 6-5 첫 화면 → ① 전환 | 첫 화면 → ① 전환·SIGNAL 머리말·점 비행기·공항 시안 맞춤·① 물결 | `2026-09-29-plan-6-5-hero-handoff.md` | ✅ PR #15 (2026-09-29 병합·배포) |
 | 7-1 이야기 흐름 | ③ 모델 카드, ④ FINDINGS / ⑤ VALIDATION | `2026-09-29-plan-7-1-story-flow.md` | ✅ PR #16 (2026-09-30 병합·배포) |
-| 5-3c SHAP 벌떼 | ③ 와플 눌러 SHAP 벌떼(작은 와플 줄 + 피처별 벌떼, 값 색), Esc 닫기 | `2026-09-30-plan-5-3c-shap-swarm.md` | PR 올림 — 확인·병합 대기 |
+| 5-3c SHAP 벌떼 | ③ 와플 눌러 SHAP 벌떼(작은 와플 줄 + 피처별 벌떼, 값 색), Esc 닫기 | `2026-09-30-plan-5-3c-shap-swarm.md` | PR #17 올림 — 확인·병합 대기 |
 
 5-3c는 PR 확인 → 병합이 남았다(아래 "다음 세션에서 할 일" 0번). 결과는 설계 문서 `docs/superpowers/specs/2026-09-30-shap-swarm-design.md` "구현 결과 (계획 5-3c)". 별도 작업 폴더(`~/dev/untitled folder/signal-ml-portfolio-5-3c`, git worktree)는 병합 뒤 지워도 된다(7-1·6-5 폴더도).
 
