@@ -43,8 +43,9 @@ for (const { path, lang } of PAGES) {
     if (content[lang].contact.nameSub) await expect(contact).toContainText(content[lang].contact.nameSub);
     for (const id of ['project', 'data', 'features', 'findings', 'validation', 'demo', 'contact']) await expect(page.locator(`#${id}`)).toBeAttached();
     // ④ 발견(출발일·U자)과 ⑤ 검증(R² 거품·평가 방식 표·예측 구간·한계) — 설계 2026-09-29 이야기 흐름 §2
-    await expect(page.locator('#findings [data-scene]')).toHaveCount(2);
-    await expect(page.locator('#validation [data-scene]')).toHaveCount(4);
+    // article = 블록. 섹션 머리(.charts-head)도 장면을 달아(2026-09-30) [data-scene]만으로는 머리까지 센다
+    await expect(page.locator('#findings article[data-scene]')).toHaveCount(2);
+    await expect(page.locator('#validation article[data-scene]')).toHaveCount(4);
     const order = await page.locator('main').evaluate((m) => [...m.querySelectorAll('#features, #findings, #validation, #demo')].map((e) => e.id));
     expect(order).toEqual(['features', 'findings', 'validation', 'demo']);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', new RegExp(`/og/${lang}\\.jpg$`));
