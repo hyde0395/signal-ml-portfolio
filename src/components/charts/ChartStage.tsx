@@ -66,7 +66,10 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
         const mod = await import('@/charts/build');
         const loaded = await mod.loadFor(chartKey, dataVersion);
         if (!alive) return;
-        setShapOk(!!loaded.charts?.shap);
+        // 펼치기는 모든 그룹 피처가 SHAP 데이터에 있을 때만 켠다 — 하나라도 빠지면 shapRows가 redraw 안(이 try 밖,
+        // ResizeObserver·effect에서 불림)에서 던져 트리 전체가 무너진다. 그땐 데이터가 없을 때처럼 와플만 보인다
+        const shap = loaded.charts?.shap;
+        setShapOk(!!shap && (strings.groups ?? []).every((g) => g.features.every((f) => shap.features.includes(f))));
         redraw = () => {
           const r = pl.getBoundingClientRect(), s = st.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) return;
