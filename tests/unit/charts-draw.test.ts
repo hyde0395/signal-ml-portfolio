@@ -113,6 +113,29 @@ describe('buildLayout', () => {
     expect(buildLayout('features', {}, { w: 1080, h: 414 }, s, 0).variant ?? '').toBe(''); // 데이터 없음 → 닫힌 와플
   });
 
+  // ③ 모델 구조 점(계획 7-2): 단계(step)마다 다른 배치 종류, 3단계 축 이름표는 기준 가격 대비. 실제 데이터로 넓은 판·휴대폰 판
+  it('chartModel: step으로 단계 배치, 실제 데이터에서 점·이름표가 판 안', () => {
+    const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.json`, 'utf8')) as ChartsData;
+    const s = { locale: 'ko' as const, holidays: {}, axis: 'AX', axisResid: 'RES', line: 'LINE' };
+    for (const size of [{ w: 1080, h: 414 }, { w: 358, h: 354 }]) {
+      for (const step of [0, 1, 2, 3]) {
+        const L = buildLayout('chartModel', { charts }, size, s, -1, step);
+        expect(L.variant).toBe(`stage:${Math.min(step, 2)}`);
+        for (let j = 0; j < L.n; j++) {
+          expect(L.x[j]).toBeGreaterThanOrEqual(0); expect(L.x[j]).toBeLessThanOrEqual(1);
+          expect(L.y[j]).toBeGreaterThanOrEqual(0); expect(L.y[j]).toBeLessThanOrEqual(1);
+        }
+        for (const l of L.labels) {
+          expect(l.x).toBeGreaterThanOrEqual(0); expect(l.x).toBeLessThanOrEqual(1);
+          expect(l.y).toBeGreaterThanOrEqual(0); expect(l.y).toBeLessThanOrEqual(1);
+        }
+        const axis = L.labels.find((l) => l.type === 'text' && l.cls === 'axis');
+        expect(axis).toMatchObject({ text: step >= 2 ? 'RES' : 'AX' });
+      }
+    }
+    expect(buildLayout('chartModel', { charts }, { w: 1080, h: 414 }, s).variant).toBe('stage:0'); // step 기본 0
+  });
+
   it('커밋된 charts.json의 SHAP 피처 = facts 와플 그룹 피처의 합집합', () => {
     const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.json`, 'utf8')) as ChartsData;
     const want = new Set(facts.model.featureGroups.flatMap((g) => g.features));

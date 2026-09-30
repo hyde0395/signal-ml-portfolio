@@ -2,6 +2,7 @@
 // (초기 JS 150KB). 날짜·금액 글자는 방문자 언어(Intl)로 만든다 — 문구 파일이 아니라 형식이라 숫자 규칙과 무관.
 import { loadCharts, loadCloud, type ChartsData, type CloudData } from './data';
 import { cloudLayout, departLayout, swarmLayout, waffleLayout, type FeatureGroupInput, type PlotSize } from './layouts';
+import { modelLayout } from './model';
 import { shapOpenLayout } from './shap';
 import type { ChartKey, ChartLayout } from './types';
 import { interpolate, type Locale } from '@/lib/i18n';
@@ -16,7 +17,9 @@ export type ShapTexts = Record<(typeof SHAP_TEXT_KEYS)[number], string>;
 export type ChartStrings = {
   locale: Locale;
   holidays: Record<string, string>; // 공휴일 코드 → 이름(출발일·구름)
-  axis?: string;                    // 세로축 이름(출발일·벌떼·구름)
+  axis?: string;                    // 세로축 이름(출발일·벌떼·구름·모델 구조 1·2단계)
+  axisResid?: string;               // 모델 구조 3단계 세로축 이름(기준 가격 대비)
+  line?: string;                    // 모델 구조 기준 가격 선 이름표
   weekdayTitle?: string;            // 요일 평균 제목(출발일만)
   groups?: FeatureGroupInput[];     // 와플(③)만
   countUnit?: string;               // "개" / " features" / "個"
@@ -54,8 +57,8 @@ const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}
 const signedInt = (v: number) => signed(Math.round(v));
 const MONDAY = Date.UTC(2024, 0, 1); // 2024-01-01은 월요일
 
-// open: ③ 펼친 와플 그룹 번호(−1 = 닫힘)
-export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: ChartStrings, open = -1): ChartLayout {
+// open: ③ 펼친 와플 그룹 번호(−1 = 닫힘). step: 단계가 있는 판(③ 모델 구조)의 지금 단계 = 자막 문단 번호(ChartStage가 자른다)
+export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: ChartStrings, open = -1, step = 0): ChartLayout {
   const holiday = (code: string) => s.holidays[code] ?? code;
   // 문장 틀이 없으면(와플 등) 빈 문장 — 이 경우 조작 층도 문장을 쓰지 않는다
   const tip = (v: Record<string, string | number>) => (s.tip ? interpolate(s.tip, { v }, s.locale) : '');
@@ -74,6 +77,13 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
         });
       }
       return waffleLayout(groups, size, { pct: gain, count });
+    }
+    case 'chartModel': {
+      const mo = new Intl.DateTimeFormat(s.locale, { month: 'short', timeZone: 'UTC' });
+      return modelLayout(loaded.charts!, size, step, {
+        month: (iso) => mo.format(new Date(`${iso}T00:00:00Z`)), pct: signed,
+        axis: s.axis ?? '', axisResid: s.axisResid ?? '', line: s.line ?? '',
+      });
     }
     case 'chartDepart': {
       const wd = new Intl.DateTimeFormat(s.locale, { weekday: 'short', timeZone: 'UTC' });
