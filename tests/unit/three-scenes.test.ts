@@ -1,7 +1,8 @@
 // 장면 표 검사: 모든 키 존재, problem·dataBoard만 지도, bubble만 제거 레이어·떨어짐,
 // 차트 장면은 정면 고정 카메라이고 세로 화면에서도 카메라가 그대로다.
 import { describe, expect, it } from 'vitest';
-import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, handoffProgress, HERO_FOV, horizonFrac, isChartScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
+import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, handoffProgress, HERO_FOV, horizonFrac, isChartScene, pickScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
+import { runwayPhases } from '@/three/plane';
 
 const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'bubble',
   'validation', 'chartCloud', 'limits', 'demo', 'contact'];
@@ -231,5 +232,37 @@ describe('이륙 비행기 진행도(plane)', () => {
   it('첫 화면은 0(서 있음), 그 밖 장면은 1(다 흩어짐)', () => {
     expect(sceneFor('hero', 0.5, false).plane).toBe(0);
     for (const k of Object.keys(SCENES) as (keyof typeof SCENES)[]) if (k !== 'hero') expect(sceneFor(k, 0, false).plane).toBe(1);
+  });
+});
+
+// 첫 화면 → ① 장면 고르기(계획 6-6): 여백(hero-runway)이 있으면 활성 섹션이 아니라 비행기 시계로 고른다
+describe('pickScene', () => {
+  const base = { portrait: false, heroScroll: 0 };
+  it('활성 섹션이 ①인데 시계가 아직 내려앉는 중(p < 0.3)이면 공항 내려앉기', () => {
+    const s = pickScene({ ...base, active: { key: 'about', progress: 0.4 }, plane: 0.1, h: 0 });
+    expect(s).toEqual(sceneFor('hero', runwayPhases(0.1).land, false));
+  });
+  it('맨 위(활성 hero)인데 시계가 아직 ①(1)이면 ① 처음(about 0)', () => {
+    const s = pickScene({ ...base, active: { key: 'hero', progress: 0.5 }, plane: 1, h: 1 });
+    expect(s).toEqual(sceneFor('about', 0, false));
+  });
+  it('시계가 ①이고 활성 섹션도 ①이면 그 진행도', () => {
+    const s = pickScene({ ...base, active: { key: 'about', progress: 0.7 }, plane: 1, h: 1 });
+    expect(s).toEqual(sceneFor('about', 0.7, false));
+  });
+  it('전환 도중(0 < h < 1)이면 공항 끝과 ① 처음을 섞고 follow', () => {
+    const s = pickScene({ ...base, active: null, plane: 0.6, h: 0.5 });
+    expect(s).toEqual({ ...blendScenes(sceneFor('hero', 1, false), sceneFor('about', 0, false), 0.5), follow: true });
+  });
+  it('차트 장면(①보다 뒤)은 보통 길 — 활성 섹션 진행도 그대로', () => {
+    const s = pickScene({ ...base, active: { key: 'chartDepart', progress: 0.3 }, plane: 1, h: 1 });
+    expect(s).toEqual(sceneFor('chartDepart', 0.3, false));
+  });
+  it('여백이 없으면(plane −1) 첫 화면은 스크롤 내려앉기(heroScroll)', () => {
+    const s = pickScene({ ...base, heroScroll: 0.4, active: { key: 'hero', progress: 0.5 }, plane: -1, h: -1 });
+    expect(s).toEqual(sceneFor('hero', 0.4, false));
+  });
+  it('활성 섹션도 전환도 여백도 없으면 null(장면을 바꾸지 않는다)', () => {
+    expect(pickScene({ ...base, active: null, plane: -1, h: -1 })).toBeNull();
   });
 });

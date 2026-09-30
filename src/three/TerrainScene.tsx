@@ -14,7 +14,7 @@ import { assignPoints, chartShiftY, pickSlot, slotBuffers } from './chartTargets
 import { buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
 import { initialFrameRate, maxDpr, stepFrameRate } from './frameRate';
 import { lookToward, PLANE, planeFollow, planePose, planeShape, runwayPhases, stepPlaneClock, takeoffProgress } from './plane';
-import { blendScenes, CHART_DISTANCE, CHART_FOV, sceneFor, type SceneKey, type SceneState } from './scenes';
+import { CHART_DISTANCE, CHART_FOV, pickScene, sceneFor, type SceneKey, type SceneState } from './scenes';
 import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
 type Props = { dataVersion: string; onReady: () => void; onFail: (reason: string) => void; capture: SceneKey | null };
@@ -80,6 +80,17 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     // 첫 화면 → ① 장면 전체를 이 값으로 움직인다(runwayPhases). -1 = 아직 없음 — 여백 클래스(hero-runway)는 3D가 켜진
     // 뒤에 붙어 첫 계산이 이미 스크롤한 뒤일 수 있으므로, 목표로 건너뛰지 않고 지금 보이는 진행도(target.plane)에서 출발한다
     let clock = -1, clockAt = 0, ticking = false;
+    // 최대 속도는 스크롤할 때만: 옆 목차·페이지 안 링크 클릭이나 주소의 #이 바뀌어(hashchange) ①로 바로 뛰면 그 뒤
+    // 3.5초 동안 ① 글 뒤에서 이륙이 다시 재생됐다 — 뛰어간 사람은 연출을 보려던 게 아니다. 그때부터 300ms(점프 뒤
+    // 스크롤이 가라앉을 때까지) 동안은 시계를 목표에 바로 맞춘다
+    let snapUntil = -Infinity;
+    // e2e 전용 속도 덮어쓰기(window.__planeRate, Playwright addInitScript로 넣는다): 소프트웨어 렌더러(CI swiftshader)는
+    // 프레임이 느려 몇 초짜리 연출이 끝나기 전에 프레임 감시가 3D를 꺼 버린다 — 테스트에서만 빠르게 돌려 끝까지 확인한다.
+    // 없으면 PLANE.maxRate. 효과가 시작될 때 한 번만 읽는다
+    const rateOverride = (window as Window & { __planeRate?: number }).__planeRate;
+    const rate = typeof rateOverride === 'number' ? rateOverride : PLANE.maxRate;
+    // 하늘 값(--sky)을 적을 자리. 정리(cleanup) 때 ref가 이미 비었을 수 있어 효과 시작 때 잡아 둔다
+    const bd = backdrop.current;
     // 전환 표시(data-handoff, e2e가 읽는다)는 html에, 하늘 불투명도(--sky)는 .backdrop에 적는다 — --sky를 html에 두면
     // 값이 바뀔 때마다 페이지 전체의 스타일이 다시 계산된다. 비행기 시계가 도는 동안은 스크롤이 멈춰도 매 프레임
     // 바뀌어서, html에 두었을 때 소프트웨어 렌더러에서 프레임이 떨어져 3D가 꺼졌다. 이 함수는 update의 DOM 읽기가
@@ -95,7 +106,6 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         else html.dataset.handoff = hs;
         shownHandoff = hs;
       }
-      const bd = backdrop.current;
       if (ss !== shownSky && bd) {
         if (ss === null) bd.style.removeProperty('--sky');
         else bd.style.setProperty('--sky', ss);
@@ -109,12 +119,12 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       const active = pickActive(readCandidates(document), vh);
       const html = document.documentElement;
       // 첫 화면 → ① 전환(설계 2026-09-29 §2.1·§5): 내려앉기가 끝난 뒤(y0)부터 ① 제목이 읽는 자리에 올 때(y1)까지
-      // 스크롤 위치로 공항과 ① 장면을 섞는다. 머리말(#intro)이 화면 가운데일 때는 활성 장면 후보가 없어
+      // 공항과 ① 장면을 섞는다. 스크롤 위치는 목표이고, 장면은 그 목표를 최대 속도로 따라가는 비행기 시계로 정한다(계획 6-6). 머리말(#intro)이 화면 가운데일 때는 활성 장면 후보가 없어
       // active가 null이므로 그보다 먼저 계산한다. 3D가 맨 위에서 켜졌을 때(hero-runway 여백)만 — 그 밖에는
       // 내려앉기 여백이 없어 y0가 의미 없다. #project 위치는 방금 readCandidates가 레이아웃을 읽은 뒤
       // (사이에 DOM 쓰기 없음)라 추가 레이아웃 계산이 없고, 캐시하지 않으므로 글꼴·창 크기 변화에도 늘 맞다
       let h = -1; // -1 = 전환 계산 안 함
-      let plane = -1; // 이륙 비행기 진행도(plane.ts takeoffProgress). -1 = 장면 기본값(첫 화면 0, 그 밖 1)
+      let plane = -1; // 이륙 비행기 진행도 = 비행기 시계 값(시안 눈금). -1 = 여백 없음, 장면 기본값(첫 화면 0, 그 밖 1)
       let goal = -1;  // 스크롤로 정한 비행기 진행도(시계가 따라갈 목표)
       const now = performance.now();
       if (html.classList.contains('hero-runway')) {
@@ -132,7 +142,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
             // (초당 1~4장)에서 시계가 실제 시간보다 몇 배 느려져 연출이 한없이 늘어진다
             goal = takeoffProgress(window.scrollY, 0.9 * vh, y1);
             const dt = ticking ? Math.min(1, (now - clockAt) / 1000) : 1 / 60;
-            clock = stepPlaneClock(clock < 0 ? target.current.plane : clock, goal, dt);
+            clock = now < snapUntil ? goal : stepPlaneClock(clock < 0 ? target.current.plane : clock, goal, dt, rate);
             clockAt = now;
             plane = clock;
             h = runwayPhases(clock).h;
@@ -148,25 +158,12 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       if (handoff || (prevH >= 0 && h >= 0 && h !== prevH)) lastHandoff = now;
       prevH = h;
       const followUntil = lastHandoff + 600;
-      // 여백이 있고 첫 화면·①·그 사이(머리말)라면 장면은 스크롤 위치(활성 섹션)가 아니라 비행기 시계로 고른다.
-      // 시계는 스크롤보다 늦게 따라오므로, 활성 섹션이 이미 ①인데 시계는 아직 내려앉는 중(h 0)이거나 거꾸로 맨 위인데
-      // 시계는 아직 ①(h 1)일 수 있다 — 활성 섹션대로 고르면 카메라가 ①로 튀었다가 공항으로 섞여 돌아온다
-      const runway = plane >= 0 && (!active || active.key === 'hero' || active.key === 'about');
-      if (!active && !handoff && !runway) { writeHandoff(html, h); return; }
-      let s: SceneState;
-      if (handoff) {
-        // 공항 끝(hero 진행 1)과 ① 처음(about 진행 0) 사이. follow로 점·카메라가 스크롤을 바짝 따라간다
-        s = { ...blendScenes(sceneFor('hero', 1, portrait.current), sceneFor('about', 0, portrait.current), h), follow: true };
-      } else if (runway) {
-        // 내려앉기도 비행기 시계로 — 한 눈금이라 비행기 굴러가기와 카메라가 어긋나지 않는다
-        s = h <= 0
-          ? sceneFor('hero', runwayPhases(plane).land, portrait.current)
-          : sceneFor('about', active?.key === 'about' ? active.progress : 0, portrait.current);
-      } else {
-        const a = active!;
-        // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
-        s = sceneFor(a.key, a.key === 'hero' ? Math.min(1, window.scrollY / (0.9 * vh)) : a.progress, portrait.current);
-      }
+      // 장면 고르기(scenes.ts pickScene): 여백이 있으면 첫 화면·머리말·①은 활성 섹션이 아니라 시계로 고른다
+      const picked = pickScene({
+        active, plane, h, portrait: portrait.current, heroScroll: Math.min(1, window.scrollY / (0.9 * vh)),
+      });
+      if (!picked) { writeHandoff(html, h); return; }
+      let s: SceneState = picked;
       if (plane >= 0) {
         // 고개로 비행기를 살짝 따라간다(시안: 방향 차이의 35%, 높이 차이의 30%) — 멀어지는 비행기가 화면 구석으로
         // 빨리 밀려나지 않고, 흩어지는 모습이 화면 안에서 보이게. 불빛이 지형으로 넘어가며 풀려(planeFollow)
@@ -215,20 +212,30 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       // 배치가 아직 없으면(데이터를 받는 중) 점을 지형에 둔다 — 빈 화면 대신 멀리 보이는 지형
       target.current = { ...s, chart: chartKey && entry ? 1 : 0, slot: chartState.current.slot, shift, followUntil };
       writeHandoff(html, h); // DOM 읽기(.chart-stage)가 모두 끝난 뒤에 쓴다
-      // 전환 앞 절반(아직 공항에 가까울 때)만 마우스 시차를 둔다
+      // 전환 앞 절반(아직 공항에 가까울 때)과 시계로 고른 공항(h 0)에서만 마우스 시차를 둔다
+      const runway = plane >= 0 && (!active || active.key === 'hero' || active.key === 'about');
       parallax.current = handoff ? h < 0.5 : runway ? h <= 0 : active?.key === 'hero';
       setRunning(active?.key !== 'contact' && !document.hidden);
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
     update();
+    // 옆 목차·페이지 안 링크(#…) 클릭과 주소 # 바뀜은 점프 — 시계를 목표에 바로 맞춘다(위 snapUntil)
+    const snap = () => { snapUntil = performance.now() + 300; schedule(); };
+    const onClick = (e: MouseEvent) => {
+      if ((e.target as Element | null)?.closest?.('a[href^="#"]')) snap();
+    };
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
+    window.addEventListener('hashchange', snap);
+    document.addEventListener('click', onClick, { capture: true });
     document.addEventListener('visibilitychange', schedule);
     // 그림 판이 배치를 새로 올리면(처음 불러옴·창 크기 변경) 지금 장면에 다시 반영한다
     const off = onChartsChange(schedule);
     return () => {
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
+      window.removeEventListener('hashchange', snap);
+      document.removeEventListener('click', onClick, { capture: true });
       document.removeEventListener('visibilitychange', schedule);
       off();
       if (raf) cancelAnimationFrame(raf);
@@ -237,7 +244,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       delete document.documentElement.dataset.activeScene;
       delete document.documentElement.dataset.chart;
       delete document.documentElement.dataset.handoff;
-      backdrop.current?.style.removeProperty('--sky');
+      bd?.style.removeProperty('--sky');
     };
   }, [capture, cloud, planeStart]);
 

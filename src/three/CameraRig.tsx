@@ -41,7 +41,7 @@ export function CameraRig({ target, instant, parallax }: Props) {
       camera.position.copy(goal);
       look.current.copy(goalLook);
     } else {
-      // 전환 구간(follow, 빠른 휠 직후 잠깐 포함)에서는 점(TerrainPoints DAMP×4)과 함께 스크롤을 바짝 따라간다
+      // 전환 구간(follow, 빠른 휠 직후 잠깐 포함)에서는 점(TerrainPoints DAMP×4)과 함께 목표(비행기 시계가 정한 전환 장면)를 바짝 따라간다
       const k = followActive(t, performance.now()) ? 7 : 1.8;
       camera.position.x = THREE.MathUtils.damp(camera.position.x, goal.x, k, delta);
       camera.position.y = THREE.MathUtils.damp(camera.position.y, goal.y, k, delta);

@@ -182,7 +182,8 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
       slots.current!.pending = null;
     }
     const u = m.uniforms;
-    // 전환 구간(follow, 빠른 휠 직후 잠깐 포함)에서는 스크롤을 바짝 따라가게 약 4배 빠르게 — 느리면 휠을 멈춘 뒤에도 한참 흘러간다
+    // 전환 구간(follow, 빠른 휠 직후 잠깐 포함)에서는 목표(비행기 시계가 정한 전환 장면)를 바짝 따라가게 약 4배 빠르게 —
+    // 느리면 시계가 멈춘 뒤에도 한참 흘러가고, 시계 값인 비행기 자세와 어긋난다
     const k = followActive(t, performance.now()) ? DAMP * 4 : DAMP;
     const step = (key: string, goal: number) => {
       u[key].value = instant ? goal : THREE.MathUtils.damp(u[key].value, goal, k, delta);

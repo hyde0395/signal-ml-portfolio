@@ -1,5 +1,7 @@
 // 장면 표: 섹션·블록마다 카메라 위치와 셰이더 uniform 목표값을 정한다.
 // 캔버스는 이 값으로 "부드럽게 다가가기"만 하므로, 연출을 바꾸려면 이 표만 고치면 된다.
+import { runwayPhases } from './plane';
+
 export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'model' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
   | 'bubble' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
 
@@ -149,6 +151,33 @@ export function sceneFor(key: SceneKey, progress: number, portrait: boolean): Sc
 
 function clamp01(v: number) { return Math.min(1, Math.max(0, v)); }
 function smooth(v: number) { return v * v * (3 - 2 * v); }
+
+// 첫 화면 → ① 구간에서 지금 보일 장면을 고른다(계획 6-6, TerrainScene update가 부른다).
+// - plane: 비행기 시계 값(여백 hero-runway가 없으면 −1), h: 시계로 구한 전환 진행도(runwayPhases, 없으면 −1)
+// - heroScroll: 여백이 없을 때 첫 화면 내려앉기(스크롤 ÷ 0.9·화면 높이, 0..1)
+// 여백이 있고 첫 화면·①·그 사이(머리말, 활성 섹션 없음)라면 활성 섹션이 아니라 시계로 고른다. 시계는 스크롤을 최대 속도로
+// 따라가 늦으므로, 활성 섹션이 이미 ①인데 시계는 아직 내려앉는 중(h 0)이거나 거꾸로 맨 위인데 시계는 아직 ①(h 1)일 수
+// 있다 — 활성 섹션대로 고르면 카메라가 ①로 튀었다가 공항으로 섞여 돌아온다. ①보다 뒤(차트 등)는 보통 길이다.
+// 활성 섹션도 전환도 여백도 없으면 null — 호출자가 지금 장면을 그대로 둔다
+export function pickScene(o: {
+  active: { key: SceneKey; progress: number } | null;
+  plane: number; h: number; portrait: boolean; heroScroll: number;
+}): SceneState | null {
+  const { active, plane, h, portrait } = o;
+  const handoff = h > 0 && h < 1;
+  const runway = plane >= 0 && (!active || active.key === 'hero' || active.key === 'about');
+  // 공항 끝(hero 진행 1)과 ① 처음(about 진행 0) 사이. follow로 점·카메라가 시계를 바짝 따라간다
+  if (handoff) return { ...blendScenes(sceneFor('hero', 1, portrait), sceneFor('about', 0, portrait), h), follow: true };
+  if (runway) {
+    // 내려앉기도 시계로 — 한 눈금이라 비행기 굴러가기와 카메라가 어긋나지 않는다
+    return h <= 0
+      ? sceneFor('hero', runwayPhases(plane).land, portrait)
+      : sceneFor('about', active?.key === 'about' ? active.progress : 0, portrait);
+  }
+  if (!active) return null;
+  // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
+  return sceneFor(active.key, active.key === 'hero' ? o.heroScroll : active.progress, portrait);
+}
 
 // 두 장면 상태를 h(0~1)로 섞는다. 숫자 필드(카메라·목표점은 성분별)는 선형 보간이고, 한쪽에만 있는 숫자는 0으로 본다.
 // 숫자가 아닌 필드는 보간할 수 없어 h >= 0.5면 b, 아니면 a 값을 쓴다.
