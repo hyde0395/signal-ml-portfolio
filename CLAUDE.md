@@ -34,7 +34,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 **병합·배포된 것**: 계획 1·2·3·4-1·4-2·5-1·5-2·6-1·6-2·6-3·5-3a·6-4·5-3b·6-5·7-1·5-3c·7-2·6-6과 작은 문제 정리(PR #1~#21). PR #21: 섹션 사이 장면 틈(③ 와플 → ④ 제목에서 점이 지형·① 물결 줄을 거쳐 가던 것) — 장면 없는 틈은 ①보다 위일 때만 머리말로 보고, ③·⑤ 머리 `model`·④ 머리 `chartDepart`. 계획서는 `docs/superpowers/plans/`, 설계는 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점).
 
-**진행 중**: 계획 8-1(⑤ 검증 설계·② 걸러내기 점 연출, 브랜치 `feat/validation-filter-dots`, 설계 `docs/superpowers/specs/2026-09-30-validation-filter-dots-design.md`) — PR 확인 대기. 6-6(PR #20) 결과는 설계 `docs/superpowers/specs/2026-09-29-hero-project-handoff-design.md` "추가 (계획 6-6)" — 로딩 중 스크롤하면 이륙이 꺼지던 버그(3D가 켜진 뒤 맨 위로 오면 `hero-runway`를 켬), 첫 화면 → ① 연출 최대 속도(`PLANE.maxRate` 0.28/s, 스크롤 자체는 그대로, `#`·옆 목차 이동은 즉시), 흩어짐 시안 C. e2e는 `window.__planeRate`로 연출을 빨리 돌려 CI에서도 이륙 흐름을 검사한다.
+**진행 중**: 계획 8-1(⑤ 검증 설계·② 걸러내기 점 연출, 브랜치 `feat/validation-filter-dots`, 설계 `docs/superpowers/specs/2026-09-30-validation-filter-dots-design.md`) — PR #22 확인 대기. 6-6(PR #20) 결과는 설계 `docs/superpowers/specs/2026-09-29-hero-project-handoff-design.md` "추가 (계획 6-6)" — 로딩 중 스크롤하면 이륙이 꺼지던 버그(3D가 켜진 뒤 맨 위로 오면 `hero-runway`를 켬), 첫 화면 → ① 연출 최대 속도(`PLANE.maxRate` 0.28/s, 스크롤 자체는 그대로, `#`·옆 목차 이동은 즉시), 흩어짐 시안 C. e2e는 `window.__planeRate`로 연출을 빨리 돌려 CI에서도 이륙 흐름을 검사한다.
 
 ## 다음 할 일 (맥미니부터)
 
