@@ -22,7 +22,9 @@ export function Features({ locale }: { locale: Locale }) {
     Object.entries(dictionaries[locale].features.shap).map(([k, v]) => [k, prefill(v as string, facts, locale)]),
   ) as ShapTexts;
   return (
-    <section id="features" className="wrap" aria-labelledby="features-h">
+    // data-scene="model": 섹션 전체의 3D 장면(가격 지형). 안쪽 그림 판 블록이 더 작아 블록 위에서는 블록 장면이 이기고,
+    // 머리·블록 사이 틈에서만 이 장면이 쓰인다 — 장면이 없는 틈이면 3D가 마지막 차트 배치에 멈춘 채 글 위에 남았다(계획 7-2 눈 확인)
+    <section id="features" className="wrap" aria-labelledby="features-h" data-scene="model">
       {/* 섹션 머리표·h2는 ④·⑤처럼 블록 위 머리(.charts-head)에 둔다 — #features-h는 움직임 e2e가 쓰는 제목 리빌 대상이라 id를 그대로 둔다.
           모델 구조 블록에는 이름을 따로 달지 않는다: h2가 이미 이 블록의 이름이라 같은 이름이 두 번 낭독된다 */}
       <div className="charts-head">
