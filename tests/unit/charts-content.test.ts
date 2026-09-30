@@ -1,6 +1,7 @@
 // 차트 문구 검사: charts.json 이름표의 공휴일 코드마다 세 언어 이름이 있고, 그림 판 블록마다 요약 문단(alt)이 있다.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { SHAP_TEXT_KEYS } from '@/charts/build';
 import { dictionaries } from '@/lib/content';
 import { facts } from '@/lib/facts';
 import { LOCALES } from '@/lib/i18n';
@@ -19,6 +20,10 @@ describe('차트 문구', () => {
     it(`${locale}: 출발일 점 그래프의 모든 공휴일 코드에 이름이 있다(표시 상자에 코드가 그대로 나오지 않게)`, () => {
       const names = { ...dictionaries[locale].demo.holidays, ...c.holidays } as Record<string, string>;
       for (const code of new Set(charts.depart.holiday)) if (code !== null) expect(names[code], code).toBeTruthy();
+    });
+    // Features.tsx는 features.shap을 ShapTexts로 바꿔 넘긴다(형 변환) — 키가 빠지거나 더해지면 타입 검사가 못 잡으니 여기서 잡는다
+    it(`${locale}: SHAP 벌떼 문구(features.shap) 키가 ShapTexts와 같다`, () => {
+      expect(Object.keys(dictionaries[locale].features.shap)).toEqual([...SHAP_TEXT_KEYS]);
     });
     it(`${locale}: 그림 판 블록(depart·curve·band)마다 요약 문단이 있다`, () => {
       for (const id of ['depart', 'curve', 'band']) expect(c[id].alt, id).toBeTruthy();

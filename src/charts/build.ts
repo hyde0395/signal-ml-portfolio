@@ -8,8 +8,10 @@ import { interpolate, type Locale } from '@/lib/i18n';
 
 export { drawLayout } from './draw2d';
 
-// ③ SHAP 벌떼 문구(content features.shap). row*·opened는 {v.name}·{v.pct} 자리표시를 남긴 채 넘어온다
-export type ShapTexts = { lead: string; down: string; up: string; low: string; high: string; catNote: string; rowUp: string; rowDown: string; rowMixed: string; rowCat: string; opened: string; closed: string };
+// ③ SHAP 벌떼 문구(content features.shap). row*·opened는 {v.name}·{v.pct} 자리표시를 남긴 채 넘어온다.
+// 키 목록을 값으로 두는 건 Features.tsx가 문구를 형 변환으로 넘겨 타입 검사가 키 불일치를 못 잡기 때문 — 단위 테스트가 세 언어 문구와 대조한다
+export const SHAP_TEXT_KEYS = ['lead', 'down', 'up', 'low', 'high', 'catNote', 'rowUp', 'rowDown', 'rowMixed', 'rowCat', 'opened', 'closed'] as const;
+export type ShapTexts = Record<(typeof SHAP_TEXT_KEYS)[number], string>;
 
 export type ChartStrings = {
   locale: Locale;
