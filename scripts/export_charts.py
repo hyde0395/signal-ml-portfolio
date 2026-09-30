@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import functools
 import gzip
 import json
 import sys
@@ -24,7 +25,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import export_terrain as et  # noqa: E402  (export_facts를 거쳐 항공권 저장소를 sys.path에 넣는다)
-from export_demo import holiday_codes, load_holidays  # noqa: E402
+from export_demo import holiday_codes, load_holidays, quiet  # noqa: E402
 from export_facts import AIRFARE_ROOT, METRICS_PATH  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,14 +127,20 @@ def check_shap_features(names: list[str], facts: dict) -> None:
                          f"facts에만 {sorted(want - set(names))}")
 
 
+@functools.lru_cache(maxsize=1)
+def service_model():
+    """서비스 모델(v2_predictor.pkl) → (xgb_model, 피처 이름, predictor). 로드가 약 17초라 SHAP과 기준 가격이 한 번만 부른다."""
+    from src.models.feature_importance import load_pkl_model
+    with quiet():
+        return load_pkl_model()
+
+
 def compute_shap(kept: pd.DataFrame, size: int = SHAP_SAMPLE, seed: int = SEED) -> dict:
     """기준일까지의 정상 행에 학습 때와 같은 피처 함수를 붙이고 표본을 뽑아, 서비스 모델(v2_predictor.pkl)의
     XGBoost로 TreeSHAP을 계산한다(재학습 없음). 항공권 저장소 src/models/shap_analysis.py와 같은 경로:
     lookup → 전처리 → booster.predict(pred_contribs=True). shap.TreeExplainer는 XGBoost 2.x base_score
     파싱 버그가 있어 쓰지 않는다(그쪽 주석). 모델 로드는 약 17초, NeuralProphet 로그는 quiet()로 막는다."""
     import xgboost as xgb
-    from export_demo import quiet
-    from src.models.feature_importance import load_pkl_model
     from src.models.tscv_eval_v2 import (add_days_features, add_jp_holiday_features,
                                          add_kr_holiday_features, add_market_features)
 
@@ -143,8 +150,8 @@ def compute_shap(kept: pd.DataFrame, size: int = SHAP_SAMPLE, seed: int = SEED) 
     df["route"] = df["origin"].astype(str) + "_" + df["destination"].astype(str)
     df["departure_date"] = pd.to_datetime(df["departure_date"])
     take = df.sample(n=min(size, len(df)), random_state=seed).reset_index(drop=True)
+    model, names, predictor = service_model()
     with quiet():
-        model, names, predictor = load_pkl_model()
         enc = pd.DataFrame(predictor.preprocessor.transform(predictor._apply_lookup(take)), columns=names)
     contribs = model.get_booster().predict(xgb.DMatrix(enc.values), pred_contribs=True)
     # 기여의 합 = 모델 출력(log 잔차)이어야 한다 — 인코딩 경로가 서비스와 어긋나면 여기서 멈춘다
@@ -205,13 +212,37 @@ def build_charts(raw: pd.DataFrame, as_of: str) -> dict:
     }
 
 
+def compute_model_baseline(route: str, cabin: str, dates: list[str]) -> dict[str, float]:
+    """서비스 모델의 NeuralProphet 기준 가격(원)을 출발일별로. V2Predictor.predict_optimal_timing의 3단계와 같은 계산 —
+    노선 NP 추세(np_baseline_for_route) × (노선, 등급) 수준 비율, 값이 없거나 0 이하면 유효 값의 중앙값. 재학습 없음."""
+    from src.models.np_baseline import np_baseline_for_route
+    _, _, p = service_model()
+    with quiet():
+        base = np_baseline_for_route(p.np_models, p.np_dailies, route, pd.Series(pd.to_datetime(dates)))
+    base = np.asarray(base, dtype=float) * p.class_level_ratio.get((route, cabin), 1.0)
+    ok = np.isfinite(base) & (base > 0)
+    if not ok.any():
+        raise SystemExit(f"{route}/{cabin} NeuralProphet 기준 가격이 하나도 없다")
+    base = np.where(ok, base, float(np.median(base[ok])))
+    return dict(zip(dates, base.tolist()))
+
+
+def compute_model(kept: pd.DataFrame, removed: pd.DataFrame, dates: list[str]) -> dict:
+    """③ 모델 구조 점: 노선·등급 평균 대비 %를 붙이고(지형과 같은 정의) 인천→나리타 LCC만 골라 표본과 기준 %를 만든다."""
+    kept, _ = et.add_route_class_pct(kept, removed)
+    sub = route_rows(kept, MODEL_ROUTE, MODEL_CABIN)
+    base = compute_model_baseline(MODEL_ROUTE, MODEL_CABIN, sorted(sub["departure_date"].unique().tolist()))
+    return model_block(sub, dates, base, MODEL_ROUTE, MODEL_CABIN)
+
+
 def main() -> None:
     metrics = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
     as_of = metrics["_meta"]["asOf"]
     raw = pd.read_csv(AIRFARE_ROOT / "data" / "raw" / "flight_prices.csv")
     charts = build_charts(raw, as_of)
-    kept, _ = et.split_rows(raw, as_of)
+    kept, removed = et.split_rows(raw, as_of)
     charts["shap"] = compute_shap(kept)
+    charts["model"] = compute_model(kept, removed, charts["dates"])
     check_shap_features(charts["shap"]["features"], json.loads((ROOT / "data" / "facts.json").read_text(encoding="utf-8")))
     check_curve(charts["curve"], metrics)
     terrain = json.loads((ROOT / "public" / "data" / f"terrain.{as_of}.json").read_text(encoding="utf-8"))
@@ -226,6 +257,11 @@ def main() -> None:
     print(f"{out.name}: 출발일 {len(charts['dates'])}개, 이름표 {[l['code'] for l in charts['labels']]}, "
           f"표본 {len(charts['curve']['sample']['pct'])}개, gzip {size:,}B"
           f", SHAP {len(charts['shap']['features'])}×{charts['shap']['n']}")
+    m = charts["model"]
+    resid = [((1 + o / 1000) / (1 + m["base"][d] / 1000) - 1) * 100 for d, o in zip(m["obs"]["date"], m["obs"]["pct"])]
+    hot = sum(abs(r) >= MODEL_RESID_HOT for r in resid) / len(resid)
+    print(f"model {m['route']}/{m['cabin']}: 관측 {len(resid)}개, 기준 {sum(b is not None for b in m['base'])}일, "
+          f"|잔차| ≥ {MODEL_RESID_HOT:.0f}% {hot:.1%}")
 
 
 if __name__ == "__main__":
