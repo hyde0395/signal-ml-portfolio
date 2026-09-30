@@ -90,7 +90,8 @@ export function shapOpenLayout(
   const top = headY + (wide ? L.headPx.wide : L.headPx.narrow), bottom = H - L.bottomPx;
   const rowH = (bottom - top) / Math.max(1, rows.length);
   const abs = rows.flatMap((r) => r.pct.map(Math.abs)).sort((a, b) => a - b);
-  const lim = Math.max(L.minLim, abs.length ? abs[Math.floor(L.clipQ * (abs.length - 1))] : 0);
+  // 올림한 정수로 둬야 끝 눈금 글(±lim%)이 실제 축 끝과 같다 — 반올림하면 눈금보다 바깥에 점이 찍힌다
+  const lim = Math.max(L.minLim, Math.ceil(abs.length ? abs[Math.floor(L.clipQ * (abs.length - 1))] : 0));
   const labelW = wide ? L.labelW.wide : L.labelW.narrow;
   const ax0 = labelW + 8, ax1 = W - 8;
   const X = (v: number) => ax0 + (ax1 - ax0) * ((v + lim) / (2 * lim));
@@ -115,9 +116,9 @@ export function shapOpenLayout(
 
   // 축: 눈금(−lim·0·+lim) 한 줄 + 방향 글 한 줄
   const tickY = H - 22, dirY = H - 7;
-  labels.push({ type: 'text', x: ax0 / W, y: tickY / H, text: s.pct(-Math.round(lim)), align: 'start', cls: 'tick' });
+  labels.push({ type: 'text', x: ax0 / W, y: tickY / H, text: s.pct(-lim), align: 'start', cls: 'tick' });
   labels.push({ type: 'text', x: X(0) / W, y: tickY / H, text: s.pct(0), align: 'center', cls: 'tick' });
-  labels.push({ type: 'text', x: ax1 / W, y: tickY / H, text: s.pct(Math.round(lim)), align: 'end', cls: 'tick' });
+  labels.push({ type: 'text', x: ax1 / W, y: tickY / H, text: s.pct(lim), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: ax0 / W, y: dirY / H, text: s.down, align: 'start', cls: 'axis' });
   labels.push({ type: 'text', x: ax1 / W, y: dirY / H, text: s.up, align: 'end', cls: 'axis' });
 

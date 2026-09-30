@@ -115,6 +115,19 @@ describe('shapOpenLayout', () => {
     expect(M.labels.filter((l) => l.type === 'group').every((l) => l.type === 'group' && l.mini === 'pct')).toBe(true);
     inside(M);
   });
+  it('끝 눈금 = 실제 축 끝: lim은 98번째 백분위를 올림한 정수', () => {
+    // +51 → +5.23%, −51 → −4.97% — 98번째 백분위 5.23을 반올림하면 5지만 축 끝은 6이어야 점이 눈금 안에 든다
+    const e: ShapData = { n: N, features: ['e'], categorical: [], v: [seq((i) => (i % 2 ? 51 : -51))], f: [seq((i) => i % 101)] };
+    const G: FeatureGroupInput[] = [{ id: 'g0', gain: 40, features: ['e'], name: 'G0' }, ...groups.slice(1)];
+    const E = shapOpenLayout(G, 0, e, { w: W, h: H }, s);
+    const ticks = E.labels.flatMap((l) => (l.type === 'text' && l.cls === 'tick' && l.text !== 'LOW' && l.text !== 'HIGH' ? [l] : []));
+    const lim = 6;
+    expect(ticks.map((l) => l.text)).toEqual([s.pct(-lim), s.pct(0), s.pct(lim)]);
+    expect(ticks[2].align).toBe('end');
+    // 기본 표본(98번째 백분위 22.6)도 끝 눈금이 정수 23
+    const endText = L.labels.flatMap((l) => (l.type === 'text' && l.cls === 'tick' && l.align === 'end' && l.text !== 'LOW' ? [l.text] : []));
+    expect(endText).toEqual([s.pct(23)]);
+  });
   it('13줄(가장 많은 그룹)도 줄 높이가 점 두 개 이상', () => {
     const many: ShapData = { ...shap, features: Array.from({ length: 13 }, (_, i) => `x${i}`), categorical: [],
       v: Array.from({ length: 13 }, (_, k) => shap.v[1].map((x) => x * (k + 1))), f: Array.from({ length: 13 }, () => shap.f[1]) };
