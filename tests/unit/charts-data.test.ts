@@ -52,6 +52,11 @@ describe('loadCharts', () => {
     uneven.model.obs.pct = uneven.model.obs.pct.slice(1);
     await expect(loadCharts(v, as(vi.fn(() => ok(uneven))))).rejects.toThrow();
   });
+  it('모델 구조: 기준 %가 전부 null이면 reject', async () => {
+    const empty = file('charts');
+    empty.model.base = empty.model.base.map(() => null);
+    await expect(loadCharts(v, as(vi.fn(() => ok(empty))))).rejects.toThrow();
+  });
   it('404면 reject', async () => {
     await expect(loadCharts(v, as(vi.fn(() => Promise.resolve(new Response('no', { status: 404 })))))).rejects.toThrow();
   });

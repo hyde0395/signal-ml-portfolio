@@ -38,7 +38,9 @@ export const chartsSchema = z.object({
   .refine((c) => !c.shap || (c.shap.v.length === c.shap.features.length && c.shap.f.length === c.shap.features.length
     && [...c.shap.v, ...c.shap.f].every((r) => r.length === c.shap!.n)), 'SHAP 배열 모양이 다르다')
   .refine((c) => !c.model || (c.model.base.length === c.dates.length && c.model.obs.date.length === c.model.obs.pct.length
-    && c.model.obs.date.every((i) => i >= 0 && i < c.dates.length)), '모델 구조 배열 모양이 다르다');
+    && c.model.obs.date.every((i) => i >= 0 && i < c.dates.length)), '모델 구조 배열 모양이 다르다')
+  // 기준이 전부 null이면 기준 가격 선을 그릴 수 없다(model.ts가 known[0]을 읽는다) — 그릴 때 죽지 않고 불러올 때 막는다
+  .refine((c) => !c.model || c.model.base.some((b) => b !== null), '모델 구조 기준 가격이 하나도 없다');
 export type ChartsData = z.infer<typeof chartsSchema>;
 
 // 불확실성 구름은 데모 데이터에서 한 조합만 쓴다(설계 §3.4 차트 4 — 기준일 인천→나리타 LCC)
