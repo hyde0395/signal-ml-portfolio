@@ -6,7 +6,7 @@ import { CABINS, ROUTES } from '@/demo/types';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const score = z.object({ r2: z.number(), mae: z.number(), mape: z.number() });
-const chapters = ['problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'features', 'model'] as const;
+const chapters = ['problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'features', 'model', 'filter'] as const;
 export type CodeChapter = (typeof chapters)[number];
 
 export const factsSchema = z.object({
@@ -32,6 +32,8 @@ export const factsSchema = z.object({
     // ② 플립 보드(설계 2026-09-25 §3.2): 왕복 합산, 행 수가 많은 순
     byRoute: z.array(z.object({ pair: z.enum(['ICN_NRT', 'ICN_KIX', 'ICN_HND']), rows: z.number().int() })).min(1),
     collectDays: z.number().int(), collectMonths: z.number().int(),
+    // ② 걸러내기 판(계획 8-1): 규칙별 제거 행 수(① 단위·소요, ② 시각 불일치, ③ 직항 확인)와 소요 시간 상한(분)
+    filter: z.object({ unit: z.number().int(), mismatch: z.number().int(), direct: z.number().int(), durationMax: z.number().int() }),
   }),
   model: z.object({
     tss: score, kfold: score, gkfNoLookup: score, gkfWithLookup: score,

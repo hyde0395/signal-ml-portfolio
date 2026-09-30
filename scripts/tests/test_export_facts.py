@@ -45,6 +45,21 @@ def test_counts_filters_and_cutoff():
     assert stats["collectMonths"] == 0
 
 
+def test_filter_counts_by_rule_in_pipeline_order():
+    raw = frame([
+        row("2026-09-22 10:00:00"),                                # 통과
+        row("2026-09-22 10:01:00", dur=500, arr="16:20"),          # ① 400분 초과
+        row("2026-09-22 10:02:00", price=150),                     # ① 가격 단위 누락
+        row("2026-09-22 10:03:00", arr="14:00"),                   # ② 시각차 360분 ≠ 소요 150분
+        row("2026-09-22 10:04:00", dur=360, arr="14:00"),          # ③ 직항인데 6시간(시각과는 맞는다)
+    ])
+    stats = ef.compute_data_stats(raw, "2026-09-22")
+    assert stats["filter"] == {"unit": 2, "mismatch": 1, "direct": 1, "durationMax": 400}
+    f = stats["filter"]
+    assert stats["rawRows"] - f["unit"] - f["mismatch"] - f["direct"] == stats["filteredRows"]
+    assert stats["removedImplausible"] == f["direct"]
+
+
 def test_merge_keeps_site_config():
     existing = {"dataVersion": "old", "contact": {"linkedin": ""}, "data": {"rawRows": 1}}
     merged = ef.merge_facts(existing, "2026-09-22", {"rawRows": 2}, {"tss": {"r2": 0.637}})

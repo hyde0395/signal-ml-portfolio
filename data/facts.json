@@ -18,7 +18,8 @@
       "interval": "blob/main/src/models/v2_predictor.py",
       "features": "blob/main/src/processing/features.py",
       "limits": "blob/main/README.md",
-      "model": "blob/main/src/models/v2_predictor.py"
+      "model": "blob/main/src/models/v2_predictor.py",
+      "filter": "blob/main/src/processing/features.py"
     }
   },
   "dataVersion": "2026-09-22",
@@ -48,7 +49,13 @@
       }
     ],
     "collectDays": 153,
-    "collectMonths": 5
+    "collectMonths": 5,
+    "filter": {
+      "unit": 5742,
+      "mismatch": 826,
+      "direct": 9387,
+      "durationMax": 400
+    }
   },
   "model": {
     "tss": {

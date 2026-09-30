@@ -28,14 +28,23 @@ from src.processing.features import (  # noqa: E402
 )
 
 
-def apply_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
-    """tscv_eval_v2.load_data()와 같은 순서의 필터. (필터 후 df, 직항 타당성 필터로 제거된 행 수)."""
+def filter_steps(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
+    """tscv_eval_v2.load_data()와 같은 순서의 필터. (필터 후 df, 규칙별 제거 행 수).
+    ② 걸러내기 판(계획 8-1)이 규칙마다 떨어지는 행 수를 문구에 쓴다 — 순서가 바뀌면 규칙별 수도 바뀌므로 한 함수에서 센다."""
+    n0 = len(df)
     df = df[df["duration_minutes"].notna() & (df["duration_minutes"] <= DURATION_MAX)]
     df = df[df["price"] >= PRICE_FLOOR]
+    n1 = len(df)
     df = drop_inconsistent_flight_times(df)
-    n_before = len(df)
+    n2 = len(df)
     df = drop_implausible_direct_flights(df)
-    return df, n_before - len(df)
+    return df, {"unit": n0 - n1, "mismatch": n1 - n2, "direct": n2 - len(df)}
+
+
+def apply_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """(필터 후 df, 직항 타당성 필터로 제거된 행 수) — 옛 호출부를 위해 남긴다."""
+    df, counts = filter_steps(df)
+    return df, counts["direct"]
 
 
 def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
@@ -43,7 +52,7 @@ def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
     # 원본 CSV에서 이후에 더 쌓인 행이 섞이면 model_metrics.json이 학습했던 시점과 어긋난다.
     cutoff = pd.Timestamp(as_of) + pd.Timedelta(days=1)
     raw = raw[pd.to_datetime(raw["fetch_timestamp"]) < cutoff]
-    df, removed = apply_filters(raw)
+    df, counts = filter_steps(raw)
     fetch = pd.to_datetime(df["fetch_timestamp"])
     dep = pd.to_datetime(df["departure_date"])
     routes = (df["origin"].astype(str) + "_" + df["destination"].astype(str)).nunique()
@@ -55,7 +64,7 @@ def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
     return {
         "rawRows": int(len(raw)),
         "filteredRows": int(len(df)),
-        "removedImplausible": int(removed),
+        "removedImplausible": int(counts["direct"]),
         "collectStart": fetch.min().strftime("%Y-%m-%d"),
         "collectEnd": fetch.max().strftime("%Y-%m-%d"),
         "departStart": dep.min().strftime("%Y-%m-%d"),
@@ -67,6 +76,8 @@ def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
         "collectDays": int(days),
         # ① 숫자판의 "5개월". 30.4일(평균 한 달)로 나눠 반올림한다
         "collectMonths": int(round(days / 30.4)),
+        # ② 걸러내기 판(계획 8-1): 규칙별 제거 행 수와 소요 시간 상한(문구 "…분을 넘거나")
+        "filter": {**{k: int(v) for k, v in counts.items()}, "durationMax": int(DURATION_MAX)},
     }
 
 
