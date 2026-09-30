@@ -63,7 +63,7 @@ export function splitLayout(d: ChartsData, size: PlotSize, stage: number, sub: n
   labels.push({ type: 'text', x: sx / W, y: (wide ? sy + lh * 3 : sy + lh * 2) / H, text: m.tag, align: 'start', cls: 'ruleOn' });
   labels.push({ type: 'text', x: (wide ? sx : sx + W * 0.42) / W, y: (wide ? sy + lh * 4 : sy + lh * 2) / H, text: st === 2 ? `FOLD ${sb + 1} / ${SPLIT.subs[2]}` : '', align: 'start', cls: 'statSm' });
   // 범례: 셋째(아직 안 씀)는 TSS에서만 글자 — 개수는 늘 같게 둔다(이름표 순서가 단계 사이에 흔들리지 않게)
-  const ky = wide ? H * 0.72 : top - 14;
+  const ky = wide ? H * 0.72 : top - 30; // 좁은 판: 수치 세 줄 아래에 범례 → 축 이름 순서로 두어 설명 줄과 겹치지 않게
   const keys: ['keyDot', 'keyAmber', 'keyDim'] = ['keyDot', 'keyAmber', 'keyDim'];
   keys.forEach((cls, i) => labels.push({
     type: 'text', x: (wide ? sx : gx0 + ((W - 8 - gx0) / 3) * i) / W, y: (wide ? ky + i * 20 : ky) / H,
@@ -85,7 +85,7 @@ export function splitLayout(d: ChartsData, size: PlotSize, stage: number, sub: n
       labels.push({ type: 'text', x: (gx0 - 6) / W, y: YT(t) / H, text: mo === 0 ? `${s.month(iso)} ’${String(y).slice(2)}` : s.month(iso), align: 'end', cls: 'tick' });
     }
   }
-  labels.push({ type: 'text', x: gx0 / W, y: Math.max(8, top * 0.5) / H, text: s.axisY, align: 'start', cls: 'axis' });
+  labels.push({ type: 'text', x: gx0 / W, y: (wide ? Math.max(8, top * 0.5) : top - 10) / H, text: s.axisY, align: 'start', cls: 'axis' });
   labels.push({ type: 'text', x: gx1 / W, y: (bottom + (H - bottom) * 0.85) / H, text: s.axisX, align: 'end', cls: 'axis' });
   return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), variant: `stage:${st}:${sb}` };
 }

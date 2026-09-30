@@ -66,5 +66,14 @@ describe('splitLayout', () => {
     for (const l of L.labels) { expect(l.x).toBeGreaterThanOrEqual(0); expect(l.x).toBeLessThanOrEqual(1); expect(l.y).toBeGreaterThanOrEqual(0); expect(l.y).toBeLessThanOrEqual(1); }
     expect(() => splitLayout({ dates: [] } as unknown as ChartsData, size, 0, 0, S)).toThrow();
   });
+  it('좁은 판: 세로축 이름이 수치 줄(설명·FOLD)과 범례 사이에 따로 있다', () => {
+    const L = splitLayout(data, { w: 358, h: 354 }, 2, 4, S);
+    const y = (pred: (l: ReturnType<typeof splitLayout>['labels'][number]) => boolean) => L.labels.find(pred)!.y * 354;
+    const tag = y((l) => l.type === 'text' && l.cls === 'ruleOn');
+    const axisY = y((l) => l.type === 'text' && l.text === '출발일');
+    const legend = y((l) => l.type === 'text' && l.cls === 'keyDot');
+    expect(axisY - tag).toBeGreaterThanOrEqual(14);
+    expect(axisY - legend).toBeGreaterThanOrEqual(14);
+  });
   it('SPLIT 상수: TSS 단계만 sub 5개', () => expect(SPLIT.subs).toEqual([1, 1, 5]));
 });
