@@ -37,7 +37,11 @@ test.describe('3D 켜짐', () => {
     // 그래도 도중에 3D가 꺼지면(저프레임) 전제가 깨지므로 건너뛴다
     const on = async () => (await page.locator('html').getAttribute('data-3d')) === 'on';
     const skipIfOff = async () => test.skip(!(await on()), '도중에 3D가 꺼짐(프레임 저하)');
-    await page.locator('#intro').evaluate((n) => n.scrollIntoView({ block: 'center' }));
+    // 계획 9-3부터 머리말이 길어져(글이 화면에 붙는다) 전환은 내려앉기 끝(y0)과 머리말 글이 붙은 뒤(yA) 사이에서 일어난다
+    await page.evaluate(() => {
+      const vh = innerHeight, r = document.getElementById('intro')!.getBoundingClientRect();
+      window.scrollTo(0, (0.9 * vh + r.top + scrollY + 0.25 * vh) / 2);
+    });
     await expect.poll(async () => ((await on()) ? handoff() : 1), { timeout: 10_000 }).toBeGreaterThan(0.2);
     await skipIfOff();
     expect(await handoff()).toBeLessThan(0.8);
@@ -47,8 +51,12 @@ test.describe('3D 켜짐', () => {
     };
     await page.locator('#project-h').evaluate((n) => n.scrollIntoView({ block: 'start' }));
     await reach('1.000');
+    // 잡음 → 신호 단계(계획 9-3)도 끝까지 — U자 완성
+    await expect.poll(async () => ((await on()) ? page.locator('html').getAttribute('data-signal') : '1.000'), { timeout: 10_000 }).toBe('1.000');
+    await skipIfOff();
     await page.evaluate(() => window.scrollTo(0, 0));
     await reach('0.000');
+    expect(await page.locator('html').getAttribute('data-signal')).toBe('0.000');
     await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'hero');
   });
 
@@ -59,6 +67,8 @@ test.describe('3D 켜짐', () => {
     await expect(page.locator('html')).toHaveClass(/hero-runway/);
     await page.locator('.side-nav a[href="#project"]').click();
     await expect.poll(() => page.locator('html').getAttribute('data-handoff'), { timeout: 1_000, intervals: [50] }).toBe('1.000');
+    // 잡음 → 신호도 다시 재생하지 않고 완성된 U자(계획 9-3)
+    expect(await page.locator('html').getAttribute('data-signal')).toBe('1.000');
     test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '도중에 3D가 꺼짐(프레임 저하)');
   });
 

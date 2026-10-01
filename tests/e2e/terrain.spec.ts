@@ -102,10 +102,12 @@ function lin(c: number) { const v = c / 255; return v <= 0.03928 ? v / 12.92 : (
 function lum([r, g, b]: number[]) { return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b); }
 function contrast(a: number[], b: number[]) { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); }
 
-async function backgroundContrast(page: Page, selector: string, alpha: number) {
+async function backgroundContrast(page: Page, selector: string, alpha: number, scroll = true) {
   const el = page.locator(selector).first();
-  await el.evaluate((n) => n.scrollIntoView({ block: 'center' }));
-  await page.waitForTimeout(3500); // 카메라·uniform이 새 장면으로 옮겨 가는 시간
+  if (scroll) {
+    await el.evaluate((n) => n.scrollIntoView({ block: 'center' }));
+    await page.waitForTimeout(3500); // 카메라·uniform이 새 장면으로 옮겨 가는 시간
+  }
   // 글자색을 지운다. 셀렉터 그 요소만이 아니라 자손도 모두 지워야 한다 — .collect-steps li·.data-board 열 이름처럼
   // 안에 자기 색(예: strong의 호박색, --mute)을 따로 지정한 자손이 섞인 경우, 부모에만 칠하면
   // 상속이 아니라 자손의 명시적 색이 이겨 글자가 그대로 남아 배경 화소를 오염시킨다(최종 리뷰 #1 추가 검사에서 발견)
@@ -175,6 +177,25 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     const { mean, p99 } = await backgroundContrast(page, sel, alpha);
     expect(mean, `${sel} 평균 배경 대비 ${mean.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
     expect(p99, `${sel} 밝은 쪽 99% 화소 대비 ${p99.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+  }
+  // 잡음 → 신호(계획 9-3): 머리말 글이 화면에 붙은 동안 잡음 밭과 그어지는 U자 위에서도 읽혀야 한다. 신호 단계 가운데
+  // (yA와 yB 사이 60%)로 스크롤하고 시계(최대 0.28/초)가 따라올 때까지 기다린다. 여백(hero-runway)이 없으면 머리말이 붙지 않는다
+  if (await page.evaluate(() => document.documentElement.classList.contains('hero-runway'))) {
+    await page.evaluate(() => {
+      const vh = innerHeight, r = document.getElementById('intro')!.getBoundingClientRect();
+      const yA = r.top + scrollY + 0.25 * vh, yB = r.bottom + scrollY - vh;
+      window.scrollTo(0, yA + (yB - yA) * 0.6);
+    });
+    const html = page.locator('html');
+    // 소프트웨어 렌더러가 도중에 3D를 끄면(저프레임) 전제가 없어지므로 건너뛴다
+    await expect.poll(async () => ((await html.getAttribute('data-3d')) === 'on' ? html.getAttribute('data-signal') : '0.600'), { timeout: 15_000 }).toBe('0.600');
+    test.skip((await html.getAttribute('data-3d')) !== 'on', '도중에 3D가 꺼짐(프레임 저하)');
+    await page.waitForTimeout(1500);
+    for (const [sel, alpha] of [['#intro-h', 1], ['.intro-note', 0.72]] as const) {
+      const { mean, p99 } = await backgroundContrast(page, sel, alpha, false);
+      expect(mean, `신호 단계 ${sel} 평균 배경 대비 ${mean.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+      expect(p99, `신호 단계 ${sel} 밝은 쪽 99% 화소 대비 ${p99.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+    }
   }
   // 상단 바의 선택 안 된 언어 링크(--mute, 11px): 맨 위(첫 화면 하늘 위)에서만 전부 보이므로 끝에 맨 위로 돌아가 잰다.
   // 목록 맨 앞에 넣으면 그 대기(3.5초)만큼 첫 화면 비행기 빛줄기 시점이 밀려 첫 화면 글(당시 .hero-sub) 화소 검사가 흔들렸다
