@@ -121,3 +121,34 @@ for (const width of [320, 390]) {
     });
   }
 }
+
+// 가운데 정렬(사용자 결정 2026-10-01, 데모와 같게): 제목 글자·탑승권·소개 칸의 가운데가 본문 가운데와 맞고,
+// 소개 글은 왼쪽 정렬. 제목은 블록 상자가 아니라 글자 범위(Range)로 잰다 — 상자는 늘 가운데라 검사가 되지 않는다
+async function centres(page: Page) {
+  return page.evaluate(() => {
+    const mid = (r: DOMRect) => r.x + r.width / 2;
+    const text = (q: string) => { const range = document.createRange(); range.selectNodeContents(document.querySelector(q)!); return mid(range.getBoundingClientRect()); };
+    const box = (q: string) => mid(document.querySelector(q)!.getBoundingClientRect());
+    const about = document.querySelector('.contact-about')!;
+    return {
+      content: box('#contact'), eyebrow: text('#contact > .eyebrow'), h2: text('#contact-h'), pass: box('.pass'), about: box('.contact-about'),
+      aboutWidth: about.getBoundingClientRect().width,
+      aligns: [about, ...about.querySelectorAll('p, li, h3, h4')].map((n) => getComputedStyle(n).textAlign),
+    };
+  });
+}
+
+for (const motion of ['no-preference', 'reduce'] as const) {
+  test.describe(`가운데 정렬(${motion === 'reduce' ? '3D 끔' : '3D 켬'})`, () => {
+    test.use({ reducedMotion: motion });
+    test('1440px: 제목·탑승권·소개 칸이 본문 가운데, 소개 글은 왼쪽 정렬', async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto('/');
+      await toPass(page);
+      const c = await centres(page);
+      for (const k of ['eyebrow', 'h2', 'pass', 'about'] as const) expect(Math.abs(c[k] - c.content), k).toBeLessThanOrEqual(4);
+      expect(c.aboutWidth).toBeLessThanOrEqual(560);
+      for (const a of c.aligns) expect(['left', 'start']).toContain(a);
+    });
+  });
+}

@@ -151,7 +151,7 @@ html.hero-runway .hero-stage { padding-bottom: 60vh; }
    홈 안으로 그대로 비쳐 보여야 "페이지 바탕과 같은 색"이 된다. 홈 위치(--n1·--n2)만 배치에 따라 바꾼다 */
 .pass { --notch: 11px; --band: 40px; --perf: 2px dashed rgba(238, 243, 255, 0.28);
   --card: linear-gradient(180deg, rgba(14, 26, 51, 0.96), rgba(10, 19, 40, 0.96));
-  display: grid; max-width: 880px; }
+  display: grid; max-width: 880px; margin-inline: auto; }
 .pass-main, .pass-stub { position: relative; overflow: hidden; background: var(--card); border: 1px solid var(--line);
   -webkit-mask: radial-gradient(circle var(--notch) at var(--n1), #0000 calc(var(--notch) - 0.5px), #000 var(--notch)),
                 radial-gradient(circle var(--notch) at var(--n2), #0000 calc(var(--notch) - 0.5px), #000 var(--notch));
@@ -327,7 +327,7 @@ html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
 /* 560px는 판 크기가 아니라 그냥 읽기 좋은 줄 너비다(긴 줄은 눈이 따라가기 어렵다). .pass(탑승권)는
    자기 배경이 있는 가로 탑승권(최대 880px, 설계 2026-10-01)이라 이 제한에서 뺀다 — 560px로 줄면 꼬리표가 옆에 설 자리가 없다.
-   .contact-about(옛 소개, 640px)은 자기 배경이 없어 여기서 빼지 않는다 — 560px로 같이 줄어야 상자
+   .contact-about(소개)은 3D와 상관없이 늘 560px 가운데 칸이라(2026-10-01) 이 규칙과 폭이 같다 — 상자
    크기(padding 없음)가 3D on/off에서 늘 같아 글이 밀리지 않는다(최종 리뷰 #4, CLS) */
 /* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 상자(.project-copy)는
    큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 상자는 글 크기만큼만 커진다 */
@@ -470,7 +470,11 @@ html[data-3d="on"] .data-board > :is(p, a) { text-shadow: 0 0 6px #02040A, 0 0 2
 }
 
 /* 연락처 아래 개인 소개(옛 소개 섹션) */
-.contact-about { margin-top: 48px; max-width: 640px; }
+/* 연락처는 데모와 같이 가운데 정렬(사용자 결정 2026-10-01). 머리표·제목은 글자도 가운데, 탑승권은 상자만
+   가운데(.pass의 margin-inline), 소개는 560px 가운데 칸이지만 글은 왼쪽 정렬 — 여러 줄 문단을 가운데 맞추면
+   줄 시작이 들쭉날쭉해 읽기 어렵다. 3D가 켜지면 위 560px 규칙이 머리표·제목에도 걸리므로 margin-inline으로 상자째 가운데 */
+#contact > :is(.eyebrow, h2) { text-align: center; margin-inline: auto; }
+.contact-about { margin: 48px auto 0; max-width: 560px; text-align: left; }
 .about-role { margin-top: -4px; font-size: 0.8rem; color: var(--amb); letter-spacing: 0.18em; }
 .contact-about h4 { font-size: 1rem; margin: 24px 0 10px; }
 
