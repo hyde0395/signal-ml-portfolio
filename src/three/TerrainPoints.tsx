@@ -8,7 +8,8 @@ import type { AirportBuffers } from './airportAssign';
 import { packMeta, type PointCloud } from './data';
 import { toNdc } from './pointerField';
 import { planePose, planeScatter } from './plane';
-import { followActive, type SceneState } from './scenes';
+import { CHART_FOV, followActive, type SceneState } from './scenes';
+import { buildField, FIELD, signalLayout, signalStage } from './signal';
 import { fragmentShader, vertexShader } from './shaders';
 
 export type ChartSlotWrite = { slot: 0 | 1; pos: Float32Array; style: Float32Array; hl: Float32Array };
@@ -23,6 +24,8 @@ type Props = {
   showNoise: boolean;
   airport: AirportBuffers | null;
   planeStart: number; // 비행기 출발 자리(m, plane.ts planePose start) — 세로 화면은 PLANE.portraitStart
+  portrait: boolean;  // 세로 화면 — 잡음 밭 점 수(signal.ts FIELD)
+  bins: number[];     // U자 8구간(%) — data.ts bookingBins
 };
 
 const DAMP = 2.2; // 클수록 빨리 따라간다. 스펙의 expo.out 느낌(처음 빠르고 끝이 느림)에 가깝다
@@ -33,7 +36,7 @@ const focusDist = (t: SceneState) =>
 // planePose 결과를 매 프레임 새로 만들지 않고 이 자리에 쓴다(한 화면에 점 구름은 하나)
 const poseScratch = planePose(0);
 
-export function TerrainPoints({ cloud, target, slots, instant, showNoise, airport, planeStart }: Props) {
+export function TerrainPoints({ cloud, target, slots, instant, showNoise, airport, planeStart, portrait, bins }: Props) {
   const material = useRef<THREE.ShaderMaterial>(null);
 
   const geometry = useMemo(() => {
@@ -43,8 +46,6 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     g.setAttribute('aTerrain', new THREE.BufferAttribute(cloud.terrain, 3));
     g.setAttribute('aMap', new THREE.BufferAttribute(cloud.map, 3));
     g.setAttribute('aScatter', new THREE.BufferAttribute(cloud.scatter, 3));
-    g.setAttribute('aMeta', new THREE.BufferAttribute(packMeta(cloud), 4));
-    g.setAttribute('aWave', new THREE.BufferAttribute(cloud.wave, 3));
     // 차트 배치 두 벌: 처음엔 비어 있고(알파 0) TerrainScene이 차트 장면에 들어갈 때 채운다
     for (const name of ['aChartA', 'aChartB', 'aStyleA', 'aStyleB']) {
       g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(cloud.count * 3), 3).setUsage(THREE.DynamicDrawUsage));
@@ -64,9 +65,14 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     }
     g.setAttribute('aAirport', new THREE.BufferAttribute(airportVec4, 4));
     g.setAttribute('aAirStyle', new THREE.BufferAttribute(air.style, 4));
+    // 잡음 → 신호(계획 9-3): 공항 불빛·비행기 점이 모두 잡음 밭에 들도록 공항 배정 뒤에 정한다
+    const f = portrait ? FIELD.portrait : FIELD.desktop;
+    const field = buildField({ kind: cloud.kind, air: air.style, target: f.target, lineCount: f.line, seed: 11 });
+    g.setAttribute('aMeta', new THREE.BufferAttribute(packMeta(cloud, field.role), 4));
+    g.setAttribute('aField', new THREE.BufferAttribute(field.field, 3));
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 30); // 흩어짐 반경까지 포함 → 잘림 방지
     return g;
-  }, [cloud, airport]);
+  }, [cloud, airport, portrait]);
 
   // geometry가 바뀌거나(cloud 교체) 컴포넌트가 사라질 때 GPU 버퍼를 반환한다(메모리 누수 방지)
   useEffect(() => () => geometry.dispose(), [geometry]);
@@ -152,9 +158,14 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     uPointerOn: { value: 0 },
     uAspect: { value: 1 },
     uRipple: { value: new THREE.Vector3(0, 0, -1) },
-    // 물결 줄·은은한 점(계획 6-5): 초기값이 목표와 같아야 ①에서 3D가 켜질 때 지형 덩어리가 번쩍 보이지 않는다
-    uRows: { value: target.current?.rows ?? 0 },
-    uSoft: { value: target.current?.soft ?? 0 },
+    // 잡음 밭(계획 9-3): 초기값이 목표와 같아야 ①에서 3D가 켜질 때 지형 덩어리가 번쩍 보이지 않는다
+    uField: { value: target.current?.field ?? 0 },
+    uSig: { value: signalStage(target.current?.plane ?? 0) },
+    // 곡선 배치는 창 비율이 바뀔 때 useFrame이 채운다(아래 aspectSeen)
+    uCurve: { value: Array.from({ length: 8 }, () => new THREE.Vector2()) },
+    uArc: { value: new Array<number>(8).fill(0) },
+    uHalf: { value: new THREE.Vector2(1, 1) },
+    uPxY: { value: 0.002 },
     // 이륙 비행기(설계 2026-09-29 §7): 로컬 → 월드 행렬과 흩어짐 진행. 첫 프레임부터 목표 진행도의 자세로
     uPlane: { value: new THREE.Matrix4().fromArray(planePose(target.current?.plane ?? 1, planeStart).matrix) },
     uPlaneGo: { value: planeScatter(target.current?.plane ?? 1) },
@@ -163,6 +174,10 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
   // 비행기 시계(최대 속도 PLANE.maxRate)라 빠른 휠에도 천천히 움직인다 — 카메라 고개(lookToward)도 같은 값으로 정해져
   // 둘이 같은 감쇠 지연만큼만 어긋난다
   const planeP = useRef(target.current?.plane ?? 1);
+  // 마지막으로 곡선 배치를 계산한 화면 비율 — 바뀔 때만 다시 계산한다(매 프레임 JS 작업을 늘리지 않게)
+  const aspectSeen = useRef(-1);
+  // 새 uniform 묶음(캡처 전환 등)이나 새 구간 값이면 곡선 배치를 다시 넣는다
+  useEffect(() => { aspectSeen.current = -1; }, [uniforms, bins]);
 
   useFrame((state, delta) => {
     const m = material.current;
@@ -200,8 +215,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     else step('uSlot', t.slot);
     step('uChart', t.chart);
     step('uAirport', t.airport);
-    step('uRows', t.rows);
-    step('uSoft', t.soft);
+    step('uField', t.field);
     step('uFocusDist', focusDist(t));
     const pp = instant ? t.plane : THREE.MathUtils.damp(planeP.current, t.plane, k, delta);
     // 멈춰 있으면(대부분의 장면에서 1) 행렬을 다시 만들지 않는다. 캡처(instant)도 목표가 바뀔 때만 — 처음 값은
@@ -210,6 +224,7 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
       planeP.current = pp;
       (u.uPlane.value as THREE.Matrix4).fromArray(planePose(pp, planeStart, poseScratch).matrix);
       u.uPlaneGo.value = planeScatter(pp);
+      u.uSig.value = signalStage(pp);
     }
     // 이동량은 부드럽게 따라가지 않고 바로 넣는다 — 스크롤하는 이름표와 한 프레임도 어긋나지 않아야 한다
     u.uChartShift.value = t.shift;
@@ -227,7 +242,17 @@ export function TerrainPoints({ cloud, target, slots, instant, showNoise, airpor
     u.uWave.value = instant || wt < 0 ? -1e4 : (wt * 700) % 5800;
     // 포인터: 위치는 빠르게, 세기는 천천히 따라간다 — 점마다 상태가 없으므로 이 부드러움이 "비켰다가 제자리로"를 만든다
     const p = pointer.current;
-    u.uAspect.value = state.size.width / Math.max(1, state.size.height);
+    const aspect = state.size.width / Math.max(1, state.size.height);
+    u.uAspect.value = aspect;
+    if (aspect !== aspectSeen.current) {
+      aspectSeen.current = aspect;
+      const lay = signalLayout(aspect, bins);
+      lay.pts.forEach((p, i) => (u.uCurve.value as THREE.Vector2[])[i].set(p[0], p[1]));
+      u.uArc.value = lay.arc;
+      const th = Math.tan((CHART_FOV * Math.PI) / 360);
+      (u.uHalf.value as THREE.Vector2).set(th * aspect, th);
+      u.uPxY.value = 2 / Math.max(1, state.size.height);
+    }
     const pv = u.uPointer.value as THREE.Vector2;
     if (p.snap) {
       pv.set(p.x, p.y); // 막 다시 켜질 때는 그 자리에서 시작(화면을 가로질러 날아오지 않게)

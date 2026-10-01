@@ -360,6 +360,19 @@ html[data-3d="on"] .charts-head > h2 { margin-bottom: 0; }
    글 열은 ①과 같은 왼쪽. 글 상자는 글 크기만큼만 잡아 화소 대비 검사가 빈 자리의 점까지 재지 않게 한다 */
 .intro { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; }
 .intro-copy { width: fit-content; max-width: 100%; }
+/* 잡음 → 신호(계획 9-3): 3D가 맨 위에서 켜졌을 때만(html.hero-runway — 히어로 여백과 같은 붙박이 클래스라 맨 위에서만
+   붙어 보이는 글이 움직이지 않는다, CLS 0) 머리말을 길게 하고 글을 화면에 붙인다. 붙어 있는 동안(약 1.3 화면) 배경에서
+   잡음 밭 → 구간 점 → 점 선 → U자가 스크롤에 맞춰 진행된다(TerrainScene yA·yB) */
+.intro-pin { display: contents; }
+html.hero-runway .intro { display: block; min-height: 230svh; }
+html.hero-runway .intro-pin { position: sticky; top: 0; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; }
+/* 3D 위 글자 번짐(시안 .copy): 잡음 밭 점이 글 뒤를 지나가도 획 둘레가 어둡게 남아 읽힌다. 화소 대비 검사(terrain.spec)는
+   글자색만 지우고 이 번짐은 남긴 채 잰다 — 실제로 읽는 화면과 같다 */
+html[data-3d="on"] :is(.intro-copy, .project-copy) { text-shadow: 0 0 18px #02040a, 0 0 6px #02040a; }
+@media (max-width: 767px) {
+  /* 세로 화면은 U자가 위쪽이라(signal.ts signalLayout) 글을 ①처럼 아래에 둔다 */
+  html.hero-runway .intro-pin { justify-content: flex-end; padding-bottom: 12vh; }
+}
 .intro-title { font-size: clamp(1.9rem, 4.4vw, 3.5rem); line-height: 1.15; max-width: 20ch; word-break: keep-all; text-transform: none; margin: 0 0 28px; }
 /* balance: 두 번째 줄이 "몇 / 개의"처럼 끝에 한 낱말만 남기고 꺾이지 않게 줄 길이를 고르게 나눈다 */
 .intro-title > span { display: block; text-wrap: balance; }

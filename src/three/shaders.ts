@@ -4,18 +4,34 @@
 import { PUSH, RIPPLE } from './pointerField';
 import { AIR_SIZE } from './airport';
 import { PLANE } from './plane';
-import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './pointStyle';
+import { DEPTH_FADE, FIELD_POINT, MAP_POINT, POINT, glslFloat as f } from './pointStyle';
+import { CHART_DISTANCE } from './scenes';
+import { SIGNAL } from './signal';
 
 // 아래 두 GLSL 문자열 안에는 // 주석을 두지 않는다 — 문자열이라 빌드 때 안 지워지고 그대로 gzip에 실려
 // 3D 청크를 불필요하게 키운다(2026-09-29 최종 점검, 약 4KB 절감). 원래 줄 옆에 있던 설명을 여기로 옮긴다.
 
 // vertexShader 정점 속성·유니폼(이름 옆에 있던 설명):
 // - aMeta: x = 종류(0 신호, 1 잡음, 2 제거), y = 공휴일 ±3일이면 1, z = 지도 노선(1 노선, 0 해안선, −1 지도에 안 씀),
-//   w = ① 물결 줄에서 호박색 줄이면 1. float 속성 넷을 vec4 하나로 묶었다 — aWave를 더하면 정점 속성이
-//   16개(WebGL 공통 한계)를 넘어 셰이더 링크가 실패한다(계획 6-5). main() 첫 줄에서 옛 이름(aKind 등)으로 풀어 쓴다
-// - aWave: ① 물결 줄 자리(data.ts buildWave)
-// - uRows: 0 = 지형 자리, 1 = 물결 줄 자리(장면 값 rows)
-// - uSoft: 지형 점 크기·알파를 SOFT_POINT 배율로 줄이는 정도(장면 값 soft)
+//   w = 잡음 → 신호 역할(signal.ts buildField: 0 밭에 없음, 1 잡음, 2 + i 구간 점, 10 + s 선 점). float 속성 넷을 vec4
+//   하나로 묶었다 — 따로 두면 정점 속성이 16개(WebGL 공통 한계)를 넘어 셰이더 링크가 실패한다(계획 6-5)
+// - aField: 잡음 밭 자리(설계 2026-10-01 §4) — 잡음 = (NDC u, v, 깊이 d), 구간 점 = (곡선 자리에서 떨어진 du, dv, d)
+// - uField: 0 = 지형 자리, 1 = 잡음 밭·곡선(장면 값 field). uSig: 신호 단계 q(signal.ts signalStage)
+// - uCurve·uArc: U자 8구간의 화면 자리(NDC)와 누적 호 길이(signal.ts signalLayout, 창 비율이 바뀔 때 TerrainPoints가 넣는다)
+// - uHalf: (tan(화각/2)·화면 비율, tan(화각/2)) — 화면 좌표 → 정면 카메라(CHART_DISTANCE) 월드. uPxY: CSS 1px의 NDC 높이
+//
+// 잡음 → 신호(계획 9-3, main() 앞쪽):
+// - eo: expo.out(사이트 이징). curveAt: signal.ts curvePoint와 같은 식(구간 찾기 → Catmull-Rom)
+// - fieldWorld: 화면 좌표(NDC)를 깊이 z에 놓인 월드 자리로 — 깊이와 상관없이 화면의 같은 자리에 보인다(카메라가
+//   about 자리에 있을 때). 깊이는 전환 중 원근(가까운 점이 빨리 움직임)만 만든다
+// - ph·sp: 점마다 떨림 위상·속도 — 흩어짐 좌표(aScatter, 시드 난수)에서 뽑는다(속성 추가 없음)
+// - jo: 떨림(CSS px → NDC). 가라앉으면(st) 70% 줄어든다. 켜진 구간 점은 떨지 않는다
+// - L: 구간 점이 켜진 정도, sh: 선 점이 나타난 정도(머리 hd가 s를 지난 뒤 0.03 호 길이 동안. ×1.03은 s = 1인 마지막 점도
+//   머리 1에서 다 나타나게)
+// - fw: 밭을 쓰는 정도. 지도로 넘어가는 동안(uMap)은 지도 쪽 크기·알파가 이기게 뺀다
+// - fa: 잡음 알파(pointStyle fieldAlpha와 같은 식), 반짝임 tw. 선 점은 그어지기 전 0, 밭 밖 점은 0
+// - isG·g: 켜진 구간 점·선 점은 공항 불빛과 같은 "핵 + 번짐" 그리기(vAir)를 빌린다 — 번짐은 조각 셰이더에서
+//   vShape.z < −1.5로 알아보고 넓고 부드럽게(시안 반지름 16px 원형 그라데이션). 구간 점 번짐은 천천히 숨쉰다(pu)
 // - aChartA: 차트 배치 A의 목표 좌표(z=0 평면)
 // - aStyleA: 차트 배치 A에서의 (알파, 색 번호, 지름 px). 알파 0 = 이 차트에 안 쓰는 점
 // - aHl: 강조 번호(설계 2026-09-28 §3, 계획 5-3b로 일반화 — ③ 와플 그룹, ④·⑤ 차트 1·4 출발일, 차트 2 구간), 아니면 -1
@@ -52,7 +68,8 @@ import { DEPTH_FADE, MAP_POINT, POINT, SOFT_POINT, glslFloat as f } from './poin
 //   three 내장(sRGBTransferOETF 등)과 이름이 겹치지 않게 따로 이름을 붙였다. pow의 밑이 음수면 정의되지 않아 0으로 자른다
 //
 // main() 안 로직(위에서 아래 순서):
-// - gather: 잡음은 신호보다 덜 모인다 → "잡음 속에서 신호가 떠오르는" 느낌
+// - gather: 잡음은 신호보다 덜 모인다 → "잡음 속에서 신호가 떠오르는" 느낌. 지도와 잡음 밭(역할이 있는 점)에서는 끝까지
+//   모인다 — 덜 모이면 선 점이 곡선 둘레에 흩어져 선으로 읽히지 않았다(계획 9-3 눈 확인)
 // - p += (...): 덜 모인 점일수록 천천히 떠다닌다
 // - if (aKind > 1.5) p.y -= ...: 제거 레이어(kind 2)만 가속하며 떨어진다
 // - isAir / p = mix(p, aAirport.xyz, ...): 공항은 불빛으로 배정된 점만 공항 자리로. uAirport가 1→0으로 줄면
@@ -114,7 +131,7 @@ export const vertexShader = /* glsl */ `
   attribute vec3 aMap;
   attribute vec3 aScatter;
   attribute vec4 aMeta;
-  attribute vec3 aWave;
+  attribute vec3 aField;
   attribute vec3 aChartA;
   attribute vec3 aChartB;
   attribute vec3 aStyleA;
@@ -122,8 +139,12 @@ export const vertexShader = /* glsl */ `
   attribute float aHl;
   attribute vec4 aAirport;
   attribute vec4 aAirStyle;
-  uniform float uRows;
-  uniform float uSoft;
+  uniform float uField;
+  uniform float uSig;
+  uniform vec2 uCurve[8];
+  uniform float uArc[8];
+  uniform vec2 uHalf;
+  uniform float uPxY;
   uniform float uAssemble;
   uniform float uMap;
   uniform float uNoise;
@@ -168,12 +189,43 @@ export const vertexShader = /* glsl */ `
     return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
   }
 
+  float eo(float t) { return t >= 1.0 ? 1.0 : 1.0 - pow(2.0, -10.0 * t); }
+  vec2 curveAt(float s) {
+    int j = 0;
+    for (int k = 1; k < 7; k++) { if (s >= uArc[k]) j = k; }
+    float t = clamp((s - uArc[j]) / max(uArc[j + 1] - uArc[j], 1e-4), 0.0, 1.0);
+    vec2 p0 = uCurve[j > 0 ? j - 1 : 0], p1 = uCurve[j], p2 = uCurve[j + 1], p3 = uCurve[j < 6 ? j + 2 : 7];
+    return 0.5 * (2.0 * p1 + (p2 - p0) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t * t + (3.0 * p1 - p0 - 3.0 * p2 + p3) * t * t * t);
+  }
+  vec3 fieldWorld(vec2 n, float z) { return vec3(n * uHalf * (${f(CHART_DISTANCE)} - z), z); }
+
   void main() {
     float aKind = aMeta.x;
-    float aHoliday = mix(aMeta.y, aMeta.w, uRows);
+    float aHoliday = aMeta.y;
     float aRoute = aMeta.z;
-    vec3 target = mix(mix(aTerrain, aWave, uRows), aMap, uMap);
-    float gather = mix(aKind > 0.5 && aKind < 1.5 ? uAssemble * 0.9 : uAssemble, uAssemble, uMap);
+    float role = aMeta.w;
+    float isLine = step(9.5, role);
+    float isBin = step(1.5, role) * (1.0 - isLine);
+    float member = step(0.5, role) * (1.0 - isLine);
+    float fd = aField.z;
+    float ph = aScatter.x * 0.45;
+    float sp = 0.4 + 0.8 * fract(aScatter.y * 7.13 + aScatter.z * 3.7);
+    float st = eo(clamp((uSig - ${f(SIGNAL.settle0)}) / ${f(1 - SIGNAL.settle0)}, 0.0, 1.0));
+    float bi = role - 2.0;
+    float L = isBin * eo(clamp((uSig - ${f(SIGNAL.lit0)} - bi * ${f(SIGNAL.litStep)}) / ${f(SIGNAL.litDur)}, 0.0, 1.0));
+    float jp = (${f(FIELD_POINT.jitterMin)} + ${f(FIELD_POINT.jitterAdd)} * fd) * (1.0 - ${f(FIELD_POINT.settleJitter)} * st) * (1.0 - L) * uPxY;
+    vec2 jo = vec2(sin(uTime * sp * 2.0 + ph) * jp / uAspect, cos(uTime * sp * 1.7 + ph * 1.3) * jp);
+    float zf = mix(-6.0, 4.0, fd);
+    vec2 bc = uCurve[int(clamp(bi, 0.0, 7.0) + 0.5)];
+    float ls = role - 10.0;
+    float hd = clamp((uSig - ${f(SIGNAL.line0)}) / ${f(SIGNAL.line1 - SIGNAL.line0)}, 0.0, 1.0);
+    float sh = isLine * eo(clamp((hd * 1.03 - ls) / 0.03, 0.0, 1.0));
+    vec3 fieldP = fieldWorld(aField.xy + jo, zf);
+    if (isBin > 0.5) fieldP = fieldWorld(mix(bc + aField.xy + jo, bc, L), mix(zf, 0.0, L));
+    if (isLine > 0.5) fieldP = fieldWorld(curveAt(ls), 0.0);
+    fieldP = mix(aTerrain, fieldP, step(0.5, role));
+    vec3 target = mix(mix(aTerrain, fieldP, uField), aMap, uMap);
+    float gather = mix(aKind > 0.5 && aKind < 1.5 ? uAssemble * 0.9 : uAssemble, uAssemble, max(uMap, uField * step(0.5, role)));
     vec3 p = mix(aScatter, target, gather);
     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
     if (aKind > 1.5) p.y -= uDrop * uDrop * 14.0;
@@ -203,7 +255,6 @@ export const vertexShader = /* glsl */ `
     vec2 off = (dp > 1e-4 ? dv / dp * push : vec2(0.0)) + (drl > 1e-4 ? dr / drl * rip : vec2(0.0));
     gl_Position.xy += off / vec2(uAspect, 1.0) * gl_Position.w;
     float size = aKind < 0.5 ? ${f(POINT.signalSize)} : (aKind < 1.5 ? ${f(POINT.noiseSize)} : 1.1);
-    size *= mix(1.0, ${f(SOFT_POINT.size)}, uSoft);
     size = mix(size, ${f(MAP_POINT.size)}, uMap);
     float terrainPx = uSize * size * (20.0 / -mv.z);
     float chartPx = mix(aStyleA.z, aStyleB.z, uSlot) * uDpr;
@@ -217,32 +268,44 @@ export const vertexShader = /* glsl */ `
     float barH = max(1.0, 14.0 / dz) * uDpr;
     airPx = mix(airPx, barW, isWin);
     vShape = vec3(corePx / airPx, 0.5, isWin * barH * step(0.5, uAirport * isAir) - isPlane);
-    float basePx = mix(terrainPx, chartPx, uChart);
-    vAir = uAirport * isAir + planeOn;
+    float fw = uField * (1.0 - uMap);
+    float fieldPx = (${f(FIELD_POINT.sizeMin)} + ${f(FIELD_POINT.sizeAdd)} * fd) * uDpr;
+    float isG = isBin + isLine;
+    float pu = 0.85 + 0.15 * sin(uTime * 2.2 - bi * 0.6);
+    float gPx = mix(18.0, 40.0 * pu, isBin) * uDpr;
+    float gCore = mix(1.1, 1.2 + 1.6 * L, isBin) * uDpr;
+    corePx = mix(corePx, gCore, isG);
+    airPx = mix(airPx, gPx, isG);
+    vShape = vec3(corePx / airPx, 0.5, vShape.z - 2.0 * isG);
+    float basePx = mix(mix(terrainPx, fieldPx, fw), chartPx, uChart);
+    vAir = uAirport * isAir + planeOn + fw * (L + sh);
     gl_PointSize = mix(basePx, airPx, vAir);
     vPx = gl_PointSize;
 
     float a = aKind < 0.5 ? ${f(POINT.signalAlpha)} : (aKind < 1.5 ? ${f(POINT.noiseAlpha)} * uNoise : 0.9 * uRemoved * (1.0 - uDrop));
-    a *= mix(1.0, ${f(SOFT_POINT.alpha)}, uSoft);
     float onMap = step(-0.5, aRoute);
     a = mix(a, onMap * mix(${f(MAP_POINT.coastAlpha)}, ${f(MAP_POINT.routeAlpha)}, max(aRoute, 0.0)), uMap);
     float fade = clamp(${f(DEPTH_FADE.base)} - (-mv.z - uFocusDist) / ${f(DEPTH_FADE.span)}, ${f(DEPTH_FADE.min)}, 1.0);
     vec3 terrainCol = aKind > 1.5 ? uText : mix(uDot, uAmber, max(aHoliday * (1.0 - uMap), max(aRoute, 0.0) * uMap));
+    float tw = 0.75 + 0.25 * sin(uTime * sp * 3.0 + ph * 2.0);
+    float fa = member * (${f(FIELD_POINT.alphaMin)} + ${f(FIELD_POINT.alphaAdd)} * fd) * tw * (1.0 - ${f(FIELD_POINT.settleAlpha)} * st);
+    terrainCol = mix(terrainCol, mix(uDot, uText, step(${f(FIELD_POINT.white)}, fd) * 0.55), fw);
     float chartA = mix(aStyleA.x, aStyleB.x, uSlot);
     vec3 chartCol = mix(toneColor(aStyleA.y), toneColor(aStyleB.y), uSlot);
     if (uFocus > -0.5 && aHl > -0.5) {
       if (abs(aHl - uFocus) < 0.5) chartCol = toneColor(uFocusTone); else chartA *= uFocusDim;
     }
-    vAlpha = mix(a * uDim * fade, chartA, uChart);
+    vAlpha = mix(mix(a * fade, fa, fw) * uDim, chartA, uChart);
     vColor = toSrgbTone(mix(terrainCol, chartCol, uChart));
-    vEdge = mix(0.15, 0.38, uChart);
+    vEdge = mix(mix(0.15, 0.32, fw), 0.38, uChart);
     float on = clamp((uLightT - mix(aAirStyle.w, 0.1, isPlane) * 1.2) / 0.18, 0.0, 1.0);
     float haze = 1.0 / (1.0 + dz / 52.0);
     float wave = aAirport.w < 0.0 ? 0.0 : exp(-pow((aAirport.w - uWave) / 90.0, 2.0));
     float airA = on * haze * (1.0 + wave * 2.2) * mix(1.0, 0.7, isCenter) * mix(1.0, 0.75, isWin);
     float planeA = on * (mi > 0.0 ? mix(0.9, 1.0, bow) : (aAirStyle.y > 2.5 ? 1.0 : 0.82)) / (1.0 + dz / 70.0);
-    vAlpha = mix(vAlpha * (1.0 - uAirport), mix(airA, planeA, isPlane), vAir);
-    vColor = mix(vColor, toSrgbTone(airTone(aAirStyle.y)), vAir);
+    float glowA = mix(0.9, 1.0, isBin) * uDim;
+    vAlpha = mix(vAlpha * (1.0 - uAirport), mix(mix(airA, planeA, isPlane), glowA, isG), vAir);
+    vColor = mix(vColor, mix(toSrgbTone(airTone(aAirStyle.y)), toSrgbTone(mix(uAmber, uText, 0.35)), isG), vAir);
     vEdge = mix(vEdge, 0.0, vAir);
     if (vAlpha < 0.003) {
       gl_PointSize = 0.0;
@@ -255,6 +318,8 @@ export const vertexShader = /* glsl */ `
 // - core / glow / air: 공항 불빛(설계 2026-09-29 §8, 시안 point()): 또렷한 핵(반지름 vShape.x, 가장자리 딱 1화소
 //   aa만 부드럽게) + 시안 halo 곡선(번짐 반지름에 대해 0 → 1, 0.15 → 0.35, 0.45 → 0.06, 1 → 0을 선형으로, ×0.55).
 //   시안처럼 핵과 번짐을 더한다(둘 다 빛 더하기로 그렸다). 예전 가우스 번짐·작은 핵(1/24)은 핵이 흐려 보였다
+// - lin: 잡음 → 신호 번짐(vShape.z < −1.5, 계획 9-3) — 스프라이트 가장자리까지 부드럽게 줄어드는 넓은 번짐(시안 원형
+//   그라데이션). 선 점은 5px 간격이라 번짐이 겹쳐 시안의 번짐 선처럼 보인다
 // - bar: 창문 막대(vShape.z > 0) — 세로로 막대 높이만큼만, 가장자리 1화소 부드럽게. 막대 끝은 스프라이트 원
 //   (d > 0.5) 밖으로 나가므로 막대는 원으로 자르지 않는다
 // - disc = smoothstep(0.5, vEdge, d): 이름을 dot으로 하면 GLSL 내장 함수와 겹친다
@@ -288,7 +353,8 @@ export const fragmentShader = /* glsl */ `
     float core = 1.0 - smoothstep(vShape.x - aa, vShape.x + aa, d);
     float t = d / vShape.y;
     float glow = (t < 0.15 ? mix(1.0, 0.35, t / 0.15) : (t < 0.45 ? mix(0.35, 0.06, (t - 0.15) / 0.3) : mix(0.06, 0.0, min((t - 0.45) / 0.55, 1.0)))) * 0.55;
-    float air = vShape.z > 0.0 ? bar : min(core + glow * (vShape.z < 0.0 ? 0.64 : 1.0), 1.0);
+    float lin = max(1.0 - d * 2.0, 0.0);
+    float air = vShape.z > 0.0 ? bar : min(core + (vShape.z < -1.5 ? 0.55 * lin * lin : glow * (vShape.z < 0.0 ? 0.64 : 1.0)), 1.0);
     float disc = smoothstep(0.5, vEdge, d);
     float a = min(vAlpha * mix(disc, air, vAir), 1.0);
     gl_FragColor = vec4(vColor * a, a * mix(1.0, a, vAir));

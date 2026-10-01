@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>잡음 속 신호 v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#02040A;--tx:#EEF3FF;--mute:#8a94ad;--amb:#FFB547;--dot:#8FB8FF}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 -apple-system,"Pretendard",sans-serif;padding:24px 32px 60px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 16px}
+.bar{display:flex;gap:14px;align-items:center;margin:0 0 14px;flex-wrap:wrap}
+.bar button{background:#0d1526;color:var(--tx);border:1px solid #24324f;border-radius:6px;padding:6px 12px;font:600 12px 'IBM Plex Mono';cursor:pointer}
+.bar button.on{border-color:var(--amb);color:var(--amb)}
+input[type=range]{width:320px;accent-color:#FFB547}
+.lbl{font:12px 'IBM Plex Mono';color:var(--mute)}
+.stage{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:16/9;max-width:1200px;background:radial-gradient(ellipse 80% 70% at 50% 10%,#0B1426 0%,#02040A 70%)}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.copy{text-shadow:0 0 18px #02040a,0 0 6px #02040a;position:absolute;left:7%;top:50%;transform:translateY(-50%);font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(18px,2.6vw,38px);line-height:1.2;letter-spacing:-.02em}
+.copy p{margin:0 0 .35em;transition:opacity .6s cubic-bezier(.16,1,.3,1)}
+.copy small{display:block;font:400 13px -apple-system,sans-serif;color:var(--mute);margin-top:14px;letter-spacing:0}
+.opts{display:flex;gap:12px;margin-top:16px}
+.opt{border:1px solid #1c2740;border-radius:10px;padding:10px 14px;cursor:pointer}
+.opt.selected{border-color:var(--amb);box-shadow:0 0 0 1px var(--amb)}
+.opt b{color:var(--amb);font:600 12px 'IBM Plex Mono'}
+</style></head><body>
+<h1>A 다듬기 — 잡음 → 몇 개가 빛남 → 선이 그어짐 → 형태 완성</h1>
+<p class="sub">실제 사이트에서는 머리말을 지나는 스크롤에 맞춰 진행된다(아래 막대 = 스크롤). ▶를 누르면 자동 재생. 완성되는 형태 두 가지를 바꿔 보세요.</p>
+<div class="bar">
+  <button id="play">▶ 재생</button>
+  <input id="p" type="range" min="0" max="1000" value="0"><span class="lbl" id="pl">스크롤 0%</span>
+  <span class="lbl">형태:</span><button id="sU" class="on">U자 예약 곡선</button><button id="sT">가격 추세선</button>
+</div>
+<div class="stage"><canvas id="c"></canvas>
+  <div class="copy"><p id="l1">가격은 매일 흔들립니다.</p><p id="l2">대부분은 잡음이고,<br>그 안에 몇 개의 신호가 있습니다.</p><small id="l3">점 하나는 실제로 수집한 가격 하나입니다.</small></div>
+</div>
+<div class="opts">
+  <div class="opt" data-choice="u" onclick="toggleSelect(this)"><b>U자 예약 곡선으로 완성</b><br><span class="lbl">실측 8구간: 이른 구매(D-61~90) +2% → 한 달 전후 −5% → 출발 직전(D-1~3) +11%</span></div>
+  <div class="opt" data-choice="t" onclick="toggleSelect(this)"><b>가격 추세선으로 완성</b><br><span class="lbl">출발일을 따라 흔들림 아래 깔린 흐름 한 줄</span></div>
+</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');let W,H,D=Math.min(2,devicePixelRatio||1);
+function size(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0)}size();addEventListener('resize',size);
+let s=11;const R=()=>{s=(s*16807)%2147483647;return s/2147483647};
+// 잡음: 깊이 세 겹(멀수록 작고 흐림)
+const N=[...Array(2200)].map(()=>({x:R(),y:R(),z:R(),ph:R()*6.283,sp:.4+R()*.8}));
+const easeO=t=>t>=1?1:1-Math.pow(2,-10*t); // expo.out
+const cl=v=>Math.max(0,Math.min(1,v));
+// 형태: 신호 점 12개(오른쪽 반쪽, 글과 겹치지 않게)
+const shapes={
+  // 실측 예약 곡선 8구간(D-61~90 → D-1~3, 같은 편 평균 대비 %): 왼쪽 = 이른 구매, 오른쪽 = 출발 직전
+  u:[2.1,-4.3,-5.0,-3.7,-2.4,0.9,4.4,11.1].map((v,i)=>[0.50+i/7*0.44,0.56-v*0.018]),
+  t:[...Array(12)].map((_,i)=>{const u=i/11;return[0.50+u*0.44,0.62-0.16*u-0.05*Math.sin(u*7)]})};
+let shape='u';
+// 신호 점은 잡음 점 하나가 "그 자리로 끌려가는" 느낌: 시작 위치는 가까운 잡음 점
+function sig(){return shapes[shape].map(([x,y],i)=>{let best=0,bd=9;N.forEach((n,k)=>{const d=(n.x-x)**2+(n.y-y)**2;if(d<bd&&n.z>.6){bd=d;best=k}});return{x,y,from:N[best],k:best,i}})}
+let S=sig();
+function glow(x,y,r,col,a){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col.replace('A',a));g.addColorStop(1,col.replace('A',0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+let p=0,play=false,t0=0;
+function draw(now){const t=now/1000;ctx.clearRect(0,0,W,H);
+  // 단계: 0~0.25 잡음만, 0.25~0.55 하나씩 빛남, 0.5~0.85 선이 그어짐, 0.85~1 완성(잡음이 가라앉음)
+  const settle=easeO(cl((p-.82)/.18));
+  N.forEach((n,k)=>{if(S.some(q=>q.k===k)&&p>.25)return;const amp=(1.6+n.z*1.2)*(1-.7*settle);
+    const x=n.x*W+Math.sin(t*n.sp*2+n.ph)*amp,y=n.y*H+Math.cos(t*n.sp*1.7+n.ph*1.3)*amp;
+    const tw=.75+.25*Math.sin(t*n.sp*3+n.ph*2);ctx.globalAlpha=(.16+.38*n.z)*tw*(1-.3*settle);ctx.fillStyle=n.z>.85?'#C9DBFF':'#8FB8FF';ctx.beginPath();ctx.arc(x,y,.7+n.z*1.3,0,7);ctx.fill()});
+  ctx.globalAlpha=1;
+  const lit=S.map((q,i)=>easeO(cl((p-.25-i*.024)/.12)));
+  // 선: 앞 점에서 다음 점으로 점점 그어진다
+  const lineP=cl((p-.5)/.33)*(S.length-1);
+  ctx.lineWidth=1.4;ctx.lineCap='round';
+  for(let i=0;i<S.length-1;i++){const f=cl(lineP-i);if(f<=0)break;const a=S[i],b=S[i+1];
+    const ax=a.x*W,ay=a.y*H,bx=b.x*W,by=b.y*H,ex=ax+(bx-ax)*easeO(f),ey=ay+(by-ay)*easeO(f);
+    ctx.strokeStyle='rgba(255,181,71,.28)';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.strokeStyle='rgba(255,201,120,.9)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ex,ey);ctx.stroke();}
+  S.forEach((q,i)=>{const L=lit[i];if(L<=0)return;const fx=q.from.x*W,fy=q.from.y*H,x=fx+(q.x*W-fx)*L,y=fy+(q.y*H-fy)*L;
+    const pulse=.85+.15*Math.sin(t*2.2-i*.6);glow(x,y,16*L*pulse,'rgba(255,181,71,A)',.35*L);
+    ctx.globalAlpha=1;ctx.fillStyle='#FFE2B0';ctx.beginPath();ctx.arc(x,y,1.2+1.6*L,0,7);ctx.fill()});
+  ctx.globalAlpha=1;
+  document.getElementById('l1').style.opacity=1;document.getElementById('l2').style.opacity=cl((p-.2)/.15);document.getElementById('l3').style.opacity=cl((p-.6)/.15);
+  if(play){p=cl((now-t0)/7000);document.getElementById('p').value=p*1000;if(p>=1)play=false}
+  document.getElementById('pl').textContent='스크롤 '+Math.round(p*100)+'%';
+  requestAnimationFrame(draw)}
+requestAnimationFrame(draw);
+document.getElementById('p').oninput=e=>{play=false;p=e.target.value/1000};
+document.getElementById('play').onclick=()=>{play=true;t0=performance.now();p=0};
+for(const[id,k]of[['sU','u'],['sT','t']])document.getElementById(id).onclick=e=>{shape=k;S=sig();document.querySelectorAll('#sU,#sT').forEach(b=>b.classList.toggle('on',b===e.target));};
+setTimeout(()=>{play=true;t0=performance.now()},600);
+</script></body></html>

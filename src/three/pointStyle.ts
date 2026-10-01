@@ -7,9 +7,19 @@ export const POINT = { signalAlpha: 0.8, noiseAlpha: 0.117, signalSize: 0.9, noi
 // 지도 장면(설계 2026-09-29 §1): 종류(신호·잡음)와 상관없이 같은 알파·크기 — 선 굵기가 고르게. size는 지형 크기 배율
 export const MAP_POINT = { coastAlpha: 0.8, routeAlpha: 0.9, size: 0.55 } as const;
 
-// ① 물결 줄의 은은한 점(설계 2026-09-29 §6): 장면 값 soft(0..1)만큼 지형 점 크기·알파에 곱한다.
-// 원래 밝기면 카메라 C에서 글 뒤 대비가 데스크톱 3.6/2.7:1로 실패했고, 이 값에서 8.4/5.5:1(시안 실측)
-export const SOFT_POINT = { size: 0.75, alpha: 0.6 } as const;
+// 머리말·① 잡음 밭 점(설계 2026-10-01 §6, 시안 noise-signal.html): 깊이 d(0 먼 쪽 .. 1 가까운 쪽)마다
+// 지름 sizeMin + sizeAdd·d (CSS px), 알파 alphaMin + alphaAdd·d, d > white면 흰빛, 떨림 jitterMin + jitterAdd·d (CSS px).
+// 시안 값(반지름 0.7 + 1.3·d → 지름 1.4 + 2.6·d, 알파 0.16 + 0.38·d)에서 사용자 요청(첫 시안보다 잘 보이게)으로 키웠다 —
+// 시안 값 그대로는 점 가장자리 흐림 때문에 실제 화면에서 거의 안 보였다(1440×900 눈 확인).
+// 가라앉으면(단계 4) 떨림 ×(1 − settleJitter), 알파 ×(1 − settleAlpha)
+export const FIELD_POINT = {
+  sizeMin: 2.0, sizeAdd: 3.0, alphaMin: 0.22, alphaAdd: 0.38, white: 0.85,
+  jitterMin: 1.6, jitterAdd: 1.2, settleJitter: 0.7, settleAlpha: 0.3,
+} as const;
+
+export function fieldAlpha(d: number, twinkle: number, settled: number): number {
+  return (FIELD_POINT.alphaMin + FIELD_POINT.alphaAdd * d) * twinkle * (1 - FIELD_POINT.settleAlpha * settled);
+}
 
 // 거리 흐림: 카메라~점 거리 d가 카메라~장면 목표점 거리 dT보다 멀수록 흐리게.
 // dT 기준이라 멀리 물러난 장면(검증·데모·연락처)에서도 전체가 한꺼번에 어두워지지 않는다.
