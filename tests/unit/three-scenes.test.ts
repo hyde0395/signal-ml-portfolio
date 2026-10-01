@@ -75,6 +75,16 @@ describe('sceneFor', () => {
     expect(SCENES.demo.dim).toBeLessThanOrEqual(0.5);
     expect(SCENES.contact.dim).toBeLessThanOrEqual(0.5);
   });
+  // 설계 2026-10-01: 데모 뒤에는 점이 하나도 보이지 않는다. 카메라는 연락처와 같아 데모 → 연락처는 제자리에서 점만 떠오른다
+  it('데모는 점이 모두 투명(dim 0·잡음 0)이고 카메라는 연락처와 같다', () => {
+    expect(SCENES.demo.dim).toBe(0);
+    expect(SCENES.demo.noise).toBe(0);
+    for (const portrait of [false, true]) {
+      const d = sceneFor('demo', 0, portrait), c = sceneFor('contact', 0, portrait);
+      expect(d.camera).toEqual(c.camera);
+      expect(d.target).toEqual(c.target);
+    }
+  });
 
   // 세로 화면은 지형이 위쪽 절반에서 보이도록 카메라·목표점의 y를 내리지만(코드 리뷰 2026-09-28),
   // 카메라−목표점 벡터(구도)는 데스크톱과 같아야 한다 — 그래야 세로 화면 1.6배 확대만 다르고 각도는 그대로다

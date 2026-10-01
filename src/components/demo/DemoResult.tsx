@@ -49,8 +49,8 @@ export function DemoResult({ forecast, locale, texts }: { forecast: Forecast; lo
         <span aria-hidden="true">{BADGE[reco.action]}</span>
         <span className="sr-only">{texts.badges[reco.action]}</span>
       </p>
-      <p>{reasonText(texts, reco, locale)}</p>
-      {conf && <p className="muted">{conf}</p>}
+      <p className="demo-reason">{reasonText(texts, reco, locale)}</p>
+      {conf && <p className="demo-reason muted">{conf}</p>}
     </div>
   );
 }

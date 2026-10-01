@@ -88,8 +88,11 @@ export const SCENES: Record<SceneKey, SceneState> = {
   validation: { ...base, camera: [-5, 22, 0.1], target: [-5, 0, 0], noise: 0.5 },
   chartCloud: { ...base, ...CHART },
   limits: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.7 },
-  // 데모·연락처: 조작 화면이 주인공이라 지형은 멀리 물러나 잡음을 줄이고 흐리게 둔다(글 뒤 판이 없다)
-  demo: { ...base, camera: [-5, 16, 30], target: [-5, 0, 0], noise: 0.3, dim: 0.45 },
+  // 데모(설계 2026-10-01): 가운데 정렬한 조작 화면 뒤에는 아무것도 두지 않는다 — 점을 모두 투명하게(dim 0) 한다.
+  // 장면을 빼면(틈) pickScene이 앞 장면을 붙잡아 지형이 남으므로, 장면은 두고 알파만 0으로 둔다. 카메라는 연락처와
+  // 같게 둬서 데모 → 연락처는 제자리에서 점이 서서히 떠오르기만 하고, ⑤ → 데모는 uDim이 감쇠로 천천히 꺼진다
+  demo: { ...base, camera: [-5, 16, 30], target: [-5, 0, 0], noise: 0, dim: 0 },
+  // 연락처: 지형은 멀리 물러나 잡음을 줄이고 흐리게 둔다(글 뒤 판이 없다)
   contact: { ...base, camera: [-5, 16, 30], target: [-5, 0, 0], noise: 0.3, dim: 0.45 },
 };
 

@@ -223,8 +223,16 @@ html.hero-runway .hero-stage { padding-bottom: 60vh; }
   .pass-stub dl { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) { .vtable { font-size: 0.8rem; } .vtable th, .vtable td { padding: 8px 4px; } }
-/* 데모(스펙 §6.1): 질문 문장 속 밑줄 선택지, 출발일 막대, 결과 카드 */
-.demo-app { margin-top: 32px; display: grid; gap: 20px; }
+/* 데모(스펙 §6.1, 설계 2026-10-01 시안 B "미니멀 가운데"): 머리표 → 제목 → 설명 → 질문 문장 → 출발일 막대 → 큰 예측가 →
+   구간 띠 → 추천 배지 → 이유를 가운데 축 한 줄로 쌓는다. 결과 카드의 테두리·바탕은 없앴다 — 3D 점도 뒤에 없어(scenes.ts
+   demo dim 0) 판 없이 글만 떠 있는 화면이다. 줄 너비는 글 종류마다 따로(설명 620 · 막대 880 · 구간 520 · 이유 560) */
+#demo { text-align: center; }
+#demo > p:not(.eyebrow) { max-width: 620px; margin-inline: auto; }
+/* 가운데 정렬 글은 마지막 줄이 "니다."처럼 한 토막만 남으면 눈에 띈다 — 낱말 단위로 끊고(keep-all) 줄 길이를 고르게(balance).
+   일본어는 띄어쓰기가 없어 keep-all이면 줄이 안 끊겨 휴대폰 폭을 넘치므로 문절 단위(auto-phrase)로 끊는다(.intro-title과 같은 이유) */
+#demo p { word-break: keep-all; text-wrap: balance; }
+:lang(ja) #demo p { word-break: normal; word-break: auto-phrase; }
+.demo-app { max-width: 880px; margin: 32px auto 0; display: grid; gap: 20px; }
 .demo-question { font-size: clamp(1.15rem, 2.4vw, 1.5rem); line-height: 1.9; }
 .demo-slot { font: inherit; color: var(--tx); background: none; border: 0; border-bottom: 2px solid var(--dot); border-radius: 0; padding: 0 2px; cursor: pointer; }
 select.demo-slot { appearance: none; -webkit-appearance: none; }
@@ -240,22 +248,24 @@ select.demo-slot option { background: var(--bg2); color: var(--tx); }
 .strip-bar.is-empty { height: 100%; background: none; border: 1px dashed rgba(238, 243, 255, 0.4); opacity: 1; }
 .strip-axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.75rem; color: var(--mute); }
 .strip-holiday { margin-top: 6px; min-height: 1.7em; color: var(--amb); font-size: 0.9rem; }
-.strip-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; font-size: 0.8rem; color: var(--mute); }
+.strip-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 8px; font-size: 0.8rem; color: var(--mute); }
 .legend-mark { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
 .legend-mark.is-holiday { background: var(--amb); transform: rotate(45deg) scale(0.7); }
 .legend-mark.is-empty { border: 1px dashed rgba(238, 243, 255, 0.5); }
-.demo-result { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: rgba(19, 32, 58, 0.5); }
+.demo-result { display: grid; justify-items: center; gap: 12px; margin-top: 8px; }
 .demo-price { display: grid; gap: 4px; }
-.demo-price .mono { font-size: clamp(1.75rem, 5vw, 2.5rem); line-height: 1.1; }
-.band { position: relative; height: 10px; border-radius: 5px; background: var(--line); }
+/* 화면의 주인공이라 가장 크게. 판이 없어 크기로 위계를 만든다 */
+.demo-price .mono { font-size: clamp(2.25rem, 6vw, 3.5rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.band { position: relative; width: min(520px, 100%); height: 10px; border-radius: 5px; background: var(--line); }
 .band-fill { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: rgba(143, 184, 255, 0.45); }
 .band-mid { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--tx); }
-.band-labels { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 0.85rem; }
-.badge { justify-self: start; padding: 4px 10px; border: 1px solid currentColor; border-radius: 4px; font: 600 0.8rem var(--font-mono); letter-spacing: 0.14em; }
+.band-labels { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; width: min(520px, 100%); font-size: 0.85rem; }
+.demo-reason { max-width: 560px; }
+.badge { justify-self: center; margin-top: 8px; padding: 4px 10px; border: 1px solid currentColor; border-radius: 4px; font: 600 0.8rem var(--font-mono); letter-spacing: 0.14em; }
 .badge.is-buy_now { color: var(--tx); }
 .badge.is-drop_expected { color: var(--dot); }
 .badge.is-wait { color: var(--amb); }
-.demo-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.demo-error { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; }
 .demo-asof { font-size: 0.8rem; color: var(--mute); }
 
 /* 3D 배경 — 캔버스는 본문 뒤에 고정. body 배경 그라데이션 위, main 아래에 오도록 z-index를 나눈다. */
@@ -333,7 +343,8 @@ html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: 
    큰 질문(최대 76px)이 560px 안에서 여러 줄로 부서지므로 뺀다 — 상자는 글 크기만큼만 커진다 */
 /* .data-intro는 여기서 빼야 한다 — :is() 안에 #project가 있어 이 규칙의 명시도가 (1,2,2)로,
    화면 1 전용 420px 규칙(.data-intro > …, 1,2,1)보다 세다. 빼지 않으면 이 560px가 항상 이긴다 */
-html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #demo, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .project-copy) { max-width: 560px; }
+/* #demo는 가운데 축이라 이 왼쪽 정렬용 560px 대신 데모 규칙의 줄 너비(설계 2026-10-01)를 3D 켜짐·꺼짐 모두에 쓴다 */
+html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .project-copy) { max-width: 560px; }
 /* 글 상자는 글 크기만큼만 커진다(옛 .text-scrim의 width: fit-content를 그대로 물려받는다). 판(배경)을
    없앴어도 이 폭 제한은 남아야 한다 — 없으면 상자가 부모(챕터) 폭 전체로 늘어나고, 그 안의 자손 중 자기
    max-width가 없는 글자(예: .hero-keywords)가 그 넓은 상자를 그대로 채워, 화소 대비 검사(terrain.spec.ts)가

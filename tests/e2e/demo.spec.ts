@@ -1,9 +1,11 @@
 // 데모 e2e: 처음 조합, 키보드·누르기 조작, 노선·등급 바꾸기, 조작 뒤 알림, 불러오기 실패 후 다시 시도,
-// 움직임 줄이기, 세 언어 axe, 데이터 모듈(source.ts)이 초기 청크에 없는지.
+// 움직임 줄이기, 세 언어 axe, 가운데 정렬·카드 없음·뒤에 점 없음(설계 2026-10-01), 좁은 화면 가로 넘침 없음,
+// 데이터 모듈(source.ts)이 초기 청크에 없는지.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 
 // site.spec.ts와 같은 이유로 JSON은 fs로 읽는다(Playwright TS 로더의 JSON import 제약)
 const read = (p: string) => JSON.parse(readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf-8'));
@@ -131,6 +133,78 @@ for (const path of ['/', '/en/', '/ja/']) {
     await expect(page.locator('.demo-result .badge')).toBeVisible();
     const result = await new AxeBuilder({ page }).include('#demo').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(result.violations).toEqual([]);
+  });
+}
+
+// 설계 2026-10-01(시안 B "미니멀 가운데"): 제목·예측가·추천 배지가 한 가운데 축에 있고, 결과 칸은 테두리·바탕이 없다.
+// 데스크톱 기준이라(사용자는 주로 데스크톱으로 본다) 1440 폭에서만 잰다
+test.describe('가운데 정렬(1440)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+  test('제목·예측가·배지의 가운데가 섹션 가운데에 있고, 결과 칸에 카드 테두리·바탕이 없다', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'mobile', '데스크톱 폭 전용');
+    await openDemo(page);
+    await expect(page.locator('.demo-result .badge')).toBeVisible();
+    // 글줄 블록(제목·문장·기준일)은 상자가 섹션 폭 전체라 가운데가 늘 같다 — 실제 글자 폭(Range)의 가운데를 잰다.
+    // 예측가·배지는 결과 칸이 가운데로 줄여 놓은 상자라 상자 가운데를 잰다(예측가 칸 안 플립 글자는 넘기는 동안
+    // 낭독용 숨은 글자까지 Range에 잡혀 엉뚱한 폭이 나온다)
+    const mid = (sel: string, text: boolean) => page.locator(sel).first().evaluate((el, text) => {
+      let r = el.getBoundingClientRect();
+      if (text) { const range = document.createRange(); range.selectNodeContents(el); r = range.getBoundingClientRect(); }
+      return r.left + r.width / 2;
+    }, text);
+    const col = await page.locator('#demo').evaluate((el) => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
+    for (const [sel, text] of [['#demo-h', true], ['.demo-question', true], ['.demo-asof', true], ['.demo-price', false], ['.demo-result .badge', false]] as const) {
+      expect(Math.abs((await mid(sel, text)) - col), sel).toBeLessThanOrEqual(4);
+    }
+    // 출발일 막대와 구간 띠도 가운데 축에 놓인다(막대 ≤ 880px, 띠 ≤ 520px)
+    for (const [sel, max] of [['.strip', 880], ['.band', 520]] as const) {
+      const r = (await page.locator(sel).boundingBox())!;
+      expect(r.width, sel).toBeLessThanOrEqual(max);
+      expect(Math.abs(r.x + r.width / 2 - col), sel).toBeLessThanOrEqual(2);
+    }
+    const style = await page.locator('.demo-result').evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { border: cs.borderTopWidth, bg: cs.backgroundColor };
+    });
+    expect(style).toEqual({ border: '0px', bg: 'rgba(0, 0, 0, 0)' });
+  });
+
+  // 설계 2026-10-01: 데모 뒤 3D에는 점이 하나도 없다(scenes.ts demo dim 0). 장면 이름과, 글이 없는 오른쪽 빈자리 화소가
+  // 바탕색 근처인지로 확인한다 — 옛 장면(dim 0.45)은 지형이 화면 오른쪽에 있어 이 자리에 밝은 점이 찍혔다
+  test('3D가 켜져도 데모 뒤에 지형 점이 보이지 않는다', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'mobile', '데스크톱 폭 전용');
+    test.setTimeout(90_000);
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 45_000 });
+    test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 켜지지 않음(느린 시작 제한 시간)');
+    await page.locator('.demo-result, .demo-question').first().evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'demo');
+    await page.waitForTimeout(3500); // uDim이 감쇠로 0까지 내려가는 시간(다른 장면 검사와 같은 대기)
+    // 데모 열(최대 880px) 오른쪽 바깥, 화면 위아래 가운데 띠. 글·막대가 없는 자리다
+    const png = await page.screenshot({ clip: { x: 1180, y: 150, width: 240, height: 600 } });
+    const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const peaks: number[] = [];
+    for (let i = 0; i < info.width * info.height; i++) peaks.push(Math.max(data[i * 3], data[i * 3 + 1], data[i * 3 + 2]));
+    peaks.sort((a, b) => a - b);
+    // 바탕(#02040A ~ #0B1426 그라데이션)의 가장 밝은 채널은 약 38. 점(#8FB8FF·#FFB547)이 하나라도 남으면 훨씬 밝다
+    expect(peaks[peaks.length - 1], '가장 밝은 화소의 최대 채널').toBeLessThanOrEqual(48);
+  });
+});
+
+// 좁은 휴대폰 폭에서도 데모(문장 선택지·막대·큰 예측가)가 가로로 넘치지 않는다
+for (const width of [320, 390]) {
+  test(`${width}px 폭에서 가로 넘침이 없다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await openDemo(page);
+    await expect(page.locator('.demo-result .badge')).toBeVisible();
+    for (const path of ['/en/', '/ja/']) {
+      const sw = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(sw, `${page.url()} 가로 넘침`).toBeLessThanOrEqual(0);
+      await openDemo(page, path);
+      await expect(page.locator('.demo-result .badge')).toBeVisible();
+    }
+    const sw = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(sw, `${page.url()} 가로 넘침`).toBeLessThanOrEqual(0);
   });
 }
 
