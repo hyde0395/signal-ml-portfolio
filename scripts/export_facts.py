@@ -47,6 +47,12 @@ def apply_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     return df, counts["direct"]
 
 
+def route_pairs(df: pd.DataFrame) -> pd.Series:
+    """노선별 행 수(왕복 합침). 모든 노선이 인천 출발·도착이라 인천(ICN)을 앞에 둔 이름으로 묶는다."""
+    pair = [f"ICN_{d if o == 'ICN' else o}" for o, d in zip(df["origin"].astype(str), df["destination"].astype(str))]
+    return pd.Series(pair, dtype=object).value_counts()
+
+
 def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
     # as_of 자정 다음날 자정 이전까지만(= as_of 당일 끝까지 포함) 남긴다. 수집이 계속 진행 중인
     # 원본 CSV에서 이후에 더 쌓인 행이 섞이면 model_metrics.json이 학습했던 시점과 어긋난다.
@@ -56,10 +62,13 @@ def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
     fetch = pd.to_datetime(df["fetch_timestamp"])
     dep = pd.to_datetime(df["departure_date"])
     routes = (df["origin"].astype(str) + "_" + df["destination"].astype(str)).nunique()
-    # ② 플립 보드용(설계 2026-09-25 §3.2): 왕복을 한 줄로 합친다. 모든 노선이 인천 출발·도착이라
-    # 인천(ICN)을 앞에 둔 이름으로 묶고, 행 수가 많은 노선부터 보여 준다
-    pair = [f"ICN_{d if o == 'ICN' else o}" for o, d in zip(df["origin"].astype(str), df["destination"].astype(str))]
-    by_route = pd.Series(pair).value_counts()
+    # 걸러낸 뒤 노선별 행 수. 행 수가 많은 노선부터
+    by_route = route_pairs(df)
+    # ② 플립 보드(2026-10-01 순서 변경: 지도 → 보드 → 걸러내기 판)는 걸러내기 전 "모은" 행을 보여 준다.
+    # 보드 TOTAL(rawRows)에서 걸러내기 판이 242,874로 줄이므로, 노선별 수도 같은 원본(기준일까지 자른 CSV)에서 센다.
+    # 줄 순서는 byRoute와 같게 두어 보드와 다른 곳의 노선 순서가 어긋나지 않게 한다(원본에만 있는 노선은 뒤에)
+    raw_counts = route_pairs(raw)
+    raw_order = [p for p in by_route.index if p in raw_counts.index] + [p for p in raw_counts.index if p not in by_route.index]
     days = (fetch.max().normalize() - fetch.min().normalize()).days + 1
     return {
         "rawRows": int(len(raw)),
@@ -73,6 +82,7 @@ def compute_data_stats(raw: pd.DataFrame, as_of: str) -> dict:
         "maxDtd": int(df["days_to_departure"].max()),
         "routes": int(routes),
         "byRoute": [{"pair": p, "rows": int(n)} for p, n in by_route.items()],
+        "rawByRoute": [{"pair": p, "rows": int(raw_counts[p])} for p in raw_order],
         "collectDays": int(days),
         # ① 숫자판의 "5개월". 30.4일(평균 한 달)로 나눠 반올림한다
         "collectMonths": int(round(days / 30.4)),

@@ -41,6 +41,8 @@ def test_counts_filters_and_cutoff():
     assert stats["routes"] == 1
     # 왕복을 한 줄로 합친 노선별 행 수(ICN이 앞). 합은 filteredRows와 같다
     assert stats["byRoute"] == [{"pair": "ICN_NRT", "rows": 2}]
+    # ② 보드는 걸러내기 전 모은 행(기준일까지 자른 원본)을 노선별로 센다
+    assert stats["rawByRoute"] == [{"pair": "ICN_NRT", "rows": 4}]
     assert stats["collectDays"] == 1
     assert stats["collectMonths"] == 0
 
@@ -85,6 +87,22 @@ def test_by_route_merges_both_directions_and_sorts_by_rows():
     assert sum(r["rows"] for r in stats["byRoute"]) == stats["filteredRows"]
     assert stats["collectDays"] == 153
     assert stats["collectMonths"] == 5
+
+
+def test_raw_by_route_sums_to_raw_rows_in_by_route_order():
+    # 원본에서는 KIX가 더 많지만(걸러질 행 둘) 줄 순서는 걸러낸 뒤 순서(byRoute)를 따른다
+    raw = frame([
+        row("2026-09-22 10:00:00"),
+        row("2026-09-22 10:01:00", o="NRT", d="ICN"),
+        row("2026-09-22 10:02:00", o="ICN", d="KIX"),
+        row("2026-09-22 10:03:00", o="ICN", d="KIX", price=150),
+        row("2026-09-22 10:04:00", o="KIX", d="ICN", price=150),
+        row("2026-09-23 10:00:00", o="ICN", d="HND"),  # 기준일 이후 → 원본에서도 제외
+    ])
+    stats = ef.compute_data_stats(raw, "2026-09-22")
+    assert stats["rawByRoute"] == [{"pair": "ICN_NRT", "rows": 2}, {"pair": "ICN_KIX", "rows": 3}]
+    assert sum(r["rows"] for r in stats["rawByRoute"]) == stats["rawRows"]
+    assert [r["pair"] for r in stats["rawByRoute"]] == [r["pair"] for r in stats["byRoute"]]
 
 
 def test_feature_groups_must_cover_model_features_exactly():

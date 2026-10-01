@@ -48,6 +48,20 @@
         "rows": 12041
       }
     ],
+    "rawByRoute": [
+      {
+        "pair": "ICN_NRT",
+        "rows": 118346
+      },
+      {
+        "pair": "ICN_KIX",
+        "rows": 112746
+      },
+      {
+        "pair": "ICN_HND",
+        "rows": 27737
+      }
+    ],
     "collectDays": 153,
     "collectMonths": 5,
     "filter": {

@@ -32,6 +32,13 @@ describe('facts.json', () => {
     expect(facts.data.byRoute.reduce((s, r) => s + r.rows, 0)).toBe(facts.data.filteredRows);
   });
 
+  // ② 보드는 걸러내기 판보다 먼저 나와 걸러내기 전 모은 행을 보여 준다(2026-10-01). 합계가 걸러내기 판의 시작 수와 같아야 한다
+  it('모은 행의 노선별 수는 byRoute와 같은 줄 순서이고 합은 원본 행 수다(플립 보드 TOTAL)', () => {
+    expect(facts.data.rawByRoute.map((r) => r.pair)).toEqual(facts.data.byRoute.map((r) => r.pair));
+    expect(facts.data.rawByRoute.reduce((s, r) => s + r.rows, 0)).toBe(facts.data.rawRows);
+    facts.data.rawByRoute.forEach((r, i) => expect(r.rows).toBeGreaterThanOrEqual(facts.data.byRoute[i].rows));
+  });
+
   it('피처 그룹의 피처 수 합이 featureCount다', () => {
     expect(facts.model.featureGroups.map((g) => g.id)).toEqual(['lookup', 'categorical', 'holiday', 'days', 'flight', 'market']);
     expect(facts.model.featureGroups.reduce((s, g) => s + g.features.length, 0)).toBe(facts.model.featureCount);

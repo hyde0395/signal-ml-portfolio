@@ -6,6 +6,8 @@ import { CABINS, ROUTES } from '@/demo/types';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const score = z.object({ r2: z.number(), mae: z.number(), mape: z.number() });
+// 노선 한 줄(왕복 합산, 인천이 앞): ② 플립 보드와 첫 화면 노선 메타 줄이 쓴다
+const routeRows = z.object({ pair: z.enum(['ICN_NRT', 'ICN_KIX', 'ICN_HND']), rows: z.number().int() });
 const chapters = ['problem', 'insight', 'bubble', 'validation', 'interval', 'limits', 'features', 'model', 'filter'] as const;
 export type CodeChapter = (typeof chapters)[number];
 
@@ -29,8 +31,10 @@ export const factsSchema = z.object({
     rawRows: z.number().int(), filteredRows: z.number().int(), removedImplausible: z.number().int(),
     collectStart: isoDate, collectEnd: isoDate, departStart: isoDate, departEnd: isoDate,
     uniqueDepartures: z.number().int(), maxDtd: z.number().int(), routes: z.number().int(),
-    // ② 플립 보드(설계 2026-09-25 §3.2): 왕복 합산, 행 수가 많은 순
-    byRoute: z.array(z.object({ pair: z.enum(['ICN_NRT', 'ICN_KIX', 'ICN_HND']), rows: z.number().int() })).min(1),
+    // 걸러낸 뒤 노선별 행 수(왕복 합산, 행 수가 많은 순)
+    byRoute: z.array(routeRows).min(1),
+    // ② 플립 보드: 걸러내기 전 모은 행의 노선별 수(byRoute와 같은 줄 순서). 보드가 걸러내기 판보다 먼저 나와서(2026-10-01)
+    rawByRoute: z.array(routeRows).min(1),
     collectDays: z.number().int(), collectMonths: z.number().int(),
     // ② 걸러내기 판(계획 8-1): 규칙별 제거 행 수(① 단위·소요, ② 시각 불일치, ③ 직항 확인)와 소요 시간 상한(분)
     filter: z.object({ unit: z.number().int(), mismatch: z.number().int(), direct: z.number().int(), durationMax: z.number().int() }),
