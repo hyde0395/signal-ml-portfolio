@@ -63,9 +63,11 @@ def test_filter_counts_by_rule_in_pipeline_order():
 
 
 def test_merge_keeps_site_config():
-    existing = {"dataVersion": "old", "contact": {"linkedin": ""}, "data": {"rawRows": 1}}
+    # contact.ticket(연락처 탑승권, 2026-10-01)도 손으로 쓰는 값이라 재학습 뒤에도 그대로 남아야 한다
+    contact = {"linkedin": "", "ticket": {"flight": "SIG 0395", "gate": "03", "fromCity": "SEOUL INCHEON", "toCity": "TOKYO · OSAKA"}}
+    existing = {"dataVersion": "old", "contact": contact, "data": {"rawRows": 1}}
     merged = ef.merge_facts(existing, "2026-09-22", {"rawRows": 2}, {"tss": {"r2": 0.637}})
-    assert merged["contact"] == {"linkedin": ""}
+    assert merged["contact"] == contact
     assert merged["dataVersion"] == "2026-09-22"
     assert merged["data"] == {"rawRows": 2}
     assert merged["model"] == {"tss": {"r2": 0.637}}

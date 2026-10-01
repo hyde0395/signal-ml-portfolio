@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import raw from '../../data/facts.json';
 import { codeUrl, facts, factsSchema } from '@/lib/facts';
+import { destinationCodes } from '@/lib/ticket';
 
 describe('facts.json', () => {
   it('스키마를 통과한다', () => {
@@ -54,5 +55,27 @@ describe('site.airport(첫 화면 메타 줄)', () => {
     expect(facts.site.airport.code).toBe('ICN');
     expect(facts.site.airport.lat).toBeGreaterThan(37);
     expect(facts.site.airport.lon).toBeGreaterThan(126);
+  });
+});
+
+// 연락처 탑승권(설계 2026-10-01): 꾸밈 값은 facts.contact.ticket, 노선은 수집 노선에서 뽑는다
+describe('contact.ticket(연락처 탑승권)', () => {
+  it('편명·게이트·도시가 들어 있고 빈 값은 거부한다', () => {
+    expect(facts.contact.ticket.flight).not.toBe('');
+    expect(facts.contact.ticket.gate).not.toBe('');
+    const broken = structuredClone(raw) as Record<string, any>;
+    broken.contact.ticket.flight = '';
+    expect(() => factsSchema.parse(broken)).toThrow();
+    delete broken.contact.ticket;
+    expect(() => factsSchema.parse(broken)).toThrow();
+  });
+
+  it('도착 공항 코드는 수집 노선에서 순서대로, 겹치지 않게 뽑는다', () => {
+    expect(destinationCodes(facts.data.byRoute)).toEqual(['NRT', 'KIX', 'HND']);
+    expect(destinationCodes([{ pair: 'ICN_NRT', rows: 2 }, { pair: 'ICN_KIX', rows: 1 }, { pair: 'ICN_NRT', rows: 1 }])).toEqual(['NRT', 'KIX']);
+  });
+
+  it('출발 공항은 첫 화면과 같은 site.airport.code이고 모든 노선의 출발지다', () => {
+    for (const r of facts.data.byRoute) expect(r.pair.split('_')[0]).toBe(facts.site.airport.code);
   });
 });
