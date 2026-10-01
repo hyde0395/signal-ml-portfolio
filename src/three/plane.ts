@@ -2,6 +2,7 @@
 // 비행기 모양(점 232개), 스크롤 → 진행도 p, 이륙 경로 자세, 흩어짐 진행, 카메라 따라가기를 순수 함수로 둔다.
 // React·three에 의존하지 않는다 — TerrainPoints가 매 프레임 planePose로 uPlane 행렬을, TerrainScene이 카메라 목표점을 만든다.
 import { K, RUNWAY } from './airport';
+import { SIGNAL } from './signal';
 
 // 진행도 p는 시안의 "스크롤 비율" 눈금을 그대로 쓴다(시안 단계 값을 옮겨 적지 않고 같은 숫자로 비교하려고).
 // 사이트 스크롤과의 대응(takeoffProgress): 첫 화면 내려앉기 0 → y0(0.9·화면 높이) = 시안 0 → 0.30(내려앉기),
@@ -77,6 +78,15 @@ export function takeoffProgress(scrollY: number, y0: number, y1: number): number
   if (scrollY <= y0 || y1 <= y0) return PLANE.landEnd * clamp01(scrollY / y0);
   if (scrollY >= y1) return 1;
   return PLANE.landEnd + (PLANE.handoffEnd - PLANE.landEnd) * ((scrollY - y0) / (y1 - y0));
+}
+
+// 머리말까지 이은 눈금(계획 9-3): yA(머리말 글이 화면에 붙은 뒤)까지는 이륙 눈금(takeoffProgress, y1 자리에 yA),
+// yA → yB(붙임이 풀릴 때)는 잡음 → 신호 단계(SIGNAL.start → end), 그 뒤 끝. yA에서 0.96 → 1로 건너뛰는 틈은 시계가
+// 최대 속도로 메운다(옛 눈금도 y1에서 같은 틈이 있었다)
+export function runwayProgress(scrollY: number, y0: number, yA: number, yB: number): number {
+  if (scrollY < yA) return takeoffProgress(scrollY, y0, yA);
+  if (yB <= yA || scrollY >= yB) return SIGNAL.end;
+  return SIGNAL.start + (SIGNAL.end - SIGNAL.start) * ((scrollY - yA) / (yB - yA));
 }
 
 // 비행기 시계 한 걸음: cur를 goal 쪽으로 dt초 동안 최대 rate만큼만 옮긴다(되감기도 같은 속도).
