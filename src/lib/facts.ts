@@ -22,6 +22,12 @@ export const factsSchema = z.object({
     emailReversed: z.string().includes('@'),
     github: z.url(),
     linkedin: z.union([z.literal(''), z.url()]),
+    // 연락처 탑승권(설계 2026-10-01)의 꾸밈 값. 문구는 디자인을 다 정한 뒤 한꺼번에 바꾸므로(사용자 결정)
+    // 코드가 아니라 여기 둔다. 숫자가 섞인 편명·게이트를 문구 파일에 쓸 수 없는 이유도 있다.
+    // 탑승(BOARDING) 칸은 졸업 월 profile.graduation을 그대로 쓴다 — 같은 값을 두 곳에 두지 않으려고
+    ticket: z.object({
+      flight: z.string().min(1), gate: z.string().min(1), fromCity: z.string().min(1), toCity: z.string().min(1),
+    }),
   }),
   codeLinks: z.object({
     baseUrl: z.url(),

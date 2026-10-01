@@ -146,14 +146,82 @@ html.hero-runway .hero-stage { padding-bottom: 60vh; }
 .vtable .is-main { color: var(--amb); }
 .pipeline { list-style: none; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); counter-reset: step; }
 .pipeline li { border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 6px; }
-.pass { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; max-width: 640px; background: rgba(19, 32, 58, 0.5); }
-.pass-head { background: var(--amb); color: #1a1200; padding: 8px 16px; font-weight: 600; letter-spacing: 0.14em; font-size: 0.8rem; }
-.pass dl { display: grid; gap: 14px; padding: 20px 16px; }
-.pass dt { font-size: 0.7rem; letter-spacing: 0.14em; color: var(--mute); }
-.pass dd { word-break: break-all; }
+/* 연락처 가로 탑승권(설계 2026-10-01, 시안 A). 본권(.pass-main)과 꼬리표(.pass-stub)가 각자 배경을 갖고,
+   절취선 양 끝의 반원 홈은 색을 칠한 원이 아니라 mask로 실제로 뚫는다 — 뒤가 3D 점이든 바탕 그라데이션이든
+   홈 안으로 그대로 비쳐 보여야 "페이지 바탕과 같은 색"이 된다. 홈 위치(--n1·--n2)만 배치에 따라 바꾼다 */
+.pass { --notch: 11px; --band: 40px; --perf: 2px dashed rgba(238, 243, 255, 0.28);
+  --card: linear-gradient(180deg, rgba(14, 26, 51, 0.96), rgba(10, 19, 40, 0.96));
+  display: grid; max-width: 880px; }
+.pass-main, .pass-stub { position: relative; overflow: hidden; background: var(--card); border: 1px solid var(--line);
+  -webkit-mask: radial-gradient(circle var(--notch) at var(--n1), #0000 calc(var(--notch) - 0.5px), #000 var(--notch)),
+                radial-gradient(circle var(--notch) at var(--n2), #0000 calc(var(--notch) - 0.5px), #000 var(--notch));
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle var(--notch) at var(--n1), #0000 calc(var(--notch) - 0.5px), #000 var(--notch)),
+        radial-gradient(circle var(--notch) at var(--n2), #0000 calc(var(--notch) - 0.5px), #000 var(--notch));
+  mask-composite: intersect; }
+.pass-label { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.14em; color: var(--mute); }
+.pass dd { overflow-wrap: anywhere; }
+.pass-head { display: flex; justify-content: space-between; gap: 12px; min-height: var(--band); align-items: center;
+  background: var(--amb); color: #1a1200; padding: 6px 20px; font-weight: 600; letter-spacing: 0.16em; font-size: 0.75rem; }
+.pass-route { display: flex; align-items: flex-end; gap: 16px; padding: 18px 20px 4px; }
+.pass-code { display: block; font-size: clamp(1.9rem, 4.2vw, 2.75rem); letter-spacing: -0.02em; line-height: 1.05; margin-top: 4px; }
+.pass-city { display: block; font-size: 0.7rem; letter-spacing: 0.08em; color: var(--mute); margin-top: 6px; }
+/* 점선 두 토막 사이에 비행기 — 선이 비행기 뒤로 지나가지 않게 가운데를 비운다 */
+.pass-path { flex: 1 1 40px; min-width: 40px; display: flex; align-items: center; gap: 6px; color: var(--amb); margin-bottom: 30px; }
+.pass-path::before, .pass-path::after { content: ''; flex: 1; border-top: 1px dashed rgba(143, 184, 255, 0.45); }
+.pass-path svg { flex: none; }
+.pass-to { flex: 0 1 auto; min-width: 0; text-align: right; }
+.pass-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 0.7fr; gap: 14px 18px; padding: 16px 20px 20px; }
+.pass-grid dd { margin-top: 2px; }
+.pass-wide { grid-column: span 2; }
 /* 이름이 첫 화면에서 빠져 여기가 이름을 보여 주는 자리라, 다른 칸 값보다 한 단계 크게 둔다 */
-.pass-name { font-size: 1.5rem; }
-.pass-name-sub { display: block; margin-top: 4px; font-size: 0.9rem; color: var(--mute); }
+.pass-name { display: block; font-size: 1.5rem; line-height: 1.1; margin-top: 2px; }
+.pass-name-sub { display: block; margin-top: 4px; font-size: 0.85rem; color: var(--mute); }
+/* 꼬리표: 본권보다 아주 옅은 호박색을 깔아 다른 종이처럼. 맨 위 띠는 본권 호박색 머리와 높이를 맞춘다 */
+.pass-stub { background: linear-gradient(rgba(255, 181, 71, 0.05), rgba(255, 181, 71, 0.05)), var(--card);
+  padding: 0 18px 18px; display: flex; flex-direction: column; }
+.pass-stub dl { display: grid; gap: 12px; }
+.pass-stub-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: var(--band);
+  border-bottom: 1px solid var(--line); }
+.pass-stub-head dd { color: var(--amb); font-weight: 600; letter-spacing: 0.16em; font-size: 0.75rem; }
+.pass-stub-name { font-size: 1.15rem; margin-top: 2px; }
+.pass-stub .pill { display: inline-block; margin-top: 6px; }
+/* 바코드는 꾸밈(aria-hidden). 굵기가 다른 막대 네 벌을 서로 다른 주기로 겹쳐 규칙적인 줄무늬로 보이지 않게 한다 */
+.pass-barcode { height: 44px; margin-top: auto; opacity: 0.8;
+  background:
+    repeating-linear-gradient(90deg, var(--tx) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(90deg, transparent 0 3px, var(--tx) 3px 4px, transparent 4px 11px),
+    repeating-linear-gradient(90deg, transparent 0 5px, var(--tx) 5px 8px, transparent 8px 17px),
+    repeating-linear-gradient(90deg, transparent 0 9px, var(--tx) 9px 10px, transparent 10px 23px); }
+.pass-stub dl { margin-bottom: 18px; }
+/* 좁은 화면(본문 폭 760px 미만): 꼬리표가 본권 아래로, 절취선은 가로, 홈은 왼쪽·오른쪽 끝 */
+.pass-main { border-radius: 14px 14px 0 0; border-bottom: 0; --n1: 0 100%; --n2: 100% 100%; }
+.pass-stub { border-radius: 0 0 14px 14px; border-top: var(--perf); --n1: 0 0; --n2: 100% 0; }
+.pass-stub dl { grid-template-columns: 1fr 1fr; }
+.pass-stub-head { grid-column: 1 / -1; }
+@media (max-width: 559px) {
+  .pass-route { padding-inline: 16px; gap: 10px; }
+  .pass-route > dl:first-child { flex: none; }
+  .pass-code { font-size: 1.6rem; }
+  .pass-city { font-size: 0.62rem; white-space: nowrap; }
+  .pass-to .pass-city { white-space: normal; }
+  .pass-path { flex-basis: 24px; min-width: 24px; margin-bottom: 22px; }
+  /* 두 칸 배치: 이름·직무는 한 줄 전체, 탑승·게이트는 나란히 — 게이트가 혼자 한 줄을 차지하지 않게 */
+  .pass-grid { grid-template-columns: 1fr 1fr; padding-inline: 16px; }
+  .pass-passenger, .pass-grid > :nth-child(2) { grid-column: 1 / -1; }
+  .pass-head { padding-inline: 16px; letter-spacing: 0.12em; }
+  .pass-stub { padding-inline: 16px; }
+  .pass-head > span { white-space: nowrap; }
+}
+/* 아주 좁은 화면(320px대)에서는 머리 띠가 두 줄로 부서지지 않게 브랜드를 빼고 편명만 남긴다 */
+@media (max-width: 379px) { .pass-head-brand { display: none; } }
+/* 넓은 화면(본문 폭 ≥ 760px, 화면 792px부터): 본권 | 세로 절취선 | 꼬리표 230px, 홈은 절취선 위아래 */
+@media (min-width: 792px) {
+  .pass { grid-template-columns: 1fr 230px; }
+  .pass-main { border-radius: 14px 0 0 14px; border-bottom: 1px solid var(--line); border-right: 0; --n1: 100% 0; --n2: 100% 100%; }
+  .pass-stub { border-radius: 0 14px 14px 0; border-top: 1px solid var(--line); border-left: var(--perf); --n1: 0 0; --n2: 0 100%; }
+  .pass-stub dl { grid-template-columns: 1fr; }
+}
 @media (max-width: 640px) { .vtable { font-size: 0.8rem; } .vtable th, .vtable td { padding: 8px 4px; } }
 /* 데모(스펙 §6.1): 질문 문장 속 밑줄 선택지, 출발일 막대, 결과 카드 */
 .demo-app { margin-top: 32px; display: grid; gap: 20px; }
@@ -257,8 +325,8 @@ html:is([data-3d="on"], [data-3d="pending"]) .scene-figure { display: none; }
 /* 3D가 켜지면 챕터를 화면 높이로 늘려 카메라가 챕터마다 새 구도로 움직일 시간을 준다. 글 뒤 판은 없고,
    대비는 장면 구도(점을 글 반대쪽에 둠)와 비네트가 지킨다(설계 2026-09-28 §2.1) */
 html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border-top: 0; }
-/* 560px는 판 크기가 아니라 그냥 읽기 좋은 줄 너비다(긴 줄은 눈이 따라가기 어렵다). .pass(탑승권 카드)는
-   자기 배경이 있는 640px 카드라 이 제한에서 뺀다(Task 6 리뷰 지적: 640px가 지켜지지 않던 문제).
+/* 560px는 판 크기가 아니라 그냥 읽기 좋은 줄 너비다(긴 줄은 눈이 따라가기 어렵다). .pass(탑승권)는
+   자기 배경이 있는 가로 탑승권(최대 880px, 설계 2026-10-01)이라 이 제한에서 뺀다 — 560px로 줄면 꼬리표가 옆에 설 자리가 없다.
    .contact-about(옛 소개, 640px)은 자기 배경이 없어 여기서 빼지 않는다 — 560px로 같이 줄어야 상자
    크기(padding 없음)가 3D on/off에서 늘 같아 글이 밀리지 않는다(최종 리뷰 #4, CLS) */
 /* 보드·수집 라인·목록은 넓게 쓰고 자기 배경(보드)이 있으므로 560px 제한에서 뺀다. ①의 글 상자(.project-copy)는

@@ -6,7 +6,8 @@
   "contact": {
     "emailReversed": "moc.liamg@5930sugolopa",
     "github": "https://github.com/hyde0395",
-    "linkedin": ""
+    "linkedin": "",
+    "ticket": { "flight": "SIG 0395", "gate": "03", "fromCity": "SEOUL INCHEON", "toCity": "TOKYO · OSAKA" }
   },
   "codeLinks": {
     "baseUrl": "https://github.com/hyde0395/airfare-forecasting-ml",
