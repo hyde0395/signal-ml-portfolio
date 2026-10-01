@@ -9,10 +9,11 @@ export const MAP_POINT = { coastAlpha: 0.8, routeAlpha: 0.9, size: 0.55 } as con
 
 // 머리말·① 잡음 밭 점(설계 2026-10-01 §6, 시안 noise-signal.html): 깊이 d(0 먼 쪽 .. 1 가까운 쪽)마다
 // 지름 sizeMin + sizeAdd·d (CSS px), 알파 alphaMin + alphaAdd·d, d > white면 흰빛, 떨림 jitterMin + jitterAdd·d (CSS px).
-// 시안 값(반지름 0.7 + 1.3·d → 지름 1.4 + 2.6·d, 알파 0.16 + 0.38·d)에 사용자 요청(첫 시안보다 잘 보이게)을 반영한 값.
+// 시안 값(반지름 0.7 + 1.3·d → 지름 1.4 + 2.6·d, 알파 0.16 + 0.38·d)에서 사용자 요청(첫 시안보다 잘 보이게)으로 키웠다 —
+// 시안 값 그대로는 점 가장자리 흐림 때문에 실제 화면에서 거의 안 보였다(1440×900 눈 확인).
 // 가라앉으면(단계 4) 떨림 ×(1 − settleJitter), 알파 ×(1 − settleAlpha)
 export const FIELD_POINT = {
-  sizeMin: 1.4, sizeAdd: 2.6, alphaMin: 0.16, alphaAdd: 0.38, white: 0.85,
+  sizeMin: 2.0, sizeAdd: 3.0, alphaMin: 0.22, alphaAdd: 0.38, white: 0.85,
   jitterMin: 1.6, jitterAdd: 1.2, settleJitter: 0.7, settleAlpha: 0.3,
 } as const;
 

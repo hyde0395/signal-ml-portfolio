@@ -45,7 +45,8 @@ export type SignalLayout = { pts: [number, number][]; arc: number[] };
 
 // U자 8구간의 화면 자리(NDC, x 오른쪽 +, y 위 +)와 구간 점마다의 누적 호 길이 비율.
 // 가로 화면: 글은 .wrap 왼쪽 열이라 곡선은 화면 가로 53% → 93%(시안 50 → 94%를 16:10과 글 폭에 맞춤), 세로 가운데 55%,
-// 1%p = 화면 높이의 1.8%(시안). 세로 화면: 글을 아래에 두므로(globals.css 머리말·①) 위쪽 16% ~ 42%에 가로 10 → 90%로 넓게.
+// 1%p = 화면 높이의 1.8%(시안). 세로 화면: 글을 아래에 두므로(globals.css 머리말·①) 위쪽 12% ~ 33%에 가로 10 → 90%로 넓게 — ① 글(머리표·큰 질문)이
+// 화면 38% 근처부터라 그보다 위(390×844 눈 확인).
 // 호 길이는 화면 px 비율(x에 aspect를 곱함)로 잰다 — 셰이더가 선 점을 곡선 위에 고르게 놓는 데 쓴다
 export function signalLayout(aspect: number, bins: readonly number[]): SignalLayout {
   const hi = Math.max(...bins), lo = Math.min(...bins), mid = (hi + lo) / 2;
@@ -54,7 +55,7 @@ export function signalLayout(aspect: number, bins: readonly number[]): SignalLay
     const u = i / (bins.length - 1);
     const xf = portrait ? 0.1 + 0.8 * u : 0.53 + 0.4 * u;
     const yf = portrait
-      ? 0.16 + (hi - lo > 1e-6 ? ((hi - v) / (hi - lo)) * 0.26 : 0.13)
+      ? 0.12 + (hi - lo > 1e-6 ? ((hi - v) / (hi - lo)) * 0.21 : 0.1)
       : 0.55 - (v - mid) * 0.018;
     return [2 * xf - 1, 1 - 2 * yf];
   });
