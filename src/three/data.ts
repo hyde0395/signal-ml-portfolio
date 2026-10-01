@@ -6,14 +6,15 @@ import { z } from 'zod';
 const ints = z.array(z.number().int());
 const layer = z.object({ dtd: ints, date: ints, pct: ints });
 
-// terrain.json의 curve 필드는 export_terrain.py가 지표 대조용으로 계속 만들지만 사이트는 쓰지 않는다
-// (z.object는 모르는 키를 버린다)
+// terrain.json의 curve 필드(남은 일수별 평균 %×10과 행 수)는 머리말 U자 8구간(bookingBins)에 쓴다(계획 9-3).
+// 없어도 받아들인다 — 그때는 U자가 평평하게(0) 놓인다
 export const terrainSchema = z.object({
   asOf: z.string(),
   maxDtd: z.number().int().positive(),
   clip: z.object({ min: z.number(), max: z.number() }),
   dates: z.array(z.string()).min(2),
   holiday: ints,
+  curve: z.object({ dtd: ints, pct: ints, n: ints }).optional(),
   signal: layer,
   noise: layer,
   removed: layer,
@@ -36,6 +37,19 @@ const ROUTE_ARC_HEIGHT = 1.5;   // 지도 장면에서 노선 궤적이 떠오�
 // 지도 가는 실선(설계 2026-09-29 §1): 해안선을 세계 좌표 step 간격으로 다시 뽑고(약 2,800점), 노선마다 routePts개 호.
 // 흔들지 않는다 — 점 수가 해안선 샘플보다 많아 흔들어 겹겹이 쌓던 것이 굵고 흐릿한 띠로 보였다(사용자 지적 2026-09-29)
 export const MAP_LINE = { step: 0.035, routePts: 170, breakDeg: 0.5 } as const;
+
+// 머리말 U자 예약 곡선의 8구간(남은 일수 경계, 왼쪽 = 이른 구매 → 오른쪽 = 출발 직전). ④ 구간별 벌떼(charts.json
+// curve.bins)와 같은 경계를 뒤집은 순서다 — 단위 테스트가 두 파일을 대조한다
+export const BOOKING_BINS = [[61, 90], [46, 60], [31, 45], [22, 30], [15, 21], [8, 14], [4, 7], [1, 3]] as const;
+
+// 구간마다 행 수(n) 가중 평균(%). 3D가 charts.json(gzip 약 40KB)을 따로 받지 않으려고 terrain.json의 일별 곡선에서 다시 낸다
+export function bookingBins(curve: { dtd: number[]; pct: number[]; n: number[] }): number[] {
+  return BOOKING_BINS.map(([lo, hi]) => {
+    let s = 0, w = 0;
+    curve.dtd.forEach((d, i) => { if (d >= lo && d <= hi) { s += curve.pct[i] * curve.n[i]; w += curve.n[i]; } });
+    return w ? s / w / 10 : 0;
+  });
+}
 
 export function terrainPosition(dtd: number, dateIdx: number, pct10: number, maxDtd: number, nDates: number): [number, number, number] {
   // 왼쪽 = 먼 예약 시점, 오른쪽 = 출발 당일. 시간이 흐르는 방향을 왼쪽→오른쪽으로 읽게 한다.

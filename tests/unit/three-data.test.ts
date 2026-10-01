@@ -1,6 +1,8 @@
 // JSON → 점 좌표 변환 검사: 좌표계, 레이어 순서, 잡음 솎아내기, 공휴일·노선 표시, 점마다 출발일 번호, 로딩 실패.
 import { describe, expect, it, vi } from 'vitest';
-import { buildPointCloud, loadSceneData, MAP_LINE, mapPosition, resampleLines, terrainPosition, type MapData, type Terrain } from '@/three/data';
+import { readFileSync } from 'node:fs';
+import { facts } from '@/lib/facts';
+import { BOOKING_BINS, bookingBins, buildPointCloud, loadSceneData, MAP_LINE, mapPosition, resampleLines, terrainPosition, terrainSchema, type MapData, type Terrain } from '@/three/data';
 
 const terrain: Terrain = {
   asOf: '2026-09-22', maxDtd: 100, clip: { min: -60, max: 200 },
@@ -137,5 +139,30 @@ describe('loadSceneData', () => {
   it('coast가 비어 있으면 reject (buildPointCloud에서 NaN 방지)', async () => {
     const fetcher = vi.fn((url: string) => ok(url.includes('terrain') ? terrain : { ...map, coast: [] }));
     await expect(loadSceneData('2026-09-22', fetcher as unknown as typeof fetch)).rejects.toThrow();
+  });
+});
+
+// 잡음 → 신호(계획 9-3): U자 8구간은 terrain.json의 남은 일수별 곡선(curve)에서 n 가중 평균으로 낸다.
+// 숫자를 코드에 적지 않고, ④ 구간별 벌떼가 쓰는 charts.json curve와 같은 값인지 여기서 대조한다
+describe('bookingBins', () => {
+  const read = (f: string) => JSON.parse(readFileSync(`public/data/${f}.${facts.dataVersion}.json`, 'utf8'));
+  const charts = read('charts'), terr = terrainSchema.parse(read('terrain'));
+  it('구간 경계는 charts.json bins를 뒤집은 순서(왼쪽 = 이른 구매)', () => {
+    expect(BOOKING_BINS.map((b) => [...b])).toEqual([...charts.curve.bins].reverse());
+  });
+  // 일별 값이 이미 %×10 정수로 반올림돼 있어 구간 평균이 0.2%p 안에서 어긋난다(지금 데이터 최대 0.19, D-61~90) —
+  // 화면에서 1%p ≈ 화면 높이의 1.8%라 보이지 않는 차이다. 행 수(n)는 정확히 같아야 한다
+  it('구간 평균(%)은 charts.json curve.mean(%×10)을 뒤집은 값과 0.25%p 안에서 같다', () => {
+    const got = bookingBins(terr.curve!);
+    const want = [...charts.curve.mean].reverse().map((v: number) => v / 10);
+    got.forEach((v, i) => expect(Math.abs(v - want[i]), `구간 ${i}`).toBeLessThanOrEqual(0.25));
+  });
+  it('구간 행 수는 charts.json curve.n과 같다', () => {
+    const c = terr.curve!;
+    const n = BOOKING_BINS.map(([lo, hi]) => c.dtd.reduce((a, d, i) => a + (d >= lo && d <= hi ? c.n[i] : 0), 0));
+    expect(n).toEqual([...charts.curve.n].reverse());
+  });
+  it('점이 없는 구간은 0', () => {
+    expect(bookingBins({ dtd: [1], pct: [100], n: [5] })).toEqual([0, 0, 0, 0, 0, 0, 0, 10]);
   });
 });
