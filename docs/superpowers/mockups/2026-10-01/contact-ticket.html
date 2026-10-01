@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>연락처 티켓 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#02040A;--tx:#EEF3FF;--mute:#8a94ad;--dot:#8FB8FF;--amb:#FFB547;--line:rgba(143,184,255,.22)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 -apple-system,"Pretendard",sans-serif;padding:28px 36px 90px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 26px}
+.opt{border:1px solid #1c2740;border-radius:12px;padding:18px 20px 22px;margin:0 0 30px;cursor:pointer;background:#040812}
+.opt.selected{border-color:var(--amb);box-shadow:0 0 0 1px var(--amb)}
+.tag{font:600 12px 'IBM Plex Mono',monospace;color:var(--amb);letter-spacing:.06em}
+.opt h2{font-size:15px;margin:2px 0 4px}.opt>p{color:#9aa6c2;margin:0 0 16px}
+.mono{font-family:'IBM Plex Mono',monospace}.disp{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-.02em}
+.lbl{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--mute);text-transform:uppercase}
+.val{font-size:14px;margin-top:2px}.val a{color:var(--dot)}
+.code{font-size:44px;line-height:1}
+.bar{height:46px;background:repeating-linear-gradient(90deg,var(--tx) 0 2px,transparent 2px 4px,var(--tx) 4px 5px,transparent 5px 9px,var(--tx) 9px 12px,transparent 12px 14px);opacity:.85}
+/* A 가로 탑승권 */
+.A{display:flex;max-width:860px;background:linear-gradient(180deg,#0e1a33,#0a1328);border-radius:14px;position:relative;overflow:hidden;border:1px solid var(--line)}
+.A .main{flex:1;padding:0 0 18px}
+.A .head{display:flex;justify-content:space-between;background:var(--amb);color:#1a1200;padding:9px 22px;font:600 12px 'IBM Plex Mono',monospace;letter-spacing:.16em}
+.A .route{display:flex;align-items:center;gap:22px;padding:20px 22px 6px}
+.A .plane{flex:1;border-top:1px dashed var(--line);position:relative}.A .plane:after{content:'✈';position:absolute;left:50%;top:-12px;color:var(--amb);font-size:18px}
+.A .grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:14px 18px;padding:12px 22px 0}
+.A .stub{width:230px;border-left:2px dashed rgba(238,243,255,.25);padding:0 18px 18px;position:relative;background:rgba(255,181,71,.04)}
+.A .stub:before,.A .stub:after{content:'';position:absolute;left:-12px;width:22px;height:22px;border-radius:50%;background:#040812}
+.A .stub:before{top:-11px}.A .stub:after{bottom:-11px}
+.A .stub .head{background:transparent;color:var(--amb);padding:9px 0}
+/* B 세로 모바일 탑승권 */
+.B{width:340px;background:#0e1a33;border-radius:18px;overflow:hidden;border:1px solid var(--line)}
+.B .top{display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.B .route{display:flex;justify-content:space-between;align-items:end;padding:18px}
+.B .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;padding:4px 18px 16px}
+.B .tear{height:22px;position:relative;border-top:2px dashed rgba(238,243,255,.25);margin:0 14px}
+.B .tear:before,.B .tear:after{content:'';position:absolute;top:-12px;width:22px;height:22px;border-radius:50%;background:#040812}
+.B .tear:before{left:-26px}.B .tear:after{right:-26px}
+.B .foot{padding:0 18px 18px}
+/* C 종이 항공권 */
+.C{max-width:860px;background:#e9e3d3;color:#1d1a14;border-radius:4px;padding:0;position:relative;font-family:'IBM Plex Mono',monospace;box-shadow:0 0 0 1px #c9c1ab}
+.C .edge{height:10px;background:radial-gradient(circle at 6px 5px,#040812 3px,transparent 3.5px) repeat-x;background-size:14px 10px}
+.C .hd{display:flex;justify-content:space-between;padding:8px 18px;border-bottom:2px solid #1d1a14;font-weight:600;letter-spacing:.12em;font-size:12px}
+.C .hd b{color:#b5410f}
+.C table{width:100%;border-collapse:collapse;font-size:12px}
+.C td{border:1px solid #8c836c;padding:6px 10px;vertical-align:top}
+.C td .l{font-size:9px;letter-spacing:.12em;color:#5c5546;display:block}
+.C a{color:#13306b}
+.C .big{font-size:20px;font-weight:600}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.note{color:#9aa6c2;font-size:12.5px;max-width:300px}
+</style></head><body>
+<h1>연락처: 내 정보 박스를 비행기 티켓으로 — 세 가지 방향</h1>
+<p class="sub">글자는 예시(문구는 나중에). 실제 사이트에서는 링크(이메일·GitHub·LinkedIn·이력서)가 그대로 눌린다. 바코드는 장식(화면 낭독기에는 숨김). 마음에 드는 쪽을 누르거나 터미널에 적어 주세요.</p>
+
+<div class="opt" data-choice="a" onclick="toggleSelect(this)">
+  <div class="tag">A · 가로 탑승권 + 절취선 꼬리표 (추천)</div>
+  <h2>공항 카운터에서 받는 가로 탑승권. 왼쪽 본권에 이름·노선·정보, 점선 절취선 오른쪽 꼬리표에 이력서·바코드</h2>
+  <p>데스크톱에서 가장 "티켓"답다. 노선은 사이트 주제 그대로 ICN → NRT·KIX·HND. 휴대폰에서는 꼬리표가 아래로 내려가 세로로 쌓인다.</p>
+  <div class="A">
+    <div class="main">
+      <div class="head"><span>BOARDING PASS</span><span>SIGNAL · SIG 0395</span></div>
+      <div class="route">
+        <div><div class="lbl">From</div><div class="code disp">ICN</div><div class="mono" style="font-size:11px;color:var(--mute)">SEOUL INCHEON</div></div>
+        <div class="plane"></div>
+        <div style="text-align:right"><div class="lbl">To</div><div class="code disp">NRT · KIX · HND</div><div class="mono" style="font-size:11px;color:var(--mute)">TOKYO · OSAKA</div></div>
+      </div>
+      <div class="grid">
+        <div><div class="lbl">Passenger · 탑승객</div><div class="val disp" style="font-size:22px">CHOI HALIM</div><div style="color:var(--mute);font-size:12px">최하림</div></div>
+        <div><div class="lbl">Class</div><div class="val mono">ML ENGINEER</div></div>
+        <div><div class="lbl">Boarding</div><div class="val mono">2028-02</div></div>
+        <div><div class="lbl">Gate</div><div class="val mono">03</div></div>
+        <div style="grid-column:span 2"><div class="lbl">Email</div><div class="val"><a>apologus0395@gmail.com</a></div></div>
+        <div style="grid-column:span 2"><div class="lbl">GitHub</div><div class="val"><a>github.com/hyde0395</a></div></div>
+      </div>
+    </div>
+    <div class="stub">
+      <div class="head mono" style="font:600 12px 'IBM Plex Mono';letter-spacing:.16em">SIG 0395</div>
+      <div class="lbl">Passenger</div><div class="val disp">CHOI HALIM</div>
+      <div style="height:12px"></div>
+      <div class="lbl">Resume</div><div class="val mono"><a>PDF ↓</a></div>
+      <div style="height:14px"></div>
+      <div class="bar"></div>
+    </div>
+  </div>
+</div>
+
+<div class="opt" data-choice="b" onclick="toggleSelect(this)">
+  <div class="tag">B · 세로 모바일 탑승권 (휴대폰 지갑 앱 느낌)</div>
+  <h2>폰 지갑 앱의 탑승권 카드. 위에 큰 ICN → NRT, 가운데 칸 정보, 절취 홈 아래 바코드</h2>
+  <div class="row">
+    <div class="B">
+      <div class="top"><span class="mono" style="font-weight:600;letter-spacing:.14em;color:var(--amb)">SIGNAL</span><span class="lbl" style="color:var(--tx)">BOARDING PASS</span></div>
+      <div class="route"><div><div class="lbl">ICN</div><div class="code disp">ICN</div></div><div style="color:var(--amb);font-size:20px">✈</div><div style="text-align:right"><div class="lbl">NRT·KIX·HND</div><div class="code disp">JPN</div></div></div>
+      <div class="grid">
+        <div style="grid-column:span 2"><div class="lbl">Passenger</div><div class="val disp" style="font-size:20px">CHOI HALIM <span style="font:400 12px sans-serif;color:var(--mute)">최하림</span></div></div>
+        <div><div class="lbl">Class</div><div class="val mono">ML ENGINEER</div></div>
+        <div><div class="lbl">Boarding</div><div class="val mono">2028-02</div></div>
+        <div style="grid-column:span 2"><div class="lbl">Email</div><div class="val"><a>apologus0395@gmail.com</a></div></div>
+        <div><div class="lbl">GitHub</div><div class="val"><a>hyde0395</a></div></div>
+        <div><div class="lbl">Resume</div><div class="val"><a>PDF ↓</a></div></div>
+      </div>
+      <div class="tear"></div>
+      <div class="foot"><div class="bar"></div></div>
+    </div>
+    <p class="note">세로 카드 한 장이라 휴대폰에서 가장 자연스럽다. 데스크톱에서는 폭이 좁아 옆이 비므로 오른쪽에 "소개" 글을 나란히 둔다.</p>
+  </div>
+</div>
+
+<div class="opt" data-choice="c" onclick="toggleSelect(this)">
+  <div class="tag">C · 종이 항공권 (옛날 다단 쿠폰)</div>
+  <h2>베이지 종이에 활자처럼 찍힌 칸 많은 옛 항공권. 위아래 구멍 뚫린 테두리</h2>
+  <p>어두운 사이트에서 유일하게 밝은 물건이라 눈에 확 띈다. 대신 사이트의 점·남색 분위기와는 가장 다르다.</p>
+  <div class="C">
+    <div class="edge"></div>
+    <div class="hd"><span><b>SIGNAL</b> AIRLINES · PASSENGER TICKET</span><span>SIG 0395</span></div>
+    <table>
+      <tr><td colspan="2"><span class="l">NAME OF PASSENGER</span><span class="big">CHOI / HALIM</span> 최하림</td><td><span class="l">CLASS</span>ML ENGINEER</td><td><span class="l">BOARDING</span>2028-02</td></tr>
+      <tr><td><span class="l">FROM</span><span class="big">ICN</span> SEOUL</td><td><span class="l">TO</span><span class="big">NRT KIX HND</span></td><td><span class="l">FLIGHT</span>SIG 0395</td><td><span class="l">GATE</span>03</td></tr>
+      <tr><td colspan="2"><span class="l">E-MAIL</span><a>apologus0395@gmail.com</a></td><td><span class="l">GITHUB</span><a>hyde0395</a></td><td><span class="l">RESUME</span><a>PDF ↓</a></td></tr>
+    </table>
+    <div class="edge" style="transform:scaleY(-1)"></div>
+  </div>
+</div>
+</body></html>
