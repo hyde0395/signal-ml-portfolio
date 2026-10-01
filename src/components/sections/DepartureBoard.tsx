@@ -29,9 +29,11 @@ function Cell({ text, read }: { text: string; read?: string }) {
 
 export function DepartureBoard({ locale }: { locale: Locale }) {
   const t = getT(locale);
-  const { byRoute, filteredRows, collectStart, collectEnd, collectDays } = facts.data;
+  // 보드는 걸러내기 판보다 먼저 나오므로(2026-10-01 순서 변경) 걸러내기 전 "모은" 행을 보여 준다.
+  // TOTAL(rawRows)에서 바로 아래 걸러내기 판이 시작해 filteredRows로 줄인다
+  const { rawByRoute, rawRows, collectStart, collectEnd, collectDays } = facts.data;
   // 행 수 칸 너비를 맞춘다(오른쪽 정렬, 앞을 빈칸으로). 실제 보드처럼 칸 개수가 줄마다 같아야 한다
-  const width = Math.max(fmt(filteredRows).length, ...byRoute.map((r) => fmt(r.rows).length));
+  const width = Math.max(fmt(rawRows).length, ...rawByRoute.map((r) => fmt(r.rows).length));
   const pad = (n: number) => fmt(n).padStart(width, ' ');
   return (
     <div className="board-housing">
@@ -56,7 +58,7 @@ export function DepartureBoard({ locale }: { locale: Locale }) {
             </tr>
           </thead>
           <tbody>
-            {byRoute.map(({ pair, rows }) => {
+            {rawByRoute.map(({ pair, rows }) => {
               const [a, b] = pair.split('_');
               return (
                 <tr key={pair}>
@@ -72,7 +74,7 @@ export function DepartureBoard({ locale }: { locale: Locale }) {
             <tr>
               <th scope="row"><Cell text="TOTAL" read={t('data.board.total')} /></th>
               <td className="board-dest" />
-              <td><Cell text={pad(filteredRows)} read={fmt(filteredRows)} /></td>
+              <td><Cell text={pad(rawRows)} read={fmt(rawRows)} /></td>
               <td className="board-status" />
             </tr>
           </tfoot>

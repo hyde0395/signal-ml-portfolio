@@ -48,6 +48,9 @@ for (const { path, lang } of PAGES) {
     await expect(page.locator('#validation article[data-scene]')).toHaveCount(5);
     const order = await page.locator('main').evaluate((m) => [...m.querySelectorAll('#features, #findings, #validation, #demo')].map((e) => e.id));
     expect(order).toEqual(['features', 'findings', 'validation', 'demo']);
+    // ② 안 순서: 지도 → 보드(흐린 지도) → 걸러내기 판(2026-10-01). 판이 지도와 보드 사이에 있으면 배경이 지도로 되돌아간다
+    const dataOrder = await page.locator('#data').evaluate((s) => [...s.querySelectorAll(':scope > [data-scene]')].map((e) => (e as HTMLElement).dataset.scene));
+    expect(dataOrder).toEqual(['problem', 'dataBoard', 'chartFilter']);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', new RegExp(`/og/${lang}\\.jpg$`));
   });
 

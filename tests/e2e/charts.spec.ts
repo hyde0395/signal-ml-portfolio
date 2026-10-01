@@ -579,12 +579,26 @@ test.describe('3D 켜짐', () => {
     }
   });
 
-  test('② 두 번째 화면에서는 보드 장면(dataBoard), 첫 화면은 지도(problem)', async ({ page }) => {
+  test('② 지도(problem) → 보드(dataBoard) → 걸러내기 판, 판 뒤에서 지도로 되돌아가지 않고 ③ 머리로', async ({ page }) => {
     await center(page, '.data-intro');
     await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'problem', { timeout: 10_000 });
     await center(page, '.data-board');
     await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'dataBoard', { timeout: 10_000 });
     await expect(page.locator('html')).not.toHaveAttribute('data-chart', /./);
+    await center(page, '.chart-block[data-scene="chartFilter"]');
+    await expect(page.locator('html')).toHaveAttribute('data-chart', 'chartFilter', { timeout: 15_000 });
+    // 2026-10-01 순서 변경 전에는 판 뒤에 보드(흐린 지도)가 와 배경이 지도로 되돌아갔다. 판 끝에서 ③ 머리까지
+    // 화면 1/4씩 내려가며 활성 장면이 지도·보드로 돌아가지 않는지 본다
+    const seen = new Set<string>();
+    const until = await page.locator('#features-h').evaluate((n) => n.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2);
+    for (let y = await page.evaluate(() => window.scrollY); y < until; y += 225) {
+      await page.evaluate((v) => window.scrollTo(0, v), y);
+      await page.waitForTimeout(80);
+      seen.add((await page.locator('html').getAttribute('data-active-scene')) ?? '');
+    }
+    await center(page, '#features-h');
+    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'model', { timeout: 10_000 });
+    expect([...seen].filter((k) => k === 'problem' || k === 'dataBoard')).toEqual([]);
   });
 
   // 섹션 머리(제목) 자리는 다음 블록의 장면 — 장면이 없으면 앞 차트 배치가 제목 위에 멈추거나(① 아래 틈 처리 전에는)

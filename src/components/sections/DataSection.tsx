@@ -1,7 +1,9 @@
 // ② 데이터 수집(설계 2026-09-25 §3.2, 2026-09-27 개정 — 두 화면). 화면 1은 글과 수집 4단계를 왼쪽 좁은 열에 두고
 // 오른쪽에 한·일 지도와 노선 궤적(장면 problem)이 온전히 보이게 한다. 화면 2는 공항 출발 안내판만 두고,
 // 뒤의 지도는 멀리 물러나 흐려진다(장면 dataBoard) — 판 없는 보드의 작은 글자가 지도 점과 섞이지 않게.
-// 두 화면 사이에는 걸러내기 그림 판(계획 8-1): 모음(지도) → 거름(산점도, 규칙마다 걸린 점이 떨어진다) → 결과(보드 합계).
+// 그 뒤에 걸러내기 그림 판(계획 8-1)이 온다: 모음(지도 → 보드의 모은 행 합계) → 거름(산점도, 규칙마다 걸린 점이 떨어진다).
+// 2026-10-01 사용자 결정으로 보드를 판 앞으로 옮겼다 — 판이 지도와 보드 사이에 있으면 배경이 지도 → 차트 → 지도로
+// 되돌아가 흐름이 끊긴다. 그래서 보드는 걸러내기 전 행 수(rawRows)를 보여 주고, 판이 그 수에서 시작한다.
 import type React from 'react';
 import { ChartStage } from '../charts/ChartStage';
 import { ChapterFigure } from './ChapterFigure';
@@ -35,6 +37,14 @@ export function DataSection({ locale }: { locale: Locale }) {
         </ol>
         <ChapterFigure locale={locale} sceneKey="problem" />
       </div>
+      <div className="data-board" data-scene="dataBoard">
+        <DepartureBoard locale={locale} />
+        <p className="muted">{t('data.sparse')}</p>
+        <p className="muted mono data-tools">{t('data.tools')}</p>
+        <a className="code-link mono" href={codeUrl('problem')} target="_blank" rel="noopener noreferrer">
+          {t('common.codeLink')} ↗
+        </a>
+      </div>
       <article className="chart-block" data-scene="chartFilter" aria-labelledby="filter-h" style={{ '--paras': 3 } as React.CSSProperties}>
         <ChartStage
           chartKey="chartFilter"
@@ -62,14 +72,6 @@ export function DataSection({ locale }: { locale: Locale }) {
           </a>
         </div>
       </article>
-      <div className="data-board" data-scene="dataBoard">
-        <DepartureBoard locale={locale} />
-        <p className="muted">{t('data.sparse')}</p>
-        <p className="muted mono data-tools">{t('data.tools')}</p>
-        <a className="code-link mono" href={codeUrl('problem')} target="_blank" rel="noopener noreferrer">
-          {t('common.codeLink')} ↗
-        </a>
-      </div>
     </section>
   );
 }

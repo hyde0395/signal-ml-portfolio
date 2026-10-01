@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 // site.spec.ts와 같은 이유로 JSON은 fs로 읽는다
 const facts = JSON.parse(readFileSync(fileURLToPath(new URL('../../data/facts.json', import.meta.url)), 'utf-8')) as {
-  data: { filteredRows: number; byRoute: { pair: string; rows: number }[] };
+  data: { rawRows: number; rawByRoute: { pair: string; rows: number }[] };
 };
 const fmt = (n: number) => new Intl.NumberFormat('en-US').format(n);
 
@@ -14,11 +14,12 @@ const fmt = (n: number) => new Intl.NumberFormat('en-US').format(n);
 const settled = (el: Element) =>
   [...el.querySelectorAll<HTMLElement>('.flap')].every((f) => f.querySelector('.flap-bot:not(.flap-unfold) > span')?.textContent === f.dataset.c);
 
-test('보드: 노선별·합계 행 수를 완성값으로 읽는다', async ({ page }) => {
+// 보드는 걸러내기 판 앞이라 걸러내기 전 모은 행(rawByRoute·rawRows)을 보여 준다(2026-10-01)
+test('보드: 노선별·합계 모은 행 수를 완성값으로 읽는다', async ({ page }) => {
   await page.goto('/');
   const board = page.locator('[data-board]');
-  for (const r of facts.data.byRoute) await expect(board.locator('.sr-only', { hasText: fmt(r.rows) })).toHaveCount(1);
-  await expect(board.locator('tfoot .sr-only', { hasText: fmt(facts.data.filteredRows) })).toHaveCount(1);
+  for (const r of facts.data.rawByRoute) await expect(board.locator('.sr-only', { hasText: fmt(r.rows) })).toHaveCount(1);
+  await expect(board.locator('tfoot .sr-only', { hasText: fmt(facts.data.rawRows) })).toHaveCount(1);
 });
 
 test('보드: 화면에 들어오면 넘어가고, 끝나면 칸 글자가 완성값이다', async ({ page }) => {
