@@ -68,7 +68,8 @@ import { SIGNAL } from './signal';
 //   three 내장(sRGBTransferOETF 등)과 이름이 겹치지 않게 따로 이름을 붙였다. pow의 밑이 음수면 정의되지 않아 0으로 자른다
 //
 // main() 안 로직(위에서 아래 순서):
-// - gather: 잡음은 신호보다 덜 모인다 → "잡음 속에서 신호가 떠오르는" 느낌
+// - gather: 잡음은 신호보다 덜 모인다 → "잡음 속에서 신호가 떠오르는" 느낌. 지도와 잡음 밭(역할이 있는 점)에서는 끝까지
+//   모인다 — 덜 모이면 선 점이 곡선 둘레에 흩어져 선으로 읽히지 않았다(계획 9-3 눈 확인)
 // - p += (...): 덜 모인 점일수록 천천히 떠다닌다
 // - if (aKind > 1.5) p.y -= ...: 제거 레이어(kind 2)만 가속하며 떨어진다
 // - isAir / p = mix(p, aAirport.xyz, ...): 공항은 불빛으로 배정된 점만 공항 자리로. uAirport가 1→0으로 줄면
@@ -224,7 +225,7 @@ export const vertexShader = /* glsl */ `
     if (isLine > 0.5) fieldP = fieldWorld(curveAt(ls), 0.0);
     fieldP = mix(aTerrain, fieldP, step(0.5, role));
     vec3 target = mix(mix(aTerrain, fieldP, uField), aMap, uMap);
-    float gather = mix(aKind > 0.5 && aKind < 1.5 ? uAssemble * 0.9 : uAssemble, uAssemble, uMap);
+    float gather = mix(aKind > 0.5 && aKind < 1.5 ? uAssemble * 0.9 : uAssemble, uAssemble, max(uMap, uField * step(0.5, role)));
     vec3 p = mix(aScatter, target, gather);
     p += (1.0 - gather) * 0.35 * vec3(sin(uTime * 0.5 + aScatter.y), cos(uTime * 0.4 + aScatter.x), sin(uTime * 0.3 + aScatter.z));
     if (aKind > 1.5) p.y -= uDrop * uDrop * 14.0;
@@ -271,7 +272,7 @@ export const vertexShader = /* glsl */ `
     float fieldPx = (${f(FIELD_POINT.sizeMin)} + ${f(FIELD_POINT.sizeAdd)} * fd) * uDpr;
     float isG = isBin + isLine;
     float pu = 0.85 + 0.15 * sin(uTime * 2.2 - bi * 0.6);
-    float gPx = mix(14.0, 34.0 * pu, isBin) * uDpr;
+    float gPx = mix(18.0, 40.0 * pu, isBin) * uDpr;
     float gCore = mix(1.1, 1.2 + 1.6 * L, isBin) * uDpr;
     corePx = mix(corePx, gCore, isG);
     airPx = mix(airPx, gPx, isG);
@@ -296,7 +297,7 @@ export const vertexShader = /* glsl */ `
     }
     vAlpha = mix(mix(a * fade, fa, fw) * uDim, chartA, uChart);
     vColor = toSrgbTone(mix(terrainCol, chartCol, uChart));
-    vEdge = mix(0.15, 0.38, uChart);
+    vEdge = mix(mix(0.15, 0.32, fw), 0.38, uChart);
     float on = clamp((uLightT - mix(aAirStyle.w, 0.1, isPlane) * 1.2) / 0.18, 0.0, 1.0);
     float haze = 1.0 / (1.0 + dz / 52.0);
     float wave = aAirport.w < 0.0 ? 0.0 : exp(-pow((aAirport.w - uWave) / 90.0, 2.0));
@@ -353,7 +354,7 @@ export const fragmentShader = /* glsl */ `
     float t = d / vShape.y;
     float glow = (t < 0.15 ? mix(1.0, 0.35, t / 0.15) : (t < 0.45 ? mix(0.35, 0.06, (t - 0.15) / 0.3) : mix(0.06, 0.0, min((t - 0.45) / 0.55, 1.0)))) * 0.55;
     float lin = max(1.0 - d * 2.0, 0.0);
-    float air = vShape.z > 0.0 ? bar : min(core + (vShape.z < -1.5 ? 0.42 * lin * lin : glow * (vShape.z < 0.0 ? 0.64 : 1.0)), 1.0);
+    float air = vShape.z > 0.0 ? bar : min(core + (vShape.z < -1.5 ? 0.55 * lin * lin : glow * (vShape.z < 0.0 ? 0.64 : 1.0)), 1.0);
     float disc = smoothstep(0.5, vEdge, d);
     float a = min(vAlpha * mix(disc, air, vAir), 1.0);
     gl_FragColor = vec4(vColor * a, a * mix(1.0, a, vAir));
