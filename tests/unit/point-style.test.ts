@@ -1,6 +1,6 @@
 // 점 스타일 상수와 거리 흐림(설계 2026-09-28 첫 화면 다듬기 §2.2)
 import { describe, expect, it } from 'vitest';
-import { DEPTH_FADE, MAP_POINT, POINT, depthFade, glslFloat } from '@/three/pointStyle';
+import { DEPTH_FADE, FIELD_POINT, fieldAlpha, MAP_POINT, POINT, depthFade, glslFloat } from '@/three/pointStyle';
 
 describe('depthFade', () => {
   it('장면 목표점 거리에서는 기준값', () => {
@@ -36,5 +36,16 @@ describe('glslFloat', () => {
     expect(glslFloat(1)).toBe('1.000');
     expect(glslFloat(0.117)).toBe('0.117');
     expect(glslFloat(18)).toBe('18.000');
+  });
+});
+
+describe('fieldAlpha(잡음 밭, 계획 9-3)', () => {
+  it('가까운 점일수록 밝고, 가라앉으면 30% 어두워진다', () => {
+    expect(fieldAlpha(1, 1, 0)).toBeGreaterThan(fieldAlpha(0, 1, 0));
+    expect(fieldAlpha(1, 1, 0)).toBeCloseTo(FIELD_POINT.alphaMin + FIELD_POINT.alphaAdd);
+    expect(fieldAlpha(0.5, 1, 1) / fieldAlpha(0.5, 1, 0)).toBeCloseTo(0.7);
+  });
+  it('가장 밝은 점도 0.6을 넘지 않는다(글 뒤 대비 — 글자 번짐과 함께 지킨다)', () => {
+    expect(fieldAlpha(1, 1, 0)).toBeLessThanOrEqual(0.6);
   });
 });

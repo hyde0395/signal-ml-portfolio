@@ -1,6 +1,7 @@
 // 장면 표: 섹션·블록마다 카메라 위치와 셰이더 uniform 목표값을 정한다.
 // 캔버스는 이 값으로 "부드럽게 다가가기"만 하므로, 연출을 바꾸려면 이 표만 고치면 된다.
 import { runwayPhases } from './plane';
+import { SIGNAL } from './signal';
 
 export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'chartFilter' | 'model' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
   | 'bubble' | 'chartSplit' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
@@ -19,11 +20,11 @@ export type SceneState = {
   shift: number;    // 차트 배치 전체의 세계 y 이동량. 장면 표에서는 0이고 TerrainScene이 판 위치로 정한다(chartShiftY)
   airport: number;  // 1 = 밤의 공항(첫 화면), 0 = 그 밖
   sway: number;     // 첫 화면 마우스 시차 크기(월드 단위)
-  rows: number;     // 1 = 지형 점이 ① 물결 줄 배치(data.ts buildWave)로 모인다
-  soft: number;     // 1 = 지형 점을 은은하게(크기·알파 배율 pointStyle SOFT_POINT) — ① 글 뒤 대비를 지킨다
+  field: number;    // 1 = 점이 머리말·① 잡음 밭과 U자 곡선(signal.ts buildField·signalLayout)으로 모인다(계획 9-3)
   fov: number;      // 세로 화각(도). CameraRig가 이 값으로 옮겨 간다 — 첫 화면만 HERO_FOV, 나머지는 CHART_FOV
-  // 이륙 비행기 진행도(plane.ts, 시안 스크롤 눈금 0..1): 첫 화면 0(활주로 끝에 서 있음), 그 밖 1(다 흩어져 지형 점).
-  // 첫 화면·전환 구간에서는 TerrainScene이 스크롤 위치로 채운다
+  // 비행기 시계 값(plane.ts, 시안 스크롤 눈금): 첫 화면 0(활주로 끝에 서 있음), 1 = 다 흩어짐, 1 → SIGNAL.end = 머리말
+  // 잡음 → 신호 단계(signal.ts). 그 밖 장면은 끝(SIGNAL.end) — 3D가 ①·②에서 켜져도 U자가 완성된 채다.
+  // 첫 화면·머리말에서는 TerrainScene이 스크롤 위치(최대 속도 시계)로 채운다
   plane: number;
   follow?: boolean; // 전환 구간 안 — 점·카메라가 스크롤을 바짝 따라가게 감쇠를 빠르게
   // 전환이 마지막으로 움직인 시각 + 600ms(performance.now 기준). 휠 한 번에 y1(또는 y0)을 넘어가면 follow가
@@ -41,7 +42,7 @@ export const CHART_FOV = 40;
 export const HERO_FOV = 45;
 const CHART = { camera: [0, 0, CHART_DISTANCE] as SceneState['camera'], target: [0, 0, 0] as SceneState['target'], chart: 1, noise: 0 };
 
-const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0, rows: 0, soft: 0, fov: CHART_FOV, plane: 1 };
+const base = { assemble: 1, map: 0, noise: 1, removed: 0, drop: 0, chart: 0, slot: 0, dim: 1, shift: 0, airport: 0, sway: 0, field: 0, fov: CHART_FOV, plane: SIGNAL.end as number };
 
 // 밤의 공항(설계 2026-09-28 §4.2): A = 터미널 창가(눈높이 약 42m), B = 땅 가까이(약 12m). 같은 방향을 본다.
 // 값은 시안(mockups/2026-09-28/01-night-airport.html)의 카메라를 사이트 좌표(airport.ts K·z 뒤집기)와 fov 45°(HERO_FOV)로
@@ -59,9 +60,10 @@ const PORTRAIT_HERO_TARGET_DX = 3.2;
 export const SCENES: Record<SceneKey, SceneState> = {
   // 첫 화면: 밤의 공항. 진행도(내려앉기)는 sceneFor가 A→B로 보간(설계 2026-09-28 §4.2)
   hero: { ...base, camera: AIRPORT_CAM.a.camera, target: AIRPORT_CAM.a.target, airport: 1, sway: 0.06, noise: 0, fov: HERO_FOV, plane: 0 },
-  // ①: 카메라 C(설계 2026-09-29 §4·§6) — 앞쪽 대각선 높은 곳에서 물결 줄 전체를 넓게 내려다본다. 잡음은 숨기고
-  // 점을 은은하게(soft) 둬서, 먼 쪽 흐린 점이 왼쪽 글 뒤를 지나가도 대비를 지킨다(시안 실측 8.4/5.5:1)
-  about: { ...base, camera: [13, 9, 15], target: [1, 0, 2], noise: 0, rows: 1, soft: 1 },
+  // ①: 잡음 밭 + 완성된 U자(설계 2026-10-01). 카메라는 차트 카메라와 같은 정면 고정 — 셰이더가 화면 좌표(NDC)로 정한 밭·곡선을
+  // 이 카메라 기준으로 월드에 올린다(세로 화면도 같은 카메라, 밭이 화면 비율을 따른다). ①에서는 흐린 배경으로(dim),
+  // 머리말에서 그어지는 동안은 또렷하게(introScene)
+  about: { ...base, camera: [0, 0, CHART_DISTANCE], target: [0, 0, 0], noise: 0, field: 1, dim: 0.6 },
   // ② 화면 1: 위에서 내려다본 한·일 지도와 노선 궤적. 데스크톱은 왼쪽에 글 카드가 얹히므로
   // 카메라·목표점을 함께 x=-4.5로 옮겨(같은 방향을 보되 옆으로 이동) 지도 전체가 카드 오른쪽에 오게 한다
   problem: { ...base, camera: [-4.5, 16, 7], target: [-4.5, 0, 0], map: 1 },
@@ -106,9 +108,6 @@ const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구�
 // y를 내려도 점이 화면에서 옆으로 옮겨지지 않고 그냥 살짝 확대(약 9%)될 뿐이라 y 이동을 빼고 원래 값을 쓴다
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
-  // ①: 카메라−목표점 벡터가 데스크톱과 다르다(세로 화면에서 물결 줄이 화면 위쪽에 넓게 깔리도록 시안에서 따로 고른 값).
-  // 1.6배 물러남은 이 값 위에 그대로 적용된다(시안이 본 모습과 같게)
-  about: { camera: [11, 6, 15], target: [3, -3, 2] },
   // bubble: 목표점을 데스크톱에서 3만큼만 내리면(다른 장면과 같은 폭) −0.5에 그친다 — 데스크톱 목표점 y가
   // 이미 2.5로 높기 때문(제거 레이어가 높이 뜬 모습을 보여주려고). 그 −0.5는 화면 중앙 바로 아래라, 문단이
   // 바닥에 붙는 세로 화면에서 제거 레이어가 떨어지는 도중(uDrop 중간값, 아직 알파가 남아 있다)의 점이
@@ -146,8 +145,8 @@ export function sceneFor(key: SceneKey, progress: number, portrait: boolean): Sc
   }
   const drop = key === 'bubble' ? smooth(clamp01((p - 0.2) / 0.6)) : 0; // 블록 20~80% 구간에서 떨어진다
   // 차트 장면은 세로 화면에서도 카메라를 옮기지 않는다 — 판 위치와 점 좌표의 대응이 카메라 거리에 묶여 있고,
-  // 판 크기 자체가 세로 화면에 맞춰져 있다
-  if (s.chart === 1) return { ...s, drop };
+  // 판 크기 자체가 세로 화면에 맞춰져 있다. 잡음 밭(field)도 같다 — 셰이더가 화면 비율로 밭을 편다
+  if (s.chart === 1 || s.field === 1) return { ...s, drop };
   const override = portrait ? PORTRAIT_OVERRIDE[key] : undefined;
   const baseCamera = override?.camera ?? s.camera;
   const target = override?.target ?? s.target;
@@ -176,17 +175,22 @@ export function pickScene(o: {
   const { active, plane, h, portrait } = o;
   const handoff = h > 0 && h < 1;
   const runway = plane >= 0 && (active ? active.key === 'hero' || active.key === 'about' : o.intro);
-  // 공항 끝(hero 진행 1)과 ① 처음(about 진행 0) 사이. follow로 점·카메라가 시계를 바짝 따라간다
-  if (handoff) return { ...blendScenes(sceneFor('hero', 1, portrait), sceneFor('about', 0, portrait), h), follow: true };
+  // 공항 끝(hero 진행 1)과 머리말 잡음 밭 사이. follow로 점·카메라가 시계를 바짝 따라간다
+  if (handoff) return { ...blendScenes(sceneFor('hero', 1, portrait), introScene(portrait), h), follow: true };
   if (runway) {
     // 내려앉기도 시계로 — 한 눈금이라 비행기 굴러가기와 카메라가 어긋나지 않는다
-    return h <= 0
-      ? sceneFor('hero', runwayPhases(plane).land, portrait)
-      : sceneFor('about', active?.key === 'about' ? active.progress : 0, portrait);
+    if (h <= 0) return sceneFor('hero', runwayPhases(plane).land, portrait);
+    return active?.key === 'about' ? sceneFor('about', active.progress, portrait) : introScene(portrait);
   }
   if (!active) return null;
   // 첫 화면은 섹션 안 진행도가 아니라 스크롤 위치로 내려앉는다(처음 화면에서 진행도가 이미 0.5 근처라서)
   return sceneFor(active.key, active.key === 'hero' ? o.heroScroll : active.progress, portrait);
+}
+
+// 머리말 장면: ①(about)과 같은 잡음 밭이지만 흐리게 하지 않는다 — 신호가 그어지는 동안은 또렷하게, ①로 넘어가면
+// dim이 감쇠로 천천히 내려간다(계획 9-3)
+export function introScene(portrait: boolean): SceneState {
+  return { ...sceneFor('about', 0, portrait), dim: 1 };
 }
 
 // 두 장면 상태를 h(0~1)로 섞는다. 숫자 필드(카메라·목표점은 성분별)는 선형 보간이고, 한쪽에만 있는 숫자는 0으로 본다.

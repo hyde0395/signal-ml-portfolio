@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { facts } from '@/lib/facts';
-import { BOOKING_BINS, bookingBins, buildPointCloud, loadSceneData, MAP_LINE, mapPosition, resampleLines, terrainPosition, terrainSchema, type MapData, type Terrain } from '@/three/data';
+import { BOOKING_BINS, bookingBins, buildPointCloud, packMeta, loadSceneData, MAP_LINE, mapPosition, resampleLines, terrainPosition, terrainSchema, type MapData, type Terrain } from '@/three/data';
 
 const terrain: Terrain = {
   asOf: '2026-09-22', maxDtd: 100, clip: { min: -60, max: 200 },
@@ -164,5 +164,14 @@ describe('bookingBins', () => {
   });
   it('점이 없는 구간은 0', () => {
     expect(bookingBins({ dtd: [1], pct: [100], n: [5] })).toEqual([0, 0, 0, 0, 0, 0, 0, 10]);
+  });
+});
+
+describe('packMeta', () => {
+  it('점마다 (종류, 공휴일, 노선, 잡음 → 신호 역할) 순서로 vec4 하나에 담는다', () => {
+    const m = packMeta({
+      count: 2, kind: Float32Array.of(0, 2), holiday: Float32Array.of(1, 0), route: Float32Array.of(-1, 1),
+    }, Float32Array.of(1, 10.5));
+    expect(Array.from(m)).toEqual([0, 1, -1, 1, 2, 0, 1, 10.5]);
   });
 });

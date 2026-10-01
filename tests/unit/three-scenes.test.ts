@@ -1,8 +1,9 @@
 // 장면 표 검사: 모든 키 존재, problem·dataBoard만 지도, bubble만 제거 레이어·떨어짐,
 // 차트 장면은 정면 고정 카메라이고 세로 화면에서도 카메라가 그대로다.
 import { describe, expect, it } from 'vitest';
-import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, handoffProgress, HERO_FOV, horizonFrac, isChartScene, pickScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
+import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, handoffProgress, HERO_FOV, horizonFrac, introScene, isChartScene, pickScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 import { runwayPhases } from '@/three/plane';
+import { SIGNAL } from '@/three/signal';
 
 const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'chartFilter', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'bubble',
   'chartSplit', 'validation', 'chartCloud', 'limits', 'demo', 'contact'];
@@ -23,14 +24,15 @@ describe('SCENES', () => {
       expect(SCENES[k].target).toEqual([0, 0, 0]);
     }
   });
-  // 설계 2026-09-28 §2.1: 데모·연락처는 글 뒤 판이 없어 조작 화면이 읽히도록 지형을 흐리게 둔다(dataBoard와 같은 이유)
-  const DIMMED: SceneKey[] = ['dataBoard', 'demo', 'contact'];
-  it('dataBoard·데모·연락처만 점을 흐리게(dim < 1) — 판 없는 화면이 읽히도록', () => {
+  // 설계 2026-09-28 §2.1: 데모·연락처는 글 뒤 판이 없어 조작 화면이 읽히도록 지형을 흐리게 둔다(dataBoard와 같은 이유).
+  // ①(about)은 완성된 U자와 잡음이 흐린 배경으로 남는다(설계 2026-10-01 §1)
+  const DIMMED: SceneKey[] = ['dataBoard', 'about', 'demo', 'contact'];
+  it('dataBoard·①·데모·연락처만 점을 흐리게(dim < 1) — 판 없는 화면이 읽히도록', () => {
     for (const k of KEYS) expect(SCENES[k].dim < 1, k).toBe(DIMMED.includes(k));
   });
   it('model(③ 섹션 바탕)은 지형 장면이다(지도·제거 레이어·차트·흐림 없음) — 설계 2026-09-29 이야기 흐름 §3.4, 계획 7-2', () => {
     const s = SCENES.model;
-    expect([s.map, s.removed, s.chart, s.rows, s.airport]).toEqual([0, 0, 0, 0, 0]);
+    expect([s.map, s.removed, s.chart, s.field, s.airport]).toEqual([0, 0, 0, 0, 0]);
     expect(s.dim).toBe(1);
   });
   it('장면 표의 slot은 모두 0(어느 슬롯을 보일지는 TerrainScene이 정한다)', () => {
@@ -60,7 +62,7 @@ describe('sceneFor', () => {
 
   // 설계 2026-09-28 §2.1: 글 뒤 판 대신 장면 구도로 대비를 지킨다 — 데스크톱은 글이 왼쪽이라 점을 오른쪽으로,
   // 세로 화면은 글이 아래라 옆으로 밀지 않는다. hero는 밤의 공항 전용 구도라 빠진다(설계 2026-09-28 §4.2).
-  // about(①)도 빠진다 — 카메라 C는 물결 줄을 화면 가득 깔고 은은한 점(soft)으로 대비를 지킨다(설계 2026-09-29 §6)
+  // about(①)도 빠진다 — 잡음 밭은 화면 좌표로 화면 전체를 덮고, U자는 셰이더가 글 반대쪽에 놓는다(설계 2026-10-01 §3)
   const TEXT_SIDE: SceneKey[] = ['model', 'bubble', 'validation', 'limits', 'demo', 'contact'];
   it('글 쪽 장면은 데스크톱에서 목표점이 왼쪽(x −5 이하), 세로 화면에서는 가운데', () => {
     // 지금은 이 목록의 모든 장면이 정확히 −5다(hero는 밤의 공항 전용 구도라 빠져 있다, 위 주석·scenes.ts
@@ -98,27 +100,21 @@ describe('sceneFor', () => {
   });
 });
 
-describe('① 카메라 C + 물결 줄(설계 2026-09-29 §4·§6)', () => {
-  it('데스크톱은 카메라 C', () => {
-    expect(sceneFor('about', 0, false).camera).toEqual([13, 9, 15]);
-    expect(sceneFor('about', 0, false).target).toEqual([1, 0, 2]);
-  });
-  it('세로 화면은 따로 고른 값에 1.6배 물러남을 얹는다', () => {
-    const s = sceneFor('about', 0, true);
-    expect(s.target).toEqual([3, -3, 2]);
-    [11, 6, 15].forEach((v, i) => expect(s.camera[i]).toBeCloseTo(s.target[i] + (v - s.target[i]) * 1.6, 9));
-  });
-  it('about만 물결 줄·은은한 점이고 잡음을 숨긴다', () => {
-    for (const k of KEYS) {
-      expect(SCENES[k].rows, k).toBe(k === 'about' ? 1 : 0);
-      expect(SCENES[k].soft, k).toBe(k === 'about' ? 1 : 0);
+describe('① 잡음 밭(설계 2026-10-01 §3·§6)', () => {
+  it('카메라는 차트 카메라와 같은 정면 고정(밭·곡선을 화면 좌표로 놓는다), 세로 화면도 같다', () => {
+    for (const portrait of [false, true]) {
+      expect(sceneFor('about', 0, portrait).camera).toEqual([0, 0, CHART_DISTANCE]);
+      expect(sceneFor('about', 0, portrait).target).toEqual([0, 0, 0]);
     }
-    expect(SCENES.about.noise).toBe(0);
   });
-  it('전환 구간 섞기에서 rows·soft도 선형으로 섞인다', () => {
-    const m = blendScenes(SCENES.hero, SCENES.about, 0.25);
-    expect(m.rows).toBeCloseTo(0.25, 9);
-    expect(m.soft).toBeCloseTo(0.25, 9);
+  it('about만 잡음 밭(field 1)', () => {
+    for (const k of KEYS) expect(SCENES[k].field, k).toBe(k === 'about' ? 1 : 0);
+  });
+  it('머리말 장면(introScene)은 ①과 같고 흐리지 않다(dim 1) — 신호가 그어지는 동안은 또렷하게', () => {
+    expect(introScene(false)).toEqual({ ...sceneFor('about', 0, false), dim: 1 });
+  });
+  it('전환 구간 섞기에서 field도 선형으로 섞인다', () => {
+    expect(blendScenes(SCENES.hero, SCENES.about, 0.25).field).toBeCloseTo(0.25, 9);
   });
 });
 
@@ -178,8 +174,8 @@ describe('blendScenes', () => {
     expect((blendScenes(x, y, 0.5) as unknown as { tag: string }).tag).toBe('y');
   });
   it('한쪽에만 있는 숫자 필드는 없는 쪽을 0으로 본다', () => {
-    const y = { ...b, rows: 10 } as typeof b;
-    expect((blendScenes(a, y, 0.5) as unknown as { rows: number }).rows).toBeCloseTo(5, 9);
+    const y = { ...b, extra: 10 } as typeof b;
+    expect((blendScenes(a, y, 0.5) as unknown as { extra: number }).extra).toBeCloseTo(5, 9);
   });
 });
 
@@ -239,9 +235,10 @@ describe('horizonFrac', () => {
 });
 
 describe('이륙 비행기 진행도(plane)', () => {
-  it('첫 화면은 0(서 있음), 그 밖 장면은 1(다 흩어짐)', () => {
+  // 계획 9-3: 시계 끝은 신호 단계까지(SIGNAL.end) — 3D가 ①·②에서 켜져도 U자가 완성된 채로 보인다
+  it('첫 화면은 0(서 있음), 그 밖 장면은 끝(SIGNAL.end, 다 흩어지고 U자 완성)', () => {
     expect(sceneFor('hero', 0.5, false).plane).toBe(0);
-    for (const k of Object.keys(SCENES) as (keyof typeof SCENES)[]) if (k !== 'hero') expect(sceneFor(k, 0, false).plane).toBe(1);
+    for (const k of Object.keys(SCENES) as (keyof typeof SCENES)[]) if (k !== 'hero') expect(sceneFor(k, 0, false).plane).toBe(SIGNAL.end);
   });
 });
 
@@ -252,9 +249,9 @@ describe('pickScene', () => {
     const s = pickScene({ ...base, active: { key: 'about', progress: 0.4 }, plane: 0.1, h: 0 });
     expect(s).toEqual(sceneFor('hero', runwayPhases(0.1).land, false));
   });
-  it('맨 위(활성 hero)인데 시계가 아직 ①(1)이면 ① 처음(about 0)', () => {
+  it('맨 위(활성 hero)인데 시계가 아직 ①(1)이면 머리말 장면', () => {
     const s = pickScene({ ...base, active: { key: 'hero', progress: 0.5 }, plane: 1, h: 1 });
-    expect(s).toEqual(sceneFor('about', 0, false));
+    expect(s).toEqual(introScene(false));
   });
   it('시계가 ①이고 활성 섹션도 ①이면 그 진행도', () => {
     const s = pickScene({ ...base, active: { key: 'about', progress: 0.7 }, plane: 1, h: 1 });
@@ -262,7 +259,7 @@ describe('pickScene', () => {
   });
   it('전환 도중(0 < h < 1)이면 공항 끝과 ① 처음을 섞고 follow', () => {
     const s = pickScene({ ...base, active: null, plane: 0.6, h: 0.5 });
-    expect(s).toEqual({ ...blendScenes(sceneFor('hero', 1, false), sceneFor('about', 0, false), 0.5), follow: true });
+    expect(s).toEqual({ ...blendScenes(sceneFor('hero', 1, false), introScene(false), 0.5), follow: true });
   });
   it('차트 장면(①보다 뒤)은 보통 길 — 활성 섹션 진행도 그대로', () => {
     const s = pickScene({ ...base, active: { key: 'chartDepart', progress: 0.3 }, plane: 1, h: 1 });
@@ -275,10 +272,10 @@ describe('pickScene', () => {
   it('활성 섹션도 전환도 여백도 없으면 null(장면을 바꾸지 않는다)', () => {
     expect(pickScene({ ...base, active: null, plane: -1, h: -1 })).toBeNull();
   });
-  it('머리말 틈(① 위)에서 활성 섹션이 없으면 시계로 ① 처음', () => {
-    expect(pickScene({ ...base, active: null, plane: 1, h: 1 })).toEqual(sceneFor('about', 0, false));
+  it('머리말 틈(① 위)에서 활성 섹션이 없으면 시계로 머리말 장면', () => {
+    expect(pickScene({ ...base, active: null, plane: 1.4, h: 1 })).toEqual(introScene(false));
   });
-  it('① 아래 틈(섹션 사이 여백·제목)에서는 여백이 있어도 null — ① 물결 줄로 되돌아가지 않는다', () => {
+  it('① 아래 틈(섹션 사이 여백·제목)에서는 여백이 있어도 null — 머리말 장면으로 되돌아가지 않는다', () => {
     expect(pickScene({ ...base, intro: false, active: null, plane: 1, h: 1 })).toBeNull();
   });
 });
