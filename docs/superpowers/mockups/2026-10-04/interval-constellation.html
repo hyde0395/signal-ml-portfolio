@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>예측 구간 시안 v6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  :root { --bg:#02040A; --bg2:#0B1426; --dot:#8FB8FF; --text:#EEF3FF; --amber:#FFB547; --mute:#93A0BA; --line:#18233b; }
+  * { box-sizing:border-box; }
+  ::selection { background:rgba(255,181,71,.35); }
+  html { background:var(--bg); }
+  body { margin:0; min-height:100vh; background:linear-gradient(180deg,var(--bg),var(--bg2)); color:var(--text);
+    font-family:Pretendard,-apple-system,sans-serif; word-break:keep-all; padding:28px 16px 32px; }
+  .wrap { max-width:1240px; margin:0 auto; }
+  .meta { font-size:13px; color:var(--mute); margin:0 0 22px; }
+  .meta b { color:var(--text); font-weight:600; }
+  h2 { font:700 34px/1.15 "Space Grotesk",Pretendard,sans-serif; letter-spacing:-.03em; margin:0 0 8px; text-wrap:balance; }
+  h2 em { font-style:normal; color:var(--amber); }
+  .sub { font-size:14px; color:var(--mute); margin:0 0 18px; }
+  .sub span { font-family:"IBM Plex Mono",monospace; color:var(--text); }
+  .fig { position:relative; }
+  canvas { display:block; width:100%; cursor:crosshair; }
+  .tip { position:absolute; pointer-events:none; background:#0d1830; border:1px solid #24375c; border-radius:8px; padding:8px 10px;
+    font:12px/1.5 Pretendard,sans-serif; color:var(--text); white-space:nowrap; transform:translate(-50%,-100%); opacity:0; transition:opacity .15s; }
+  .tip b { font:600 13px "IBM Plex Mono",monospace; }
+  .tip .m { color:var(--mute); }
+  .fine { font-size:12px; color:var(--mute); margin:12px 0 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="meta"><b>⑤ 예측 구간 v6 · 가운데 별자리</b> · 지금 운영 중인 점 구름을 바탕으로, 자료 조사(팬 차트·분위수 점 그림·538 점 100개)에서 가져온 것: ① 가운데 진한 층/바깥 옅은 층 ② 고른 출발일 하나를 "점 20개 = 확률 5%씩"으로 펼친 옆 그림 ③ 마우스를 올리면 그 날짜로 바뀜 · 문구 임시</p>
+  <h2>예측 구간이 실제 가격의 <em>80.2%</em>를 감쌌다</h2>
+  <p class="sub">보정 전 <span>69%</span> → 보정 후 <span>80.2%</span> (목표 80%) · 인천→나리타 LCC, 2026-09-22에 샀을 때의 예측</p>
+  <div class="fig">
+    <canvas id="c" height="470" role="img" aria-label="출발일별 예측가와 80% 예측 구간 점 구름, 오른쪽에 고른 출발일의 분위수 점 그림"></canvas>
+    <div class="tip" id="tip"></div>
+  </div>
+  <p class="fine">구간 안 점 위치는 q10 · 예측가 · q90에 맞춘 근사입니다. 오른쪽 점 20개 중 위아래 두 개씩(속 빈 점)이 구간 밖 — 이런 날 10번 중 2번은 구간을 벗어난다는 뜻입니다.</p>
+</div>
+
+<script>
+const D = {"dates":["2026-09-25","2026-09-26","2026-09-27","2026-09-28","2026-09-29","2026-09-30","2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07","2026-10-08","2026-10-09","2026-10-10","2026-10-11","2026-10-12","2026-10-13","2026-10-14","2026-10-15","2026-10-16","2026-10-17","2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23","2026-10-24","2026-10-25","2026-10-26","2026-10-27","2026-10-28","2026-10-29","2026-10-30","2026-10-31","2026-11-01","2026-11-02","2026-11-03","2026-11-04","2026-11-05","2026-11-06","2026-11-07","2026-11-08","2026-11-09","2026-11-10","2026-11-11","2026-11-12","2026-11-13","2026-11-14","2026-11-15","2026-11-16","2026-11-17","2026-11-18","2026-11-19","2026-11-20","2026-11-21","2026-11-22","2026-11-23","2026-11-24","2026-11-25","2026-11-26","2026-11-27","2026-11-28","2026-11-29","2026-11-30","2026-12-01","2026-12-02","2026-12-03","2026-12-04","2026-12-05","2026-12-06","2026-12-07","2026-12-08","2026-12-09","2026-12-10","2026-12-11","2026-12-12","2026-12-13","2026-12-14","2026-12-15","2026-12-16","2026-12-17","2026-12-18","2026-12-19","2026-12-20","2026-12-21"],"price":[443800,284400,271200,190000,178800,217500,263400,326500,389800,302400,259600,167300,149100,223400,315500,148800,187500,304500,197800,168100,202700,206400,180900,216900,196900,155000,171500,181200,185000,193700,220800,236000,221800,221800,221100,203600,228500,233600,240800,278700,222600,221700,247400,232000,234800,253500,236800,233500,231200,233400,239000,250200,258400,240600,237400,233700,251400,240500,267900,359900,253000,251500,248400,220400,248400,230000,271200,255200,254200,250700,236900,256200,231600,286600,269100,267800,267300,237200,274600,260200,302700,284000,281900,279600,245700,284100,259800,312800],"lo":[262400,186100,177300,117700,110600,110400,158600,211900,253600,203100,168300,122700,114600,148000,224600,115200,122700,189300,141300,124000,142800,146900,125600,157300,143500,120600,129900,131400,136200,135000,166100,161300,151000,150700,150600,147800,154200,183800,171900,216400,159400,159700,192900,164500,185800,180300,168600,167700,167600,182100,171200,190600,185900,173200,170800,168500,194900,168900,206400,264800,175000,174900,173000,181100,174400,180300,192700,181900,180300,179200,190700,183600,180600,200800,188500,187600,186000,189600,192300,211700,209500,196600,194800,194000,200500,198600,211300,216500],"hi":[452200,339800,367700,280500,257000,270200,304800,385400,435300,376100,329700,265400,224100,289500,425400,226700,309400,414000,276300,257700,279600,279400,254300,312200,288500,233200,253300,244600,275900,266300,320000,304500,287600,288200,287100,287000,299700,343400,322400,431500,301100,300200,324600,303900,339800,332400,313900,312600,307800,317000,315400,361900,346900,322500,318300,313300,328400,324600,445700,461700,337600,339000,333700,311800,323700,322000,354300,331000,329500,326400,313000,334700,334300,367000,340600,339900,335900,314200,342000,346900,378400,352100,349500,344600,321600,347200,344100,384000],
+  "hol":["2026-09-25","2026-09-26","2026-09-27","2026-09-28","2026-09-29","2026-09-30","2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07","2026-10-08","2026-10-09","2026-10-10","2026-10-11","2026-10-12","2026-10-13","2026-10-14","2026-10-15","2026-10-31","2026-11-01","2026-11-02","2026-11-03","2026-11-04","2026-11-05","2026-11-06","2026-11-20","2026-11-21","2026-11-22","2026-11-23","2026-11-24","2026-11-25","2026-11-26"]};
+const C = { dot:[143,184,255], amber:[255,181,71], text:[238,243,255] };
+const Z90 = 1.2815515655446004;
+const n = D.dates.length, hol = new Set(D.hol);
+const DAY = 864e5, asOf = Date.UTC(2026, 8, 22);
+const dday = i => Math.round((Date.parse(D.dates[i]) - asOf) / DAY);
+const won = v => Math.round(v / 1000).toLocaleString('ko-KR') + ',000원';
+function rng(s) { return () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function invNorm(p) {
+  const a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],c=[-0.00778489400243029,-0.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],d=[0.00778469570904146,0.32246712907004,2.445134137143,3.75440866190742];
+  if (p<0.02425){const q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if (p>1-0.02425){const q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  const q=p-0.5,r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+// 두 쪽 정규 근사: 분위 p의 가격(운영 cloudLayout과 같은 규칙)
+const qv = (i, p) => { const z = invNorm(p) / Z90, pr = D.price[i]; return z < 0 ? pr + z * (pr - D.lo[i]) : pr + z * (D.hi[i] - pr); };
+
+const cv = document.getElementById('c'), tip = document.getElementById('tip');
+let sel = 59; // 기본: 근로감사의 날 무렵 봉우리(구간이 가장 넓은 날 중 하나)
+let geo = null;
+
+function dot(g, x, y, r, rgb, a) { g.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill(); }
+function ring(g, x, y, r, rgb, a) { g.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`; g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.stroke(); }
+
+function draw() {
+  const dpr = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = +cv.getAttribute('height');
+  cv.width = w * dpr; cv.height = h * dpr; cv.style.height = h + 'px';
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const side = Math.max(200, Math.min(280, w * 0.24)); // 오른쪽 분위수 점 그림 칸
+  const L = 50, R = side + 28, T = 64, B = 34;
+  const vmin = 100000, vmax = 475000;
+  const x = i => L + (w - L - R) * (i + 0.5) / n, colW = (w - L - R) / n;
+  const y = v => T + (h - T - B) * (1 - (v - vmin) / (vmax - vmin));
+  geo = { L, R, w, h, x, colW };
+
+  // 축: 아주 옅은 점 격자 + 눈금
+  g.font = '11px "IBM Plex Mono",monospace'; g.fillStyle = 'rgba(147,160,186,.85)'; g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let v = 150000; v <= 450000; v += 100000) {
+    g.fillText(v / 10000 + '만', L - 10, y(v));
+    for (let gx = L; gx <= w - 16; gx += 10) dot(g, gx, y(v), 0.55, C.dot, 0.16);
+  }
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  [0, 43, n - 1].forEach(i => g.fillText('D+' + dday(i), x(i), h - B + 14));
+
+  // 선택한 날 기둥 강조(옅은 점 기둥)
+  for (let gy = T; gy <= h - B; gy += 5) dot(g, x(sel), gy, 0.7, C.text, 0.22);
+
+  // 점 구름: 열마다 분위 0.1~0.9를 30개로. 가운데 50%(분위 0.25~0.75) 층은 진하고 크게, 바깥 층은 옅게 — 팬 차트의 두 층
+  for (let i = 0; i < n; i++) {
+    const r = rng(i + 1), col = hol.has(D.dates[i]) ? C.amber : C.dot, on = i === sel;
+    for (let k = 0; k < 30; k++) {
+      const p = 0.1 + 0.8 * (k + 0.5) / 30, core = p > 0.25 && p < 0.75;
+      const jx = (r() - 0.5) * colW * 0.62;
+      dot(g, x(i) + jx, y(qv(i, p)), core ? 1.25 : 1.0, col, (core ? 0.62 : 0.24) * (on ? 1.35 : 1));
+    }
+  }
+
+  // 별자리: 가운데 중요한 점(출발일마다 예측가)만 가는 선으로 잇는다. 구간 바깥은 점 구름만으로 둔다.
+  // 선은 아주 가늘고 반투명하게 — 점이 주인공이고, 선은 점 사이 관계만 알려 준다
+  const link = (vals, rgb, a, wpx) => {
+    g.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`; g.lineWidth = wpx; g.lineJoin = 'round';
+    g.beginPath(); vals.forEach((v, i) => (i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v)))); g.stroke();
+  };
+  link(D.price, C.text, 0.55, 1);
+  // 예측가 별: 빛 번짐(옅은 큰 원) + 밝은 심
+  for (let i = 0; i < n; i++) {
+    const on = i === sel, col = hol.has(D.dates[i]) ? C.amber : C.text;
+    dot(g, x(i), y(D.price[i]), on ? 8 : 5, col, on ? 0.22 : 0.12);
+    dot(g, x(i), y(D.price[i]), on ? 3.4 : 2.1, col, 1);
+  }
+
+  // 오른쪽: 고른 날의 분위수 점 그림(점 20개 = 5%씩). 같은 세로 축을 쓴다
+  const sx0 = w - side, sx1 = w - 16;
+  // 칸 구분: 세로 점선
+  for (let gy = 4; gy <= h - B; gy += 6) dot(g, sx0 - 14, gy, 0.6, C.dot, 0.25);
+  const qs = Array.from({ length: 20 }, (_, k) => (k + 0.5) / 20).map(p => qv(sel, p));
+  // 구간 끝 q10·q90: 기둥에서 오른쪽 칸까지 이어지는 성긴 점선
+  for (const v of [D.lo[sel], D.hi[sel]]) for (let gx = x(sel) + 8; gx <= sx1; gx += 5) dot(g, gx, y(v), 0.8, C.dot, 0.45);
+  // 점 쌓기: 세로를 점 지름 칸으로 나눠 같은 칸에 든 점을 가로로 쌓는다
+  // 칸 높이는 구간 폭의 1/6(최소 점 한 줄) — 고전 분위수 점 그림처럼 같은 값대 점이 가로로 쌓인다
+  const dr = 5, gap = 2.4, cell = dr * 2 + gap;
+  const cellH = Math.max(cell, (y(D.lo[sel]) - y(D.hi[sel])) / 6), y0 = y(vmax), bins = new Map();
+  qs.forEach((v, k) => { const b = Math.floor((y(v) - y0) / cellH); const l = bins.get(b) || []; l.push(k); bins.set(b, l); });
+  const baseX = sx0 + 8;
+  for (const [b, ks] of bins) ks.forEach((k, j) => {
+    const cx = baseX + dr + j * cell, cy = y0 + (b + 0.5) * cellH, out = k < 2 || k >= 18;
+    if (out) ring(g, cx, cy, dr - 0.6, C.text, 0.75); else dot(g, cx, cy, dr, C.dot, 0.95);
+  });
+  // 칸 머리: 날짜와 설명
+  const dt = new Date(D.dates[sel]);
+  g.textAlign = 'left'; g.textBaseline = 'top';
+  g.font = '600 13px Pretendard,sans-serif'; g.fillStyle = '#EEF3FF';
+  g.fillText(`${dt.getMonth() + 1}월 ${dt.getDate()}일 출발 · D+${dday(sel)}`, sx0, 4);
+  g.font = '12px Pretendard,sans-serif'; g.fillStyle = 'rgba(147,160,186,.95)';
+  g.fillText('점 하나 = 가능성 5% · 20개 중 16개가 구간 안', sx0, 24);
+  // 예측가 이름표
+  g.textBaseline = 'middle'; g.font = '600 12px "IBM Plex Mono",monospace'; g.fillStyle = '#EEF3FF'; g.textAlign = 'right';
+  g.fillText(won(D.price[sel]), sx1, y(D.price[sel]));
+  g.font = '11px "IBM Plex Mono",monospace'; g.fillStyle = 'rgba(143,184,255,.9)';
+  g.fillText('q90 ' + won(D.hi[sel]), sx1, y(D.hi[sel]) - 10);
+  g.fillText('q10 ' + won(D.lo[sel]), sx1, y(D.lo[sel]) + 10);
+
+  // 범례(왼쪽 아래 축 줄 오른쪽)
+  g.textAlign = 'left'; g.textBaseline = 'top'; g.font = '12px Pretendard,sans-serif';
+  let lx = L + (w - L - R) * 0.56;
+  dot(g, lx, h - B + 21, 2.4, C.text, 1); g.fillStyle = '#EEF3FF'; g.fillText('예측가', lx + 8, h - B + 14); lx += 64;
+  for (let k = 0; k < 3; k++) dot(g, lx + k * 4, h - B + 21, 1.2, C.dot, 0.7);
+  g.fillStyle = 'rgba(143,184,255,.95)'; g.fillText('80% 구간', lx + 16, h - B + 14); lx += 86;
+  dot(g, lx, h - B + 21, 2.4, C.amber, 1); g.fillStyle = 'rgba(255,181,71,.95)'; g.fillText('공휴일 무렵', lx + 8, h - B + 14);
+}
+
+function pickAt(px) {
+  if (!geo) return null;
+  const i = Math.floor((px - geo.L) / geo.colW);
+  return i >= 0 && i < n && px < geo.w - geo.R + 4 ? i : null;
+}
+cv.addEventListener('pointermove', e => {
+  const r = cv.getBoundingClientRect(), i = pickAt(e.clientX - r.left);
+  if (i === null) { tip.style.opacity = 0; return; }
+  if (i !== sel) { sel = i; draw(); }
+  tip.innerHTML = `${D.dates[i].slice(5).replace('-', '월 ')}일 출발 <span class="m">D+${dday(i)}</span><br><b>${won(D.price[i])}</b> <span class="m">구간 ${won(D.lo[i])} ~ ${won(D.hi[i])}</span>`;
+  tip.style.left = geo.x(i) + 'px'; tip.style.top = (e.clientY - r.top - 14) + 'px'; tip.style.opacity = 1;
+});
+cv.addEventListener('pointerleave', () => { tip.style.opacity = 0; });
+document.fonts.ready.then(draw); addEventListener('resize', draw);
+</script>
+</body>
+</html>
