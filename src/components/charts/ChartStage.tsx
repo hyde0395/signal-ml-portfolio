@@ -12,11 +12,13 @@
 // 작은 단계(sub): subs를 주면(② 걸러내기·⑤ 검증 설계, 계획 8-1) 한 단계 안에서 sub가 subMs마다 저절로 올라가 마지막에서 멈춘다.
 // 판이 화면 밖이면 멈추고 다시 들어오면 처음부터, 움직임 줄이기면 바로 마지막. 수치 이름표(stat·statSm)는 글자가 바뀌면 플립
 import type React from 'react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ChartStrings } from '@/charts/build';
+import { linesDelay } from '@/charts/lines';
 import { publishChart, setFocus as publishFocus } from '@/charts/registry';
 import type { ChartKey, ChartLabel, ChartLayout } from '@/charts/types';
 import { flip } from '@/motion/flip';
+import { ChartLines } from './ChartLines';
 import { startSubs } from './subTimer';
 
 // label: 조작 층의 aria-label(차트 제목 + " · " + charts.touch), hint: 짚은 항목이 없을 때의 valuetext(charts.touchHint).
@@ -78,6 +80,9 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
   const dragging = useRef(false);
   // 웹 글꼴이 늦게 도착해 글자 폭이 바뀌면 표시 상자를 다시 잰다(대체 글꼴로 잰 폭이면 판 밖으로 삐져나갈 수 있다)
   const [fontTick, setFontTick] = useState(0);
+  // SVG 층(ChartLines)이 판 px로 그리므로 배치 때 판 크기를 같이 둔다. linesOn: 점이 자리 잡은 뒤 선을 보인다(설계 §3)
+  const [plotSize, setPlotSize] = useState({ w: 0, h: 0 });
+  const [linesOn, setLinesOn] = useState(false);
 
   useEffect(() => {
     const st = stage.current, pl = plot.current, cv = canvas.current;
@@ -111,6 +116,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
           if (!inited.current) { inited.current = true; selRef.current = layout.initial ?? -1; setSel(selRef.current); }
           // 새 배치의 항목 수가 줄었으면 짚은 번호가 범위 밖이 된다(aria-valuenow > valuemax) — 처음 강조로 되돌린다
           else if (layout.items && selRef.current >= layout.items.length) { selRef.current = layout.initial ?? -1; setSel(selRef.current); }
+          setPlotSize((p) => (p.w === r.width && p.h === r.height ? p : { w: r.width, h: r.height }));
           setLay(layout);
           draw(openRef.current >= 0 ? openRef.current : selRef.current);
         };
@@ -213,6 +219,27 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     // subs는 서버에서 온 배열이라 렌더마다 새 배열일 수 있어 글자로 비교한다(subsKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, subsKey, subMs]);
+
+  // 선은 판이 화면 절반 이상 들어온 뒤, 3D면 점이 날아와 자리 잡을 시간(linesDelay) 뒤에 페이드인. 판을 벗어나거나 배치 종류
+  // (단계)가 바뀌면 바로 숨긴다 — 점이 옮겨 가는 동안 옛 선이 엉뚱한 자리에 떠 있지 않게
+  const hasLines = !!(lay?.lines?.length || lay?.overlay);
+  useEffect(() => {
+    const st = stage.current;
+    setLinesOn(false);
+    if (!st || !hasLines) return;
+    let reduced = true;
+    try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { /* 없으면 줄인 쪽 */ }
+    let timer = 0;
+    const io = new IntersectionObserver(([e]) => {
+      clearTimeout(timer);
+      if (!e.isIntersecting) { setLinesOn(false); return; }
+      const is3d = document.documentElement.getAttribute('data-3d') !== 'off';
+      timer = window.setTimeout(() => setLinesOn(true), linesDelay(is3d, reduced));
+    }, { threshold: 0.5 });
+    io.observe(st);
+    return () => { io.disconnect(); clearTimeout(timer); };
+  }, [hasLines, lay?.variant]);
+  const overlayShapes = useMemo(() => lay?.overlay?.(sel) ?? [], [lay, sel]);
 
   // 표시 상자 자리: 짚은 항목 위 TIP_GAP(자리가 없으면 아래), 좌우는 판 안으로 자른다. 상자 폭은 문장마다 달라 그린 뒤 잰다
   const cur = items && sel >= 0 ? items[sel] : undefined;
@@ -325,6 +352,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     <div ref={stage} className="chart-stage" data-stage={stages ? step : undefined} data-sub={subs ? sub : undefined}>
       <div ref={plot} className="chart-plot" data-plot>
         <canvas ref={canvas} className="chart-canvas" aria-hidden="true" />
+        <ChartLines lines={lay?.lines} overlay={overlayShapes} w={plotSize.w} h={plotSize.h} on={linesOn} />
         <div className="chart-labels" aria-hidden="true">
           {labels.map((l, i) => {
             const style = { left: `${l.x * 100}%`, top: `${l.y * 100}%` };
@@ -335,6 +363,13 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
                 <p key="detail" className="chart-detail" style={style}>
                   {g && <><b>{g.name} · {g.pct} · {g.count}</b><span>{g.features.join(' · ')}</span></>}
                 </p>
+              );
+            }
+            if (l.type === 'callout') {
+              return (
+                <span key={i} className={`chart-callout is-${l.tone} is-${l.place}`} style={style}>
+                  <b>{l.value}</b><small>{l.note}</small>
+                </span>
               );
             }
             const cls = `chart-label ${l.cls} align-${l.align}`;

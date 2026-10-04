@@ -28,7 +28,17 @@ export type ChartLabel =
   // mini: 펼친 SHAP 화면의 작은 와플 이름표(계획 5-3c) — 넓은 판은 이름만, 좁은 판은 %만
   | { type: 'group'; x: number; y: number; id: string; pct: string; name: string; count: string; features: string[]; holiday: boolean; compact: boolean; mini?: 'name' | 'pct' }
   // ③ 와플 설명 줄의 자리(왼쪽 위 기준). 내용은 그림 판이 강조 그룹에 따라 채운다(설계 2026-09-28 §3)
-  | { type: 'detail'; x: number; y: number };
+  | { type: 'detail'; x: number; y: number }
+  // 결론 이름표(설계 2026-10-04 §2): 큰 숫자 + 아래 작은 설명. place = 점 위/아래, tone = 숫자 색
+  | { type: 'callout'; x: number; y: number; value: string; note: string; tone: 'amber' | 'text'; place: 'above' | 'below' };
+
+// 별자리 선(설계 2026-10-04 §3): 결론 점끼리 잇는 가는 꺾은선. pts = 정규화 좌표를 펼친 배열 [x0, y0, x1, y1, …]
+export type ChartLine = { pts: number[]; tone: number; alpha: number; width: number };
+// 짚은 항목에 따라 바뀌는 SVG 덧그림(⑤ 분위수 점 그림 칸). x·y 정규화, r = px 반지름, hollow = 속 빈 점
+export type OverlayShape =
+  | { type: 'dot'; x: number; y: number; r: number; tone: number; alpha: number; hollow?: boolean }
+  | { type: 'text'; x: number; y: number; text: string; align: 'start' | 'center' | 'end'; cls: 'panelHead' | 'panelNote' | 'panelValue' | 'panelQ' }
+  | { type: 'dash'; x0: number; x1: number; y: number; tone: number; alpha: number };
 
 // ④·⑤ 차트 1·2·4에서 짚을 수 있는 항목 하나(계획 5-3b). key = 강조 번호(ChartLayout.hl과 같은 번호)이자 items 안의 순서 —
 // 조작 층이 items[key]로 바로 찾는다. 항목은 화면 왼쪽부터 번호를 매긴다(키보드 → = 번호 +1 = 오른쪽).
@@ -55,6 +65,10 @@ export type ChartLayout = {
   // 없으면 '' — 창 크기 변경처럼 같은 종류의 다시 배치는 같은 슬롯
   variant?: string;
   summary?: string[]; // 화면 낭독기용 요약 문장(펼친 SHAP 벌떼의 피처별 한 줄)
+  // 별자리 선(SVG 층). 점이 아니라 3D 셰이더는 모른다 — 3D 켜짐·꺼짐 모두 같은 SVG로 그린다(ChartLines)
+  lines?: ChartLine[];
+  // 짚은 항목 번호(−1 포함)를 받아 덧그림 모양을 돌려준다. 없으면 덧그림 없음
+  overlay?: (sel: number) => OverlayShape[];
 };
 
 // 판이 고정(sticky, top: 0)된 동안의 화면 위치(px)와 그때의 뷰포트 크기
