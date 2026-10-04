@@ -79,4 +79,11 @@ describe('filterLayout', () => {
   it('filter가 없으면 던진다', () => {
     expect(() => filterLayout({ dates: [] } as unknown as ChartsData, size, 0, 0, S)).toThrow();
   });
+  it('남는 점은 배경 층(FILTER.keptA), 걸려 켜진 점은 FILTER.litA', () => {
+    const all = [[0, 0], [1, 0], [1, 1], [2, 0], [2, 1]].map(([st, sb]) => filterLayout(data, size, st, sb, S));
+    for (const L of all) for (let i = 0; i < L.n; i++) {
+      if (L.alpha[i] === 0 || L.size[i] === 1.5) continue; // 숨은 점·규칙 점선
+      expect(L.alpha[i]).toBeCloseTo(L.tone[i] === TONE.amber ? FILTER.litA : FILTER.keptA);
+    }
+  });
 });

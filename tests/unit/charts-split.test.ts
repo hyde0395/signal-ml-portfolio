@@ -39,6 +39,7 @@ describe('splitLayout', () => {
   it('평가 점은 호박색, 아직 안 씀은 흐림, 점 자리는 단계와 무관', () => {
     const [kf, , tss0] = all;
     expect(Array.from(kf.tone)).toEqual([TONE.dot, TONE.dot, TONE.amber, TONE.amber, TONE.dot, TONE.dot]);
+    expect(kf.alpha[0]).toBeCloseTo(SPLIT.trainA); expect(kf.alpha[2]).toBeCloseTo(0.95);
     expect(tss0.alpha[5]).toBeLessThan(kf.alpha[5]);
     expect(Array.from(tss0.x)).toEqual(Array.from(kf.x));
     expect(Array.from(tss0.y)).toEqual(Array.from(kf.y));

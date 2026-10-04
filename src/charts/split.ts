@@ -10,7 +10,8 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 // 한 점에 겹치지 않게 조금 흔든다(시드 고정 — 단계가 바뀌어도 자리 그대로). unusedA: 아직 안 쓴(미래) 점의 알파
 // wideMinPx 820: 옆 칸(0.78W)이 영어 문구까지 담으려면 판이 820px는 돼야 한다. 그보다 좁으면 옆 칸이 판 밖으로 나가
 // 페이지 가로 스크롤이 생겼다(8-1 최종 검토). 820 이상에서 긴 꼬리표는 CSS가 판 오른쪽 끝에서 줄바꿈한다.
-export const SPLIT = { stages: 3, subs: [1, 1, 5], subMs: 1200, wideMinPx: 820, jitterPx: 1.6, seed: 5, unusedA: 0.2 } as const;
+// trainA: 학습 점은 배경 층 — 규칙이 무엇을 걸렀는지 먼저 보이게(설계 2026-10-04 §4)
+export const SPLIT = { stages: 3, subs: [1, 1, 5], subMs: 1200, wideMinPx: 820, jitterPx: 1.6, seed: 5, unusedA: 0.2, trainA: 0.4 } as const;
 
 export type SplitMethod = { name: string; r2: string; mae: string; tag: string };
 export type SplitTexts = {
@@ -52,7 +53,7 @@ export function splitLayout(d: ChartsData, size: PlotSize, stage: number, sub: n
     const role = splitRole(sp, i, st, sb);
     const x = Math.min(1, Math.max(0, (XF(sp.fetch[i]) + jx) / W));
     const y = Math.min(1, Math.max(0, (YT(utc(d.dates[sp.date[i]])) + jy) / H));
-    p.add(x, y, dot, role === 1 ? 0.95 : role === 0 ? 0.7 : SPLIT.unusedA, role === 1 ? TONE.amber : TONE.dot, sp.date[i]);
+    p.add(x, y, dot, role === 1 ? 0.95 : role === 0 ? SPLIT.trainA : SPLIT.unusedA, role === 1 ? TONE.amber : TONE.dot, sp.date[i]);
   }
 
   // 이름표: 수치 5개를 맨 앞에(방식 이름·R²·MAE·설명·폴드) — 그림 판이 순서로 그려 같은 자리의 플립이 단계 사이에 이어진다

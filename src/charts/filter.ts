@@ -10,9 +10,11 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 // ruleMin: 규칙 ① 소요 상한(facts data.filter.durationMax와 같은 400분). boxFrom: 규칙 ③ 상자 왼쪽 — 노선별 직항 p05 최댓값
 // 150분 + 여유 65분(항공권 저장소 constants.py). subs: 단계마다 작은 단계 수(켜짐 → 떨어짐), subMs: 그 간격
 // wideMinPx 820: 옆 칸(0.76W)의 "258,829 ROWS"·규칙 이름이 판 안에 들어가는 최소 폭(768px에서 7px 넘쳤다, 8-1 최종 검토)
+// keptA: 남는 점은 배경 층, litA: 걸린 점은 결론 층 — 규칙이 무엇을 걸렀는지 먼저 보이게(설계 2026-10-04 §4)
 export const FILTER = {
   stages: 3, subs: [1, 2, 2], subMs: 700, wideMinPx: 820,
   x0: 60, x1: 960, over: 0.05, lo: -90, hi: 300, ruleMin: 400, boxFrom: 215, seed: 11,
+  keptA: 0.4, litA: 0.95,
 } as const;
 const RULES = ['RULE 1 · DURATION · UNIT', 'RULE 2 · TIME MISMATCH', 'RULE 3 · DIRECT CHECK'];
 
@@ -61,7 +63,7 @@ export function filterLayout(d: ChartsData, size: PlotSize, stage: number, sub: 
     const visible = m >= FILTER.x0 && v >= FILTER.lo && v <= FILTER.hi;
     const state = filterState(rule, st, sb);
     if (state === 'fallen') p.add(Math.min(1, Math.max(0, x / W + drift)), 1.12, dot, 0, TONE.amber);
-    else p.add(x / W, (visible ? Y(v) : Y(0)) / H, dot, visible ? 0.7 : 0, state === 'lit' ? TONE.amber : TONE.dot);
+    else p.add(x / W, (visible ? Y(v) : Y(0)) / H, dot, visible ? (state === 'lit' ? FILTER.litA : FILTER.keptA) : 0, state === 'lit' ? TONE.amber : TONE.dot);
   }
 
   // 이름표: 행 수를 맨 앞에 둔다 — 그림 판이 이름표를 순서(번호)로 그려, 같은 자리의 플립이 단계 사이에 이어진다
