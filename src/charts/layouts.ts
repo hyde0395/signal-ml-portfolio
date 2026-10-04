@@ -90,7 +90,7 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
 // 날만 — 공휴일 ±3일을 모두 칠하면 강조가 흐려졌다(사용자 지적 2026-09-29). 오른쪽(휴대폰은 아래)은 요일 평균
 // 이름표 겹침 어림값: 공휴일 이름(11px 글꼴) 글자당 폭, 월 이름 사이 최소 간격
 export const DEPART_TEXT = { charPx: 6.6, monthGapPx: 34 } as const;
-export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25, lineA: 0.45 } as const;
+export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25, lineA: 0.38 } as const;
 
 // 출발일 가로축의 월 이름(차트 1·③ 모델 구조가 같이 쓴다). X = 출발일 → 판 안 px, y = 이름표 줄 높이(px).
 // 앞 월 이름과 monthGapPx보다 가까우면 뺀다 — 첫 출발일(5월 중순)과 다음 달 첫 출발일이 붙어 있어 좁은 판에서 "MayJun"처럼 붙었다
@@ -162,6 +162,11 @@ export function departLayout(
     .forEach(({ l, i }) => {
       const text = s.holiday(l.code), x = X(l.date), half = (text.length * DEPART_TEXT.charPx) / 2;
       let y = Math.max(8, Y(d.depart.pct[i] / 10) - r - 10);
+      // 결론 이름표(callout)가 차지하는 자리(봉우리 위나 아래 약 62px, 폭 약 ±36px)와 겹치는 이름표는 뺀다 — 성탄절이 +71% 글자 위에 얹혔다
+      if (peak >= 0) {
+        const px = X(d.dates[peak]), py = Y(d.depart.pct[peak] / 10) - r;
+        if (Math.abs(x - px) < 36 + half && Math.abs(y - py) < 62 + 12) return;
+      }
       for (const q of placed) if (Math.abs(q.x - x) < q.half + half + 4 && Math.abs(q.y - y) < 12) y = Math.max(8, q.y - 13);
       placed.push({ x, y, half });
       labels.push({ type: 'text', x: x / W, y: y / H, text, align: 'center', cls: 'holiday' });
@@ -320,7 +325,8 @@ export const CLOUD = {
   marginLeft: 0.1, marginTop: 0.16, marginBottom: 0.12,
 } as const;
 // 분위수 점 그림(Kay 외 2016): 점 n개 = 확률 1/n씩. 칸 높이는 구간 폭의 1/rows(최소 점 한 줄)로 묶어 가로로 쌓는다
-export const QDOT = { n: 20, r: 5, gap: 2.4, rows: 6 } as const;
+// panelTop: 칸 머리(제목·설명 두 줄) 아래 — 점이 머리 글자 위로 올라오지 않게 하는 최소 높이(px)
+export const QDOT = { n: 20, r: 5, gap: 2.4, rows: 6, panelTop: 46 } as const;
 // 분위 (k + 0.5)/n 중 q10~q90 안에 드는 점 수(n = 20이면 16) — 문구에 숫자를 쓰지 않으려고 코드가 센다
 const QDOT_Q = Array.from({ length: QDOT.n }, (_, k) => (k + 0.5) / QDOT.n);
 const QDOT_INSIDE = QDOT_Q.filter((q) => q > 0.1 && q < 0.9).length;
@@ -352,7 +358,7 @@ export function cloudLayout(
   const side = wide ? Math.max(CLOUD.panelMin, Math.min(CLOUD.panelMax, size.w * CLOUD.panelFrac)) : 0;
   const sc = cloudScale(cd, size, side ? side + CLOUD.panelGap : 0);
   const colW = ((size.w - side - (side ? CLOUD.panelGap : 0)) * (1 - CLOUD.marginLeft)) / cd.dates.length;
-  // 항목 문장 끝에 칸 설명을 붙인다(낭독용 — 칸은 aria-hidden이라 같은 내용을 문장으로도 준다)
+  // 항목 문장 끝에 칸 설명을 붙인다(낭독용 — 칸은 aria-hidden이라 같은 내용을 문장으로도 준다). 칸이 있는 넓은 판에서만
   const note = s.panelNote({ step: 100 / QDOT.n, total: QDOT.n, inside: QDOT_INSIDE });
   const p = new Pts();
   const items: ChartItem[] = [];
@@ -369,7 +375,7 @@ export function cloudLayout(
         core ? CLOUD.coreA : CLOUD.outerA, hol ? TONE.amber : TONE.dot, -1, j);
     }
     addStar(p, sc.x(i) / size.w, sc.y(price) / size.h, CLOUD.star, hol ? TONE.amber : TONE.text, 1, -1, j);
-    items.push({ key: j, x: sc.x(i) / size.w, y: sc.y(price) / size.h, text: `${s.tip({ date: cd.dates[i], price, lo, hi })} · ${note}` });
+    items.push({ key: j, x: sc.x(i) / size.w, y: sc.y(price) / size.h, text: side > 0 ? `${s.tip({ date: cd.dates[i], price, lo, hi })} · ${note}` : s.tip({ date: cd.dates[i], price, lo, hi }) });
   }
 
   const labels: ChartLabel[] = [];
@@ -408,7 +414,7 @@ export function cloudLayout(
   const pool = holIdx.length ? holIdx : idx;
   const first = pool.reduce((a, i) => (width(i) > width(a) ? i : a), pool[0]);
   const initial = idx.indexOf(first);
-  return { ...p.done(labels, TONE.text, CLOUD.focusDim), items, initial, lines, overlay: (sel) => cloudPanel(cd, size, sc, idx, side, s, sel) };
+  return { ...p.done(labels, TONE.text, CLOUD.focusDim), items, initial, lines, tipRight: side > 0 ? (size.w - side - CLOUD.panelGap) / size.w : undefined, overlay: (sel) => cloudPanel(cd, size, sc, idx, side, s, sel) };
 }
 
 // ⑤ 덧그림: 짚은 날의 별 강조(모든 판) + 넓은 판이면 오른쪽 분위수 점 그림 칸. 세로는 왼쪽 차트와 같은 sc.y
@@ -435,7 +441,7 @@ function cloudPanel(cd: CloudData, size: PlotSize, sc: ReturnType<typeof cloudSc
   QDOT_Q.forEach((q, k) => { const b = Math.floor((Y(qv(q)) - y0) / cellH); bins.set(b, [...(bins.get(b) ?? []), k]); });
   for (const [b, ks] of bins) ks.forEach((k, jx) => {
     const outside = QDOT_Q[k] < 0.1 || QDOT_Q[k] > 0.9;
-    out.push({ type: 'dot', x: (x0 + 8 + QDOT.r + jx * cell) / W, y: Math.min(H - QDOT.r, Math.max(QDOT.r, y0 + (b + 0.5) * cellH)) / H,
+    out.push({ type: 'dot', x: (x0 + 8 + QDOT.r + jx * cell) / W, y: Math.min(H - QDOT.r, Math.max(QDOT.panelTop + QDOT.r, y0 + (b + 0.5) * cellH)) / H,
       r: QDOT.r, tone: outside ? TONE.text : TONE.dot, alpha: outside ? 0.75 : 0.95, hollow: outside });
   });
   const dday = Math.round((utc(cd.dates[i]) - utc(cd.asOf)) / DAY);

@@ -247,10 +247,23 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     const el = tipEl.current, pl = plot.current;
     if (!el || !pl || !cur) return;
     const W = pl.clientWidth, H = pl.clientHeight, w = el.offsetWidth, h = el.offsetHeight;
-    const x = cur.x * W, y = cur.y * H;
-    el.style.left = `${Math.max(0, Math.min(W - w, x - w / 2))}px`;
+    const x = cur.x * W, y = cur.y * H, R = (lay?.tipRight ?? 1) * W;
+    el.style.left = `${Math.max(0, Math.min(R - w, x - w / 2))}px`;
     el.style.top = `${y - TIP_GAP - h >= 0 ? y - TIP_GAP - h : Math.min(H - h, y + TIP_GAP)}px`;
   }, [cur, lay, fontTick]);
+  // 결론 이름표(callout)는 점 위에 가운데 맞춤이라 판 가장자리 근처(마지막 구간 등)에서 글이 판 밖으로 나가 페이지 가로 폭을 늘린다 —
+  // 그린 뒤 폭을 재서 판 안으로 밀어 넣는다(margin-left만 바꾸므로 transform 위치는 그대로)
+  useLayoutEffect(() => {
+    const pl = plot.current;
+    if (!pl) return;
+    const W = pl.clientWidth;
+    for (const el of pl.querySelectorAll<HTMLElement>('.chart-callout')) {
+      el.style.marginLeft = '0px';
+      const x = el.offsetLeft, w = el.offsetWidth;
+      const left = x - w / 2, shift = left < 0 ? -left : left + w > W ? W - (left + w) : 0;
+      el.style.marginLeft = `${shift}px`;
+    }
+  }, [lay, fontTick, plotSize.w, plotSize.h]);
   useEffect(() => {
     let alive = true;
     document.fonts?.ready.then(() => { if (alive) setFontTick((n) => n + 1); });

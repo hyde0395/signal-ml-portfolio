@@ -39,6 +39,44 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     });
   }
 
+  // 별자리 선(점 위계 계획): 움직임 줄이기에서는 점이 바로 자리 잡아 선도 바로 보인다
+  for (const [key, n] of [['chartCurve', 1], ['chartCloud', 1], ['chartDepart', 1]] as const) {
+    test(`${key}: 별자리 선이 그려진다`, async ({ page }) => {
+      await page.goto('/');
+      await center(page, `.chart-block[data-scene="${key}"]`);
+      const svg = page.locator(`.chart-block[data-scene="${key}"] .chart-lines`);
+      await expect(svg).toHaveAttribute('data-on', '', { timeout: 10_000 });
+      await expect(svg.locator('path')).toHaveCount(n);
+      expect(await svg.locator('path').first().getAttribute('d')).toMatch(/^M[\d.]+ [\d.]+L/);
+    });
+  }
+  test('④ U자: 결론 이름표 둘(최저·출발 직전)', async ({ page }) => {
+    await page.goto('/');
+    await center(page, '.chart-block[data-scene="chartCurve"]');
+    await expect(page.locator('.chart-block[data-scene="chartCurve"] .chart-callout')).toHaveCount(2, { timeout: 10_000 });
+  });
+  test('⑤ 예측 구간 1440px: 칸에 점 20개, → 로 짚은 날을 바꾸면 칸 머리가 바뀐다', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await center(page, '.chart-block[data-scene="chartCloud"]');
+    const block = page.locator('.chart-block[data-scene="chartCloud"]');
+    await expect(block.locator('.chart-lines circle[r="5"]')).toHaveCount(20, { timeout: 10_000 });
+    const head = block.locator('.chart-panelHead');
+    const before = await head.textContent();
+    await block.locator('.chart-touch').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(head).not.toHaveText(before ?? '');
+  });
+  test('⑤ 예측 구간 390px: 칸 없음, 가로 스크롤 없음', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await center(page, '.chart-block[data-scene="chartCloud"]');
+    const block = page.locator('.chart-block[data-scene="chartCloud"]');
+    await expect(block.locator('.chart-lines path')).toHaveCount(1, { timeout: 10_000 });
+    await expect(block.locator('.chart-panelHead')).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+
   // ③ 모델 구조 점(계획 7-2): 판이 고정된 스크롤 구간을 문단 수(4)로 나눈 자리마다 단계가 바뀐다 — 넷째 칸은 3단계 그대로
   test.describe('③ 모델 구조', () => {
     // 블록 안 고정 구간의 f 위치(0 = 판이 막 고정됨, 1 = 풀리기 직전)로 스크롤한다
@@ -146,9 +184,9 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     });
   });
 
-  test('이름표 개수: 출발일 눈금 4 + 요일 이름·값 14, 벌떼 구간 8 + 눈금 3, 와플 그룹 6', async ({ page }) => {
+  test('이름표 개수: 출발일 눈금 4 + 요일 이름·값 14, 벌떼 구간 8 + 눈금 5, 와플 그룹 6', async ({ page }) => {
     await page.goto('/');
-    for (const [key, sel, n] of [['chartDepart', '.chart-label.tick', 18], ['chartCurve', '.chart-label.tick', 11], ['features', '.chart-group', 6]] as const) {
+    for (const [key, sel, n] of [['chartDepart', '.chart-label.tick', 18], ['chartCurve', '.chart-label.tick', 13], ['features', '.chart-group', 6]] as const) {
       await center(page, `.chart-block[data-scene="${key}"]`);
       await expect(page.locator(`.chart-block[data-scene="${key}"] ${sel}`)).toHaveCount(n, { timeout: 10_000 });
     }
@@ -296,7 +334,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     await expect(slider).toHaveAttribute('aria-valuetext', /./);
   });
 
-  test('차트 4: Tab으로 조작 층에 초점, → 두 번이면 두 번째 항목', async ({ page }) => {
+  test('차트 4: Tab으로 조작 층에 초점, 처음부터 한 날이 짚여 있고 → 로 다음 항목', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await center(page, '.chart-block[data-scene="chartCloud"]');
@@ -304,13 +342,15 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     const slider = stage.locator('[role="slider"]');
     await expect(slider).toBeAttached({ timeout: 10_000 });
     await expect(slider).toHaveAttribute('aria-label', /값 살펴보기$/);
+    const start = Number(await slider.getAttribute('aria-valuenow'));
+    expect(start).toBeGreaterThanOrEqual(0);
     // 앞 블록(검증 표)의 코드 링크에서 Tab 한 번 — 문서 순서상 바로 다음이 차트 4 조작 층이다
     await page.locator('[data-scene="validation"] a.code-link').focus();
     await page.keyboard.press('Tab');
     await expect(slider).toBeFocused();
-    await page.keyboard.press('ArrowRight');
-    await page.keyboard.press('ArrowRight');
-    await expect(slider).toHaveAttribute('aria-valuenow', '1');
+    const max = Number(await slider.getAttribute('aria-valuemax'));
+    await page.keyboard.press(start < max ? 'ArrowRight' : 'ArrowLeft');
+    await expect(slider).toHaveAttribute('aria-valuenow', String(start < max ? start + 1 : start - 1));
     await expect(stage.locator('.chart-tip')).toContainText('예측가');
   });
 
@@ -459,7 +499,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await center(page, '.chart-block[data-scene="chartCurve"]');
-    await expect(page.locator('.chart-block[data-scene="chartCurve"] .chart-label.tick')).toHaveCount(11, { timeout: 10_000 });
+    await expect(page.locator('.chart-block[data-scene="chartCurve"] .chart-label.tick')).toHaveCount(13, { timeout: 10_000 });
     await page.setViewportSize({ width: 820, height: 900 });
     const plot = page.locator('.chart-block[data-scene="chartCurve"] [data-plot]');
     await expect.poll(async () => {
@@ -561,6 +601,7 @@ test('3D가 도중에 꺼지면 이미 불러온 판이 그 자리에서 2D로 �
   // 판은 곧바로 그려지지만, 소프트웨어 렌더러(CI swiftshader)에서는 검사의 getImageData(GPU 캔버스 읽기) 한 번이
   // 몇 초씩 걸린다(CPU 4배 느리게 해서 0.8~4.3초 측정, 2026-09-28). 5초로는 CI에서 가끔 모자라 넉넉히 둔다
   await expect.poll(() => painted(page, 'chartCloud'), { timeout: 15_000 }).toBe(true);
+  await expect(page.locator('.chart-block[data-scene="chartCloud"] .chart-lines path')).toHaveCount(1);
 });
 
 // 3D 켜짐 묶음 전용: html의 3D 속성이 기대값이 될 때까지 기다리되, 그사이 소프트웨어 렌더러(CI swiftshader)가 저프레임으로 3D를
@@ -579,6 +620,14 @@ test.describe('3D 켜짐', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
     test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 꺼진 환경(소프트웨어 렌더러 저프레임)');
+  });
+
+  test('3D 켜짐: 선은 점이 자리 잡은 뒤에 나타난다', async ({ page }) => {
+    await center(page, '.chart-block[data-scene="chartCurve"]');
+    const svg = page.locator('.chart-block[data-scene="chartCurve"] .chart-lines');
+    await expect(svg).not.toHaveAttribute('data-on', '');
+    await expect(svg).toHaveAttribute('data-on', '', { timeout: 3_000 });
+    test.skip((await page.locator('html').getAttribute('data-3d')) === 'off', '도중에 3D가 꺼짐(소프트웨어 렌더러 저프레임)');
   });
 
   test('순서를 섞어 건너뛰어도 멈춘 차트의 배치로 바뀐다', async ({ page }) => {

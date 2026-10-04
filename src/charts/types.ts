@@ -60,6 +60,7 @@ export type ChartLayout = {
   focusDim: number;  // 강조 중일 때 강조 안 된 점의 알파 배율
   labels: ChartLabel[];
   items?: ChartItem[]; // 짚을 항목(차트 1·2·4만). 없으면 조작 층을 두지 않는다
+  tipRight?: number;   // 표시 상자가 넘지 않을 오른쪽 한계(판 폭 비율) — 오른쪽 칸이 있는 판(⑤)에서 상자가 칸 점을 가리지 않게
   initial?: number;    // 처음 강조 번호(차트 2 = 가장 싼 구간). 없으면 −1
   // 배치 종류 표식(계획 5-3c). 같은 차트라도 이 값이 바뀌면 3D가 반대 슬롯에 써서 점이 옮겨 간다(chartTargets.pickSlot).
   // 없으면 '' — 창 크기 변경처럼 같은 종류의 다시 배치는 같은 슬롯

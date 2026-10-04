@@ -43,6 +43,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
   - 병합하며 고친 것: 잡음 밭으로 3D가 무거워져 CI 휴대폰(swiftshader)에서 테스트 도중 3D가 꺼지는 일이 세 번 연속 났다 → `tests/e2e/charts.spec.ts`의 "3D 켜짐" 묶음은 `expect3D()`로 기다리고, 도중에 `data-3d="off"`가 되면 실패 대신 건너뛴다(시작 때 꺼져 있으면 건너뛰던 규칙과 같다)
 - **PR #27 디자인 스킬**(`chore/design-skills`): `.claude/skills/`에 `emil-design-eng`·`design-taste-frontend`·`impeccable`(원저자 저장소에서, 출처 `skills-lock.json`·각 폴더 `LICENSE`) + impeccable 보조 에이전트 4개(`.claude/agents/`). 엔진 실행 파일과 훅은 기기마다 따로(아래 "기기별 처음 한 번" 7번). 맥미니는 엔진·훅·Playwright 연결·Figma 로그인까지 끝남, 맥북은 아직
 - 문구는 디자인을 모두 정한 뒤 한꺼번에 바꾼다(사용자 2026-10-01) — 단, 아래 "교수님 피드백"은 정보 설계라 문구 다듬기와 별개로 다룬다
+- **점 위계 계획(2026-10-05)**: 브랜치 `feat/dot-hierarchy`가 점 위계·별자리 선·결론 이름표·⑤ 분위수 점 칸을 구현(PR 대기, 설계 `docs/superpowers/specs/2026-10-04-dot-hierarchy-design.md` 끝 "구현 결과"). 다음은 **정보 전달 2 설계**(설계서 §8 목록)
 - 열린 PR·작업 브랜치·worktree 없음(PR #27 병합 뒤)
 
 ## ★ 교수님 피드백과 바꿀 것 (2026-10-01) — 다음 작업의 중심

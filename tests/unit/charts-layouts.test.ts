@@ -370,6 +370,14 @@ describe('cloudLayout', () => {
     expect([pts[0], pts[1]]).toEqual([sc.x(0) / size.w, sc.y(200_000) / size.h]);
     expect([pts[2], pts[3]]).toEqual([sc.x(2) / size.w, sc.y(300_000) / size.h]);
   });
+  it('칸이 있는 넓은 판은 표시 상자 오른쪽 한계(tipRight)가 칸 왼쪽, 좁은 판은 없다', () => {
+    expect(L.tipRight).toBeCloseTo((size.w - side - CLOUD.panelGap) / size.w, 6);
+    expect(cloudLayout(cd, { w: 390, h: 414 }, s).tipRight).toBeUndefined();
+  });
+  it('칸이 없는 좁은 판에서는 항목 문장에 칸 설명을 붙이지 않는다', () => {
+    const narrow = cloudLayout(cd, { w: 390, h: 414 }, s);
+    expect(narrow.items![0].text).toBe(`T ${cd.dates[0]} 200000 150000~260000`);
+  });
   it('처음 짚은 날 = 공휴일 무렵 출발일 중 구간이 가장 넓은 날(항목 번호), 없으면 전체에서', () => {
     expect(L.initial).toBe(1); // 2026-09-27(공휴일, 폭 130,000) — 예측 있는 날만 센 번호 1
     const noHol = cloudLayout({ ...cd, holidays: {} }, size, s);
