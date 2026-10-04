@@ -1,7 +1,8 @@
 // 배치 함수 검사: 점 개수, 판 안(0..1), 강조 색, 크기 순서, 이름표. 좁은 휴대폰 판에서도 깨지지 않는지.
 import { describe, expect, it } from 'vitest';
 import type { ChartsData, CloudData } from '@/charts/data';
-import { cloudLayout, cloudScale, DEPART, departLayout, invNorm, SWARM, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
+import { CLOUD, cloudLayout, cloudScale, DEPART, QDOT, departLayout, invNorm, SWARM, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
+import { STAR } from '@/charts/lines';
 import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from '@/charts/types';
 
 const inside = (L: ChartLayout) => {
@@ -325,47 +326,90 @@ describe('cloudLayout', () => {
   const s = {
     money: (v: number) => `${v}`, dday: (n: number) => `D+${n}`, holiday: (c: string) => `h:${c}`, axis: 'A',
     tip: (v: { date: string; price: number; lo: number; hi: number }) => `T ${v.date} ${v.price} ${v.lo}~${v.hi}`,
+    panelHead: (v: { date: string; dday: number }) => `H ${v.date} ${v.dday}`,
+    panelNote: (v: { step: number; total: number; inside: number }) => `N ${v.step} ${v.inside}/${v.total}`,
+    moneyFull: (v: number) => `${v}`,
   };
   const L = cloudLayout(cd, size, s);
-  const sc = cloudScale(cd, size);
-  it('예측 없는 날은 건너뛰고, 출발일마다 구름 24개 + 예측가 1개', () => expect(L.n).toBe(2 * 25));
+  const side = Math.max(CLOUD.panelMin, Math.min(CLOUD.panelMax, size.w * CLOUD.panelFrac));
+  const sc = cloudScale(cd, size, side + CLOUD.panelGap);
+  const PER = CLOUD.perDate + 2; // 날짜 하나의 점 수: 구름 + 별(번짐·심)
+  it('예측 없는 날은 건너뛰고, 출발일마다 구름 perDate개 + 예측가 별(번짐 + 심) 2개', () => expect(L.n).toBe(2 * (CLOUD.perDate + 2)));
+  it('가운데 50% 층은 바깥 층보다 크고 진하다', () => {
+    const cloud = Array.from({ length: L.n }, (_, i) => i).filter((i) => L.size[i] === CLOUD.coreSize || L.size[i] === CLOUD.outerSize);
+    expect(cloud).toHaveLength(2 * CLOUD.perDate);
+    const core = cloud.filter((i) => L.size[i] === CLOUD.coreSize), outer = cloud.filter((i) => L.size[i] === CLOUD.outerSize);
+    expect(core.length).toBeGreaterThan(0); expect(outer.length).toBeGreaterThan(0);
+    for (const i of core) expect(L.alpha[i]).toBe(Math.fround(CLOUD.coreA));
+    for (const i of outer) expect(L.alpha[i]).toBe(Math.fround(CLOUD.outerA));
+  });
+  it('별자리 선 하나: 예측 있는 날의 예측가 자리를 날짜 순으로(예측 없는 날은 건너뛴다)', () => {
+    expect(L.lines).toHaveLength(1);
+    const pts = L.lines![0].pts;
+    expect(pts).toHaveLength(4);
+    expect([pts[0], pts[1]]).toEqual([sc.x(0) / size.w, sc.y(200_000) / size.h]);
+    expect([pts[2], pts[3]]).toEqual([sc.x(2) / size.w, sc.y(300_000) / size.h]);
+  });
+  it('처음 짚은 날 = 공휴일 무렵 출발일 중 구간이 가장 넓은 날(항목 번호), 없으면 전체에서', () => {
+    expect(L.initial).toBe(1); // 2026-09-27(공휴일, 폭 130,000) — 예측 있는 날만 센 번호 1
+    const noHol = cloudLayout({ ...cd, holidays: {} }, size, s);
+    expect(noHol.initial).toBe(1); // 폭 110,000 < 130,000
+  });
+  it('넓은 판: 덧그림 칸에 점 20개(속 빈 점 4개), 칸 머리·설명, 같은 세로축', () => {
+    const shapes = L.overlay!(1);
+    const dots = shapes.filter((x) => x.type === 'dot' && x.r === QDOT.r);
+    expect(dots).toHaveLength(QDOT.n);
+    expect(dots.filter((x) => x.type === 'dot' && x.hollow)).toHaveLength(4);
+    expect(shapes).toContainEqual(expect.objectContaining({ type: 'text', cls: 'panelHead', text: 'H 2026-09-27 5' }));
+    expect(shapes).toContainEqual(expect.objectContaining({ type: 'text', cls: 'panelNote', text: 'N 5 16/20' }));
+    for (const d of dots) { expect(d.y).toBeGreaterThan(0); expect(d.y).toBeLessThan(1); expect((d as { x: number }).x).toBeGreaterThan(sc.x(2) / size.w); }
+  });
+  it('좁은 판(640px 미만): 칸 없음 — 덧그림은 짚은 날 별 강조만', () => {
+    const N = cloudLayout(cd, { w: 600, h: 380 }, s);
+    const shapes = N.overlay!(0);
+    expect(shapes.filter((x) => x.type === 'dot' && x.r === QDOT.r)).toHaveLength(0);
+    expect(shapes.filter((x) => x.type === 'text')).toHaveLength(0);
+  });
+  it('짚은 날이 없으면(−1) 덧그림 없음', () => expect(L.overlay!(-1)).toEqual([]));
   // 항목 번호는 예측 있는 날만 센 순서(예측 없는 날이 끼면 날짜 번호와 달라진다) — 조작 층이 items[번호]로 바로 찾게
   it('강조 번호: 그날 구름·예측가 점 모두 그날 항목 번호', () => {
-    for (let i = 0; i < L.n; i++) expect(L.hl[i], `점 ${i}`).toBe(Math.floor(i / 25));
+    for (let i = 0; i < L.n; i++) expect(L.hl[i], `점 ${i}`).toBe(Math.floor(i / PER));
     expect(L.focusTone).toBe(TONE.text);
-    expect(L.focusDim).toBe(CHART_FOCUS_DIM);
+    expect(L.focusDim).toBe(CLOUD.focusDim);
   });
-  it('짚을 항목: 예측 있는 날마다 하나, 자리 = 예측가 점, 문장에 날짜·예측가·범위, 처음 강조 없음', () => {
+  it('짚을 항목: 예측 있는 날마다 하나, 자리 = 예측가 점, 문장에 날짜·예측가·범위, 처음 짚은 날은 initial', () => {
     const items = L.items!;
     expect(items).toHaveLength(2);
     for (const [j, i] of [[0, 0], [1, 2]]) {
       expect(items[j].key).toBe(j);
       expect(items[j].x).toBeCloseTo(sc.x(i) / size.w, 6);
       expect(items[j].y).toBeCloseTo(sc.y(cd.price[i]!) / size.h, 6);
-      expect(items[j].text).toBe(`T ${cd.dates[i]} ${cd.price[i]} ${cd.lo[i]}~${cd.hi[i]}`);
+      expect(items[j].text).toBe(`T ${cd.dates[i]} ${cd.price[i]} ${cd.lo[i]}~${cd.hi[i]} · N 5 16/20`);
     }
     expect(items[1].x).toBeGreaterThan(items[0].x);
-    expect(L.initial).toBe(-1);
+    expect(L.initial).toBe(1);
   });
   it('구름 점은 모두 그날 q10~q90 안, 예측가 점은 예측가 자리', () => {
     for (const [j, i] of [[0, 0], [1, 2]]) {
-      for (let k = 0; k < 24; k++) {
-        const py = L.y[j * 25 + k] * size.h;
+      for (let k = 0; k < CLOUD.perDate; k++) {
+        const py = L.y[j * PER + k] * size.h;
         expect(py).toBeGreaterThanOrEqual(sc.y(cd.hi[i]!) - 1e-6);
         expect(py).toBeLessThanOrEqual(sc.y(cd.lo[i]!) + 1e-6);
       }
-      expect(L.y[j * 25 + 24] * size.h).toBeCloseTo(sc.y(cd.price[i]!), 3);
+      for (const o of [0, 1]) expect(L.y[j * PER + CLOUD.perDate + o] * size.h).toBeCloseTo(sc.y(cd.price[i]!), 3);
+      expect(L.size[j * PER + CLOUD.perDate + 1]).toBe(Math.fround(CLOUD.star));
+      expect(L.size[j * PER + CLOUD.perDate]).toBe(Math.fround(CLOUD.star * STAR.haloScale));
     }
   });
   it('예측가 가까이가 가장자리보다 빽빽하다', () => {
     const band = (sc.y(cd.lo[0]!) - sc.y(cd.hi[0]!)) / 4;
     const mid = sc.y(cd.price[0]!);
-    const near = Array.from({ length: 24 }, (_, k) => L.y[k] * size.h).filter((py) => Math.abs(py - mid) < band).length;
-    expect(near).toBeGreaterThan(12);
+    const near = Array.from({ length: CLOUD.perDate }, (_, k) => L.y[k] * size.h).filter((py) => Math.abs(py - mid) < band).length;
+    expect(near).toBeGreaterThan(CLOUD.perDate / 2);
   });
   it('공휴일 출발일은 호박색(구름과 예측가 모두), 아니면 예측가만 글자색', () => {
-    for (let k = 0; k < 25; k++) expect(L.tone[25 + k]).toBe(TONE.amber);
-    expect(L.tone[24]).toBe(TONE.text);
+    for (let k = 0; k < PER; k++) expect(L.tone[PER + k]).toBe(TONE.amber);
+    expect(L.tone[CLOUD.perDate + 1]).toBe(TONE.text);
     expect(L.tone[0]).toBe(TONE.dot);
   });
   it('이름표: y 눈금(tick) 2개 이상, D+ 날짜, 공휴일 이름, 축 이름', () => {

@@ -100,6 +100,7 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
               tip: b.chart === 'chartSplit' ? undefined : tipOf(b.id),
               tipHoliday: b.id === 'depart' ? tipOf('depart', 'tipHoliday') : undefined,
               ...(b.id === 'curve' ? { zero: t('charts.curve.zero'), callLast: t('charts.curve.callLast'), callMin: tipOf('curve', 'callMin') } : {}),
+              ...(b.id === 'band' ? { panelHead: tipOf('band', 'panelHead'), panelNote: tipOf('band', 'panelNote') } : {}),
               ...(b.chart === 'chartSplit' ? splitStrings : {}),
             }}
             errorText={t('charts.error')}

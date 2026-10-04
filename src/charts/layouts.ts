@@ -3,7 +3,7 @@
 // 점 개수는 데이터 행 수가 아니라 차트마다 정한 고정 개수다(설계 §4 점 개수 원칙).
 import type { ChartsData, CloudData } from './data';
 import { addStar, LINE } from './lines';
-import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartItem, type ChartLabel, type ChartLayout } from './types';
+import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartItem, type ChartLabel, type ChartLayout, type OverlayShape } from './types';
 
 export type PlotSize = { w: number; h: number };
 export type FeatureGroupInput = { id: string; gain: number; features: string[]; name: string };
@@ -294,20 +294,31 @@ export function invNorm(p: number): number {
   return ((((((IA[0] * r + IA[1]) * r + IA[2]) * r + IA[3]) * r + IA[4]) * r + IA[5]) * q) / (((((IB[0] * r + IB[1]) * r + IB[2]) * r + IB[3]) * r + IB[4]) * r + 1);
 }
 
-// ⑤ 차트 4 예측 불확실성 구름: 출발일마다 q10~q90 사이에 점을 뿌리되, 분위(0.1~0.9)를 고르게 나눠 표준정규
-// 분위수로 바꾸므로 예측가 근처는 빽빽하고 가장자리는 성기다. 예측가 아래·위는 폭이 달라 두 쪽을 따로 늘린다
-// (q10·예측가·q90에 맞춘 두 쪽 정규분포 근사 — 점 위치는 표현용이고, 차트 글에 그렇게 밝힌다).
-export const CLOUD = { perDate: 24, z90: 1.2815515655446004, marginLeft: 0.1, marginTop: 0.12, marginBottom: 0.12 } as const;
+// ⑤ 차트 4 예측 구간(설계 2026-10-04 §4, 시안 interval-constellation v6): 출발일마다 q10~q90 사이에 점을 뿌리되 분위(0.1~0.9)를
+// 고르게 나눠 표준정규 분위수로 바꾸므로 예측가 근처는 빽빽하고 가장자리는 성기다(두 쪽 정규 근사 — 점 위치는 표현용, 자막에 밝힘).
+// 가운데 50%(분위 0.25~0.75)는 크고 진하게, 바깥은 작고 옅게 — 팬 차트의 두 층. 예측가는 별 + 별자리 선.
+// 넓은 판(panelMinPx 이상)은 오른쪽 칸(판 폭의 panelFrac, panelMin~panelMax px)에 짚은 날의 분위수 점 그림(QDOT)
+// focusDim 0.8: 짚은 날 외 점을 조금만 흐린다 — 0.45면 처음부터 짚힌 상태라 구름 전체가 늘 어두웠다(시안 대비)
+export const CLOUD = {
+  perDate: 30, z90: 1.2815515655446004, coreLo: 0.25, coreHi: 0.75, coreSize: 2.5, coreA: 0.6, outerSize: 2, outerA: 0.24,
+  star: 4.4, focusDim: 0.8, panelMinPx: 640, panelFrac: 0.24, panelMin: 200, panelMax: 280, panelGap: 28,
+  marginLeft: 0.1, marginTop: 0.16, marginBottom: 0.12,
+} as const;
+// 분위수 점 그림(Kay 외 2016): 점 n개 = 확률 1/n씩. 칸 높이는 구간 폭의 1/rows(최소 점 한 줄)로 묶어 가로로 쌓는다
+export const QDOT = { n: 20, r: 5, gap: 2.4, rows: 6 } as const;
+// 분위 (k + 0.5)/n 중 q10~q90 안에 드는 점 수(n = 20이면 16) — 문구에 숫자를 쓰지 않으려고 코드가 센다
+const QDOT_Q = Array.from({ length: QDOT.n }, (_, k) => (k + 0.5) / QDOT.n);
+const QDOT_INSIDE = QDOT_Q.filter((q) => q > 0.1 && q < 0.9).length;
 
 const valid = (cd: CloudData) => cd.dates.map((_, i) => i).filter((i) => cd.price[i] !== null && cd.lo[i] !== null && cd.hi[i] !== null);
 
-export function cloudScale(cd: CloudData, size: PlotSize): { x(i: number): number; y(v: number): number } {
+export function cloudScale(cd: CloudData, size: PlotSize, rightPx = 0): { x(i: number): number; y(v: number): number } {
   const idx = valid(cd);
   const min = Math.min(...idx.map((i) => cd.lo[i]!)), max = Math.max(...idx.map((i) => cd.hi[i]!));
   const pad = (max - min) * 0.05 || 1;
   const dlo = min - pad, dhi = max + pad;
   const left = size.w * CLOUD.marginLeft, top = size.h * CLOUD.marginTop;
-  const innerW = size.w - left, innerH = size.h * (1 - CLOUD.marginTop - CLOUD.marginBottom);
+  const innerW = size.w - left - rightPx, innerH = size.h * (1 - CLOUD.marginTop - CLOUD.marginBottom);
   const n = cd.dates.length;
   return {
     x: (i) => left + innerW * (n === 1 ? 0.5 : (i + 0.5) / n),
@@ -318,11 +329,16 @@ export function cloudScale(cd: CloudData, size: PlotSize): { x(i: number): numbe
 export function cloudLayout(
   cd: CloudData, size: PlotSize,
   // tip: 짚은 출발일 문장. date = ISO 날짜, price·lo·hi = 예측가·구간 아래·위(원)
-  s: { money(v: number): string; dday(n: number): string; holiday(code: string): string; axis: string; tip(v: { date: string; price: number; lo: number; hi: number }): string },
+  s: { money(v: number): string; dday(n: number): string; holiday(code: string): string; axis: string; tip(v: { date: string; price: number; lo: number; hi: number }): string;
+    panelHead(v: { date: string; dday: number }): string; panelNote(v: { step: number; total: number; inside: number }): string; moneyFull(v: number): string },
 ): ChartLayout {
   const idx = valid(cd);
-  const sc = cloudScale(cd, size);
-  const colW = (size.w * (1 - CLOUD.marginLeft)) / cd.dates.length;
+  const wide = size.w >= CLOUD.panelMinPx;
+  const side = wide ? Math.max(CLOUD.panelMin, Math.min(CLOUD.panelMax, size.w * CLOUD.panelFrac)) : 0;
+  const sc = cloudScale(cd, size, side ? side + CLOUD.panelGap : 0);
+  const colW = ((size.w - side - (side ? CLOUD.panelGap : 0)) * (1 - CLOUD.marginLeft)) / cd.dates.length;
+  // 항목 문장 끝에 칸 설명을 붙인다(낭독용 — 칸은 aria-hidden이라 같은 내용을 문장으로도 준다)
+  const note = s.panelNote({ step: 100 / QDOT.n, total: QDOT.n, inside: QDOT_INSIDE });
   const p = new Pts();
   const items: ChartItem[] = [];
   // 강조·항목 번호 j는 예측 있는 날만 센 순서다(날짜 번호 i가 아니다) — 예측 없는 날이 끼어도 items[j]로 바로 찾게
@@ -331,13 +347,14 @@ export function cloudLayout(
     const hol = cd.holidays[cd.dates[i]] !== undefined;
     const rand = mulberry32(i + 1);
     for (let k = 0; k < CLOUD.perDate; k++) {
-      const z = invNorm(0.1 + (0.8 * (k + 0.5)) / CLOUD.perDate);
+      const q = 0.1 + (0.8 * (k + 0.5)) / CLOUD.perDate, z = invNorm(q);
       const v = z < 0 ? price + (z / CLOUD.z90) * (price - lo) : price + (z / CLOUD.z90) * (hi - price);
-      const alpha = 0.16 + 0.34 * (1 - Math.abs(z) / CLOUD.z90);
-      p.add((sc.x(i) + (rand() - 0.5) * colW * 0.7) / size.w, sc.y(v) / size.h, 2.2, alpha, hol ? TONE.amber : TONE.dot, -1, j);
+      const core = q > CLOUD.coreLo && q < CLOUD.coreHi;
+      p.add((sc.x(i) + (rand() - 0.5) * colW * 0.62) / size.w, sc.y(v) / size.h, core ? CLOUD.coreSize : CLOUD.outerSize,
+        core ? CLOUD.coreA : CLOUD.outerA, hol ? TONE.amber : TONE.dot, -1, j);
     }
-    p.add(sc.x(i) / size.w, sc.y(price) / size.h, 4.2, 0.95, hol ? TONE.amber : TONE.text, -1, j);
-    items.push({ key: j, x: sc.x(i) / size.w, y: sc.y(price) / size.h, text: s.tip({ date: cd.dates[i], price, lo, hi }) });
+    addStar(p, sc.x(i) / size.w, sc.y(price) / size.h, CLOUD.star, hol ? TONE.amber : TONE.text, 1, -1, j);
+    items.push({ key: j, x: sc.x(i) / size.w, y: sc.y(price) / size.h, text: `${s.tip({ date: cd.dates[i], price, lo, hi })} · ${note}` });
   }
 
   const labels: ChartLabel[] = [];
@@ -369,7 +386,50 @@ export function cloudLayout(
     labels.push({ type: 'text', x: sc.x(c.at) / size.w, y: y / size.h, text: s.holiday(c.code), align: 'center', cls: 'holiday' });
   });
   labels.push({ type: 'text', x: (size.w * CLOUD.marginLeft) / size.w, y: 0.02, text: s.axis, align: 'start', cls: 'axis' });
-  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: -1 };
+  const lines = [{ pts: idx.flatMap((i) => [sc.x(i) / size.w, sc.y(cd.price[i]!) / size.h]), tone: TONE.text, alpha: LINE.alpha * 0.9, width: LINE.width }];
+  // 처음 짚은 날: 공휴일 무렵 출발일 중 구간(q90 − q10)이 가장 넓은 날 — 분위수 점 그림이 가장 잘 펼쳐지는 날. 없으면 전체에서
+  const width = (i: number) => cd.hi[i]! - cd.lo[i]!;
+  const holIdx = idx.filter((i) => cd.holidays[cd.dates[i]] !== undefined);
+  const pool = holIdx.length ? holIdx : idx;
+  const first = pool.reduce((a, i) => (width(i) > width(a) ? i : a), pool[0]);
+  const initial = idx.indexOf(first);
+  return { ...p.done(labels, TONE.text, CLOUD.focusDim), items, initial, lines, overlay: (sel) => cloudPanel(cd, size, sc, idx, side, s, sel) };
+}
+
+// ⑤ 덧그림: 짚은 날의 별 강조(모든 판) + 넓은 판이면 오른쪽 분위수 점 그림 칸. 세로는 왼쪽 차트와 같은 sc.y
+function cloudPanel(cd: CloudData, size: PlotSize, sc: ReturnType<typeof cloudScale>, idx: number[], side: number,
+  s: { panelHead(v: { date: string; dday: number }): string; panelNote(v: { step: number; total: number; inside: number }): string; moneyFull(v: number): string },
+  sel: number): OverlayShape[] {
+  if (sel < 0 || sel >= idx.length) return [];
+  const i = idx[sel], price = cd.price[i]!, lo = cd.lo[i]!, hi = cd.hi[i]!;
+  const hol = cd.holidays[cd.dates[i]] !== undefined;
+  const W = size.w, H = size.h, X = sc.x(i), Y = (v: number) => sc.y(v);
+  const out: OverlayShape[] = [
+    { type: 'dot', x: X / W, y: Y(price) / H, r: 9, tone: hol ? TONE.amber : TONE.text, alpha: 0.22 },
+    { type: 'dot', x: X / W, y: Y(price) / H, r: 3.4, tone: hol ? TONE.amber : TONE.text, alpha: 1 },
+  ];
+  if (!side) return out;
+  const x0 = W - side, x1 = W - 16;
+  const qv = (q: number) => { const z = invNorm(q) / CLOUD.z90; return z < 0 ? price + z * (price - lo) : price + z * (hi - price); };
+  // q10·q90 자리: 기둥에서 칸 끝까지 성긴 점선
+  for (const v of [lo, hi]) out.push({ type: 'dash', x0: (X + 8) / W, x1: x1 / W, y: Y(v) / H, tone: TONE.dot, alpha: 0.45 });
+  // 점 쌓기: 세로를 칸(구간 폭의 1/rows, 최소 점 한 줄)으로 나눠 같은 칸의 점을 가로로.
+  // y0를 칸 세 개만큼 위로 잡는 것은 바깥 점(q0.025·q0.975)이 q90 위·q10 아래로 나가도 칸 번호가 음수가 되지 않게 하려는 여유
+  const cell = QDOT.r * 2 + QDOT.gap, cellH = Math.max(cell, (Y(lo) - Y(hi)) / QDOT.rows), y0 = Y(hi) - cellH * 3;
+  const bins = new Map<number, number[]>();
+  QDOT_Q.forEach((q, k) => { const b = Math.floor((Y(qv(q)) - y0) / cellH); bins.set(b, [...(bins.get(b) ?? []), k]); });
+  for (const [b, ks] of bins) ks.forEach((k, jx) => {
+    const outside = QDOT_Q[k] < 0.1 || QDOT_Q[k] > 0.9;
+    out.push({ type: 'dot', x: (x0 + 8 + QDOT.r + jx * cell) / W, y: Math.min(H - QDOT.r, Math.max(QDOT.r, y0 + (b + 0.5) * cellH)) / H,
+      r: QDOT.r, tone: outside ? TONE.text : TONE.dot, alpha: outside ? 0.75 : 0.95, hollow: outside });
+  });
+  const dday = Math.round((utc(cd.dates[i]) - utc(cd.asOf)) / DAY);
+  out.push({ type: 'text', x: x0 / W, y: 12 / H, text: s.panelHead({ date: cd.dates[i], dday }), align: 'start', cls: 'panelHead' });
+  out.push({ type: 'text', x: x0 / W, y: 32 / H, text: s.panelNote({ step: 100 / QDOT.n, total: QDOT.n, inside: QDOT_INSIDE }), align: 'start', cls: 'panelNote' });
+  out.push({ type: 'text', x: x1 / W, y: Y(price) / H, text: s.moneyFull(price), align: 'end', cls: 'panelValue' });
+  out.push({ type: 'text', x: x1 / W, y: (Y(hi) - 10) / H, text: `q90 ${s.moneyFull(hi)}`, align: 'end', cls: 'panelQ' });
+  out.push({ type: 'text', x: x1 / W, y: (Y(lo) + 10) / H, text: `q10 ${s.moneyFull(lo)}`, align: 'end', cls: 'panelQ' });
+  return out;
 }
 
 // 눈금 간격: 1·2·5 × 10^k 중에서 대략 n칸이 되는 값

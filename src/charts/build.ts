@@ -32,6 +32,8 @@ export type ChartStrings = {
   tipHoliday?: string;
   // ④ U자 결론 이름표(설계 2026-10-04). callMin은 {v.lo}·{v.hi}가 남은 채 넘어온다
   zero?: string; callMin?: string; callLast?: string;
+  // ⑤ 예측 구간 칸 머리·설명 틀({v.…}가 남은 채 넘어온다)
+  panelHead?: string; panelNote?: string;
   axisX?: string;                   // 가로축 이름(걸러내기·검증 설계, 계획 8-1)
   box?: string;                     // 걸러내기 규칙 ③ 상자 이름표
   rowsRaw?: string; rowsKept?: string; // 걸러내기 행 수 글자("258,829 ROWS") — 서버가 facts로 만든다(문구에 숫자 금지)
@@ -119,7 +121,13 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
       });
     case 'chartCloud': {
       const money = new Intl.NumberFormat(s.locale, { notation: 'compact', maximumFractionDigits: 1 });
+      const full = new Intl.NumberFormat(s.locale);
+      const fill = (tpl: string | undefined, v: Record<string, string | number>) => (tpl ? interpolate(tpl, { v }, s.locale) : '');
       return cloudLayout(loaded.cloud!, size, {
+        panelHead: (v) => fill(s.panelHead, { date: dayOf(v.date), dday: v.dday }),
+        panelNote: (v) => fill(s.panelNote, v),
+        // 칸 글자는 숫자만(단위는 표시 상자 문장에 있다)
+        moneyFull: (v) => full.format(v),
         money: (v) => money.format(v), dday: (n) => `D+${n}`, holiday, axis: s.axis ?? '',
         // 금액은 세로축 이름표와 같은 간략 표기(예: 18.7만 / 187.4K). 단위(원·₩)는 문장 틀에 있다
         tip: (v) => tip({ date: dayOf(v.date), price: money.format(v.price), lo: money.format(v.lo), hi: money.format(v.hi) }),

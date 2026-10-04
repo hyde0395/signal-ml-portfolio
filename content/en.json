@@ -281,7 +281,9 @@
       "body3": "The dots in the cloud are spread inside the {model.interval.level}% prediction interval computed on the reference date for Incheon→Narita LCC. The bright dot in the middle is the predicted price; the sparser the edge, the less likely that price. Other routes are in the demo below.",
       "alt": "Predicted price and prediction interval per departure date drawn as a dot cloud. The bright dot in the middle is the predicted price; the wider the interval on a date, the more widely its dots spread.",
       "axis": "Predicted price (KRW)",
-      "tip": "Departing {v.date} · predicted ₩{v.price} · range ₩{v.lo}–₩{v.hi}"
+      "tip": "Departing {v.date} · predicted ₩{v.price} · range ₩{v.lo}–₩{v.hi}",
+      "panelHead": "Departs {v.date} · D+{v.dday}",
+      "panelNote": "One dot = {v.step}% chance · {v.inside} of {v.total} inside the range"
     },
     "limits": {
       "heading": "Limitations and next steps",
