@@ -3,13 +3,15 @@
 // 세 단계의 점 순서·개수·group이 같아야 3D에서 같은 지형 점이 단계 사이를 옮겨 다닌다(variant가 바뀌면 반대 슬롯, chartTargets.pickSlot).
 import type { ChartsData } from './data';
 import { DEPART, monthLabels, mulberry32, Pts, utc, type PlotSize } from './layouts';
+import { LINE } from './lines';
 import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './types';
 
 // lo·hi: 세로 %범위 — 관측의 1~99번째 백분위(약 −61~+108%)가 들어간다. 밖의 점(1~2%)은 그 단계에서 숨긴다(알파 0) —
 // 가장자리에 붙이면 같은 높이에 줄지어 밝은 가로 막대로 보였다(④ 벌떼와 같은 이유, 2026-09-30 눈 확인). 세 단계가 같은 눈금이라
 // 3단계에서 점이 "기준만큼 내려앉는" 것이 그대로 보인다. residHot: 큰 잔차(|%|) 호박색 — 지금 데이터로 관측의 약 13%.
 // dashOn/dashPeriod: 3단계 0 줄은 선 점 5개 중 3개만 보여 끊긴 점선. jitterPx: 같은 출발일 관측을 좌우로 조금 흔든다(세로 줄 한 개로 겹치지 않게)
-export const MODEL = { stages: 3, wideMinPx: 560, lo: -60, hi: 110, linePts: 240, dashOn: 3, dashPeriod: 5, residHot: 50, jitterPx: 1.6, seed: 7 } as const;
+// zeroA: 3단계 0 끊긴 점선 알파 — 결론 층(설계 2026-10-04 §4)
+export const MODEL = { stages: 3, wideMinPx: 560, lo: -60, hi: 110, linePts: 240, dashOn: 3, dashPeriod: 5, residHot: 50, jitterPx: 1.6, seed: 7, zeroA: 0.95 } as const;
 
 // 관측·기준이 같은 평균(노선·등급)에 대한 %라, 평균이 약분되어 obs / base − 1이 된다. 모델 목표 log1p(y) − log1p(base)와의
 // 차이는 가격이 수만 원대라 0.001% 수준이다(설계 §2)
@@ -72,10 +74,15 @@ export function modelLayout(d: ChartsData, size: PlotSize, stage: number, s: Mod
     const v = (a.v + (b.v - a.v) * f) / 10;
     const g = b.t - t < t - a.t ? b.i : a.i;
     const x = XT(t) / W;
-    if (st === 2) p.add(x, Y(0) / H, 2.2, i % MODEL.dashPeriod < MODEL.dashOn ? 0.75 : 0, TONE.text, g);
+    if (st === 2) p.add(x, Y(0) / H, 2.2, i % MODEL.dashPeriod < MODEL.dashOn ? MODEL.zeroA : 0, TONE.text, g);
     else p.add(x, Y(v) / H, 2.6, st === 1 ? 0.95 : 0, TONE.text, g);
     lastY = st === 2 ? Y(0) : Y(v);
   }
+
+  // 1단계 별자리 선: 기준 가격이 있는 출발일 마디를 잇는다(설계 2026-10-04 §4). 점으로 된 기준 선 위에 겹쳐 선의 흐름만 또렷이
+  const lines = st === 1
+    ? [{ pts: known.flatMap((k) => [XT(k.t) / W, Y(k.v / 10) / H]), tone: TONE.text, alpha: LINE.alpha * 0.8, width: 1 }]
+    : undefined;
 
   const labels: ChartLabel[] = [];
   for (const v of [100, 50, 0, -50]) labels.push({ type: 'text', x: (gx0 - 6) / W, y: Y(v) / H, text: s.pct(v), align: 'end', cls: 'tick' });
@@ -83,5 +90,5 @@ export function modelLayout(d: ChartsData, size: PlotSize, stage: number, s: Mod
   labels.push(...monthLabels(d.dates, X, s.month, bottom + (H - bottom) * 0.55, size));
   // 선 이름표: 선 오른쪽 끝 바로 위(판 위로 나가지 않게 8px에서 멈춘다)
   if (st >= 1) labels.push({ type: 'text', x: gx1 / W, y: Math.max(8, lastY - 12) / H, text: s.line, align: 'end', cls: 'head' });
-  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), variant: `stage:${st}` };
+  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), variant: `stage:${st}`, lines };
 }

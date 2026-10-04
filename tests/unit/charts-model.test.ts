@@ -128,4 +128,17 @@ describe('modelLayout', () => {
   it('model이 없으면 던진다', () => {
     expect(() => modelLayout({ ...data, model: undefined }, size, 0, S)).toThrow();
   });
+  it('1단계에만 별자리 선: 기준 가격이 있는 출발일 마디를 날짜 순으로', () => {
+    expect(L[0].lines ?? []).toHaveLength(0);
+    expect(L[2].lines ?? []).toHaveLength(0);
+    expect(L[1].lines).toHaveLength(1);
+    const pts = L[1].lines![0].pts;
+    const known = data.model!.base.filter((v) => v !== null).length;
+    expect(pts).toHaveLength(known * 2);
+    for (let k = 2; k < pts.length; k += 2) expect(pts[k]).toBeGreaterThanOrEqual(pts[k - 2]);
+  });
+  it('2단계 0 끊긴 점선은 결론 층(보이는 점 알파 MODEL.zeroA)', () => {
+    const l = L[2];
+    for (let i = lineStart(l); i < l.n; i++) if (l.alpha[i] > 0) expect(l.alpha[i]).toBeCloseTo(MODEL.zeroA);
+  });
 });
