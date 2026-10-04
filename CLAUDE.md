@@ -126,7 +126,12 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
    - 맥미니에는 `~/.venvs/airfare-py311`이 없고(2026-10-01 확인), `scripts/py.sh`가 항공권 저장소 `.venv`로 넘어가 잘 돌았다(pandas 2.3.3·scikit-learn). 맥북에는 있다
    - 기기마다 iCloud 밖에 `~/.venvs/airfare-py311`: `brew install python@3.11` → `"$(brew --prefix python@3.11)/bin/python3.11" -m venv ~/.venvs/airfare-py311` → `~/.venvs/airfare-py311/bin/pip install -r ~/Documents/airfare-forecasting-ml/requirements.txt pytest`. `scripts/py.sh`가 AIRFARE_PYTHON → `~/.venvs/airfare-py311` → 저장소 `.venv` 순서로 고른다(맥북에는 있음, 맥미니는 확인)
    - 모델을 돌리기 전에 그쪽 CLAUDE.md의 iCloud 워밍 절차를 따른다(`npm run charts`는 SHAP·모델 구조 때문에 모델을 불러온다, 약 20초)
-6. `.superpowers/`(시안)·`.lighthouse/`는 git에 없다. 설계 시안 중 남길 것은 `docs/superpowers/mockups/`에 복사해 커밋한다
+7. **디자인 스킬·연결 도구(2026-10-04 추가)**: 스킬 3개(`emil-design-eng`·`design-taste-frontend`·`impeccable`, 원저자 저장소에서 받음 — 출처는 `skills-lock.json`·각 폴더 `LICENSE`)는 `.claude/skills/`에 커밋돼 있어 pull로 따라온다. 기기마다 한 번 더 할 것:
+   - `npx --yes impeccable@latest install --providers=claude --scope=project` — impeccable 엔진 실행 파일(`scripts/bin/`, git 제외)과 훅(`.claude/settings.local.json`, git 제외: 편집 뒤 UI 검사·세션 끝 디자인 점검)을 넣는다. 스킬 파일이 새 판으로 바뀌면 diff를 보고 커밋할지 정한다
+   - `claude mcp add playwright npx @playwright/mcp@latest` — Claude가 만든 화면을 직접 열어 캡처하는 연결
+   - Figma 연결은 Figma 플러그인에 이미 있다 — Claude Code에서 `/mcp`로 로그인 승인
+   - Claude Code를 껐다 켜야 새 스킬을 읽는다. `/impeccable init`(디자인 기준 파일 `PRODUCT.md` 만들기)은 아직 안 함
+8. `.superpowers/`(시안)·`.lighthouse/`는 git에 없다. 설계 시안 중 남길 것은 `docs/superpowers/mockups/`에 복사해 커밋한다
 
 **CI 일시 오류**: 빌드 중 `Can't resolve '@vercel/turbopack-next/internal/font/google/font'`(Google Fonts 못 받음) → `gh run rerun <id> --failed`.
 
