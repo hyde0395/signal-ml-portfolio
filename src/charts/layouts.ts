@@ -90,7 +90,7 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
 // 날만 — 공휴일 ±3일을 모두 칠하면 강조가 흐려졌다(사용자 지적 2026-09-29). 오른쪽(휴대폰은 아래)은 요일 평균
 // 이름표 겹침 어림값: 공휴일 이름(11px 글꼴) 글자당 폭, 월 이름 사이 최소 간격
 export const DEPART_TEXT = { charPx: 6.6, monthGapPx: 34 } as const;
-export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25 } as const;
+export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25, lineA: 0.45 } as const;
 
 // 출발일 가로축의 월 이름(차트 1·③ 모델 구조가 같이 쓴다). X = 출발일 → 판 안 px, y = 이름표 줄 높이(px).
 // 앞 월 이름과 monthGapPx보다 가까우면 뺀다 — 첫 출발일(5월 중순)과 다음 달 첫 출발일이 붙어 있어 좁은 판에서 "MayJun"처럼 붙었다
@@ -128,6 +128,8 @@ export function departLayout(
   const p = new Pts();
   const labels: ChartLabel[] = [];
   const items: ChartItem[] = [];
+  // 별자리 선 좌표 수집
+  const centers: number[] = [];
   // 0% 기준선
   for (let x = gx0; x <= gx1; x += 6) p.add(x / W, Y(0) / H, 1.6, 0.28, TONE.text);
   d.dates.forEach((iso, i) => {
@@ -141,16 +143,21 @@ export function departLayout(
     }
     const code = d.depart.holiday[i];
     items.push({ key: i, x: cx / W, y: cy / H, text: s.tip({ date: iso, pct: v, holiday: code === null ? undefined : s.holiday(code) }) });
+    // 별자리 선용 중심 좌표 수집(정규화된 좌표, Float32 정밀도로 통일)
+    centers.push(Math.fround(cx / W), Math.fround(cy / H));
   });
   for (const v of [50, 25, 0, -25]) labels.push({ type: 'text', x: (gx0 - 6) / W, y: Y(v) / H, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: gx0 / W, y: (top * 0.35) / H, text: s.axis, align: 'start', cls: 'axis' });
   labels.push(...monthLabels(d.dates, X, s.month, bottom + (gy1 - bottom) * 0.6, size));
+  // 결론 이름표: 공휴일 무렵 출발일 중 가장 높은 봉우리(지금 데이터로 신정 +71%)
+  let peak = -1;
+  d.dates.forEach((_, i) => { if (d.depart.holiday[i] !== null && (peak < 0 || d.depart.pct[i] > d.depart.pct[peak])) peak = i; });
   // 공휴일 이름표: 봉우리 바로 위. 옆 이름표와 가로로 겹치면 한 줄(13px) 위로 올린다 — 글자 폭은 배치 함수에서 잴 수 없어
   // 글자 수 × charPx로 어림한다(좁은 영어 판에서 Christmas·Seollal이 붙었다). 판 위로 나가지 않게 8px에서 멈춘다
   const placed: { x: number; y: number; half: number }[] = [];
   d.labels
     .map((l) => ({ l, i: d.dates.indexOf(l.date) }))
-    .filter(({ i }) => i >= 0)
+    .filter(({ i }) => i >= 0 && i !== peak)
     .sort((a, b) => X(a.l.date) - X(b.l.date))
     .forEach(({ l, i }) => {
       const text = s.holiday(l.code), x = X(l.date), half = (text.length * DEPART_TEXT.charPx) / 2;
@@ -159,6 +166,13 @@ export function departLayout(
       placed.push({ x, y, half });
       labels.push({ type: 'text', x: x / W, y: y / H, text, align: 'center', cls: 'holiday' });
     });
+  // 봉우리가 판 위쪽 끝(48px 안)이면 이름표가 판 밖으로 나가므로 아래에 붙인다
+  if (peak >= 0) {
+    const py = Y(d.depart.pct[peak] / 10) - r;
+    const place = py < 48 ? 'below' : 'above';
+    labels.push({ type: 'callout', x: X(d.dates[peak]) / W, y: py / H,
+      value: s.pct(Math.round(d.depart.pct[peak] / 10)), note: s.holiday(d.depart.holiday[peak]!), tone: 'amber', place });
+  }
 
   // 요일 평균(월=0 … 일=6)
   const sum = Array(7).fill(0), cnt = Array(7).fill(0);
@@ -196,7 +210,8 @@ export function departLayout(
       labels.push({ type: 'text', x: cx / W, y: (SY(a) - 10) / H, text: s.pct(Math.round(a)), align: 'center', cls: 'tick' });
     });
   }
-  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: -1 };
+  const lines = [{ pts: centers, tone: TONE.text, alpha: DEPART.lineA, width: 1 }];
+  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: -1, lines };
 }
 
 // ④ 차트 2 구간별 분포 벌떼(설계 2026-10-04 §4, 시안 ucurve-constellation): 출발이 지난 편의 관측 하나 = 점 하나(배경 층 —

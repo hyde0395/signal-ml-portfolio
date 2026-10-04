@@ -100,13 +100,13 @@ describe('waffleLayout', () => {
   });
 });
 
-// 2026-10-05(월)부터 14일, 하루는 공휴일, 값이 날마다 다르다
+// 2026-10-05(월)부터 14일, 둘 다 공휴일이지만 하나는 봉우리(peak)가 된다. 값이 날마다 다르다
 const dates = Array.from({ length: 14 }, (_, i) => new Date(Date.UTC(2026, 9, 5 + i)).toISOString().slice(0, 10));
 const charts: ChartsData = {
   asOf: '2026-09-22',
   dates,
-  depart: { pct: dates.map((_, i) => (i - 7) * 50), holiday: dates.map((_, i) => (i === 9 ? 'kr_hangul_day' : null)) },
-  labels: [{ date: dates[9], code: 'kr_hangul_day' }],
+  depart: { pct: dates.map((_, i) => (i === 2 ? 40 : (i - 7) * 50)), holiday: dates.map((_, i) => (i === 2 ? 'chuseok' : i === 9 ? 'kr_hangul_day' : null)) },
+  labels: [{ date: dates[2], code: 'chuseok' }, { date: dates[9], code: 'kr_hangul_day' }],
   curve: { bins: [[1, 3], [4, 7], [8, 14], [15, 21], [22, 30], [31, 45], [46, 60], [61, 90]], mean: Array(8).fill(0), n: Array(8).fill(1), sample: { bin: [], pct: [] } },
 };
 const depS = {
@@ -140,8 +140,8 @@ describe('departLayout', () => {
   });
   it('공휴일 이름표는 그 출발일 뭉치 바로 위', () => {
     const h = L.labels.filter((l): l is Extract<ChartLabel, { type: 'text' }> => l.type === 'text' && l.cls === 'holiday');
-    expect(h.map((l) => l.text)).toEqual(['h:kr_hangul_day']);
-    const [cx, cy] = centerOf(9);
+    expect(h.map((l) => l.text)).toEqual(['h:chuseok']);
+    const [cx, cy] = centerOf(2);
     expect(Math.abs(h[0].x - cx)).toBeLessThan(0.01);
     expect(h[0].y).toBeLessThan(cy);
     expect((cy - h[0].y) * 414).toBeLessThan(30);
@@ -187,6 +187,26 @@ describe('departLayout', () => {
     expect(items[8].text).not.toContain('h:');
   });
   it('판 안, 지름 1.6px 이상(넓은 판·좁은 판)', () => { inside(L); inside(departLayout(charts, { w: 340, h: 380 }, depS)); });
+  it('별자리 선 하나: 출발일 뭉치 가운데를 날짜 순으로, 알파 DEPART.lineA', () => {
+    expect(L.lines).toHaveLength(1);
+    const ln = L.lines![0];
+    expect(ln.alpha).toBe(DEPART.lineA);
+    expect(ln.pts).toHaveLength(charts.dates.length * 2);
+    for (let d = 0; d < charts.dates.length; d++) {
+      const [cx, cy] = centerOf(d);
+      expect(ln.pts[d * 2]).toBeCloseTo(cx, 3);
+      expect(ln.pts[d * 2 + 1]).toBeCloseTo(cy, 3);
+    }
+  });
+  it('결론 이름표: 공휴일 무렵 출발일 중 가장 높은 봉우리 하나(호박, 위), 그 날의 공휴일 이름표는 빠진다', () => {
+    const c = L.labels.filter((l) => l.type === 'callout');
+    expect(c).toHaveLength(1);
+    const peak = charts.depart.pct.reduce((b, v, i) => (charts.depart.holiday[i] !== null && v > charts.depart.pct[b] ? i : b),
+      charts.depart.pct.findIndex((_, i) => charts.depart.holiday[i] !== null));
+    expect(c[0]).toMatchObject({ tone: 'amber', place: 'above', value: depS.pct(Math.round(charts.depart.pct[peak] / 10)), note: depS.holiday(charts.depart.holiday[peak]!) });
+    const peakLabel = charts.labels.find((l) => l.date === charts.dates[peak]);
+    if (peakLabel) expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'holiday' && l.text === depS.holiday(peakLabel.code) && Math.abs(l.x - c[0].x) < 1e-6)).toHaveLength(0);
+  });
 });
 
 describe('swarmLayout', () => {
