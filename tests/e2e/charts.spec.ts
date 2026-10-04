@@ -563,6 +563,16 @@ test('3D가 도중에 꺼지면 이미 불러온 판이 그 자리에서 2D로 �
   await expect.poll(() => painted(page, 'chartCloud'), { timeout: 15_000 }).toBe(true);
 });
 
+// 3D 켜짐 묶음 전용: html의 3D 속성이 기대값이 될 때까지 기다리되, 그사이 소프트웨어 렌더러(CI swiftshader)가 저프레임으로 3D를
+// 끄면(data-3d="off") 실패가 아니라 건너뛴다 — 꺼진 뒤에는 검사할 3D 장면이 없다(시작 때 꺼져 있으면 beforeEach가 건너뛰는 것과
+// 같은 규칙). 계획 9-3 잡음 밭 뒤로 CI 휴대폰에서 도중에 꺼지는 일이 잦아졌다(2026-10-04, 세 번 연속 다른 검사에서)
+async function expect3D(page: Page, attr: string, value: string, timeout = 15_000): Promise<void> {
+  const html = page.locator('html');
+  await expect.poll(async () => ((await html.getAttribute('data-3d')) === 'off' ? '3D_OFF' : (await html.getAttribute(attr)) ?? ''),
+    { timeout }).toMatch(new RegExp(`^(${value}|3D_OFF)$`));
+  test.skip((await html.getAttribute('data-3d')) === 'off', '도중에 3D가 꺼짐(소프트웨어 렌더러 저프레임)');
+}
+
 test.describe('3D 켜짐', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -575,24 +585,18 @@ test.describe('3D 켜짐', () => {
     for (const key of ['chartCloud', 'chartFilter', 'features', 'chartSplit', 'chartModel', 'chartCurve', 'chartDepart']) {
       // .chart-block: ④ 머리도 첫 판과 같은 data-scene(chartDepart)을 달아 [data-scene=…]만으로는 머리가 먼저 잡힌다
       await center(page, `.chart-block[data-scene="${key}"]`);
-      // 소프트웨어 렌더러(CI swiftshader)는 장면이 무거우면 도중에 저프레임으로 3D를 끈다(data-3d="off"). 그러면 검사할 3D 배치가
-      // 없으니 실패가 아니라 건너뜀 — 시작 때 꺼져 있으면 beforeEach가 건너뛰는 것과 같은 규칙. 계획 9-3 잡음 밭 뒤로 CI 휴대폰에서
-      // 두 번 연속 이렇게 끝났다(2026-10-04)
-      const html = page.locator('html');
-      await expect.poll(async () => ((await html.getAttribute('data-3d')) === 'off' ? 'off' : (await html.getAttribute('data-chart')) ?? ''),
-        { timeout: 15_000 }).toMatch(new RegExp(`^(${key}|off)$`));
-      test.skip((await html.getAttribute('data-3d')) === 'off', '도중에 3D가 꺼짐(소프트웨어 렌더러 저프레임)');
+      await expect3D(page, 'data-chart', key);
     }
   });
 
   test('② 지도(problem) → 보드(dataBoard) → 걸러내기 판, 판 뒤에서 지도로 되돌아가지 않고 ③ 머리로', async ({ page }) => {
     await center(page, '.data-intro');
-    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'problem', { timeout: 10_000 });
+    await expect3D(page, 'data-active-scene', 'problem', 10_000);
     await center(page, '.data-board');
-    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'dataBoard', { timeout: 10_000 });
+    await expect3D(page, 'data-active-scene', 'dataBoard', 10_000);
     await expect(page.locator('html')).not.toHaveAttribute('data-chart', /./);
     await center(page, '.chart-block[data-scene="chartFilter"]');
-    await expect(page.locator('html')).toHaveAttribute('data-chart', 'chartFilter', { timeout: 15_000 });
+    await expect3D(page, 'data-chart', 'chartFilter', 15_000);
     // 2026-10-01 순서 변경 전에는 판 뒤에 보드(흐린 지도)가 와 배경이 지도로 되돌아갔다. 판 끝에서 ③ 머리까지
     // 화면 1/4씩 내려가며 활성 장면이 지도·보드로 돌아가지 않는지 본다
     const seen = new Set<string>();
@@ -603,7 +607,7 @@ test.describe('3D 켜짐', () => {
       seen.add((await page.locator('html').getAttribute('data-active-scene')) ?? '');
     }
     await center(page, '#features-h');
-    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'model', { timeout: 10_000 });
+    await expect3D(page, 'data-active-scene', 'model', 10_000);
     expect([...seen].filter((k) => k === 'problem' || k === 'dataBoard')).toEqual([]);
   });
 
@@ -611,13 +615,13 @@ test.describe('3D 켜짐', () => {
   // ① 물결 줄로 되돌아갔다. ③ 와플 → ④ 제목은 지형을 거치지 않고 곧장 출발일 차트로 간다(2026-09-30)
   test('③·④·⑤ 머리에서는 지형 → 출발일 차트 → 지형', async ({ page }) => {
     await center(page, '#features-h');
-    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'model', { timeout: 10_000 });
+    await expect3D(page, 'data-active-scene', 'model', 10_000);
     await center(page, '.chart-block[data-scene="features"]');
-    await expect(page.locator('html')).toHaveAttribute('data-chart', 'features', { timeout: 15_000 });
+    await expect3D(page, 'data-chart', 'features', 15_000);
     await center(page, '#findings-h');
-    await expect(page.locator('html')).toHaveAttribute('data-chart', 'chartDepart', { timeout: 15_000 });
+    await expect3D(page, 'data-chart', 'chartDepart', 15_000);
     await center(page, '#validation-h');
-    await expect(page.locator('html')).toHaveAttribute('data-active-scene', 'model', { timeout: 10_000 });
+    await expect3D(page, 'data-active-scene', 'model', 10_000);
     await expect(page.locator('html')).not.toHaveAttribute('data-chart', /./);
   });
 });
