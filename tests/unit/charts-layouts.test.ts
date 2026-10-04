@@ -252,6 +252,23 @@ describe('swarmLayout', () => {
       expect.objectContaining({ value: '11.1%', note: 'last', tone: 'text', place: 'above' }),
     ]);
   });
+  // 평균이 데이터를 따라가는지: 가장 싼 구간이 D-8~14(구간 2)로 옮겨 가면 호박 별·최저 이름표·initial도 따라간다
+  it('평균을 옮기면 호박 별·최저 이름표·initial이 데이터를 따라간다', () => {
+    const shifted = [111, 44, -60, -24, -37, -50, -43, 21];
+    const sh = swarmLayout({ ...curve, mean: shifted }, { w: W, h: H }, S);
+    const st = Array.from({ length: sh.n }, (_, i) => i).filter((i) => sh.size[i] === Math.fround(SWARM.star) || sh.size[i] === Math.fround(SWARM.starKey));
+    const amber = st.filter((i) => sh.tone[i] === TONE.amber);
+    expect(amber).toHaveLength(1);
+    expect(sh.y[amber[0]]).toBe(Math.max(...st.map((i) => sh.y[i])));
+    expect(sh.labels).toContainEqual(expect.objectContaining({ type: 'callout', value: '-6.0%', note: 'min 8~14', tone: 'amber' }));
+    expect(sh.initial).toBe(7 - 2); // 항목은 화면 왼쪽(먼 구간)부터 번호 = nb-1-b
+  });
+  it('가장 싼 구간이 출발 직전(구간 0)이면 "출발 직전" 이름표는 건너뛴다(최저 이름표와 겹침 방지)', () => {
+    const z = swarmLayout({ ...curve, mean: [-90, 44, 9, -24, -37, -50, -43, 21] }, { w: W, h: H }, S);
+    const c = z.labels.filter((l) => l.type === 'callout');
+    expect(c).toHaveLength(1);
+    expect(c[0]).toMatchObject({ tone: 'amber' });
+  });
   it('0% 기준 점선과 "같은 편 평균" 이름표', () => {
     expect(L.labels).toContainEqual(expect.objectContaining({ type: 'text', text: 'Z', cls: 'axis', align: 'end' }));
   });
@@ -377,6 +394,7 @@ describe('cloudLayout', () => {
   it('칸이 없는 좁은 판에서는 항목 문장에 칸 설명을 붙이지 않는다', () => {
     const narrow = cloudLayout(cd, { w: 390, h: 414 }, s);
     expect(narrow.items![0].text).toBe(`T ${cd.dates[0]} 200000 150000~260000`);
+    expect(narrow.items![0].valuetext).toBeUndefined();
   });
   it('처음 짚은 날 = 공휴일 무렵 출발일 중 구간이 가장 넓은 날(항목 번호), 없으면 전체에서', () => {
     expect(L.initial).toBe(1); // 2026-09-27(공휴일, 폭 130,000) — 예측 있는 날만 센 번호 1
@@ -412,7 +430,8 @@ describe('cloudLayout', () => {
       expect(items[j].key).toBe(j);
       expect(items[j].x).toBeCloseTo(sc.x(i) / size.w, 6);
       expect(items[j].y).toBeCloseTo(sc.y(cd.price[i]!) / size.h, 6);
-      expect(items[j].text).toBe(`T ${cd.dates[i]} ${cd.price[i]} ${cd.lo[i]}~${cd.hi[i]} · N 5 16/20`);
+      expect(items[j].text).toBe(`T ${cd.dates[i]} ${cd.price[i]} ${cd.lo[i]}~${cd.hi[i]}`);
+      expect(items[j].valuetext).toBe(`${items[j].text} · N 5 16/20`);
     }
     expect(items[1].x).toBeGreaterThan(items[0].x);
     expect(L.initial).toBe(1);

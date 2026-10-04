@@ -423,7 +423,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
             aria-valuemin={0}
             aria-valuemax={items.length - 1}
             aria-valuenow={cur ? sel : 0}
-            aria-valuetext={cur?.text ?? hint}
+            aria-valuetext={cur?.valuetext ?? cur?.text ?? hint}
             {...touchHandlers}
           />
         )}

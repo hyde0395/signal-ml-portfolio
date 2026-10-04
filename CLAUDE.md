@@ -44,7 +44,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - **PR #27 디자인 스킬**(`chore/design-skills`): `.claude/skills/`에 `emil-design-eng`·`design-taste-frontend`·`impeccable`(원저자 저장소에서, 출처 `skills-lock.json`·각 폴더 `LICENSE`) + impeccable 보조 에이전트 4개(`.claude/agents/`). 엔진 실행 파일과 훅은 기기마다 따로(아래 "기기별 처음 한 번" 7번). 맥미니는 엔진·훅·Playwright 연결·Figma 로그인까지 끝남, 맥북은 아직
 - 문구는 디자인을 모두 정한 뒤 한꺼번에 바꾼다(사용자 2026-10-01) — 단, 아래 "교수님 피드백"은 정보 설계라 문구 다듬기와 별개로 다룬다
 - **점 위계 계획(2026-10-05)**: 브랜치 `feat/dot-hierarchy`가 점 위계·별자리 선·결론 이름표·⑤ 분위수 점 칸을 구현(PR 대기, 설계 `docs/superpowers/specs/2026-10-04-dot-hierarchy-design.md` 끝 "구현 결과"). 다음은 **정보 전달 2 설계**(설계서 §8 목록)
-- 열린 PR·작업 브랜치·worktree 없음(PR #27 병합 뒤)
+- 작업 브랜치 `feat/dot-hierarchy`(점 위계 + 별자리 선, 미리보기 확인 전) — 그 밖의 열린 PR 없음
 
 ## ★ 교수님 피드백과 바꿀 것 (2026-10-01) — 다음 작업의 중심
 
@@ -89,7 +89,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 0. **세션 시작**: `git switch main && git pull --ff-only` → `git fetch --prune` → `gh pr list`(비어 있어야 함) → `npm ci`. 맥북이면 처음 한 번 "기기별 처음 한 번" 7번(impeccable 엔진·훅, Playwright 연결, Figma `/mcp` 로그인) 뒤 Claude Code 재시작
    - 첫 확인(운영 https://signal-ml.vercel.app): 맨 위부터 천천히 스크롤해 9-3 "잡음 → 신호"(머리말 길이·① 배경 밝기·번짐 — 위 "남은 확인")를 보고, ③ 와플 → ④ 제목, ② 보드 → 걸러내기 판, ⑤ 검증 설계 판도 한 번씩
-0-1. **★ 교수님 피드백 방향 결정 — 질문 1/7부터 이어서**(위 "진행 상황"): 질문 1 첫 화면 이름·역할(A 추천) → 질문 2~7을 하나씩 → 점 가독성 시안(비주얼 컴패니언, 실제 데이터) → 설계서
+0-1. **★ 교수님 피드백**: 방향 결정 7개 끝(위 "진행 상황" 참고) → 점 위계 PR(`feat/dot-hierarchy`) 미리보기 확인·병합 → 정보 전달 2 설계(설계서 §8)
 1. **문구 검토(사용자)** — 한국어 확인 후 영·일 초안을 사용자·검수자에게
    - 5-3c `features.shap.*`, 7-2 `features.structure.*`, 8-1 `data.filter.*`·`charts.validation.*`(body1~3·tagKf/tagGkf/tagTss·legend*·axis*·alt)
    - 8-1 검토에서 나온 영·일 용어 맞추기 후보(기존 문구·표 이름과 통일): en `data.filter.axisY` "vs. route/cabin mean" → "vs. route-and-class average", en `tagKf` "upper reference" → "reference upper bound", en `data.filter.body1` "placed by" → "plotted by", en `charts.validation.body2` "service setup" → "service configuration", ja `tagGkf` "初めて見る出発日" → "未知の出発日"(표와 같게), ja `legendUnused` "未使用" → "まだ未使用", ja `data.filter.heading` → "エラー行の除去", ja `charts.validation.body2` "学習とサービスの不一致" → "学習と提供の不一致"

@@ -43,7 +43,8 @@ export type OverlayShape =
 // ④·⑤ 차트 1·2·4에서 짚을 수 있는 항목 하나(계획 5-3b). key = 강조 번호(ChartLayout.hl과 같은 번호)이자 items 안의 순서 —
 // 조작 층이 items[key]로 바로 찾는다. 항목은 화면 왼쪽부터 번호를 매긴다(키보드 → = 번호 +1 = 오른쪽).
 // x·y는 표시 상자를 붙일 자리(정규화), text는 표시 상자와 aria-valuetext에 같이 쓰는 문장
-export type ChartItem = { key: number; x: number; y: number; text: string };
+// valuetext가 있으면 aria-valuetext만 그것을 쓴다(⑤ 오른쪽 칸이 이미 보여 주는 설명을 눈에 보이는 표시 상자에서는 빼려고)
+export type ChartItem = { key: number; x: number; y: number; text: string; valuetext?: string };
 
 export type ChartLayout = {
   n: number;

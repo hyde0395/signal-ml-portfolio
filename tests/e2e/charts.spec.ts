@@ -507,6 +507,15 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       const boxes = await page.locator('.chart-block[data-scene="chartCurve"] .chart-label.tick').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right));
       return boxes.every((r) => r <= p.x + p.width + 2);
     }, { timeout: 5_000 }).toBe(true);
+    // 선 svg도 새 판 크기를 따라가야 한다(옛 크기로 남으면 선이 점에서 어긋난다)
+    const lines = page.locator('.chart-block[data-scene="chartCurve"] .chart-lines');
+    await expect.poll(async () => {
+      const pw = await plot.evaluate((e) => e.clientWidth);
+      const w = Number(await lines.getAttribute('width'));
+      const d = (await lines.locator('path').evaluateAll((ps) => ps.map((x) => x.getAttribute('d') ?? ''))).join(' ');
+      const xs = [...d.matchAll(/[ML]\s*(-?[\d.]+)[ ,]/g)].map((m) => Number(m[1]));
+      return Math.abs(w - pw) <= 1 && xs.length > 0 && xs.every((x) => x <= pw + 1);
+    }, { timeout: 5_000 }).toBe(true);
   });
 
   // 설계 2026-09-28 §2: 글 상자는 그림 판 아래 띠에 고정되고, 어떤 스크롤 위치에서도 판과 겹치지 않는다
@@ -622,12 +631,31 @@ test.describe('3D 켜짐', () => {
     test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 꺼진 환경(소프트웨어 렌더러 저프레임)');
   });
 
+  // 시각을 직접 재서 비교한다: 판이 50% 보인 시각(IntersectionObserver)과 선 svg가 data-on을 얻은 시각(MutationObserver)의 간격이
+  // linesDelay(3D)만큼 벌어져야 한다. 둘 다 스크롤 전에 설치해 타이머와 경주하지 않고, 도중에 3D가 꺼지면(linesDelay가 0이 돼
+  // 간격이 짧아짐) 결과를 믿을 수 없으니 건너뛴다
   test('3D 켜짐: 선은 점이 자리 잡은 뒤에 나타난다', async ({ page }) => {
+    const block = page.locator('.chart-block[data-scene="chartCurve"]');
+    await expect(block.locator('.chart-stage')).toBeAttached({ timeout: 10_000 });
+    await page.evaluate(() => {
+      const w = window as unknown as { __t: { seen?: number; on?: number; off3d: boolean } };
+      w.__t = { off3d: false };
+      const html = document.documentElement, blk = document.querySelector('.chart-block[data-scene="chartCurve"]')!;
+      new MutationObserver(() => {
+        if (html.getAttribute('data-3d') === 'off') w.__t.off3d = true;
+        const svg = blk.querySelector('.chart-lines');
+        if (svg?.hasAttribute('data-on') && w.__t.on === undefined) w.__t.on = performance.now();
+      }).observe(document, { subtree: true, childList: true, attributes: true });
+      new IntersectionObserver(([e]) => { if (e.isIntersecting && w.__t.seen === undefined) w.__t.seen = performance.now(); }, { threshold: 0.5 })
+        .observe(blk.querySelector('.chart-stage')!);
+    });
     await center(page, '.chart-block[data-scene="chartCurve"]');
-    const svg = page.locator('.chart-block[data-scene="chartCurve"] .chart-lines');
-    await expect(svg).not.toHaveAttribute('data-on', '');
-    await expect(svg).toHaveAttribute('data-on', '', { timeout: 3_000 });
-    test.skip((await page.locator('html').getAttribute('data-3d')) === 'off', '도중에 3D가 꺼짐(소프트웨어 렌더러 저프레임)');
+    await expect3D(page, 'data-chart', 'chartCurve');
+    await expect(block.locator('.chart-lines')).toHaveAttribute('data-on', '', { timeout: 10_000 });
+    const t = await page.evaluate(() => (window as unknown as { __t: { seen?: number; on?: number; off3d: boolean } }).__t);
+    test.skip(t.off3d, '도중에 3D가 꺼짐(소프트웨어 렌더러 저프레임)');
+    expect(t.seen, '판이 보인 시각이 기록돼야 한다').toBeDefined();
+    expect(t.on! - t.seen!).toBeGreaterThanOrEqual(900);
   });
 
   test('순서를 섞어 건너뛰어도 멈춘 차트의 배치로 바뀐다', async ({ page }) => {

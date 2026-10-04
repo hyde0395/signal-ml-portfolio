@@ -90,7 +90,7 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
 // 날만 — 공휴일 ±3일을 모두 칠하면 강조가 흐려졌다(사용자 지적 2026-09-29). 오른쪽(휴대폰은 아래)은 요일 평균
 // 이름표 겹침 어림값: 공휴일 이름(11px 글꼴) 글자당 폭, 월 이름 사이 최소 간격
 export const DEPART_TEXT = { charPx: 6.6, monthGapPx: 34 } as const;
-export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25, lineA: 0.38 } as const;
+export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25, lineA: 0.4 } as const;
 
 // 출발일 가로축의 월 이름(차트 1·③ 모델 구조가 같이 쓴다). X = 출발일 → 판 안 px, y = 이름표 줄 높이(px).
 // 앞 월 이름과 monthGapPx보다 가까우면 뺀다 — 첫 출발일(5월 중순)과 다음 달 첫 출발일이 붙어 있어 좁은 판에서 "MayJun"처럼 붙었다
@@ -292,10 +292,12 @@ export function swarmLayout(
   for (const v of [20, 10, 0, -10, -20]) labels.push({ type: 'text', x: (left - 6) / size.w, y: y(v) / size.h, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: left / size.w, y: (top * 0.4) / size.h, text: s.axis, align: 'start', cls: 'axis' });
   labels.push({ type: 'text', x: (size.w - 4) / size.w, y: (y(0) - 8) / size.h, text: s.zero, align: 'end', cls: 'axis' });
+  // charts.json의 bins는 가까운 구간부터라 b === 0이 D-1~3(출발 직전)이다
   const minN = nodes.find((n) => n.b === cheapest)!, lastN = nodes.find((n) => n.b === 0)!;
   const [mlo, mhi] = c.bins[cheapest];
   labels.push({ type: 'callout', x: minN.x / size.w, y: minN.y / size.h, value: s.pct1(minN.v), note: s.callMin(mlo, mhi), tone: 'amber', place: 'below' });
-  labels.push({ type: 'callout', x: lastN.x / size.w, y: lastN.y / size.h, value: s.pct1(lastN.v), note: s.callLast, tone: 'text', place: 'above' });
+  // 가장 싼 구간이 출발 직전이면 이름표 둘이 같은 점에 겹치므로 "출발 직전"은 건너뛴다
+  if (cheapest !== 0) labels.push({ type: 'callout', x: lastN.x / size.w, y: lastN.y / size.h, value: s.pct1(lastN.v), note: s.callLast, tone: 'text', place: 'above' });
   // 처음에는 평균이 가장 낮은(가장 싼) 구간을 강조해 둔다(조작 규칙 표)
   return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: keyOf(cheapest), lines };
 }
@@ -375,7 +377,9 @@ export function cloudLayout(
         core ? CLOUD.coreA : CLOUD.outerA, hol ? TONE.amber : TONE.dot, -1, j);
     }
     addStar(p, sc.x(i) / size.w, sc.y(price) / size.h, CLOUD.star, hol ? TONE.amber : TONE.text, 1, -1, j);
-    items.push({ key: j, x: sc.x(i) / size.w, y: sc.y(price) / size.h, text: side > 0 ? `${s.tip({ date: cd.dates[i], price, lo, hi })} · ${note}` : s.tip({ date: cd.dates[i], price, lo, hi }) });
+    // 칸 설명은 화면에 이미 있어 눈에 보이는 표시 상자에는 빼고, 읽어 주는 글(valuetext)에만 붙인다
+    const tipText = s.tip({ date: cd.dates[i], price, lo, hi });
+    items.push({ key: j, x: sc.x(i) / size.w, y: sc.y(price) / size.h, text: tipText, valuetext: side > 0 ? `${tipText} · ${note}` : undefined });
   }
 
   const labels: ChartLabel[] = [];
