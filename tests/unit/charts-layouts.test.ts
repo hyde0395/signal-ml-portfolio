@@ -1,7 +1,7 @@
 // 배치 함수 검사: 점 개수, 판 안(0..1), 강조 색, 크기 순서, 이름표. 좁은 휴대폰 판에서도 깨지지 않는지.
 import { describe, expect, it } from 'vitest';
 import type { ChartsData, CloudData } from '@/charts/data';
-import { cloudLayout, cloudScale, DEPART, departLayout, invNorm, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
+import { cloudLayout, cloudScale, DEPART, departLayout, invNorm, SWARM, swarmLayout, WAFFLE, waffleLayout, type FeatureGroupInput } from '@/charts/layouts';
 import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from '@/charts/types';
 
 const inside = (L: ChartLayout) => {
@@ -197,51 +197,75 @@ describe('swarmLayout', () => {
   const curve: ChartsData['curve'] = { ...charts.curve, mean, sample: { bin, pct } };
   const W = 1080, H = 414;
   const tip = (v: { bin: string; pct: number; n: number }) => `T ${v.bin} ${v.pct} ${v.n}`;
-  const L = swarmLayout(curve, { w: W, h: H }, { bin: (lo, hi) => `D-${lo}~${hi}`, pct: (v) => `${v}%`, axis: 'A', tip });
-  const isSample = (i: number) => L.size[i] === 3;
-  const nodes = () => Array.from({ length: L.n }, (_, i) => i).filter((i) => L.size[i] === 6);
+  const S = {
+    bin: (lo: number, hi: number) => `D-${lo}~${hi}`, pct: (v: number) => `${v}%`, axis: 'A', tip,
+    zero: 'Z', callMin: (lo: number, hi: number) => `min ${lo}~${hi}`, callLast: 'last', pct1: (v: number) => `${v.toFixed(1)}%`,
+  };
+  const L = swarmLayout(curve, { w: W, h: H }, S);
+  const isSample = (i: number) => L.size[i] === Math.fround(SWARM.dot); // size는 Float32Array라 fround로 맞춘다
+  const stars = () => Array.from({ length: L.n }, (_, i) => i).filter((i) => L.size[i] === Math.fround(SWARM.star) || L.size[i] === Math.fround(SWARM.starKey));
+  // 0% 점선이 먼저 들어가므로 표본 점은 앞에서부터가 아니라 크기로 골라 구간 순서대로 본다
+  const sampleIdx = Array.from({ length: L.n }, (_, i) => i).filter(isSample);
 
-  it('범위 밖 표본은 빼고 320개, 평균선 점과 구간 마디 8개', () => {
-    expect(Array.from({ length: L.n }, (_, i) => i).filter(isSample)).toHaveLength(320);
-    expect(nodes()).toHaveLength(8);
+  it('범위 밖 표본은 빼고 320개, 구간 평균 별 8개, 별자리 선 하나(꼭짓점 8개, 왼쪽→오른쪽)', () => {
+    expect(sampleIdx).toHaveLength(320);
+    expect(stars()).toHaveLength(8);
+    expect(L.lines).toHaveLength(1);
+    const pts = L.lines![0].pts;
+    expect(pts).toHaveLength(16);
+    for (let k = 2; k < pts.length; k += 2) expect(pts[k]).toBeGreaterThan(pts[k - 2]);
   });
-  it('가장 싼 세 구간(D-22~60)만 호박색', () => {
-    // 표본은 구간 순서대로 들어가 있다(0번 구간부터 40개씩)
-    for (let i = 0; i < 320; i++) expect(L.tone[i] === TONE.amber, `표본 ${i}`).toBe([4, 5, 6].includes(Math.floor(i / 40)));
+  it('표본은 모두 파랑(꾸밈 호박색 없음), 가장 싼 구간의 별만 호박색', () => {
+    for (const i of sampleIdx) expect(L.tone[i]).toBe(TONE.dot);
+    const amberStars = stars().filter((i) => L.tone[i] === TONE.amber);
+    expect(amberStars).toHaveLength(1);
+    expect(L.size[amberStars[0]]).toBe(Math.fround(SWARM.starKey));
+    // 가장 싼 구간 = 평균이 가장 낮음 = 화면에서 가장 아래(y 최대)
+    const ys = stars().map((i) => L.y[i]);
+    expect(L.y[amberStars[0]]).toBe(Math.max(...ys));
+  });
+  it('결론 이름표 둘: 최저(호박, 아래)와 출발 직전(글자색, 위), 값은 소수 한 자리', () => {
+    const c = L.labels.filter((l) => l.type === 'callout');
+    expect(c).toEqual([
+      expect.objectContaining({ value: '-5.0%', note: 'min 31~45', tone: 'amber', place: 'below' }),
+      expect.objectContaining({ value: '11.1%', note: 'last', tone: 'text', place: 'above' }),
+    ]);
+  });
+  it('0% 기준 점선과 "같은 편 평균" 이름표', () => {
+    expect(L.labels).toContainEqual(expect.objectContaining({ type: 'text', text: 'Z', cls: 'axis', align: 'end' }));
   });
   it('왼쪽이 먼 출발일, 평균이 가장 낮은 구간의 마디가 가장 아래', () => {
-    const ns = nodes().sort((a, b) => L.x[a] - L.x[b]);
+    const ns = stars().sort((a, b) => L.x[a] - L.x[b]);
     const ys = ns.map((i) => L.y[i]);
     // 왼쪽부터 D-61~90(평균 +2.1%) … D-1~3(+11.1%): 가장 아래(y 최대)는 D-31~45(-5.0%) = 왼쪽에서 세 번째
     expect(ys.indexOf(Math.max(...ys))).toBe(2);
   });
   it('같은 구간의 표본 점끼리 겹치지 않는다', () => {
     for (let b = 0; b < 8; b++) {
-      const idx = Array.from({ length: 40 }, (_, k) => b * 40 + k);
+      const idx = Array.from({ length: 40 }, (_, k) => sampleIdx[b * 40 + k]);
       for (let a = 0; a < idx.length; a++) for (let c = a + 1; c < idx.length; c++) {
         const dx = (L.x[idx[a]] - L.x[idx[c]]) * W, dy = (L.y[idx[a]] - L.y[idx[c]]) * H;
-        expect(Math.hypot(dx, dy)).toBeGreaterThanOrEqual(2.99);
+        expect(Math.hypot(dx, dy)).toBeGreaterThanOrEqual(SWARM.dot + SWARM.gap - 0.01);
       }
     }
   });
-  it('이름표: 구간 8개 + y 눈금 3개(tick), 축 이름 1개', () => {
-    expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'tick')).toHaveLength(11);
-    expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'axis')).toHaveLength(1);
+  it('이름표: 구간 8개 + y 눈금 5개(tick), 축 이름 + 0% 기준 이름 2개', () => {
+    expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'tick')).toHaveLength(13);
+    expect(L.labels.filter((l) => l.type === 'text' && l.cls === 'axis')).toHaveLength(2);
   });
-  const S = { bin: (lo: number, hi: number) => `D-${lo}~${hi}`, pct: (v: number) => `${v}%`, axis: 'A', tip };
   // 항목 번호(= 강조 번호)는 화면 왼쪽부터 0 — 구간 번호 b는 오른쪽(D-1~3)이 0이라 뒤집힌다(k = 7 − b).
   // 키보드 → / aria-valuenow 증가가 화면 오른쪽 이동과 같아지게 하려는 것이다
   const keyOfBin = (b: number) => 7 - b;
-  it('강조 번호: 구간 표본 점은 그 구간의 항목 번호, 평균선·마디는 −1', () => {
-    for (let i = 0; i < 320; i++) expect(L.hl[i], `표본 ${i}`).toBe(keyOfBin(Math.floor(i / 40)));
-    for (let i = 320; i < L.n; i++) expect(L.hl[i], `선 ${i}`).toBe(-1);
+  it('강조 번호: 구간 표본 점은 그 구간의 항목 번호, 별·0% 점선은 −1', () => {
+    sampleIdx.forEach((i, k) => expect(L.hl[i], `표본 ${i}`).toBe(keyOfBin(Math.floor(k / 40))));
+    for (let i = 0; i < L.n; i++) if (!isSample(i)) expect(L.hl[i], `선 ${i}`).toBe(-1);
     expect(L.focusTone).toBe(TONE.text);
     expect(L.focusDim).toBe(CHART_FOCUS_DIM);
   });
   it('짚을 항목: 구간 8개, key = 번호, x 오름차순(마디 자리), 문장에 구간 이름·평균 %·관측 수', () => {
     const items = L.items!;
     expect(items).toHaveLength(8);
-    const ns = nodes().sort((a, b) => L.x[a] - L.x[b]);
+    const ns = stars().sort((a, b) => L.x[a] - L.x[b]);
     items.forEach((it, k) => {
       expect(it.key).toBe(k);
       expect(it.x).toBeCloseTo(L.x[ns[k]], 6);
@@ -268,7 +292,7 @@ describe('swarmLayout', () => {
     const seen = new Set<string>();
     let count = 0;
     for (let i = 0; i < D.n; i++) {
-      if (D.size[i] !== 3) continue;
+      if (D.size[i] !== Math.fround(SWARM.dot)) continue;
       count++;
       const key = `${Math.round(D.x[i] * 340 * 100)},${Math.round(D.y[i] * 380 * 100)}`;
       expect(seen.has(key), `점 ${i}`).toBe(false);
@@ -276,13 +300,6 @@ describe('swarmLayout', () => {
     }
     expect(count).toBeGreaterThan(0);
     expect(count).toBeLessThan(200);
-  });
-  it('호박색 구간은 평균이 가장 낮은 세 구간에서 정한다(고정 번호가 아니다)', () => {
-    const shifted = [-60, -55, -50, 10, 20, 30, 40, 50];
-    const b2: number[] = [], p2: number[] = [];
-    shifted.forEach((m, b) => { for (let k = 0; k < 5; k++) { b2.push(b); p2.push(m); } });
-    const X = swarmLayout({ ...charts.curve, mean: shifted, sample: { bin: b2, pct: p2 } }, { w: W, h: H }, S);
-    for (let i = 0; i < 40; i++) expect(X.tone[i] === TONE.amber, `표본 ${i}`).toBe([0, 1, 2].includes(Math.floor(i / 5)));
   });
 });
 

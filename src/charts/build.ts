@@ -30,6 +30,8 @@ export type ChartStrings = {
   tip?: string;
   // 출발일 표시 상자의 공휴일 조각 틀(charts.depart.tipHoliday, {v.name}). 공휴일 코드는 공휴일 ±3일을 표시하므로 "무렵"으로 쓴다
   tipHoliday?: string;
+  // ④ U자 결론 이름표(설계 2026-10-04). callMin은 {v.lo}·{v.hi}가 남은 채 넘어온다
+  zero?: string; callMin?: string; callLast?: string;
   axisX?: string;                   // 가로축 이름(걸러내기·검증 설계, 계획 8-1)
   box?: string;                     // 걸러내기 규칙 ③ 상자 이름표
   rowsRaw?: string; rowsKept?: string; // 걸러내기 행 수 글자("258,829 ROWS") — 서버가 facts로 만든다(문구에 숫자 금지)
@@ -111,6 +113,9 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
       return swarmLayout(loaded.charts!.curve, size, {
         bin: (lo, hi) => `D-${lo}~${hi}`, pct: signed, axis: s.axis ?? '',
         tip: (v) => tip({ bin: v.bin, pct: signedInt(v.pct), n: v.n }),
+        // 결론 이름표 값은 소수 한 자리, 부호는 기존 signed와 같은 −(U+2212)
+        zero: s.zero ?? '', callLast: s.callLast ?? '', pct1: (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}%`,
+        callMin: (lo, hi) => (s.callMin ? interpolate(s.callMin, { v: { lo, hi } }, s.locale) : ''),
       });
     case 'chartCloud': {
       const money = new Intl.NumberFormat(s.locale, { notation: 'compact', maximumFractionDigits: 1 });

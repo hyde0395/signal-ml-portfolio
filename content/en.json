@@ -240,6 +240,9 @@
       "heading": "The U-shaped booking curve",
       "alt": "Observations stacked by days-to-departure range, relative to the same flight's average. The line through the range averages forms a U.",
       "axis": "vs. same-flight average",
+      "zero": "Same-flight average",
+      "callMin": "Lowest · {v.lo}–{v.hi} days out",
+      "callLast": "Right before departure",
       "tip": "Buying at {v.bin}: {v.pct} vs. same-flight average · {v.n} observations"
     },
     "bubble": {

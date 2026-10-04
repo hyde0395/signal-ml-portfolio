@@ -99,6 +99,7 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
               // 표시 상자는 조작 층이 있는 차트(1·2·4)만 — 검증 설계 판에는 틀(tip)이 없다
               tip: b.chart === 'chartSplit' ? undefined : tipOf(b.id),
               tipHoliday: b.id === 'depart' ? tipOf('depart', 'tipHoliday') : undefined,
+              ...(b.id === 'curve' ? { zero: t('charts.curve.zero'), callLast: t('charts.curve.callLast'), callMin: tipOf('curve', 'callMin') } : {}),
               ...(b.chart === 'chartSplit' ? splitStrings : {}),
             }}
             errorText={t('charts.error')}

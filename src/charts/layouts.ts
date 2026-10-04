@@ -2,6 +2,7 @@
 // 판 안 정규화 좌표의 점 목록과 HTML 이름표 목록을 돌려주는 순수 함수들이다. 2D 대체 그림과 3D 점이 같은 결과를 쓴다.
 // 점 개수는 데이터 행 수가 아니라 차트마다 정한 고정 개수다(설계 §4 점 개수 원칙).
 import type { ChartsData, CloudData } from './data';
+import { addStar, LINE } from './lines';
 import { CHART_FOCUS_DIM, FOCUS_DIM, TONE, type ChartItem, type ChartLabel, type ChartLayout } from './types';
 
 export type PlotSize = { w: number; h: number };
@@ -198,16 +199,22 @@ export function departLayout(
   return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: -1 };
 }
 
-// ④ 차트 2 구간별 분포 벌떼: 출발이 지난 편의 관측 하나 = 점 하나. 구간 8개를 왼쪽(D-61~90)에서
-// 오른쪽(D-1~3)으로 놓고, 구간 안에서 같은 높이의 점은 좌우로 번갈아 비켜 쌓는다. 구간 평균을 이은 밝은 선이 U자.
-// 평균이 가장 낮은 세 구간(지금 데이터로는 D-22~60)의 점은 호박색. ±22% 밖은 그리지 않는다(몇 개가 축을 늘려 모양을 뭉개지 않게).
+// ④ 차트 2 구간별 분포 벌떼(설계 2026-10-04 §4, 시안 ucurve-constellation): 출발이 지난 편의 관측 하나 = 점 하나(배경 층 —
+// 작고 옅게, 모두 파랑). 구간 8개를 왼쪽(D-61~90)에서 오른쪽(D-1~3)으로 놓고, 같은 높이의 점은 좌우로 번갈아 비켜 쌓는다.
+// 구간 평균 8개는 별(빛 번짐 + 심)과 가는 별자리 선(결론 층). 가장 싼 구간의 별만 호박색·조금 크게, 그 아래 최저 이름표,
+// 가장 가까운 구간(D-1~3) 위에 출발 직전 이름표. ±22% 밖은 그리지 않는다(몇 개가 축을 늘려 모양을 뭉개지 않게).
+// sampleA: 표본 알파 — 차트 2는 늘 한 구간이 짚혀 있어(처음 = 가장 싼 구간) 나머지는 × CHART_FOCUS_DIM(0.45) ≈ 0.2가 되고,
+// 짚은 구간만 0.45로 밝다(설계 §2 "짚은 항목만 약 0.45")
 // narrowColPx: 구간 칸이 이보다 좁으면(휴대폰) 이름표에서 "D-"를 뺀다 — 9px 글자로 "D-61~90"이 칸 폭을 다 채워 옆 이름표와 겹친다
-export const SWARM = { dot: 3, gap: 0.4, clip: 22, linePts: 20, cheapCount: 3, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.08, marginBottom: 0.12 } as const;
+export const SWARM = { dot: 2.4, gap: 0.5, sampleA: 0.45, star: 6.8, starKey: 9.2, clip: 22, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.12, marginBottom: 0.12 } as const;
 
 export function swarmLayout(
   c: ChartsData['curve'], size: PlotSize,
   // tip: 짚은 구간 문장. bin = 구간 이름, pct = 구간 평균(같은 편 평균 대비 %), n = 관측 수
-  s: { bin(lo: number, hi: number): string; pct(v: number): string; axis: string; tip(v: { bin: string; pct: number; n: number }): string },
+  s: {
+    bin(lo: number, hi: number): string; pct(v: number): string; axis: string; tip(v: { bin: string; pct: number; n: number }): string;
+    zero: string; callMin(lo: number, hi: number): string; callLast: string; pct1(v: number): string;
+  },
 ): ChartLayout {
   const nb = c.bins.length;
   const left = size.w * SWARM.marginLeft, top = size.h * SWARM.marginTop;
@@ -225,10 +232,9 @@ export function swarmLayout(
     const v = c.sample.pct[i] / 10;
     if (b >= 0 && b < nb && Math.abs(v) <= SWARM.clip) byBin[b].push(v);
   });
-  // 호박색 구간은 번호를 박아 두지 않고 평균으로 고른다 — 재추출로 곡선 모양이 바뀌어도 "가장 싼 구간"이 맞게
-  const cheapBins = c.mean.map((m, b) => [m, b] as const).sort((a, z) => a[0] - z[0]).slice(0, SWARM.cheapCount).map(([, b]) => b);
+  // 0% 기준(같은 편 평균): 성긴 점선 — 기준 층(설계 §2). 표본보다 먼저 그려 뒤에 깔린다
+  for (let x = left; x <= size.w - 4; x += 7) p.add(x / size.w, y(0) / size.h, 1.6, 0.35, TONE.text);
   byBin.forEach((vals, b) => {
-    const cheap = cheapBins.includes(b);
     const used = new Map<number, number>();
     for (const v of vals) {
       // 높이를 점 간격 단위 줄로 맞추고, 같은 줄의 k번째 점은 가운데에서 좌우로 번갈아 비킨다 → 겹치지 않는다
@@ -239,20 +245,20 @@ export function swarmLayout(
       // 칸 폭을 넘치는 점은 버린다. 가장자리에 붙여 두면 같은 자리에 겹겹이 쌓여(더하기 혼합) 밝은 세로 막대로 보인다
       if (reach > colW * 0.45) continue;
       const off = reach * (k % 2 ? 1 : -1);
-      p.add((cx(b) + off) / size.w, (row * step) / size.h, SWARM.dot, 0.55, cheap ? TONE.amber : TONE.dot, -1, keyOf(b));
+      p.add((cx(b) + off) / size.w, (row * step) / size.h, SWARM.dot, SWARM.sampleA, TONE.dot, -1, keyOf(b));
     }
   });
 
   const nodes = c.mean
-    .map((m, b) => [cx(b), y(Math.max(-SWARM.clip, Math.min(SWARM.clip, m / 10)))] as const)
-    .sort((a, z) => a[0] - z[0]);
-  for (let i = 0; i + 1 < nodes.length; i++) {
-    for (let k = 1; k < SWARM.linePts; k++) {
-      const t = k / SWARM.linePts;
-      p.add((nodes[i][0] + (nodes[i + 1][0] - nodes[i][0]) * t) / size.w, (nodes[i][1] + (nodes[i + 1][1] - nodes[i][1]) * t) / size.h, 2.2, 0.9, TONE.text);
-    }
+    .map((m, b) => ({ b, x: cx(b), y: y(Math.max(-SWARM.clip, Math.min(SWARM.clip, m / 10))), v: m / 10 }))
+    .sort((a, z) => a.x - z.x);
+  // 호박색 구간은 번호를 박아 두지 않고 평균으로 고른다 — 재추출로 곡선 모양이 바뀌어도 "가장 싼 구간"이 맞게
+  const cheapest = c.mean.reduce((best, m, b) => (m < c.mean[best] ? b : best), 0);
+  for (const n of nodes) {
+    const key = n.b === cheapest;
+    addStar(p, n.x / size.w, n.y / size.h, key ? SWARM.starKey : SWARM.star, key ? TONE.amber : TONE.text);
   }
-  for (const [nx, ny] of nodes) p.add(nx / size.w, ny / size.h, 6, 1, TONE.text);
+  const lines = [{ pts: nodes.flatMap((n) => [n.x / size.w, n.y / size.h]), tone: TONE.text, alpha: LINE.alpha, width: LINE.width }];
 
   const labels: ChartLabel[] = [];
   const binText = (lo: number, hi: number) => (colW < SWARM.narrowColPx ? `${lo}~${hi}` : s.bin(lo, hi));
@@ -262,12 +268,16 @@ export function swarmLayout(
     const m = Math.max(-SWARM.clip, Math.min(SWARM.clip, c.mean[b] / 10));
     return { key: k, x: cx(b) / size.w, y: y(m) / size.h, text: s.tip({ bin: s.bin(lo, hi), pct: c.mean[b] / 10, n: c.n[b] }) };
   });
-  // 처음에는 평균이 가장 낮은(가장 싼) 구간을 강조해 둔다(조작 규칙 표)
-  const cheapest = c.mean.reduce((best, m, b) => (m < c.mean[best] ? b : best), 0);
   c.bins.forEach(([lo, hi], b) => labels.push({ type: 'text', x: cx(b) / size.w, y: (top + innerH + 14) / size.h, text: binText(lo, hi), align: 'center', cls: 'tick' }));
-  for (const v of [20, 0, -20]) labels.push({ type: 'text', x: (left - 6) / size.w, y: y(v) / size.h, text: s.pct(v), align: 'end', cls: 'tick' });
+  for (const v of [20, 10, 0, -10, -20]) labels.push({ type: 'text', x: (left - 6) / size.w, y: y(v) / size.h, text: s.pct(v), align: 'end', cls: 'tick' });
   labels.push({ type: 'text', x: left / size.w, y: (top * 0.4) / size.h, text: s.axis, align: 'start', cls: 'axis' });
-  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: keyOf(cheapest) };
+  labels.push({ type: 'text', x: (size.w - 4) / size.w, y: (y(0) - 8) / size.h, text: s.zero, align: 'end', cls: 'axis' });
+  const minN = nodes.find((n) => n.b === cheapest)!, lastN = nodes.find((n) => n.b === 0)!;
+  const [mlo, mhi] = c.bins[cheapest];
+  labels.push({ type: 'callout', x: minN.x / size.w, y: minN.y / size.h, value: s.pct1(minN.v), note: s.callMin(mlo, mhi), tone: 'amber', place: 'below' });
+  labels.push({ type: 'callout', x: lastN.x / size.w, y: lastN.y / size.h, value: s.pct1(lastN.v), note: s.callLast, tone: 'text', place: 'above' });
+  // 처음에는 평균이 가장 낮은(가장 싼) 구간을 강조해 둔다(조작 규칙 표)
+  return { ...p.done(labels, TONE.text, CHART_FOCUS_DIM), items, initial: keyOf(cheapest), lines };
 }
 
 // 표준정규분포의 분위수 함수(Acklam 근사, 오차 약 1e-9). 구름 점을 q10~q90 안에 뿌릴 때 쓴다
