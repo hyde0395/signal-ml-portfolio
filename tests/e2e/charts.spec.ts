@@ -575,7 +575,13 @@ test.describe('3D 켜짐', () => {
     for (const key of ['chartCloud', 'chartFilter', 'features', 'chartSplit', 'chartModel', 'chartCurve', 'chartDepart']) {
       // .chart-block: ④ 머리도 첫 판과 같은 data-scene(chartDepart)을 달아 [data-scene=…]만으로는 머리가 먼저 잡힌다
       await center(page, `.chart-block[data-scene="${key}"]`);
-      await expect(page.locator('html')).toHaveAttribute('data-chart', key, { timeout: 15_000 });
+      // 소프트웨어 렌더러(CI swiftshader)는 장면이 무거우면 도중에 저프레임으로 3D를 끈다(data-3d="off"). 그러면 검사할 3D 배치가
+      // 없으니 실패가 아니라 건너뜀 — 시작 때 꺼져 있으면 beforeEach가 건너뛰는 것과 같은 규칙. 계획 9-3 잡음 밭 뒤로 CI 휴대폰에서
+      // 두 번 연속 이렇게 끝났다(2026-10-04)
+      const html = page.locator('html');
+      await expect.poll(async () => ((await html.getAttribute('data-3d')) === 'off' ? 'off' : (await html.getAttribute('data-chart')) ?? ''),
+        { timeout: 15_000 }).toMatch(new RegExp(`^(${key}|off)$`));
+      test.skip((await html.getAttribute('data-3d')) === 'off', '도중에 3D가 꺼짐(소프트웨어 렌더러 저프레임)');
     }
   });
 
