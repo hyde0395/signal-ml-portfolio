@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>검증 설계 세 방향</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  :root { --bg:#02040A; --tx:#EEF3FF; --mute:#93A0BA; --amb:#FFB547; --dot:#8FB8FF; --line:#18233b; }
+  html { background:var(--bg); }
+  body { margin:0; background:var(--bg); color:var(--tx); font-family:Pretendard,sans-serif; padding:20px 16px 32px; word-break:keep-all; }
+  .wrap { max-width:1460px; margin:0 auto; }
+  .meta { font-size:13px; color:var(--mute); margin:0 0 12px; }
+  .meta b { color:var(--tx); }
+  .tabs { display:flex; gap:8px; margin:0 0 14px; }
+  .tabs button { font:600 14px Pretendard,sans-serif; color:var(--mute); background:none; border:1px solid var(--line); border-radius:999px; padding:8px 16px; cursor:pointer; }
+  .tabs button[aria-pressed="true"] { color:var(--tx); border-color:var(--amb); }
+  .opt { display:none; }
+  .opt.on { display:block; }
+  .desc { font-size:14px; color:var(--mute); margin:0 0 12px; line-height:1.6; }
+  .desc b { color:var(--tx); }
+  .frames { display:flex; gap:16px; flex-wrap:wrap; }
+  .frame { width:690px; height:431.25px; overflow:hidden; border:1px solid var(--line); border-radius:8px; position:relative; }
+  .frame .cap { position:absolute; left:10px; top:8px; z-index:5; font:600 12px Pretendard,sans-serif; color:var(--amb); background:rgba(2,4,10,.8); padding:3px 8px; border-radius:4px; }
+  .stage { width:1440px; height:900px; transform:scale(.4792); transform-origin:0 0; position:relative; }
+  .stage > img { position:absolute; inset:0; width:1440px; height:900px; }
+  .cover { position:absolute; background:#050914; }
+  .board { position:absolute; left:1018px; top:128px; font-family:"IBM Plex Mono",monospace; }
+  .row { display:grid; grid-template-columns:150px 1fr; column-gap:10px; align-items:baseline; margin-bottom:12px; color:rgba(238,243,255,.38); font-size:14px; }
+  .row .n { letter-spacing:.04em; }
+  .row .tag { grid-column:2; font:400 12px Pretendard,sans-serif; color:rgba(147,160,186,.6); }
+  .row.big { color:var(--tx); }
+  .row.big .v { font:600 30px/1.1 "IBM Plex Mono",monospace; color:var(--amb); }
+  .row.big .m { grid-column:2; font-size:14px; }
+  .row.big .tag { color:var(--amb); }
+  .plate { position:absolute; left:1022px; top:132px; font-family:"IBM Plex Mono",monospace; color:var(--tx); }
+  .plate .n { font-size:14px; letter-spacing:.04em; }
+  .plate .v { font:600 28px/1.3 "IBM Plex Mono",monospace; }
+  .plate .d { font-size:15px; color:var(--amb); }
+  .plate .m { font-size:14px; }
+  .plate .t { font:400 12px Pretendard,sans-serif; color:var(--amb); margin-top:8px; max-width:250px; line-height:1.5; }
+  .title { position:absolute; left:180px; top:600px; width:760px; }
+  .title h3 { font:700 28px/1.25 Pretendard,sans-serif; margin:0 0 10px; letter-spacing:-.01em; }
+  .title h3 em { font-style:normal; color:var(--amb); }
+  .title p { font-size:16px; line-height:1.7; margin:0; color:var(--tx); }
+  /* 3안: 작은 판 셋 */
+  .multi { position:absolute; left:180px; top:110px; width:1060px; display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  .mini { border:1px solid #1b2742; border-radius:8px; padding:10px 10px 12px; background:#03060E; opacity:.55; }
+  .mini.on { border-color:var(--amb); opacity:1; }
+  .mini .crop { height:230px; background-repeat:no-repeat; background-size:600px auto; border-radius:4px; }
+  .mini .n { font:400 13px "IBM Plex Mono",monospace; margin-top:10px; letter-spacing:.04em; }
+  .mini .v { font:600 26px "IBM Plex Mono",monospace; }
+  .mini.on .v { color:var(--amb); }
+  .mini .t { font:400 12px Pretendard,sans-serif; color:var(--mute); }
+  .mini.on .t { color:var(--amb); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="meta"><b>⑤ 검증 설계 — 세 방향</b> · 운영 화면(1440×900) 캡처 위에 판 위 숫자·제목을 바꿔 얹은 시안. 점 그림은 실제. 문구는 임시 · 탭을 눌러 비교</p>
+  <div class="tabs" role="group">
+    <button type="button" data-k="1" aria-pressed="true">1 점수판 쌓기 (추천)</button>
+    <button type="button" data-k="2" aria-pressed="false">2 결론 먼저</button>
+    <button type="button" data-k="3" aria-pressed="false">3 한 판에 셋</button>
+  </div>
+
+  <!-- 1안 -->
+  <section class="opt on" data-k="1">
+    <p class="desc"><b>순서는 그대로(K-Fold → GroupKFold → TSS).</b> 판 위 숫자가 바뀌지 않고 한 줄씩 쌓인다 — 지나간 방식은 흐리게 남고, 마지막 TSS만 호박색으로 크게. 제목은 숫자 대신 판단.</p>
+    <div class="frames">
+      <div class="frame"><span class="cap">자막 1칸 — K-Fold</span><div class="stage">
+        <img src="st-kf.png" alt="">
+        <div class="cover" style="left:1010px;top:120px;width:300px;height:165px"></div>
+        <div class="board">
+          <div class="row big"><span class="n">K-FOLD</span><span class="v" style="color:var(--tx)">R² 0.668</span><span class="m">MAE 44,196원</span><span class="tag" style="color:var(--amb)">참고 상한</span></div>
+        </div>
+        <div class="cover" style="left:170px;top:595px;width:820px;height:120px"></div>
+        <div class="title"><h3>가장 높은 점수 대신, 운영과 같은 조건의 점수를 쓴다</h3><p>K-Fold는 가운데 구간을 평가로 떼고 앞뒤를 모두 학습에 씁니다. 미래로 과거를 맞히는 셈이라 가장 높게 나옵니다.</p></div>
+      </div></div>
+      <div class="frame"><span class="cap">자막 3칸 — TSS (끝)</span><div class="stage">
+        <img src="st-tss.png" alt="">
+        <div class="cover" style="left:1010px;top:120px;width:300px;height:165px"></div>
+        <div class="board">
+          <div class="row"><span class="n">K-FOLD</span><span>R² 0.668</span><span class="tag">참고 상한</span></div>
+          <div class="row"><span class="n">GROUPKFOLD</span><span>R² 0.649</span><span class="tag">처음 보는 출발일</span></div>
+          <div class="row big"><span class="n">▶ TSS</span><span class="v">R² 0.637</span><span class="m">MAE 48,235원</span><span class="tag">운영 기준 · 대표값</span></div>
+        </div>
+        <div class="cover" style="left:170px;top:595px;width:820px;height:120px"></div>
+        <div class="title"><h3>가장 높은 점수 대신, 운영과 같은 조건의 점수를 쓴다</h3><p>TimeSeriesSplit은 과거로만 배우고 바로 다음 구간을 평가합니다. 운영과 같은 조건이라 대표값으로 씁니다.</p></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 2안 -->
+  <section class="opt" data-k="2">
+    <p class="desc"><b>순서를 뒤집는다(TSS → GroupKFold → K-Fold).</b> 첫 칸에 대표값, 다음 칸들은 대표값과의 차이와 그 이유.</p>
+    <div class="frames">
+      <div class="frame"><span class="cap">자막 1칸 — TSS (대표값)</span><div class="stage">
+        <img src="st-tss.png" alt="">
+        <div class="cover" style="left:1010px;top:120px;width:300px;height:165px"></div>
+        <div class="plate"><div class="n">TIMESERIESSPLIT</div><div class="v" style="color:var(--amb)">R² 0.637</div><div class="m">MAE 48,235원</div><div class="t">운영 기준 · 대표값</div></div>
+        <div class="cover" style="left:170px;top:595px;width:820px;height:120px"></div>
+        <div class="title"><h3>운영과 같은 조건에서 <em>R² 0.637 · MAE 48,235원</em></h3><p>과거로만 배우고 바로 다음 구간을 평가합니다. 더 높게 나오는 두 방식을 대표값으로 쓰지 않는 이유는 다음 칸에서.</p></div>
+      </div></div>
+      <div class="frame"><span class="cap">자막 3칸 — K-Fold</span><div class="stage">
+        <img src="st-kf.png" alt="">
+        <div class="cover" style="left:1010px;top:120px;width:300px;height:165px"></div>
+        <div class="plate"><div class="n">K-FOLD</div><div class="v">R² 0.668</div><div class="d">대표값보다 +0.031</div><div class="t">높지만, 미래에 모은 가격으로 과거를 맞힌다</div></div>
+        <div class="cover" style="left:170px;top:595px;width:820px;height:120px"></div>
+        <div class="title"><h3>운영과 같은 조건에서 <em>R² 0.637 · MAE 48,235원</em></h3><p>K-Fold는 가운데 구간을 평가로 떼고 앞뒤를 모두 학습에 씁니다. 점수는 가장 높지만 운영에서는 미래 가격을 알 수 없습니다.</p></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 3안 -->
+  <section class="opt" data-k="3">
+    <p class="desc"><b>세 방식을 한 판에 나란히.</b> 자막 칸이 넘어가면 해당 판만 밝아진다(지금은 TSS 칸). 한눈에 비교되지만 판 하나가 작아지고, "단계가 넘어가는 흐름" 결정과 멀어진다.</p>
+    <div class="frames">
+      <div class="frame" style="width:1100px;height:687.5px"><span class="cap">자막 3칸 — TSS 밝게</span><div class="stage" style="transform:scale(.7639)">
+        <img src="st-tss.png" alt="" style="opacity:0">
+        <div class="multi">
+          <div class="mini"><div class="crop" style="background-image:url(st-kf.png);background-position:-78px -30px"></div><div class="n">K-FOLD</div><div class="v">R² 0.668</div><div class="t">참고 상한</div></div>
+          <div class="mini"><div class="crop" style="background-image:url(st-gkf.png);background-position:-78px -30px"></div><div class="n">GROUPKFOLD</div><div class="v">R² 0.649</div><div class="t">처음 보는 출발일</div></div>
+          <div class="mini on"><div class="crop" style="background-image:url(st-tss.png);background-position:-78px -30px"></div><div class="n">TIMESERIESSPLIT</div><div class="v">R² 0.637</div><div class="t">운영 기준 · 대표값 · MAE 48,235원</div></div>
+        </div>
+        <div class="title" style="top:560px"><h3>같은 모델도 평가 방식에 따라 R² 0.637~0.668 — <em>운영 조건 값을 쓴다</em></h3><p>TimeSeriesSplit은 과거로만 배우고 바로 다음 구간을 평가합니다. 운영과 같은 조건이라 대표값으로 씁니다.</p></div>
+      </div></div>
+    </div>
+  </section>
+</div>
+<script>
+  document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    document.querySelectorAll('.opt').forEach(o => o.classList.toggle('on', o.dataset.k === b.dataset.k));
+    if (window.brainstorm) brainstorm.send({ type: 'click', choice: 'opt' + b.dataset.k });
+  }));
+</script>
+</body>
+</html>

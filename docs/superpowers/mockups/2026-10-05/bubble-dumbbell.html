@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R² 거품 차트 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  :root { --bg:#02040A; --bg2:#0B1426; --tx:#EEF3FF; --mute:#93A0BA; --amb:#FFB547; --dot:#8FB8FF; --line:#18233b; }
+  html { background:var(--bg); }
+  body { margin:0; min-height:100vh; background:linear-gradient(180deg,var(--bg),var(--bg2)); color:var(--tx); font-family:Pretendard,sans-serif; padding:22px 16px 32px; word-break:keep-all; }
+  .wrap { max-width:1400px; margin:0 auto; }
+  .meta { font-size:13px; color:var(--mute); margin:0 0 18px; }
+  .meta b { color:var(--tx); }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .opt { border:1px solid var(--line); border-radius:12px; padding:20px 22px; cursor:pointer; }
+  .opt.selected { border-color:var(--amb); }
+  .which { font:600 13px Pretendard,sans-serif; color:var(--mute); margin:0 0 12px; }
+  .which b { color:var(--amb); }
+  h2 { font:700 24px/1.25 Pretendard,sans-serif; margin:0 0 6px; letter-spacing:-.01em; }
+  .sub { font-size:13px; color:var(--mute); margin:0 0 10px; }
+  canvas { display:block; width:100%; }
+  .note { font-size:12.5px; color:var(--mute); margin:10px 0 0; line-height:1.6; }
+  @media (max-width:1000px) { .grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="meta"><b>⑤ 차트 3 "R² 거품 빼기" — A vs A+B</b> · 실제 수치(facts: 첫 R² 0.93 → 0.71, 직항 필터 R² 0.84 → 0.64, MAE 48,442 → 48,235원). 첫 정정의 MAE는 facts에 숫자가 없어(약 3만 원 그대로) 둘째 정정만 MAE를 그림. 제목·문구 임시. 자막 칸마다 한 쌍씩 나타나는 흐름을 가정</p>
+  <div class="grid">
+    <section class="opt" data-choice="dumbbell" onclick="pick(this)">
+      <p class="which"><b>A</b> · 전·후 아령: R² 축 하나에 두 번의 정정</p>
+      <h2>R²는 두 번 부풀려져 있었다, MAE는 그대로</h2>
+      <p class="sub">걸러내기 전(속 빈 점) → 후(별), 가는 선으로 이어 얼마나 내려갔는지</p>
+      <canvas id="a" height="360"></canvas>
+      <p class="note">한 축에서 두 정정의 크기(−0.22, −0.20)를 바로 비교. MAE는 오른쪽 작은 칸에 "거의 그대로"를 점 두 개가 겹치는 모양으로.</p>
+    </section>
+    <section class="opt" data-choice="mix" onclick="pick(this)">
+      <p class="which"><b>A+B</b> · 아령 두 칸: 같은 줄에 R²와 MAE를 나란히</p>
+      <h2>R²는 두 번 부풀려져 있었다, MAE는 그대로</h2>
+      <p class="sub">줄마다 왼쪽 R², 오른쪽 MAE — 두 칸 폭이 같아 "R²는 길게 움직이고 MAE는 제자리"가 길이로 보인다</p>
+      <canvas id="b" height="360"></canvas>
+      <p class="note">A의 아령 형식 + B의 "두 칸 비교". MAE 칸 축은 3만~6만 원(값의 약 절반 폭 — R² 칸 0.55~1.0과 비슷한 비율)이라 같은 비율로 움직였다면 같은 길이. 첫 정정 MAE는 facts에 숫자가 없어 "약 3만 원 그대로" 글자로.</p>
+    </section>
+  </div>
+</div>
+<script>
+const C = { dot:[143,184,255], amber:[255,181,71], text:[238,243,255] };
+function setup(id) { const c = document.getElementById(id), d = Math.min(2, devicePixelRatio||1), w = c.clientWidth, h = +c.getAttribute('height'); c.width = w*d; c.height = h*d; c.style.height = h+'px'; const g = c.getContext('2d'); g.setTransform(d,0,0,d,0,0); return { g, w, h }; }
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+function dot(g, x, y, r, c, a) { g.fillStyle = rgba(c, a); g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill(); }
+function star(g, x, y, r, c) { dot(g, x, y, r * 2.5, c, .14); dot(g, x, y, r, c, 1); }
+function ring(g, x, y, r, c, a) { g.strokeStyle = rgba(c, a); g.lineWidth = 1.4; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.stroke(); }
+function link(g, x0, y0, x1, y1, a) { g.strokeStyle = rgba(C.text, a); g.lineWidth = 1.2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); }
+function txt(g, s, x, y, font, color, align = 'left', base = 'middle') { g.font = font; g.fillStyle = color; g.textAlign = align; g.textBaseline = base; g.fillText(s, x, y); }
+const MONO = '"IBM Plex Mono",monospace', SANS = 'Pretendard,sans-serif', DISP = '700 22px "Space Grotesk",sans-serif';
+
+// A: 아령 — 가로 R² 축(0.55~1.0), 두 줄
+function drawA() {
+  const { g, w, h } = setup('a');
+  const L = 150, R = w - 170, X = v => L + (R - L) * (v - 0.55) / 0.45;
+  for (const v of [0.6, 0.7, 0.8, 0.9, 1.0]) { for (let y = 40; y <= h - 60; y += 7) dot(g, X(v), y, .7, C.dot, .2); txt(g, v.toFixed(1), X(v), h - 40, `11px ${MONO}`, 'rgba(147,160,186,.9)', 'center'); }
+  txt(g, 'R²', R + 20, h - 40, `11px ${MONO}`, 'rgba(147,160,186,.9)');
+  const rows = [
+    { y: 110, name: '첫 정정', note: '하네다 고가 행 매칭 오류', b: .93, a: .71 },
+    { y: 230, name: '둘째 정정', note: '직항으로 표시된 경유 9,387행', b: .84, a: .64 },
+  ];
+  for (const r of rows) {
+    txt(g, r.name, 16, r.y - 9, `600 14px ${SANS}`, '#EEF3FF');
+    txt(g, r.note, 16, r.y + 11, `12px ${SANS}`, 'rgba(147,160,186,.95)');
+    // 아령 선: 점으로 채운 굵은 선 대신 별자리 선 하나 + 방향 점선
+    link(g, X(r.b), r.y, X(r.a), r.y, .55);
+    for (let x = X(r.a) + 10; x < X(r.b) - 10; x += 9) dot(g, x, r.y, 1, C.amber, .5);
+    ring(g, X(r.b), r.y, 7, C.text, .8);
+    star(g, X(r.a), r.y, 5, C.amber);
+    txt(g, r.b.toFixed(2), X(r.b), r.y - 24, `13px ${MONO}`, 'rgba(238,243,255,.7)', 'center');
+    txt(g, r.a.toFixed(2), X(r.a), r.y - 26, `600 18px ${MONO}`, '#FFB547', 'center');
+    txt(g, `−${(r.b - r.a).toFixed(2)}`, (X(r.a) + X(r.b)) / 2, r.y + 22, `12px ${MONO}`, 'rgba(255,181,71,.85)', 'center');
+  }
+  // 범례
+  ring(g, L, 24, 6, C.text, .8); txt(g, '걸러내기 전', L + 12, 24, `12px ${SANS}`, 'rgba(238,243,255,.75)');
+  star(g, L + 110, 24, 4, C.amber); txt(g, '걸러낸 뒤', L + 122, 24, `12px ${SANS}`, 'rgba(238,243,255,.75)');
+  // MAE 칸
+  const mx = R + 50;
+  txt(g, 'MAE', mx, 70, `600 12px ${MONO}`, 'rgba(147,160,186,.95)');
+  txt(g, '둘째 정정', mx, 92, `12px ${SANS}`, 'rgba(147,160,186,.95)');
+  ring(g, mx + 30, 230, 7, C.text, .8); star(g, mx + 33, 230, 5, C.dot);
+  txt(g, '48,442 → 48,235원', mx, 262, `12px ${MONO}`, '#EEF3FF');
+  txt(g, '거의 그대로', mx, 282, `600 13px ${SANS}`, '#8FB8FF');
+  txt(g, '첫 정정: 약 3만 원 그대로', mx, 130, `11px ${SANS}`, 'rgba(147,160,186,.8)');
+}
+
+// A+B: 아령 두 칸 — 같은 줄, 같은 폭
+function drawB() {
+  const { g, w, h } = setup('b');
+  const colL0 = 150, gap = 80, colW = (w - colL0 - gap - 30) / 2;
+  const cols = [
+    { x0: colL0, title: 'R²', sub: '크게 떨어짐', lo: .55, hi: 1.0, ticks: [.6, .8, 1.0], fmt: v => v.toFixed(2), c: C.amber },
+    { x0: colL0 + colW + gap, title: 'MAE', sub: '거의 그대로', lo: 30000, hi: 60000, ticks: [30000, 45000, 60000], fmt: v => (v / 10000).toFixed(1) + '만', c: C.dot },
+  ];
+  const X = (col, v) => col.x0 + colW * (v - col.lo) / (col.hi - col.lo);
+  for (const col of cols) {
+    txt(g, col.title, col.x0, 24, `600 13px ${MONO}`, '#EEF3FF');
+    txt(g, col.sub, col.x0 + 46, 24, `600 13px ${SANS}`, col.c === C.amber ? '#FFB547' : '#8FB8FF');
+    for (const t of col.ticks) { for (let y = 50; y <= h - 60; y += 7) dot(g, X(col, t), y, .6, C.dot, .18); txt(g, col.fmt(t), X(col, t), h - 40, `10px ${MONO}`, 'rgba(147,160,186,.85)', 'center'); }
+  }
+  const rows = [
+    { y: 120, name: '첫 정정', note: '하네다 고가 행 매칭 오류', r: [.93, .71], m: null },
+    { y: 240, name: '둘째 정정', note: '직항으로 표시된 경유 행', r: [.84, .64], m: [48442, 48235] },
+  ];
+  for (const row of rows) {
+    txt(g, row.name, 16, row.y - 9, `600 14px ${SANS}`, '#EEF3FF');
+    txt(g, row.note, 16, row.y + 11, `12px ${SANS}`, 'rgba(147,160,186,.95)');
+    const pairs = [[cols[0], row.r], [cols[1], row.m]];
+    for (const [col, p] of pairs) {
+      if (!p) { txt(g, '약 3만 원 그대로', col.x0 + 4, row.y, `12px ${SANS}`, 'rgba(147,160,186,.85)'); continue; }
+      const xb = X(col, p[0]), xa = X(col, p[1]);
+      link(g, xb, row.y, xa, row.y, .55);
+      ring(g, xb, row.y, 7, C.text, .8);
+      star(g, xa, row.y, 5, col.c);
+      const big = col === cols[0];
+      if (big) {
+        txt(g, col.fmt(p[0]), xb, row.y - 24, `12px ${MONO}`, 'rgba(238,243,255,.7)', 'center');
+        txt(g, col.fmt(p[1]), xa, row.y - 26, `600 18px ${MONO}`, '#FFB547', 'center');
+        txt(g, `−${(p[0] - p[1]).toFixed(2)}`, (xa + xb) / 2, row.y + 22, `12px ${MONO}`, 'rgba(255,181,71,.85)', 'center');
+      } else {
+        // MAE는 두 점이 거의 겹쳐 위·아래 글자로: 값 두 개와 변화율
+        txt(g, `${p[0].toLocaleString('ko-KR')} → ${p[1].toLocaleString('ko-KR')}원`, xa, row.y - 24, `600 13px ${MONO}`, '#8FB8FF', 'center');
+        txt(g, `−${((p[0] - p[1]) / p[0] * 100).toFixed(1)}%`, xa, row.y + 22, `12px ${MONO}`, 'rgba(143,184,255,.85)', 'center');
+      }
+    }
+  }
+  ring(g, 16, h - 14, 6, C.text, .8); txt(g, '걸러내기 전', 28, h - 14, `12px ${SANS}`, 'rgba(238,243,255,.75)');
+  star(g, 120, h - 14, 4, C.amber); txt(g, '걸러낸 뒤', 132, h - 14, `12px ${SANS}`, 'rgba(238,243,255,.75)');
+}
+function pick(el) { document.querySelectorAll('.opt').forEach(o => o.classList.toggle('selected', o === el)); if (window.brainstorm) brainstorm.send({ type:'click', choice: el.dataset.choice }); }
+document.fonts.ready.then(() => { drawA(); drawB(); }); addEventListener('resize', () => { drawA(); drawB(); });
+</script>
+</body>
+</html>
