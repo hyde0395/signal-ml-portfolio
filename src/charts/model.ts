@@ -1,4 +1,4 @@
-// ③ 모델 구조 점(계획 7-2, 설계 2026-09-30-model-dots-design): 인천→나리타 LCC 관측 점이 자막 칸에 맞춰 세 단계로 옮겨 간다 —
+// ③ 모델 구조 점(계획 7-2, 설계 2026-09-30-model-dots-design): 인천→나리타 LCC 관측 점이 자막 2칸(첫 칸 안에서 저절로 한 번)에 맞춰 세 단계로 옮겨 간다 —
 // 0 모은 가격(노선·등급 평균 대비 %) → 1 NeuralProphet 기준 가격 선 → 2 기준에서 벗어난 몫(잔차 %, XGBoost가 배우는 것).
 // 세 단계의 점 순서·개수·group이 같아야 3D에서 같은 지형 점이 단계 사이를 옮겨 다닌다(variant가 바뀌면 반대 슬롯, chartTargets.pickSlot).
 import type { ChartsData } from './data';
@@ -12,6 +12,11 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 // dashOn/dashPeriod: 3단계 0 줄은 선 점 5개 중 3개만 보여 끊긴 점선. jitterPx: 같은 출발일 관측을 좌우로 조금 흔든다(세로 줄 한 개로 겹치지 않게)
 // zeroA: 3단계 0 끊긴 점선 알파 — 결론 층(설계 2026-10-04 §4)
 export const MODEL = { stages: 3, wideMinPx: 560, lo: -60, hi: 110, linePts: 240, dashOn: 3, dashPeriod: 5, residHot: 50, jitterPx: 1.6, seed: 7, zeroA: 0.95 } as const;
+
+// ③ 블록(정보 전달 2 §7): 자막 2칸. 1칸 = 모은 가격 → subMs 뒤 저절로 기준 가격(⑤ TSS 폴드와 같은 sub 타이머), 2칸 = 잔차.
+// 그림 단계(MODEL.stages 3)는 그대로 두고 (칸, sub)를 그림 단계로 바꾼다 — 배치 코드와 3D 슬롯 규칙(variant stage:n)이 그대로다
+export const MODEL_BLOCK = { stages: 2, subs: [2, 1], subMs: 1200 } as const;
+export const modelStage = (para: number, sub: number) => (para <= 0 ? Math.min(1, Math.max(0, sub)) : 2);
 
 // 관측·기준이 같은 평균(노선·등급)에 대한 %라, 평균이 약분되어 obs / base − 1이 된다. 모델 목표 log1p(y) − log1p(base)와의
 // 차이는 가격이 수만 원대라 0.001% 수준이다(설계 §2)

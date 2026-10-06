@@ -1,6 +1,6 @@
 // ③ 모델과 피처(설계 2026-09-25 §3.3, 2026-09-29 이야기 흐름 §3.1): 모델 구조 → 점 와플.
-// 모델 구조는 그림 판 블록(계획 7-2): 자막 칸이 바뀔 때마다 인천→나리타 LCC 관측 점이 모은 가격 → NeuralProphet 기준 가격 선 →
-// 기준에서 벗어난 몫(XGBoost)으로 옮겨 간다(src/charts/model.ts). 넷째 칸(Optuna·분위수·SHAP)은 셋째 단계 그대로.
+// 모델 구조는 그림 판 블록(계획 7-2): 인천→나리타 LCC 관측 점이 자막 두 칸 — 첫 칸 안에서 모은 가격 → 1.2초 뒤 저절로 NeuralProphet 기준 가격,
+// 둘째 칸에서 기준에서 벗어난 몫(XGBoost)으로 옮겨 간다(src/charts/model.ts modelStage, 정보 전달 2).
 // 와플은 그룹마다 점 100개 중 중요도만큼 켜지는 그림 판(ChartStage)이다(3D가 켜지면 배경 점이 그 자리에 모인다). 글은
 // 판 아래 자막 띠에 고정되고 세 칸을 차례로 보여 준다(설계 2026-09-28 §2). 화면 낭독기를 위해 같은 내용을 숨긴
 // 목록(그룹 · % · 피처 이름)으로 둔다. 그룹을 누르면(키보드는 Enter·Space) 그 그룹의 SHAP 벌떼로 펼쳐진다(계획 5-3c).
@@ -11,6 +11,7 @@ import { dictionaries, getT } from '@/lib/content';
 import { codeUrl, facts } from '@/lib/facts';
 import { formatValue, prefill, type Locale } from '@/lib/i18n';
 import { eyebrow } from '@/lib/sections';
+import { MODEL_BLOCK } from '@/charts/model';
 
 export function Features({ locale }: { locale: Locale }) {
   const t = getT(locale);
@@ -32,11 +33,13 @@ export function Features({ locale }: { locale: Locale }) {
         <p className="eyebrow" data-flip-on-enter>{eyebrow('features')}</p>
         <h2 id="features-h" className="display" data-reveal>{t('features.structure.heading')}</h2>
       </div>
-      <article className="chart-block" data-scene="chartModel" style={{ '--paras': 4 } as React.CSSProperties}>
+      <article className="chart-block" data-scene="chartModel" style={{ '--paras': MODEL_BLOCK.stages } as React.CSSProperties}>
         <ChartStage
           chartKey="chartModel"
           dataVersion={facts.dataVersion}
-          stages={3}
+          stages={MODEL_BLOCK.stages}
+          subs={MODEL_BLOCK.subs}
+          subMs={MODEL_BLOCK.subMs}
           strings={{
             locale, holidays: {},
             axis: t('features.structure.axis'), axisResid: t('features.structure.axisResid'), line: t('features.structure.line'),
@@ -45,15 +48,14 @@ export function Features({ locale }: { locale: Locale }) {
         />
         <div className="chart-copy">
           <p className="sr-only">{t('features.structure.alt')}</p>
-          {/* 네 칸: 모은 가격 → 기준 가격 → 벗어난 몫(+ 흐름 줄) → 튜닝·구간·SHAP. 앞 세 칸이 점 단계와 짝이다 */}
+          {/* 두 칸(정보 전달 2 §7): 모은 가격 → (저절로) 기준 가격 / 벗어난 몫 + 흐름 줄 + 도구 한 줄. step1·step2 문장은 그대로 이어 붙였다 */}
           <div className="chart-paras">
-            <div className="chart-para"><p>{t('features.structure.step1')}</p></div>
-            <div className="chart-para"><p>{t('features.structure.step2')}</p></div>
+            <div className="chart-para"><p>{t('features.structure.step1')} {t('features.structure.step2')}</p></div>
             <div className="chart-para">
               <p>{t('features.structure.step3')}</p>
               <p className="muted mono data-tools model-flow">{t('features.structure.flow')}</p>
+              <p className="muted">{t('features.structure.tools')}</p>
             </div>
-            <div className="chart-para"><p>{t('features.structure.body2')}</p></div>
           </div>
           <a className="code-link mono" href={codeUrl('model')} target="_blank" rel="noopener noreferrer">
             {t('common.codeLink')} ↗

@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ChartsData } from '@/charts/data';
 import { DEPART } from '@/charts/layouts';
-import { MODEL, modelLayout, residualPct } from '@/charts/model';
+import { MODEL, MODEL_BLOCK, modelLayout, modelStage, residualPct } from '@/charts/model';
 import { TONE, type ChartLabel, type ChartLayout } from '@/charts/types';
 
 const dates = ['2026-10-01', '2026-10-02', '2026-10-05', '2026-10-09', '2026-10-20'];
@@ -140,5 +140,18 @@ describe('modelLayout', () => {
   it('2단계 0 끊긴 점선은 결론 층(보이는 점 알파 MODEL.zeroA)', () => {
     const l = L[2];
     for (let i = lineStart(l); i < l.n; i++) if (l.alpha[i] > 0) expect(l.alpha[i]).toBeCloseTo(MODEL.zeroA);
+  });
+});
+
+// 정보 전달 2 §7: 자막 2칸 — 1칸 안에서 sub 0(모은 가격) → 1.2초 뒤 sub 1(기준 가격), 2칸 = 잔차
+describe('modelStage', () => {
+  it('(칸, sub) → 그림 단계', () => {
+    expect(modelStage(0, 0)).toBe(0);
+    expect(modelStage(0, 1)).toBe(1);
+    expect(modelStage(1, 0)).toBe(2);
+    expect(modelStage(5, 0)).toBe(2);
+  });
+  it('블록은 2칸, 첫 칸만 sub 2개(⑤ TSS와 같은 1.2초)', () => {
+    expect(MODEL_BLOCK).toEqual({ stages: 2, subs: [2, 1], subMs: 1200 });
   });
 });

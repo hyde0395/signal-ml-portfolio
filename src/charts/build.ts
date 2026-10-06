@@ -4,7 +4,7 @@ import { loadCharts, loadCloud, type ChartsData, type CloudData } from './data';
 import { cloudLayout, departLayout, swarmLayout, waffleLayout, type FeatureGroupInput, type PlotSize } from './layouts';
 import { bubbleLayout, type BubbleInput } from './bubble';
 import { filterLayout } from './filter';
-import { modelLayout } from './model';
+import { modelLayout, modelStage } from './model';
 import { shapOpenLayout } from './shap';
 import { splitLayout, type SplitMethod } from './split';
 import type { ChartKey, ChartLayout } from './types';
@@ -98,7 +98,7 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
     }
     case 'chartModel': {
       const mo = new Intl.DateTimeFormat(s.locale, { month: 'short', timeZone: 'UTC' });
-      return modelLayout(loaded.charts!, size, step, {
+      return modelLayout(loaded.charts!, size, modelStage(step, sub), {
         month: (iso) => mo.format(new Date(`${iso}T00:00:00Z`)), pct: signed,
         axis: s.axis ?? '', axisResid: s.axisResid ?? '', line: s.line ?? '',
       });

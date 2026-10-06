@@ -9,7 +9,7 @@
 // 어느 쪽이든 강조 번호 하나를 저장소로 3D에 알리고 2D도 다시 그린다.
 // 펼침(open): ③ 와플 그룹 버튼을 누르면 그 그룹의 SHAP 벌떼 배치로 다시 배치한다(계획 5-3c). 펼친 동안은 펼친 그룹이 강조다.
 // 단계(step): stages를 주면(③ 모델 구조, 계획 7-2) 자막 스크립트가 블록에 적는 지금 문단(data-para)을 따라 단계를 바꿔 다시 배치한다.
-// 작은 단계(sub): subs를 주면(② 걸러내기·⑤ 검증 설계, 계획 8-1) 한 단계 안에서 sub가 subMs마다 저절로 올라가 마지막에서 멈춘다.
+// 작은 단계(sub): subs를 주면(② 걸러내기·⑤ 검증 설계·③ 모델 구조) 한 단계 안에서 sub가 subMs마다 저절로 올라가 마지막에서 멈춘다.
 // 판이 화면 밖이면 멈추고 다시 들어오면 처음부터, 움직임 줄이기면 바로 마지막. 수치 이름표(stat·statSm)는 글자가 바뀌면 플립
 import type React from 'react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -209,11 +209,12 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     if (count <= 1 || reduced || !subMs || !el) return;
     let timer: ReturnType<typeof startSubs> | null = null;
     const set = (n: number) => { if (subRef.current === n) return; subRef.current = n; setSub(n); relayout.current(); };
+    // 판이 절반 이상 보일 때 시작한다 — 조금만 걸쳐도 시작하면 독자가 판에 닿기 전에 sub가 끝나 있다(③·⑤ 두 판이 쓴다, 정보 전달 2 §7)
     const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) { timer?.stop(); return; }
       if (timer) timer.restart();
       else timer = startSubs({ count, ms: subMs, reduced: false, set, setTimeout: window.setTimeout.bind(window) as typeof setTimeout, clearTimeout: window.clearTimeout.bind(window) });
-    });
+    }, { threshold: 0.5 });
     io.observe(el);
     return () => { io.disconnect(); timer?.stop(); };
     // subs는 서버에서 온 배열이라 렌더마다 새 배열일 수 있어 글자로 비교한다(subsKey)

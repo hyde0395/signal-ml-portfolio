@@ -189,6 +189,7 @@
       "step2": "For each route, NeuralProphet learns how the average fare moves across departure dates (trend and weekly cycle), and scaling it by each cabin class's price level gives a base price.",
       "step3": "XGBoost then uses {model.featureCount} features to learn how far the actual fare sits from that base on a log scale; adding the two gives the prediction.",
       "body2": "The XGBoost settings are the best of {model.optunaTrials} Optuna trials on time-ordered validation. Separate lower and upper quantile models trained on the same residual give the prediction interval, and SHAP splits each prediction into per-feature contributions.",
+      "tools": "Optuna picks the settings, quantile models give the interval, and SHAP splits out each feature's contribution.",
       "flow": "Base price (NeuralProphet per route × cabin level) + deviation (XGBoost, log scale) = prediction",
       "axis": "vs. route-and-class average",
       "axisResid": "vs. base price",
