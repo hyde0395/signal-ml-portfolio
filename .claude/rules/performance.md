@@ -22,7 +22,7 @@ paths:
 ## 최적화 계획 (맨 마지막, effort high 이상, 별도 계획서)
 - 연출·화질·점 개수·접근성 100·CLS 0은 그대로 두고 수치만. 배포 미리보기에서 Lighthouse 모바일 3회 중앙값으로 전후 비교. 로컬 `npm run lighthouse`는 전후 비교에만
 - 목표: 성능 ko·en·ja ≥90, TBT ≤200ms, LCP ≤2.0s
-- 후보: 3D 시작 더 늦추기·점 구름 만들기 Web Worker·`scheduler.yield()`, `@next/bundle-analyzer` 뒤 첫 화면 밖 코드 `import()`, 3D 청크 zod 제거·three 이름 가져오기, `terrain.json` 이진화, ja 글꼴, 대체 이미지 AVIF, DPR·저프레임 문턱(줄이기 전에 사용자와). 되돌린 것: `experimental.inlineCss`
+- 후보: 3D 시작 더 늦추기·점 구름 만들기 Web Worker·`scheduler.yield()`, `@next/bundle-analyzer` 뒤 첫 화면 밖 코드 `import()`, 3D 청크 zod 제거·three 이름 가져오기, `terrain.json` 이진화, 제거 레이어(9,387점)·`uRemoved`·`uDrop`·`terrain.json` removed 정리(정보 전달 2 뒤로 쓰는 장면 없음), ja 글꼴, 대체 이미지 AVIF, DPR·저프레임 문턱(줄이기 전에 사용자와). 되돌린 것: `experimental.inlineCss`
 
 ## 운영 측정 기록 (4-2 뒤, Lighthouse 모바일)
 - 성능 ko 87 · en 92 · ja 84~89, LCP 1.5 / 1.3 / 2.2~2.4s, CLS 0, TBT 350~500ms, 접근성 100

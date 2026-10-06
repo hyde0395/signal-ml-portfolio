@@ -10,10 +10,10 @@ import { expect, test, type Page } from '@playwright/test';
 // e2e(ESM)에서는 JSON 정적 import가 실패해 fs로 읽는다(board.spec.ts와 같은 방식). 피처 줄 개수의 기준
 const facts = JSON.parse(readFileSync(fileURLToPath(new URL('../../data/facts.json', import.meta.url)), 'utf-8')) as {
   model: { featureGroups: { features: string[] }[] };
-  data: { filteredRows: number };
+  data: { filteredRows: number; filter: { direct: number } };
 };
 
-const STAGES = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud'] as const;
+const STAGES = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud', 'chartBubble'] as const;
 
 async function painted(page: Page, key: string) {
   return page.locator(`.chart-block[data-scene="${key}"] .chart-canvas`).evaluate((c: HTMLCanvasElement) => {
@@ -50,6 +50,25 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       expect(await svg.locator('path').first().getAttribute('d')).toMatch(/^M[\d.]+ [\d.]+L/);
     });
   }
+  test('chartBubble: 단계마다 선 1 → 2, 속 빈 점(전)과 결론 이름표(후)', async ({ page }) => {
+    await page.goto('/');
+    const block = page.locator('.chart-block[data-scene="chartBubble"]');
+    const into = (f: number) => block.evaluate((el, f) => {
+      const r = el.getBoundingClientRect();
+      window.scrollTo(0, window.scrollY + r.top + (r.height - window.innerHeight) * f);
+    }, f);
+    for (const [f, n] of [[0.1, 1], [0.5, 2], [0.9, 2]] as const) {
+      await into(f);
+      const svg = block.locator('.chart-lines');
+      await expect(svg).toHaveAttribute('data-on', '', { timeout: 10_000 });
+      await expect(svg.locator('path')).toHaveCount(n);
+      // 넓은 판(≥560px)은 둘째 단계부터 MAE 칸 전 점이 하나 더 — e2e는 desktop·mobile 두 프로젝트로 돈다
+      const wide = (await block.locator('[data-plot]').boundingBox())!.width >= 560;
+      await expect(svg.locator('circle[fill="none"]')).toHaveCount(n === 1 ? 1 : wide ? 3 : 2);
+      await expect(block.locator('.chart-callout')).toHaveCount(n);
+    }
+    await expect(block.locator('[role="slider"]')).toHaveCount(0);
+  });
   test('④ U자: 결론 이름표 둘(최저·출발 직전)', async ({ page }) => {
     await page.goto('/');
     await center(page, '.chart-block[data-scene="chartCurve"]');
@@ -92,13 +111,14 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
         const block = page.locator('.chart-block[data-scene="chartModel"]');
         const stage = block.locator('.chart-stage');
         const axis = block.locator('.chart-label.axis');
-        for (const [f, n, para] of [[0.1, '0', 0], [0.37, '1', 1], [0.62, '2', 2], [0.9, '2', 3]] as const) {
+        for (const [f, n, para, fig] of [[0.2, '0', 0, 1], [0.8, '1', 1, 2]] as const) {
+          // 움직임 줄이기라 첫 칸은 바로 마지막 sub(기준 가격) — data-sub 1, 그림 단계 1
           await scrollInto(page, f);
           await expect(stage).toHaveAttribute('data-stage', n, { timeout: 10_000 });
           await expect(block.locator('.chart-para').nth(para)).toHaveClass(/is-on/);
           await expect.poll(() => painted(page, 'chartModel'), { timeout: 10_000 }).toBe(true);
-          await expect(axis).toHaveText(n === '2' ? '기준 가격 대비' : '노선·등급 평균 대비');
-          await expect(block.locator('.chart-label.head')).toHaveCount(n === '0' ? 0 : 1);
+          await expect(axis).toHaveText(fig === 2 ? '기준 가격 대비' : '노선·등급 평균 대비');
+          await expect(block.locator('.chart-label.head')).toHaveCount(1);
           const plot = (await block.locator('[data-plot]').boundingBox())!;
           for (const b of await block.locator('.chart-label').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) {
             expect(b.left).toBeGreaterThanOrEqual(plot.x - 1);
@@ -114,10 +134,10 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       });
     }
 
-    test('axe 위반 없음(3단계)', async ({ page }) => {
+    test('axe 위반 없음(2칸)', async ({ page }) => {
       await page.goto('/');
-      await scrollInto(page, 0.62);
-      await expect(page.locator('.chart-block[data-scene="chartModel"] .chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
+      await scrollInto(page, 0.8);
+      await expect(page.locator('.chart-block[data-scene="chartModel"] .chart-stage')).toHaveAttribute('data-stage', '1', { timeout: 10_000 });
       const r = await new AxeBuilder({ page }).include('#features').analyze();
       expect(r.violations).toEqual([]);
     });
@@ -141,6 +161,8 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
         await expect(stage).toHaveAttribute('data-sub', '1');
         const kept = new Intl.NumberFormat('ko').format(facts.data.filteredRows);
         await expect(stage.locator('.chart-label.stat').first()).toContainText(kept);
+        const n = (v: number) => new Intl.NumberFormat('ko').format(v);
+        await expect(stage.locator('.chart-label.ruleOn').last()).toContainText(n(facts.data.filter.direct));
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       });
       test(`${label}: 검증 설계 단계 0 → 1 → 2, TSS는 바로 FOLD 5 / 5`, async ({ page }) => {
@@ -153,15 +175,18 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
         }
         await expect(stage).toHaveAttribute('data-sub', '4');
         await expect(stage.locator('.chart-label.statSm', { hasText: 'FOLD 5 / 5' })).toBeAttached();
+        await expect(stage.locator('.chart-label.scoreHi').first()).toContainText('TSS');
+        // 지난 줄 2개 × 두 칸(좁은 판의 빈 MAE 칸도 cls는 scorePast — 자리 번호를 지키려고 빈 글자로 둔다)
+        await expect(stage.locator('.chart-label.scorePast')).toHaveCount(4);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       });
     }
     // 8-1 최종 검토: 옆 칸 이름표가 판 밖으로 나가 가로 스크롤이 생기던 문제(영어가 가장 길다)
-    for (const [w, h] of [[1024, 768], [768, 1024]] as const) {
-      test(`en ${w}×${h}: 마지막 단계에서 이름표가 판 안, 가로 스크롤 없음`, async ({ page }) => {
+    for (const path of ['/en/', '/ja/']) for (const [w, h] of [[1024, 768], [768, 1024]] as const) {
+      test(`${path} ${w}×${h}: 마지막 단계에서 이름표가 판 안, 가로 스크롤 없음`, async ({ page }) => {
         await page.setViewportSize({ width: w, height: h });
-        await page.goto('/en/');
-        for (const key of ['chartFilter', 'chartSplit']) {
+        await page.goto(path);
+        for (const key of ['chartFilter', 'chartSplit', 'chartBubble']) {
           await scrollInto(page, key, 0.85);
           const block = page.locator(`.chart-block[data-scene="${key}"]`);
           await expect(block.locator('.chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
@@ -700,5 +725,17 @@ test.describe('3D 켜짐', () => {
     await center(page, '#validation-h');
     await expect3D(page, 'data-active-scene', 'model', 10_000);
     await expect(page.locator('html')).not.toHaveAttribute('data-chart', /./);
+  });
+});
+
+test.describe('③ 모델 구조 저절로 넘김(정보 전달 2 §7)', () => {
+  test.use({ reducedMotion: 'no-preference' });
+  test('첫 칸에서 sub 0 → 약 1.2초 뒤 1', async ({ page }) => {
+    await page.goto('/');
+    const block = page.locator('.chart-block[data-scene="chartModel"]');
+    await block.evaluate((el) => { const r = el.getBoundingClientRect(); window.scrollTo(0, window.scrollY + r.top + (r.height - window.innerHeight) * 0.2); });
+    const stage = block.locator('.chart-stage');
+    await expect(stage).toHaveAttribute('data-stage', '0', { timeout: 10_000 });
+    await expect(stage).toHaveAttribute('data-sub', '1', { timeout: 5_000 });
   });
 });

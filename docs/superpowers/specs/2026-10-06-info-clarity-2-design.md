@@ -36,7 +36,7 @@
 
 | 섹션 | 키 | 지금 | ko (임시) | en 초안 | ja 초안 |
 |---|---|---|---|---|---|
-| ② 수집 | `data.heading` | 수집한 데이터 | {collectMonths}개월 동안 가격 {rawRows}개를 모았다 | {rawRows} prices collected over {collectMonths} months | {collectMonths}か月で価格{rawRows}件を集めた |
+| ② 수집 | `data.heading` | 수집한 데이터 | {collectMonths}개월 동안 가격 {rawRows}개를 모았다 | {rawRows} prices in {collectMonths} months | {collectMonths}か月で価格{rawRows}件を集めた |
 | ② 걸러내기 | `data.filter.heading` | 오류 걸러내기 | 잘못 들어온 {removed}행을 걸러 냈다 | {removed} faulty rows filtered out | 誤った{removed}行を取り除いた |
 | ③ 모델 구조 | `features.structure.heading` | 모델 구조 | 기준 가격을 먼저 잡고, 벗어난 몫을 배운다 | A baseline price first, then the gap from it | まず基準価格を置き、そこからのずれを学ぶ |
 | ③ 와플 | `features.heading` | {featureCount} FEATURES | 과거 가격 통계 {lookup}% · 노선·항공사 {categorical}% | Past-price stats {lookup}% · route & airline {categorical}% | 過去価格の統計 {lookup}% · 路線・航空会社 {categorical}% |
@@ -154,4 +154,12 @@
 
 ## 구현 결과
 
-(구현 뒤 적는다)
+구현: 브랜치 `feat/info-clarity-2`(커밋 e1864b8..8f2f391 + e2e·문서). 바뀐 묶음: facts 새 수치(`export_facts.py`·`facts.json`·zod·`signed0`) / 결론형 제목·① 숫자 4개 / ② 규칙 이름표(`filter.ts`) / ⑤ 점수판(`split.ts`) / ⑤ 차트 3 아령 판(`bubble.ts`, `chartBubble`, 3D `bubble` 장면 제거) / ③ 모델 구조 2칸 + sub 타이머(문턱 0.5).
+
+설계와 달라진 점(계획 "설계서 검토 결과" 1~10):
+- 1 `add_derived`는 `export_facts.py`에 두고 `npm run facts:derived`로 호출, 2 zod 스키마에 새 키 추가, 3 `signed0` 추가, 4 ① dd는 플립이 아닌 글자, 5 규칙 ③ 이름은 `boxLabel` 재사용(새 키는 `rule1`·`rule2`), 6 ②·③ h2도 결론 문장, 7 `charts.bubble.*` 새 키, 8 형식 함수는 `build.ts`에서, 9 점수판은 줄마다 두 칸·이름 `TSS` — 모두 계획대로
+- 10 3D 제거 레이어는 지우지 않고 값 0으로 두고 `performance` 후보에 올림
+- 고침 커밋(8f2f391): 좁은 판 줄 제목 `y-64`·줄 `[H*0.3, H*0.58]`, 넓은 판 왼쪽 열은 줄 이름만(메모는 `(gx0, y+24)`), 넓은 규칙 줄 간격 34px, sub 타이머는 `intersectionRatio >= 0.5`일 때만
+- e2e 중 고침: en ② 제목 "prices collected over 5 months" → "prices in 5 months"(1024px 세 줄), ko·ja MAE 변화 글자는 단위를 끝에 한 번만(ja 768px 넘침)
+
+미리보기에서 확인받을 것: (1) ⑤ `EVALUATION` 머리표·표 제목(화면에서 숨김) 없어짐, (2) 3D `bubble` 장면(제거 레이어 떨어짐) 연출이 사라짐.

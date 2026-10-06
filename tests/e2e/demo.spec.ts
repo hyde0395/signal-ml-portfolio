@@ -25,7 +25,7 @@ async function openDemo(page: Page, path = '/') {
 
 test('처음에는 facts.demoDefault 조합(DROP EXPECTED)이 선택돼 있다', async ({ page }) => {
   await openDemo(page);
-  await expect(page.getByLabel(ko.demo.routeLabel)).toHaveValue(facts.demoDefault.route);
+  await expect(page.locator('#demo').getByLabel(ko.demo.routeLabel)).toHaveValue(facts.demoDefault.route);
   await expect(page.locator('.demo-cabin')).toHaveText(facts.demoDefault.cabin);
   await expect(page.locator('.demo-result .badge [aria-hidden="true"]')).toHaveText('DROP EXPECTED');
 });
@@ -73,9 +73,9 @@ test('노선과 등급을 바꾸면 선택지와 막대가 새로 그려진다',
   const slider = await openDemo(page);
   const before = (await slider.getAttribute('aria-valuetext'))!;
   const other = facts.demoDefault.route === 'ICN_KIX' ? 'ICN_NRT' : 'ICN_KIX';
-  await page.getByLabel(ko.demo.routeLabel).selectOption(other);
+  await page.locator('#demo').getByLabel(ko.demo.routeLabel).selectOption(other);
   await page.locator('.demo-cabin').click();
-  await expect(page.getByLabel(ko.demo.routeLabel)).toHaveValue(other);
+  await expect(page.locator('#demo').getByLabel(ko.demo.routeLabel)).toHaveValue(other);
   await expect(page.locator('.demo-cabin')).toHaveText(facts.demoDefault.cabin === 'LCC' ? 'FSC' : 'LCC');
   // 막대가 다시 그려지는 동안 잠깐 사라졌다 나타날 수 있으니, 값을 비교하기 전에 슬라이더가
   // 다시 화면에 떠 있는지부터 확인한다
