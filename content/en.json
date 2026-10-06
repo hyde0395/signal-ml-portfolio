@@ -151,7 +151,7 @@
     "body1": "I collected airfare prices for {data.routes} routes between Incheon and Tokyo (Narita, Haneda) and Osaka (Kansai), from {data.collectStart|date} to {data.collectEnd|date}.",
     "body2": "Results come from the Google Flights search via SerpApi, run daily by GitHub Actions. Of {data.rawRows} raw rows, {data.filteredRows} remained after filtering out errors.",
     "sparse": "The closer the departure, the more often it was collected: within a week, Wednesday, Friday and Sunday departures every day; within a month, every weekday in a three-day rotation; further out, only alternate Fridays and Sundays plus holidays, once a week on Sundays. That is why the far end is sparse. The schedule changed twice early on; this is the final one.",
-    "heading": "{data.rawRows} prices collected over {data.collectMonths} months",
+    "heading": "{data.rawRows} prices in {data.collectMonths} months",
     "steps": {
       "collect": "SerpApi · Google Flights search results",
       "schedule": "GitHub Actions · daily (far-off dates on Sundays)",

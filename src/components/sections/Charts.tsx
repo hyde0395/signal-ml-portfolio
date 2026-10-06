@@ -87,7 +87,8 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
         { name: t('charts.bubble.row2'), note: t('charts.bubble.row2Note'), before: facts.model.bubble.r2Before, after: facts.model.bubble.r2After },
       ] as const,
       legendBefore: t('charts.bubble.legendBefore'), legendAfter: t('charts.bubble.legendAfter'), maeSame: t('charts.bubble.maeSame'),
-      maeChange: `${won(facts.model.bubble.maeBefore)} → ${won(facts.model.bubble.maeAfter)}`,
+      // ko·ja는 단위를 끝에 한 번만(ja "ウォン"이 두 번이면 768px 판의 MAE 칸이 판 밖으로 넘친다)
+      maeChange: locale === 'en' ? `${won(facts.model.bubble.maeBefore)} → ${won(facts.model.bubble.maeAfter)}` : `${num(facts.model.bubble.maeBefore)} → ${num(facts.model.bubble.maeAfter)}${unit}`,
     },
   };
   return (
