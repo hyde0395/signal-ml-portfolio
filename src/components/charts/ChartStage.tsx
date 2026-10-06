@@ -382,7 +382,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
             if (l.type === 'callout') {
               return (
                 <span key={i} className={`chart-callout is-${l.tone} is-${l.place}`} style={style}>
-                  <b>{l.value}</b><small>{l.note}</small>
+                  <b>{l.value}</b>{l.note && <small>{l.note}</small>}
                 </span>
               );
             }

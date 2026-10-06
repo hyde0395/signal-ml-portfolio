@@ -39,10 +39,13 @@ describe('bubbleLayout', () => {
     expect(before(0)).toEqual([BUBBLE.beforeA]);
     expect(before(2).slice(0, 2)).toEqual([BUBBLE.pastA, BUBBLE.pastA]);
   });
-  it('차이 값은 결론 이름표(callout) 설명 줄: −0.22 · −0.20', () => {
-    const notes = (st: number) => at(st).labels.filter((l) => l.type === 'callout').map((l) => (l as { value: string; note: string }));
-    expect(notes(0)).toEqual([{ type: 'callout', x: expect.any(Number), y: expect.any(Number), value: '0.71', note: '−0.22', tone: 'amber', place: 'above' }]);
-    expect(notes(1).map((n) => n.note)).toEqual(['−0.22', '−0.20']);
+  it('차이 값은 줄 아래 가운데 글자(holiday): −0.22 · −0.20, 이름표는 값만', () => {
+    const diffs = (st: number) => at(st).labels.filter((l) => l.type === 'text' && l.cls === 'holiday').map((l) => (l as { text: string }).text);
+    const callouts = (st: number) => at(st).labels.filter((l) => l.type === 'callout').map((l) => (l as { value: string; note: string }));
+    expect(diffs(0)).toEqual(['−0.22']);
+    expect(diffs(1)).toEqual(['−0.22', '−0.20']);
+    expect(callouts(0)).toEqual([{ type: 'callout', x: expect.any(Number), y: expect.any(Number), value: '0.71', note: '', tone: 'amber', place: 'above' }]);
+    expect(callouts(1).map((n) => n.value)).toEqual(['0.71', '0.64']);
   });
   it('MAE 칸: 둘째 정정 값은 단계 1부터', () => {
     const has = (st: number) => at(st).labels.some((l) => l.type === 'text' && l.text.includes('48,442'));

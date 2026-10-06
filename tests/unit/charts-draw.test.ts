@@ -212,7 +212,9 @@ describe('buildLayout', () => {
     };
     const L = buildLayout('chartBubble', {}, { w: 1080, h: 414 }, { locale: 'en', holidays: {}, bubble }, -1, 1);
     expect(L.variant).toBe('stage:1');
-    const callouts = L.labels.filter((l) => l.type === 'callout') as { value: string; note: string }[];
-    expect(callouts.map((c) => [c.value, c.note])).toEqual([['0.71', '−0.22'], ['0.64', '−0.20']]);
+    const callouts = L.labels.filter((l) => l.type === 'callout') as { value: string }[];
+    expect(callouts.map((c) => c.value)).toEqual(['0.71', '0.64']);
+    const diffs = L.labels.filter((l) => l.type === 'text' && l.cls === 'holiday') as { text: string }[];
+    expect(diffs.map((d) => d.text)).toEqual(['−0.22', '−0.20']);
   });
 });

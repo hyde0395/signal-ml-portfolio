@@ -398,7 +398,8 @@ html[data-3d="on"] :is(.intro-copy, .project-copy) { text-shadow: 0 0 18px #0204
 .project-q { font-size: clamp(2.2rem, 6vw, 4.75rem); max-width: 16ch; word-break: keep-all; text-transform: none; }
 .project-lead { font-size: clamp(1.05rem, 1.8vw, 1.2rem); max-width: 40ch; color: var(--mute); }
 .project-stats { display: flex; flex-wrap: wrap; gap: 40px; margin-top: 32px; }
-.project-stats div { display: flex; flex-direction: column-reverse; }
+/* column-reverse에선 flex-end가 위쪽 — 2번 칸처럼 이름이 두 줄이어도 숫자가 같은 윗선에 서도록 */
+.project-stats div { display: flex; flex-direction: column-reverse; justify-content: flex-end; }
 .project-stats dd { font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 600; color: var(--amb); line-height: 1.1; }
 .project-stats dt { font-size: 0.85rem; color: var(--mute); }
 /* ① 2번 칸 작은 둘째 줄(정보 전달 2 §4): 이름 아래 작게 — 숫자가 무엇과 비교한 값인지 */

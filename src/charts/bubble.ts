@@ -70,15 +70,17 @@ export function bubbleLayout(size: PlotSize, stage: number, s: BubbleTexts): Cha
     if (!shown(i)) return;
     const y = rowY[i];
     if (wide) {
-      // 왼쪽 칸(0.18W)엔 이름만 — 긴 설명은 줄 아래 축 왼쪽에서 시작한다
-      labels.push({ type: 'text', x: (W * 0.02) / W, y: y / H, text: r.name, align: 'start', cls: 'head' });
+      // 이름은 축 바로 왼쪽에 붙여 오른쪽 정렬 — 긴 설명은 줄 아래 축 왼쪽에서 시작한다
+      labels.push({ type: 'text', x: (gx0 - 20) / W, y: y / H, text: r.name, align: 'end', cls: 'head' });
       labels.push({ type: 'text', x: gx0 / W, y: (y + 24) / H, text: r.note, align: 'start', cls: 'tick' });
     } else {
       labels.push({ type: 'text', x: gx0 / W, y: (y - 64) / H, text: `${r.name} · ${r.note}`, align: 'start', cls: 'head' });
     }
     // 전 값은 작게 점 위, 후 값은 결론 이름표(큰 호박 숫자 + 차이)
     labels.push({ type: 'text', x: X(r.before) / W, y: (y - 20) / H, text: s.r2(r.before), align: 'center', cls: 'tick' });
-    labels.push({ type: 'callout', x: X(r.after) / W, y: (y - 10) / H, value: s.r2(r.after), note: s.diff(r.before - r.after), tone: 'amber', place: 'above' });
+    labels.push({ type: 'callout', x: X(r.after) / W, y: (y - 10) / H, value: s.r2(r.after), note: '', tone: 'amber', place: 'above' });
+    // 차이 값은 이름표 안(큰 숫자 위)이 어색해, 전·후 사이 줄 아래 가운데에 작은 호박색 글자로 둔다
+    labels.push({ type: 'text', x: ((X(r.before) + X(r.after)) / 2) / W, y: (y + 14) / H, text: s.diff(r.before - r.after), align: 'center', cls: 'holiday' });
   });
   // 축 눈금과 이름
   for (const v of BUBBLE.ticks) labels.push({ type: 'text', x: X(v) / W, y: (bottom + 14) / H, text: s.tick(v), align: 'center', cls: 'tick' });
