@@ -580,6 +580,8 @@ button.chart-group { background: none; border: 0; padding: 0; color: inherit; fo
 .chart-label.keyDot::before { color: #8FB8FF; }
 .chart-label.keyAmber::before { color: var(--amb); }
 .chart-label.keyDim::before { color: #8FB8FF; opacity: 0.35; }
+/* ⑤ 아령(정보 전달 2 §6): "걸러내기 전" 범례는 속 빈 점 — 색이 아니라 모양으로 전·후를 가른다 */
+.chart-label.keyRing:not(:empty)::before { content: '○'; margin-right: 6px; color: var(--tx); }
 .chart-group-pct { font: 600 1.25rem var(--font-mono); }
 .chart-group.is-holiday .chart-group-pct { color: var(--amb); }
 .chart-group-name { font-weight: 600; font-size: 0.85rem; }
