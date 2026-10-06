@@ -36,6 +36,8 @@ export type ChartStrings = {
   panelHead?: string; panelNote?: string;
   axisX?: string;                   // 가로축 이름(걸러내기·검증 설계, 계획 8-1)
   box?: string;                     // 걸러내기 규칙 ③ 상자 이름표
+  rules?: [string, string, string];  // 걸러내기 규칙 이름(③은 box와 같은 말)
+  ruleCounts?: [string, string, string]; // 걸러내기 규칙별 개수 글자(서버가 facts로 만든다)
   rowsRaw?: string; rowsKept?: string; // 걸러내기 행 수 글자("258,829 ROWS") — 서버가 facts로 만든다(문구에 숫자 금지)
   legend?: [string, string, string]; // 검증 설계 범례: 학습·평가·아직 안 씀
   methods?: readonly [SplitMethod, SplitMethod, SplitMethod]; // 검증 설계 판 위 수치(K-Fold·GroupKFold·TSS)
@@ -137,6 +139,7 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
       const num = new Intl.NumberFormat(s.locale);
       return filterLayout(loaded.charts!, size, step, sub, {
         axisX: s.axisX ?? '', axisY: s.axis ?? '', box: s.box ?? '', rowsRaw: s.rowsRaw ?? '', rowsKept: s.rowsKept ?? '',
+        rules: s.rules ?? ['', '', ''], counts: s.ruleCounts ?? ['', '', ''],
         minutes: (v) => num.format(v), pct: signed,
       });
     }

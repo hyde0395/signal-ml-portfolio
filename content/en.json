@@ -178,6 +178,8 @@
       "axisX": "Flight time (min)",
       "axisY": "vs. route/cabin mean",
       "boxLabel": "Nonstop, but as long as a connection",
+      "rule1": "Duration / unit error",
+      "rule2": "Time mismatch",
       "alt": "A dot chart of the {data.rawRows} raw rows by flight time and price. Normal nonstop flights form a narrow cluster. {data.filter.unit} rows with overly long flight times or missing price units, {data.filter.mismatch} rows with mismatched times, and {data.filter.direct} nonstop rows as long as a connection drop out in turn, leaving {data.filteredRows} rows."
     }
   },

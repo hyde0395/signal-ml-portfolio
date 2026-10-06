@@ -13,7 +13,8 @@ const data = {
     rule: [0, 0, 1, 2, 3, 1, 0],
   },
 } as unknown as ChartsData;
-const S = { axisX: '소요', axisY: '평균 대비', box: '직항인데 오래', rowsRaw: '258,829 ROWS', rowsKept: '242,874 ROWS', minutes: (v: number) => `${v}`, pct: (v: number) => `${v}%` };
+const S = { axisX: '소요', axisY: '평균 대비', box: '직항인데 오래', rowsRaw: '258,829 ROWS', rowsKept: '242,874 ROWS', minutes: (v: number) => `${v}`, pct: (v: number) => `${v}%`,
+  rules: ['단위 오류', '시각 불일치', '직항인데 오래'] as [string, string, string], counts: ['5,742', '826', '9,387'] as [string, string, string] };
 const size = { w: 1080, h: 414 };
 const pointOf = (L: ReturnType<typeof filterLayout>, k: number) => {
   // 표본 점은 규칙 선·상자 점 뒤에 온다 — 표본 k번째 = 뒤에서 (n - k)번째
@@ -71,6 +72,16 @@ describe('filterLayout', () => {
     expect(cls(0)).toEqual(['rule', 'rule', 'rule']);
     expect(cls(1)).toEqual(['ruleOn', 'ruleOn', 'rule']);
     expect(cls(2)).toEqual(['ruleOn', 'ruleOn', 'ruleOn']);
+  });
+  // 정보 전달 2 §8: 넓은 판 "RULE n · 이름 · 개수", 켜지기 전에는 개수 없음, 좁은 판은 이름 생략
+  it('규칙 이름표 글자: 넓은 판은 이름 + 켜진 뒤 개수, 좁은 판은 RULE n · 개수', () => {
+    const text = (st: number, w = 1080) => filterLayout(data, { w, h: 414 }, st, 0, S).labels
+      .filter((l) => l.type === 'text' && /^RULE/.test(l.text)).map((l) => (l as { text: string }).text);
+    expect(text(0)).toEqual(['RULE 1 · 단위 오류', 'RULE 2 · 시각 불일치', 'RULE 3 · 직항인데 오래']);
+    expect(text(1)).toEqual(['RULE 1 · 단위 오류 · 5,742', 'RULE 2 · 시각 불일치 · 826', 'RULE 3 · 직항인데 오래']);
+    expect(text(2)).toEqual(['RULE 1 · 단위 오류 · 5,742', 'RULE 2 · 시각 불일치 · 826', 'RULE 3 · 직항인데 오래 · 9,387']);
+    expect(text(0, 358)).toEqual(['RULE 1', 'RULE 2', 'RULE 3']);
+    expect(text(2, 358)).toEqual(['RULE 1 · 5,742', 'RULE 2 · 826', 'RULE 3 · 9,387']);
   });
   it('좁은 판(390px)도 이름표가 판 안', () => {
     const L = filterLayout(data, { w: 358, h: 354 }, 2, 1, S);

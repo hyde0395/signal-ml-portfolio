@@ -178,6 +178,8 @@
       "axisX": "소요 시간(분)",
       "axisY": "노선·등급 평균 대비",
       "boxLabel": "직항인데 경유만큼 걸림",
+      "rule1": "소요 시간·단위 오류",
+      "rule2": "시각 불일치",
       "alt": "원본 {data.rawRows}행을 소요 시간과 가격으로 놓은 점 그림입니다. 정상 직항은 좁게 모여 있고, 소요 시간이 너무 길거나 가격 단위가 빠진 행 {data.filter.unit}개, 시각이 맞지 않는 행 {data.filter.mismatch}개, 직항인데 경유만큼 걸리는 행 {data.filter.direct}개가 차례로 빠져 {data.filteredRows}행이 남습니다."
     }
   },

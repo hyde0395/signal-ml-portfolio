@@ -178,6 +178,8 @@
       "axisX": "所要時間(分)",
       "axisY": "路線・クラス平均比",
       "boxLabel": "直行便なのに乗り継ぎ並み",
+      "rule1": "所要時間・単位の誤り",
+      "rule2": "時刻の不一致",
       "alt": "元の{data.rawRows}行を所要時間と価格で並べた点グラフです。通常の直行便は狭くまとまり、所要時間が長すぎる行や価格単位が抜けた行{data.filter.unit}件、時刻が合わない行{data.filter.mismatch}件、乗り継ぎ並みに長い直行便{data.filter.direct}件が順に抜けて{data.filteredRows}行が残ります。"
     }
   },

@@ -57,6 +57,8 @@ export function DataSection({ locale }: { locale: Locale }) {
             axis: t('data.filter.axisY'), axisX: t('data.filter.axisX'), box: t('data.filter.boxLabel'),
             // 행 수 글자는 문구가 아니라 형식(숫자 + 공통 영어)이라 여기서 만든다 — 문구 파일에는 숫자를 쓰지 않는다
             rowsRaw: `${rows(facts.data.rawRows)} ROWS`, rowsKept: `${rows(facts.data.filteredRows)} ROWS`,
+            rules: [t('data.filter.rule1'), t('data.filter.rule2'), t('data.filter.boxLabel')],
+            ruleCounts: [rows(facts.data.filter.unit), rows(facts.data.filter.mismatch), rows(facts.data.filter.direct)],
           }}
           errorText={t('charts.error')}
         />

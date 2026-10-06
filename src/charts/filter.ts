@@ -16,11 +16,12 @@ export const FILTER = {
   x0: 60, x1: 960, over: 0.05, lo: -90, hi: 300, ruleMin: 400, boxFrom: 215, seed: 11,
   keptA: 0.4, litA: 0.95,
 } as const;
-const RULES = ['RULE 1 · DURATION · UNIT', 'RULE 2 · TIME MISMATCH', 'RULE 3 · DIRECT CHECK'];
 
 export type FilterTexts = {
   axisX: string; axisY: string; box: string;
   rowsRaw: string; rowsKept: string; // "258,829 ROWS"처럼 이미 형식을 갖춘 글자(서버가 facts로 만든다)
+  // 규칙 이름(언어별, ③은 상자 이름표와 같은 말)과 개수(지역 천 단위, facts data.filter.unit·mismatch·direct) — 정보 전달 2 §8
+  rules: readonly [string, string, string]; counts: readonly [string, string, string];
   minutes(v: number): string; pct(v: number): string;
 };
 
@@ -71,11 +72,15 @@ export function filterLayout(d: ChartsData, size: PlotSize, stage: number, sub: 
   const kept = st === 2 && sb >= 1;
   const sideX = wide ? W * 0.76 : gx0;
   labels.push({ type: 'text', x: sideX / W, y: (wide ? H * 0.62 : H * 0.07) / H, text: kept ? s.rowsKept : s.rowsRaw, align: 'start', cls: 'stat' });
-  RULES.forEach((text, i) => {
+  // 규칙 이름표(정보 전달 2 §8): 머리 "RULE n"은 세 언어 공통. 켜지기 전에는 이름까지만, 켜지면 개수가 붙어 제목의 걸러 낸 행 수가
+  // 단계마다 더해지는 모양이 된다. 좁은 판은 이름을 빼고 머리 + 개수만(세 칸이 한 줄에 들어가야 한다)
+  s.rules.forEach((name, i) => {
     const on = i < 2 ? st >= 1 : st >= 2;
     const x = wide ? sideX : gx0 + ((W - 8 - gx0) / 3) * i;
     const y = wide ? H * 0.12 + i * 24 : H * 0.18;
-    labels.push({ type: 'text', x: x / W, y: y / H, text: wide ? text : text.slice(0, 6), align: 'start', cls: on ? 'ruleOn' : 'rule' });
+    const head = `RULE ${i + 1}`;
+    const text = wide ? `${head} · ${name}${on ? ` · ${s.counts[i]}` : ''}` : on ? `${head} · ${s.counts[i]}` : head;
+    labels.push({ type: 'text', x: x / W, y: y / H, text, align: 'start', cls: on ? 'ruleOn' : 'rule' });
   });
   for (const m of [120, 240, 360, 480, 720]) labels.push({ type: 'text', x: X(m) / W, y: (bottom + (H - bottom) * 0.45) / H, text: s.minutes(m), align: 'center', cls: 'tick' });
   labels.push({ type: 'text', x: ((gxMain + gx1) / 2) / W, y: (bottom + (H - bottom) * 0.45) / H, text: `${FILTER.x1}+`, align: 'center', cls: 'tick' });
