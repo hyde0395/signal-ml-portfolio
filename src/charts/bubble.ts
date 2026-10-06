@@ -31,8 +31,9 @@ export function bubbleLayout(size: PlotSize, stage: number, s: BubbleTexts): Cha
   // 넓은 판: 왼쪽 20% 줄 이름, 가운데 축, 오른쪽 칸(0.8W~) MAE. 좁은 판: 줄 이름은 줄 위, MAE는 축 아래
   const gx0 = wide ? W * 0.2 : W * 0.06, gx1 = wide ? W * 0.74 : W - 16;
   const top = H * (wide ? 0.18 : 0.12), bottom = H * (wide ? 0.82 : 0.64);
-  const X = (v: number) => gx0 + (gx1 - gx0) * ((v - BUBBLE.lo) / (BUBBLE.hi - BUBBLE.lo));
-  const rowY = wide ? [H * 0.38, H * 0.64] : [H * 0.3, H * 0.52];
+  // 축 범위 밖 값(앞으로 바뀌는 facts)도 판 안에 머물도록 범위로 자른다
+  const X = (v: number) => gx0 + (gx1 - gx0) * ((Math.min(BUBBLE.hi, Math.max(BUBBLE.lo, v)) - BUBBLE.lo) / (BUBBLE.hi - BUBBLE.lo));
+  const rowY = wide ? [H * 0.38, H * 0.64] : [H * 0.3, H * 0.58];
   const shown = (i: number) => i === 0 || st >= 1;
   const p = new Pts();
 
@@ -69,10 +70,11 @@ export function bubbleLayout(size: PlotSize, stage: number, s: BubbleTexts): Cha
     if (!shown(i)) return;
     const y = rowY[i];
     if (wide) {
-      labels.push({ type: 'text', x: (W * 0.02) / W, y: (y - 9) / H, text: r.name, align: 'start', cls: 'head' });
-      labels.push({ type: 'text', x: (W * 0.02) / W, y: (y + 11) / H, text: r.note, align: 'start', cls: 'tick' });
+      // 왼쪽 칸(0.18W)엔 이름만 — 긴 설명은 줄 아래 축 왼쪽에서 시작한다
+      labels.push({ type: 'text', x: (W * 0.02) / W, y: y / H, text: r.name, align: 'start', cls: 'head' });
+      labels.push({ type: 'text', x: gx0 / W, y: (y + 24) / H, text: r.note, align: 'start', cls: 'tick' });
     } else {
-      labels.push({ type: 'text', x: gx0 / W, y: (y - 34) / H, text: `${r.name} · ${r.note}`, align: 'start', cls: 'head' });
+      labels.push({ type: 'text', x: gx0 / W, y: (y - 64) / H, text: `${r.name} · ${r.note}`, align: 'start', cls: 'head' });
     }
     // 전 값은 작게 점 위, 후 값은 결론 이름표(큰 호박 숫자 + 차이)
     labels.push({ type: 'text', x: X(r.before) / W, y: (y - 20) / H, text: s.r2(r.before), align: 'center', cls: 'tick' });

@@ -97,4 +97,12 @@ describe('filterLayout', () => {
       expect(L.alpha[i]).toBeCloseTo(L.tone[i] === TONE.amber ? FILTER.litA : FILTER.keptA);
     }
   });
+  it('넓은 판: 규칙 이름표 줄 간격 30px 이상, 행 수 stat과도 안 겹친다', () => {
+    for (const h of [414, 700]) {
+      const L = filterLayout(data, { w: 1080, h }, 2, 1, S);
+      const ys = L.labels.filter((l) => l.type === 'text' && /^RULE/.test(l.text)).map((l) => l.y * h);
+      for (let i = 1; i < ys.length; i++) expect(ys[i] - ys[i - 1]).toBeGreaterThanOrEqual(30);
+      expect(Math.abs(L.labels[0].y * h - ys[ys.length - 1])).toBeGreaterThanOrEqual(30);
+    }
+  });
 });

@@ -209,9 +209,9 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     if (count <= 1 || reduced || !subMs || !el) return;
     let timer: ReturnType<typeof startSubs> | null = null;
     const set = (n: number) => { if (subRef.current === n) return; subRef.current = n; setSub(n); relayout.current(); };
-    // 판이 절반 이상 보일 때 시작한다 — 조금만 걸쳐도 시작하면 독자가 판에 닿기 전에 sub가 끝나 있다(③·⑤ 두 판이 쓴다, 정보 전달 2 §7)
+    // 판이 절반 이상 보일 때 시작한다 — 조금만 걸쳐도 시작하면 독자가 판에 닿기 전에 sub가 끝나 있다(②·③·⑤ 판이 sub 타이머를 쓴다, 정보 전달 2 §7)
     const io = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) { timer?.stop(); return; }
+      if (!e.isIntersecting || e.intersectionRatio < 0.5) { timer?.stop(); return; }
       if (timer) timer.restart();
       else timer = startSubs({ count, ms: subMs, reduced: false, set, setTimeout: window.setTimeout.bind(window) as typeof setTimeout, clearTimeout: window.clearTimeout.bind(window) });
     }, { threshold: 0.5 });
@@ -388,7 +388,7 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
             }
             const cls = `chart-label ${l.cls} align-${l.align}`;
             // 판 위 수치(stat·statSm)와 ⑤ 점수판 줄은 글자가 바뀌면 플립 — 지난 줄은 글자가 같아 다시 플립하지 않고 색만 바뀐다
-            if (l.cls === 'stat' || l.cls === 'statSm' || l.cls.startsWith('score')) return <FlipLabel key={i} text={l.text} className={cls} style={style} />;
+            if (l.cls === 'stat' || l.cls === 'statSm' || (l.cls === 'score' || l.cls === 'scoreHi' || l.cls === 'scorePast')) return <FlipLabel key={i} text={l.text} className={cls} style={style} />;
             return <span key={i} className={cls} style={style}>{l.text}</span>;
           })}
         </div>

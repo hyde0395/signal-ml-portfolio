@@ -65,4 +65,23 @@ describe('bubbleLayout', () => {
     const cls = at(0).labels.filter((l) => l.type === 'text' && l.cls.startsWith('key')).map((l) => (l as { cls: string }).cls);
     expect(cls).toEqual(['keyRing', 'keyAmber']);
   });
+  it('좁은 판: 줄 제목은 그 줄 결론 이름표보다 30px 이상 위', () => {
+    const L = at(2, narrow);
+    const titles = L.labels.filter((l) => l.type === 'text' && S.rows.some((r) => l.text === `${r.name} · ${r.note}`));
+    const callouts = L.labels.filter((l) => l.type === 'callout');
+    expect(titles.length).toBe(2);
+    titles.forEach((t, i) => expect(callouts[i].y * narrow.h - t.y * narrow.h).toBeGreaterThanOrEqual(30));
+  });
+  it('넓은 판: 줄 설명은 축 왼쪽(첫 눈금 칸의 왼쪽 0.2W)에서 시작', () => {
+    const L = at(2, wide);
+    for (const r of S.rows) {
+      const note = L.labels.find((l) => l.type === 'text' && l.text === r.note)!;
+      expect(note.x).toBeCloseTo(0.2, 6);
+    }
+  });
+  it('범위 밖 R²도 판 안에 머문다', () => {
+    const L = bubbleLayout(wide, 2, { ...S, rows: [{ ...S.rows[0], before: 1.4, after: 0.1 }, S.rows[1]] });
+    for (let i = 0; i < L.n; i++) { expect(L.x[i]).toBeGreaterThanOrEqual(0); expect(L.x[i]).toBeLessThanOrEqual(1); }
+    for (const l of L.labels) { expect(l.x).toBeGreaterThanOrEqual(0); expect(l.x).toBeLessThanOrEqual(1); }
+  });
 });

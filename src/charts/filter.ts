@@ -77,7 +77,7 @@ export function filterLayout(d: ChartsData, size: PlotSize, stage: number, sub: 
   s.rules.forEach((name, i) => {
     const on = i < 2 ? st >= 1 : st >= 2;
     const x = wide ? sideX : gx0 + ((W - 8 - gx0) / 3) * i;
-    const y = wide ? H * 0.12 + i * 24 : H * 0.18;
+    const y = wide ? H * 0.12 + i * 34 : H * 0.18;
     const head = `RULE ${i + 1}`;
     const text = wide ? `${head} · ${name}${on ? ` · ${s.counts[i]}` : ''}` : on ? `${head} · ${s.counts[i]}` : head;
     labels.push({ type: 'text', x: x / W, y: y / H, text, align: 'start', cls: on ? 'ruleOn' : 'rule' });
