@@ -53,7 +53,7 @@ paths:
 
 ## 알고 있는 작은 것
 - `hero.webp` 작은 불빛이 조금 흐림, ② 보드 해안선이 "ROWS" 뒤 몇 화소 4.2:1, 5-3c 3D 전환 도중 그룹을 빠르게 바꾸면 점이 튈 수 있음, `flip.ts` 코드 포인트 분할
-- 미룬 것: `ChartStage` sub 타이머 IntersectionObserver에 `threshold` 없음(필요하면 0.5), `globals.css` `.keyDot`·`.keyDim`의 `#8FB8FF` → `var(--dot)`, `Charts.tsx` `splitStrings`가 ④에서도 만들어짐·`axis${…'Y'}` 특례
+- 미룬 것: `globals.css` `.keyDot`·`.keyDim`의 `#8FB8FF` → `var(--dot)`, `Charts.tsx` `splitStrings`가 ④에서도 만들어짐·`axis${…'Y'}` 특례
 
 ## 그 밖
 - 링크 미리보기: OG 이미지(지형 + 이름 + `ML ENGINEER`, 언어별), 제목·설명·파비콘
