@@ -27,6 +27,10 @@ export function formatValue(value: unknown, format: string | undefined, locale: 
   if (format === 'signed' && typeof value === 'number') {
     return new Intl.NumberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'exceptZero' }).format(value);
   }
+  // 제목 속 부호 있는 정수 %(정보 전달 2: "+71%", "−5%"). signed는 소수 한 자리라 따로 둔다
+  if (format === 'signed0' && typeof value === 'number') {
+    return new Intl.NumberFormat(intl, { maximumFractionDigits: 0, signDisplay: 'exceptZero' }).format(value);
+  }
   if (format === 'plain' && typeof value === 'number') return String(value);
   if (format === 'fixed1' && typeof value === 'number') {
     return new Intl.NumberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);

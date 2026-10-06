@@ -115,3 +115,55 @@ def test_feature_groups_must_cover_model_features_exactly():
         ef.check_feature_groups([{"id": "x", "gain": 100.0, "features": ["a", "b"]}], model_features)
     with pytest.raises(SystemExit, match="z"):
         ef.check_feature_groups(good + [{"id": "z", "gain": 0.0, "features": ["z"]}], model_features)
+
+
+def test_half_up_matches_js_math_round():
+    # 사이트 단위 테스트가 Math.round로 다시 계산해 대조한다 — 파이썬 round()(은행가 반올림)와 .5에서 다르다
+    assert ef.half_up(70.5) == 71
+    assert ef.half_up(-17.27) == -17
+    assert ef.half_up(-17.5) == -17
+    assert ef.half_up(46.8) == 47
+
+
+def test_weekday_means_monday_first_and_none_for_missing():
+    # 2027-01-03 일, 01-04 월, 01-10 일
+    got = ef.weekday_means(["2027-01-03", "2027-01-04", "2027-01-10"], [200, -170, 100])
+    assert got == [-17, None, None, None, None, None, 15]
+
+
+def test_holiday_peak_first_max_among_holiday_dates():
+    # 공휴일이 아닌 날(800)은 무시, 같은 값이면 앞의 것(④ departLayout과 같은 규칙)
+    assert ef.holiday_peak([800, 705, 705, 300], [None, "kr_new_year", "kr_christmas_day", "kr_new_year"]) == {"pct": 71, "holiday": "kr_new_year"}
+    with pytest.raises(SystemExit):
+        ef.holiday_peak([100], [None])
+
+
+def test_add_derived_fills_new_numbers_without_touching_input():
+    facts = {
+        "data": {"filter": {"unit": 5742, "mismatch": 826, "direct": 9387, "durationMax": 400}},
+        "model": {
+            "baselineMae": 48688, "tss": {"mae": 48235},
+            "featureGroups": [{"id": "lookup", "gain": 46.8, "features": []}, {"id": "categorical", "gain": 26.0, "features": []}],
+            "bookingCurve": [{"label": "a", "pct": 11.1}, {"label": "b", "pct": -5.0}, {"label": "c", "pct": -4.3}],
+        },
+    }
+    charts = {"dates": ["2027-01-03", "2027-01-04"], "depart": {"pct": [713, -100], "holiday": ["kr_new_year", None]}}
+    out = ef.add_derived(facts, charts)
+    assert out["data"]["filter"]["removed"] == 15955
+    assert out["model"]["baselineGap"] == {"mae": 453, "pct": 0.9}
+    assert out["model"]["groupShare"] == {"lookup": 47, "categorical": 26}
+    assert out["insight"]["holidayPeak"] == {"pct": 71, "holiday": "kr_new_year"}
+    assert out["insight"]["weekdayPct"] == [-10, None, None, None, None, None, 71]
+    assert out["insight"]["curveMin"] == -5.0
+    assert "removed" not in facts["data"]["filter"]  # 입력은 그대로
+
+
+def test_add_derived_without_charts_keeps_existing_insight():
+    facts = {
+        "data": {"filter": {"unit": 1, "mismatch": 2, "direct": 3, "durationMax": 400}},
+        "model": {"baselineMae": 100, "tss": {"mae": 90}, "featureGroups": [], "bookingCurve": [{"label": "a", "pct": 1.0}]},
+        "insight": {"curveMin": 1.0},
+    }
+    out = ef.add_derived(facts, None)
+    assert out["insight"] == {"curveMin": 1.0}
+    assert out["model"]["baselineGap"] == {"mae": 10, "pct": 10.0}

@@ -20,6 +20,12 @@ describe('formatValue', () => {
     expect(formatValue(11.1, 'signed', 'ko')).toBe('+11.1');
     expect(formatValue(-5, 'signed', 'ko')).toMatch(/^[-−]5\.0$/);
   });
+  it('signed0: 부호 + 정수(정보 전달 2 제목의 +71% · −5%)', () => {
+    expect(formatValue(71, 'signed0', 'ko')).toBe('+71');
+    expect(formatValue(-5, 'signed0', 'en')).toBe('-5');
+    expect(formatValue(-4.6, 'signed0', 'ja')).toBe('-5');
+    expect(formatValue(0, 'signed0', 'ko')).toBe('0');
+  });
   it('plain은 구분 기호 없이', () => {
     expect(formatValue(2028, 'plain', 'ko')).toBe('2028');
   });

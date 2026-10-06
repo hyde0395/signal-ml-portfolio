@@ -69,7 +69,8 @@
       "unit": 5742,
       "mismatch": 826,
       "direct": 9387,
-      "durationMax": 400
+      "durationMax": 400,
+      "removed": 15955
     }
   },
   "model": {
@@ -224,11 +225,39 @@
         "pct": 2.1
       }
     ],
-    "featureCount": 33
+    "featureCount": 33,
+    "baselineGap": {
+      "mae": 453,
+      "pct": 0.9
+    },
+    "groupShare": {
+      "lookup": 47,
+      "categorical": 26,
+      "holiday": 11,
+      "days": 7,
+      "flight": 5,
+      "market": 1
+    }
   },
   "demoDefault": {
     "route": "ICN_NRT",
     "cabin": "LCC",
     "date": "2026-11-26"
+  },
+  "insight": {
+    "holidayPeak": {
+      "pct": 71,
+      "holiday": "kr_new_year"
+    },
+    "weekdayPct": [
+      2,
+      -17,
+      -17,
+      -11,
+      7,
+      3,
+      20
+    ],
+    "curveMin": -5.0
   }
 }

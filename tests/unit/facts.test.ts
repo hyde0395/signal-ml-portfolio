@@ -1,5 +1,8 @@
 // data/facts.json이 스키마를 지키는지, 대표 수치가 들어 있는지, 코드 링크 조립이 맞는지 확인한다.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import type { ChartsData } from '@/charts/data';
+import { holidayPeakIndex, weekdayMeans } from '@/charts/layouts';
 import raw from '../../data/facts.json';
 import { codeUrl, facts, factsSchema } from '@/lib/facts';
 import { destinationCodes } from '@/lib/ticket';
@@ -77,5 +80,42 @@ describe('contact.ticket(연락처 탑승권)', () => {
 
   it('출발 공항은 첫 화면과 같은 site.airport.code이고 모든 노선의 출발지다', () => {
     for (const r of facts.data.byRoute) expect(r.pair.split('_')[0]).toBe(facts.site.airport.code);
+  });
+});
+
+// 정보 전달 2(설계 2026-10-06 §2): export_facts.py add_derived가 넣은 값을 사이트 데이터로 다시 계산해 대조한다
+describe('정보 전달 2 새 수치', () => {
+  const charts = JSON.parse(readFileSync(`public/data/charts.${facts.dataVersion}.json`, 'utf8')) as ChartsData;
+
+  it('걸러 낸 행 = 규칙 셋의 합 = 원본 − 남은 행', () => {
+    const f = facts.data.filter;
+    expect(f.removed).toBe(f.unit + f.mismatch + f.direct);
+    expect(f.removed).toBe(facts.data.rawRows - facts.data.filteredRows);
+  });
+
+  it('단순 기준선과 MAE 차이(원·%)', () => {
+    const gap = facts.model.baselineMae - facts.model.tss.mae;
+    expect(facts.model.baselineGap.mae).toBe(Math.round(gap));
+    expect(facts.model.baselineGap.pct).toBeCloseTo(Math.round((gap / facts.model.baselineMae) * 1000) / 10, 9);
+  });
+
+  it('그룹 몫 = gain 반올림(③ 와플 제목)', () => {
+    for (const g of facts.model.featureGroups) expect(facts.model.groupShare[g.id]).toBe(Math.round(g.gain));
+  });
+
+  // ④ 출발일 제목은 공휴일 이름을 글자로 쓴다("신정"/"New Year"/"元日") — 재학습으로 봉우리가 바뀌면 여기서 멈추고 제목을 고친다
+  it('공휴일 봉우리 = 출발일 차트 이름표와 같은 날, 신정', () => {
+    const i = holidayPeakIndex(charts);
+    expect(facts.insight.holidayPeak.pct).toBe(Math.round(charts.depart.pct[i] / 10));
+    expect(facts.insight.holidayPeak.holiday).toBe(charts.depart.holiday[i]);
+    expect(facts.insight.holidayPeak.holiday).toBe('kr_new_year');
+  });
+
+  it('요일 평균 = 요일 막대 값(정수)', () => {
+    expect(facts.insight.weekdayPct).toEqual(weekdayMeans(charts).map((v) => (v === null ? null : Math.round(v))));
+  });
+
+  it('U자 최솟값 = bookingCurve 최솟값', () => {
+    expect(facts.insight.curveMin).toBe(Math.min(...facts.model.bookingCurve.map((b) => b.pct)));
   });
 });

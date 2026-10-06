@@ -92,6 +92,21 @@ export function waffleLayout(groups: FeatureGroupInput[], size: PlotSize, fmt: {
 export const DEPART_TEXT = { charPx: 6.6, monthGapPx: 34 } as const;
 export const DEPART = { perDate: 12, wideMinPx: 560, lo: -30, hi: 75, hotPct: 25, hotWeekday: 15, weekLo: -25, weekHi: 25, lineA: 0.4 } as const;
 
+// 요일(월=0 … 일=6)별 출발일 % 평균. 출발일이 없는 요일은 null. facts insight.weekdayPct(export_facts.py weekday_means)와
+// 같은 계산이라 단위 테스트가 둘을 대조한다
+export function weekdayMeans(d: Pick<ChartsData, 'dates' | 'depart'>): (number | null)[] {
+  const sum = Array(7).fill(0), cnt = Array(7).fill(0);
+  d.dates.forEach((iso, i) => { const k = (new Date(utc(iso)).getUTCDay() + 6) % 7; sum[k] += d.depart.pct[i] / 10; cnt[k]++; });
+  return sum.map((v, k) => (cnt[k] ? v / cnt[k] : null));
+}
+
+// 공휴일 무렵 출발일 중 가장 비싼 날의 번호(없으면 −1, 같은 값이면 앞의 날). ④ 봉우리 이름표와 facts insight.holidayPeak가 같은 규칙
+export function holidayPeakIndex(d: Pick<ChartsData, 'dates' | 'depart'>): number {
+  let peak = -1;
+  d.dates.forEach((_, i) => { if (d.depart.holiday[i] !== null && (peak < 0 || d.depart.pct[i] > d.depart.pct[peak])) peak = i; });
+  return peak;
+}
+
 // 출발일 가로축의 월 이름(차트 1·③ 모델 구조가 같이 쓴다). X = 출발일 → 판 안 px, y = 이름표 줄 높이(px).
 // 앞 월 이름과 monthGapPx보다 가까우면 뺀다 — 첫 출발일(5월 중순)과 다음 달 첫 출발일이 붙어 있어 좁은 판에서 "MayJun"처럼 붙었다
 export function monthLabels(dates: string[], X: (iso: string) => number, month: (iso: string) => string, y: number, size: PlotSize): ChartLabel[] {
@@ -150,8 +165,7 @@ export function departLayout(
   labels.push({ type: 'text', x: gx0 / W, y: (top * 0.35) / H, text: s.axis, align: 'start', cls: 'axis' });
   labels.push(...monthLabels(d.dates, X, s.month, bottom + (gy1 - bottom) * 0.6, size));
   // 결론 이름표: 공휴일 무렵 출발일 중 가장 높은 봉우리(지금 데이터로 신정 +71%)
-  let peak = -1;
-  d.dates.forEach((_, i) => { if (d.depart.holiday[i] !== null && (peak < 0 || d.depart.pct[i] > d.depart.pct[peak])) peak = i; });
+  const peak = holidayPeakIndex(d);
   // 공휴일 이름표: 봉우리 바로 위. 옆 이름표와 가로로 겹치면 한 줄(13px) 위로 올린다 — 글자 폭은 배치 함수에서 잴 수 없어
   // 글자 수 × charPx로 어림한다(좁은 영어 판에서 Christmas·Seollal이 붙었다). 판 위로 나가지 않게 8px에서 멈춘다
   const placed: { x: number; y: number; half: number }[] = [];
@@ -180,9 +194,7 @@ export function departLayout(
   }
 
   // 요일 평균(월=0 … 일=6)
-  const sum = Array(7).fill(0), cnt = Array(7).fill(0);
-  d.dates.forEach((iso, i) => { const k = (new Date(utc(iso)).getUTCDay() + 6) % 7; sum[k] += d.depart.pct[i] / 10; cnt[k]++; });
-  const avg = sum.map((v, k) => (cnt[k] ? v / cnt[k] : null));
+  const avg = weekdayMeans(d);
   const clampW = (v: number) => Math.min(DEPART.weekHi, Math.max(DEPART.weekLo, v));
   if (wide) {
     // 요일 이름 칸(nameX, 오른쪽 맞춤)과 점 줄 시작(sx0) 사이를 비워 둔다 — 음수 값 이름표가 점 줄 왼쪽 끝 밖에 붙으므로

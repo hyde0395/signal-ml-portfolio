@@ -5,10 +5,12 @@
 - 나머지 키(profile, contact, codeLinks 등)는 손대지 않는다.
 
 실행: npm run facts   (AIRFARE_ROOT 기본값 ~/Documents/airfare-forecasting-ml)
+      npm run facts:derived   (원본 CSV 없이 facts.json·charts.json에서 계산하는 값만 다시 — 정보 전달 2)
 """
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 from pathlib import Path
@@ -18,6 +20,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 FACTS_PATH = ROOT / "data" / "facts.json"
 METRICS_PATH = ROOT / "scripts" / "model_metrics.json"
+CHARTS_DIR = ROOT / "public" / "data"
 AIRFARE_ROOT = Path(os.environ.get("AIRFARE_ROOT", Path.home() / "Documents" / "airfare-forecasting-ml"))
 
 sys.path.insert(0, str(AIRFARE_ROOT))
@@ -132,7 +135,75 @@ def merge_facts(existing: dict, as_of: str, data: dict, model: dict) -> dict:
     return merged
 
 
-def main() -> None:
+def half_up(v: float) -> int:
+    """JS Math.round와 같은 반올림(.5는 위로). 사이트 단위 테스트가 Math.round로 다시 계산해 대조하므로 같은 규칙을 쓴다."""
+    return int(math.floor(v + 0.5))
+
+
+def weekday_means(dates: list[str], pct10: list[int]) -> list[int | None]:
+    """요일(월=0 … 일=6)별 출발일 % 평균(정수). ④ 요일 막대(src/charts/layouts.ts weekdayMeans)와 같은 계산 — 출발일이 없는 요일은 None."""
+    total, count = [0.0] * 7, [0] * 7
+    for d, p in zip(dates, pct10):
+        k = pd.Timestamp(d).weekday()
+        total[k] += p / 10
+        count[k] += 1
+    return [half_up(total[k] / count[k]) if count[k] else None for k in range(7)]
+
+
+def holiday_peak(pct10: list[int], holiday: list[str | None]) -> dict:
+    """공휴일 무렵 출발일 중 가장 비싼 날의 %(정수)와 공휴일 코드. ④ 봉우리 이름표(layouts.ts holidayPeakIndex)와 같은 규칙 —
+    같은 값이면 앞의 날. ④ 제목이 공휴일 이름을 글자로 쓰므로(자리 표시로 못 끌어옴) 사이트 테스트가 코드를 확인한다."""
+    best: tuple[int, str] | None = None
+    for p, h in zip(pct10, holiday):
+        if h is not None and (best is None or p > best[0]):
+            best = (p, h)
+    if best is None:
+        raise SystemExit("공휴일 무렵 출발일이 없다 — ④ 출발일 제목을 만들 수 없다")
+    return {"pct": half_up(best[0] / 10), "holiday": best[1]}
+
+
+def add_derived(facts: dict, charts: dict | None) -> dict:
+    """정보 전달 2(설계 2026-10-06 §2): 다른 수치에서 계산하는 값을 채운 새 dict. charts가 없으면 insight는 있던 것을 둔다.
+    - data.filter.removed: 규칙 셋이 뺀 행 합(② 걸러내기 제목)
+    - model.baselineGap: 단순 기준선과 모델 MAE 차이(⑤ 한계 제목), model.groupShare: 그룹 gain 정수(③ 와플 제목)
+    - insight: charts.json 출발일 %에서 공휴일 봉우리·요일 평균(④ 출발일 제목), bookingCurve 최솟값(④ U자 제목)"""
+    out = json.loads(json.dumps(facts))
+    f = out["data"]["filter"]
+    f["removed"] = f["unit"] + f["mismatch"] + f["direct"]
+    m = out["model"]
+    gap = m["baselineMae"] - m["tss"]["mae"]
+    m["baselineGap"] = {"mae": half_up(gap), "pct": round(gap / m["baselineMae"] * 100, 1)}
+    m["groupShare"] = {g["id"]: half_up(g["gain"]) for g in m["featureGroups"]}
+    if charts is not None:
+        dep = charts["depart"]
+        out["insight"] = {
+            "holidayPeak": holiday_peak(dep["pct"], dep["holiday"]),
+            "weekdayPct": weekday_means(charts["dates"], dep["pct"]),
+            "curveMin": min(b["pct"] for b in m["bookingCurve"]),
+        }
+    return out
+
+
+def load_charts(as_of: str) -> dict | None:
+    path = CHARTS_DIR / f"charts.{as_of}.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
+
+def write_facts(facts: dict) -> None:
+    FACTS_PATH.write_text(json.dumps(facts, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def refresh_derived(charts: dict | None = None) -> None:
+    """facts.json의 계산 값만 다시 쓴다. export_charts.py가 새 charts.json을 만든 뒤 부른다(갱신 순서가 facts → charts라서)."""
+    facts = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
+    write_facts(add_derived(facts, charts if charts is not None else load_charts(facts["dataVersion"])))
+
+
+def main(argv: list[str] | None = None) -> None:
+    if "--derived-only" in (sys.argv[1:] if argv is None else argv):
+        refresh_derived()
+        print("facts.json 계산 값 갱신(원본 CSV 안 읽음)")
+        return
     metrics = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
     meta = metrics.pop("_meta")
     as_of = meta["asOf"]
@@ -141,8 +212,8 @@ def main() -> None:
     check_snapshot(data, meta)
     metrics["featureCount"] = check_feature_groups(metrics["featureGroups"], model_feature_names())
     existing = json.loads(FACTS_PATH.read_text(encoding="utf-8")) if FACTS_PATH.exists() else {}
-    merged = merge_facts(existing, as_of, data, metrics)
-    FACTS_PATH.write_text(json.dumps(merged, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    merged = add_derived(merge_facts(existing, as_of, data, metrics), load_charts(as_of))
+    write_facts(merged)
     print(f"facts.json 갱신: {as_of}, {data['filteredRows']:,}행")
 
 

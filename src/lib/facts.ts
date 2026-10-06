@@ -43,7 +43,10 @@ export const factsSchema = z.object({
     rawByRoute: z.array(routeRows).min(1),
     collectDays: z.number().int(), collectMonths: z.number().int(),
     // ② 걸러내기 판(계획 8-1): 규칙별 제거 행 수(① 단위·소요, ② 시각 불일치, ③ 직항 확인)와 소요 시간 상한(분)
-    filter: z.object({ unit: z.number().int(), mismatch: z.number().int(), direct: z.number().int(), durationMax: z.number().int() }),
+    // removed = 셋의 합(정보 전달 2, ② 걸러내기 제목) — export_facts.py add_derived가 계산한다
+    filter: z.object({
+      unit: z.number().int(), mismatch: z.number().int(), direct: z.number().int(), durationMax: z.number().int(), removed: z.number().int(),
+    }),
   }),
   model: z.object({
     tss: score, kfold: score, gkfNoLookup: score, gkfWithLookup: score,
@@ -63,6 +66,18 @@ export const factsSchema = z.object({
       gain: z.number(), features: z.array(z.string()).min(1),
     })).length(6),
     featureCount: z.number().int(),
+    // 정보 전달 2(설계 2026-10-06 §2) — export_facts.py add_derived가 계산한다. ⑤ 한계 제목·③ 와플 제목
+    baselineGap: z.object({ mae: z.number().int(), pct: z.number() }),
+    groupShare: z.object({
+      lookup: z.number().int(), categorical: z.number().int(), holiday: z.number().int(),
+      days: z.number().int(), flight: z.number().int(), market: z.number().int(),
+    }),
+  }),
+  // ④ 제목 수치(정보 전달 2) — charts.json 출발일 %와 bookingCurve에서 계산한다. 단위 테스트가 charts.json과 대조한다
+  insight: z.object({
+    holidayPeak: z.object({ pct: z.number().int(), holiday: z.string().min(1) }),
+    weekdayPct: z.array(z.number().int().nullable()).length(7), // 월 … 일, 출발일이 없는 요일은 null
+    curveMin: z.number(),
   }),
 });
 

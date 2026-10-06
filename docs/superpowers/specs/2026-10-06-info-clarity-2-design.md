@@ -27,6 +27,7 @@
 | `insight.curveMin` | −5.0 | `model.bookingCurve` 최솟값 | ④ U자 제목 |
 | `model.groupShare.lookup` · `.categorical` | 47 · 26 | `featureGroups` gain 반올림 정수 | ③ 와플 제목 |
 
+- 계산 함수 `add_derived`는 `export_facts.py`, 호출은 `npm run facts`·`npm run charts` 끝·`npm run facts:derived`(원본 CSV 없이)
 - `insight.*`는 `charts.json`과 같은 원본에서 계산하므로 **단위 테스트로 서로 대조**한다(지금 `bookingBins`처럼): 봉우리 % = `charts.json` 출발일 % 최댓값(공휴일), 요일 평균 = 같은 % 평균, `data.filter.removed = rawRows − filteredRows`
 - ④ 출발일 제목은 공휴일 이름을 글자로 쓴다("신정"/"New Year"/"元日") — 자리 표시로 공휴일 이름을 끌어올 수 없어서. 대신 테스트가 `insight.holidayPeak.holiday === 'kr_new_year'`를 확인해, 재학습으로 봉우리가 바뀌면 테스트가 깨지고 제목을 고치게 한다
 - `npm run facts` 뒤 `site` 줄만 바뀌었으면 되돌린다(알려진 동작)
@@ -46,7 +47,7 @@
 | ⑤ 예측 구간 | `charts.band.heading` | 예측 구간 보정 | 예측 구간이 실제 가격의 {coverage}%를 감쌌다 | The interval covered {coverage}% of actual prices | 予測区間が実際の価格の{coverage}%を捉えた |
 | ⑤ 한계 | `charts.limits.heading` | 한계와 다음 단계 | 단순 기준선과 MAE 차이는 {gap}원({gapPct}%) | MAE gap to a simple baseline: ₩{gap} ({gapPct}%) | 単純なベースラインとのMAE差は{gap}ウォン({gapPct}%) |
 
-- 자리 표시 경로는 위 §2 이름 그대로(예: `{data.filter.removed}`, `{insight.curveMin|signed}`, `{model.baselineGap.pct|fixed1}`). 숫자는 문구에 쓰지 않으므로 ja "ひと月", en "a month"처럼 글자로
+- 새 형식 `signed0`(부호 + 정수, 제목의 `+71%`·`−5%`용)을 `i18n.ts`에 더한다. 출발일 제목은 `+{pct}%` → `{insight.holidayPeak.pct|signed0}%`. 자리 표시 경로는 위 §2 이름 그대로(예: `{data.filter.removed}`, `{insight.curveMin|signed0}`, `{model.baselineGap.pct|fixed1}`). 숫자는 문구에 쓰지 않으므로 ja "ひと月", en "a month"처럼 글자로
 - 섹션 h2(①~⑤ 큰 제목 "한·일 항공권, 언제 사야 할까?"·"데이터가 보여 준 것"·"모델 검증" 등)는 그대로 — h2는 섹션 이름, h3가 결론
 - 긴 제목 처리: 제목이 두 줄을 넘지 않는지 1024·768·390에서 3개 언어로 확인(가장 긴 것: ④ 두 제목 en). 넘으면 콜론 뒤를 줄바꿈 단위로(`<wbr>` 대신 문구 쪽 조정)
 - 차트 판의 `aria-label`(`제목 · 값 살펴보기`)도 새 제목을 쓴다 — 지금 코드가 같은 키를 쓰므로 자동
@@ -60,10 +61,10 @@
 | 3 | `{model.bubble.firstR2} → {model.bubble.firstR2After}` → 0.93 → 0.71 | 부풀려진 R² 바로잡음 | 피처 33 |
 | 4 | `{data.routes}` → 6 | 노선 | 예측 구간 80% |
 
-- `project.stats` 키를 `rows`·`coverage`·`r2Fix`·`routes`로 바꾼다(세 언어 함께). 값은 플립 글자판 그대로 — 3번 칸은 화살표가 들어가는 글자판(`→`를 글자판 문자 집합에 넣거나 화살표만 고정 글자로; 구현 계획에서 `flip.ts` 문자 집합을 확인)
+- `project.stats` 키를 `rows`·`coverage`·`r2Fix`·`routes`로 바꾼다(세 언어 함께). 값은 플립 글자판 그대로 — ① 숫자 칸은 플립 글자판이 아니라 그냥 글자라 바꿀 것 없음(`flip.ts` 문자 집합 그대로)
 - 3번 칸이 "숫자가 떨어졌다 = 나빠졌다"로 읽히지 않게 이름표에 "바로잡음"을 반드시 둔다
 - 2번 칸 작은 줄 "보정 전 69%"는 이름표 아래 둘째 줄(작은 회색)
-- 휴대폰: 지금처럼 2×2. 3번 칸 값이 가장 길다(9자) — 390px에서 넘치지 않는지 확인
+- 휴대폰: 지금처럼 줄바꿈(flex-wrap). 3번 칸 값이 가장 길다(9자) — 390px에서 넘치지 않는지 확인
 
 ## 5. ⑤ 검증 설계 "점수판 쌓기" (질문 1)
 
@@ -71,6 +72,7 @@
   - 단계 0(K-Fold): `K-FOLD  R² 0.668 · MAE 44,196` 한 줄
   - 단계 1(GroupKFold): 위 줄이 흐려지고(알파 약 0.45) 아래에 `GROUPKFOLD  0.649 · 49,067`
   - 단계 2(TSS): 위 두 줄 흐리게, 마지막 줄 `▶ TSS  R² 0.637 · MAE 48,235원`만 **호박색·크게**(약 1.4배), 오른쪽 꼬리표 "운영 기준 · 대표값"(content `charts.validation.tagTss`를 이 말로)
+  - 판 위 방식 이름은 `TSS`(옆 칸 폭), 줄마다 두 칸(이름·R² / MAE). 표와 낭독 문단은 전체 이름 그대로
   - 순서는 그대로(K-Fold → GroupKFold → TSS), TSS 폴드 1/5 → 5/5 저절로 넘김도 그대로
 - 점수판은 지금처럼 `splitLayout`의 이름표(labels)로 그린다(3D·2D 같음). 새 줄은 플립으로 나타남, 지난 줄은 알파만 바뀜
 - 좁은 판: 세 줄이 판 위 공간을 넘으면 지난 줄은 방식 이름 + R²만(MAE 생략)
@@ -98,6 +100,7 @@
 - 좁은 판(약 560px 미만): MAE 칸을 축 아래로
 - 3D 장면 `bubble`(제거 레이어 떨어짐)은 이 블록에서 쓰지 않게 된다 → `scenes.ts`·`activeScene.ts`의 `bubble` 장면, `figureKeys`의 `bubble`, `public/fallback/bubble.webp`, `capture-fallbacks`의 bubble 캡처를 정리. 제거 레이어(9,387행)가 떨어지는 연출은 ② 걸러내기 판(규칙 3)이 같은 이야기를 이미 하므로 잃는 정보는 없다 — 다만 연출 하나가 사라지므로 미리보기에서 확인받는다
 - 테스트 영향: `motion.spec.ts`의 `[data-scene="bubble"] .eyebrow`, `terrain.spec.ts`의 bubble 대비 검사(맥미니 로컬 알려진 실패도 함께 사라짐)를 판 기준으로 바꾼다
+- 새 문구 키: `charts.bubble.row1`·`row1Note`·`row2`·`row2Note`·`legendBefore`·`legendAfter`·`maeSame`·`alt`. 3D 제거 레이어 점·셰이더는 값 0으로 두고 성능 계획에서 정리
 
 ## 7. ③ 모델 구조 자막 4칸 → 2칸 (질문 3, A)
 
@@ -114,8 +117,8 @@
 
 - 지금 `filter.ts` `RULES`에 영어 글자 그대로(`RULE 1 · DURATION · UNIT` 등), 좁은 판은 앞 6글자
 - 바꿀 것: 넓은 판 `RULE 1 · {이름} · {개수}`
-  - 이름(content `data.filter.rule1..3`, ko 임시): "소요 시간·단위 오류" / "시각 불일치" / "직항인데 경유만큼 걸림"(③은 `boxLabel`과 같은 말 — 같은 키를 재사용하거나 값 일치를 테스트로)
-  - en 초안: "Duration / unit error" / "Time mismatch" / "Direct, but as long as a layover"; ja 초안: "所要時間・単位の誤り" / "時刻の不一致" / "直行なのに経由並みの所要時間"
+  - 이름(content `data.filter.rule1`·`rule2` + 규칙 ③은 `data.filter.boxLabel` 그대로, ko 임시): "소요 시간·단위 오류" / "시각 불일치" / "직항인데 경유만큼 걸림"
+  - en 초안: "Duration / unit error" / "Time mismatch"; ja 초안: "所要時間・単位の誤り" / "時刻の不一致"(③ 줄은 `boxLabel` 값을 그대로 쓴다)
   - 개수: facts `data.filter.unit`·`mismatch`·`direct`(지역별 천 단위 구분)
   - 좁은 판: `RULE 1 · 5,742`(이름 생략)
 - 규칙이 켜질 때(지금 `ruleOn` 클래스) 개수도 함께 밝아진다. 켜지기 전에는 이름까지만 흐리게 보이고 개수는 숨김 — 제목의 15,955가 어디서 왔는지 단계마다 더해지는 모양

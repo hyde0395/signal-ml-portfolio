@@ -13,6 +13,7 @@
     "og": "node scripts/capture-og.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "facts": "sh scripts/py.sh scripts/export_facts.py",
+    "facts:derived": "sh scripts/py.sh scripts/export_facts.py --derived-only",
     "terrain": "sh scripts/py.sh scripts/export_terrain.py",
     "charts": "sh scripts/py.sh scripts/export_charts.py",
     "map": "sh scripts/py.sh scripts/export_map.py",

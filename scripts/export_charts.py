@@ -32,6 +32,7 @@ import export_terrain as et  # noqa: E402  (export_facts를 거쳐 항공권 저
 from export_demo import holiday_codes, load_holidays, quiet  # noqa: E402
 from export_facts import (  # noqa: E402
     AIRFARE_ROOT, DURATION_MAX, METRICS_PATH, PRICE_FLOOR, drop_implausible_direct_flights, drop_inconsistent_flight_times,
+    refresh_derived,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -331,6 +332,8 @@ def main() -> None:
         raise SystemExit(f"charts.json gzip {size:,}B > 목표 {MAX_GZIP_BYTES:,}B — SAMPLE_SIZE를 줄인다")
     out = ROOT / "public" / "data" / f"charts.{as_of}.json"
     out.write_bytes(body)
+    # facts.json의 insight(④ 제목 수치)는 이 출발일 %에서 계산한다 — 갱신 순서가 facts → charts라 여기서 한 번 더 맞춘다
+    refresh_derived(charts)
     print(f"{out.name}: 출발일 {len(charts['dates'])}개, 이름표 {[l['code'] for l in charts['labels']]}, "
           f"표본 {len(charts['curve']['sample']['pct'])}개, gzip {size:,}B"
           f", SHAP {len(charts['shap']['features'])}×{charts['shap']['n']}")
