@@ -386,7 +386,8 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
               );
             }
             const cls = `chart-label ${l.cls} align-${l.align}`;
-            if (l.cls === 'stat' || l.cls === 'statSm') return <FlipLabel key={i} text={l.text} className={cls} style={style} />;
+            // 판 위 수치(stat·statSm)와 ⑤ 점수판 줄은 글자가 바뀌면 플립 — 지난 줄은 글자가 같아 다시 플립하지 않고 색만 바뀐다
+            if (l.cls === 'stat' || l.cls === 'statSm' || l.cls.startsWith('score')) return <FlipLabel key={i} text={l.text} className={cls} style={style} />;
             return <span key={i} className={cls} style={style}>{l.text}</span>;
           })}
         </div>

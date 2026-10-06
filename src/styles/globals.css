@@ -562,8 +562,13 @@ button.chart-group { background: none; border: 0; padding: 0; color: inherit; fo
 /* 판 위 수치(계획 8-1): 큰 수치(R², 행 수)와 작은 줄. 규칙 목록은 적용 전 흐리게, 적용되면 호박색. 범례는 앞에 그 색 점 */
 .chart-label.stat { font: 600 26px var(--font-mono); color: var(--tx); letter-spacing: -0.01em; }
 .chart-label.statSm { font: 500 13px var(--font-mono); color: var(--tx); letter-spacing: 0.04em; }
+/* ⑤ 점수판(정보 전달 2 §5): 지금 줄 = statSm 크기, TSS 줄 = 호박색 약 1.4배, 지난 줄 = 흐리게. 흐린 줄도 대비 4.5:1 —
+   알파 0.45로는 어두운 판 위에서 모자랄 수 있어 0.55(설계 §9) */
+.chart-label:is(.score, .scorePast) { font: 500 13px var(--font-mono); color: var(--tx); letter-spacing: 0.04em; }
+.chart-label.scorePast { opacity: 0.55; }
+.chart-label.scoreHi { font: 600 18px var(--font-mono); color: var(--amb); letter-spacing: 0.02em; }
 /* 옆 칸 이름표는 판 오른쪽 끝에서 줄바꿈한다: 절대 위치 요소의 폭은 남은 공간까지라, nowrap만 풀면 판 밖으로 안 나간다(8-1) */
-.chart-label:is(.stat, .statSm, .rule, .ruleOn, .note) { white-space: normal; }
+.chart-label:is(.stat, .statSm, .rule, .ruleOn, .note, .score, .scoreHi, .scorePast) { white-space: normal; }
 .chart-label.note { color: var(--amb); letter-spacing: 0.04em; }
 .chart-label.rule { color: var(--mute); letter-spacing: 0.04em; }
 /* 규칙 목록: 색만으로 구분하지 않게 적용됨 ●(호박), 아직 ○(흐림) 표시(설계 §4.1) */
@@ -624,5 +629,7 @@ html.has-captions .chart-para:not(.is-on) { pointer-events: none; }
   .chart-label { font-size: 9px; }
   .chart-label.stat { font-size: 17px; }
   .chart-label.statSm { font-size: 10px; }
+  .chart-label:is(.score, .scorePast) { font-size: 10px; }
+  .chart-label.scoreHi { font-size: 13px; }
   .chart-group-pct { font-size: 1rem; }
 }

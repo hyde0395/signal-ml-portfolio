@@ -1,4 +1,4 @@
-// ⑤ 검증 설계 배치(계획 8-1): 방식마다 평가 점, TSS sub마다 평가 구간이 밀려 감, 첫 이름표 5개는 수치, 점 개수 불변
+// ⑤ 검증 설계 배치(계획 8-1): 방식마다 평가 점, TSS sub마다 평가 구간이 밀려 감, 첫 이름표 8개는 점수판, 점 개수 불변
 import { describe, expect, it } from 'vitest';
 import type { ChartsData } from '@/charts/data';
 import { SPLIT, splitLayout, splitRole } from '@/charts/split';
@@ -50,12 +50,30 @@ describe('splitLayout', () => {
     expect(L.y[2]).toBeLessThan(L.y[0]);
     expect(Array.from(L.group)).toEqual(split.date);
   });
-  it('앞 이름표 5개는 방식 이름·R²·MAE·설명·폴드 — TSS에서만 폴드 글자', () => {
-    const head = (L: ReturnType<typeof splitLayout>) => L.labels.slice(0, 5).map((l) => (l.type === 'text' ? l.text : ''));
-    expect(head(all[0])).toEqual(['K-FOLD', 'R² 0.6', 'MAE 1원', 'k-fold', '']);
-    expect(head(all[4])[4]).toBe('FOLD 5 / 5');
-    expect(head(all[3])[4]).toBe('FOLD 3 / 5');
-    expect(all[0].labels[1]).toMatchObject({ cls: 'stat' });
+  // 정보 전달 2 §5 점수판: 앞 8개 = 줄 3개 × (이름·R², MAE) + 꼬리표 + 폴드. 아직 안 나온 줄은 빈 글자(자리 번호가 단계 사이에 이어져
+  // 같은 자리의 플립이 이어진다), 지난 줄은 scorePast, 지금 줄은 score, TSS 단계의 TSS 줄만 scoreHi + ▶
+  it('점수판: 단계 n에 줄 n+1개, 마지막 줄만 강조', () => {
+    const head = (L: ReturnType<typeof splitLayout>) => L.labels.slice(0, 8).map((l) => (l.type === 'text' ? [l.text, l.cls] : null));
+    expect(head(all[0])).toEqual([
+      ['K-FOLD · R² 0.6', 'score'], ['MAE 1원', 'score'],
+      ['', 'score'], ['', 'score'], ['', 'score'], ['', 'score'],
+      ['k-fold', 'note'], ['', 'statSm'],
+    ]);
+    expect(head(all[1]).slice(0, 4)).toEqual([
+      ['K-FOLD · R² 0.6', 'scorePast'], ['MAE 1원', 'scorePast'],
+      ['GROUPKFOLD · R² 0.6', 'score'], ['MAE 1원', 'score'],
+    ]);
+    const tss = head(all[4]);
+    expect(tss[4]).toEqual(['▶ TIMESERIESSPLIT · R² 0.6', 'scoreHi']);
+    expect(tss[5]).toEqual(['MAE 1원', 'scoreHi']);
+    expect(tss[6]).toEqual(['timeseriessplit', 'note']);
+    expect(tss[7]).toEqual(['FOLD 5 / 5', 'statSm']);
+    expect(head(all[3])[7]).toEqual(['FOLD 3 / 5', 'statSm']);
+  });
+  it('좁은 판: 지난 줄은 MAE를 뺀다(이름·R²만)', () => {
+    const L = splitLayout(data, { w: 358, h: 354 }, 2, 4, S);
+    const t = L.labels.slice(0, 6).map((l) => (l.type === 'text' ? l.text : ''));
+    expect(t).toEqual(['K-FOLD · R² 0.6', '', 'GROUPKFOLD · R² 0.6', '', '▶ TIMESERIESSPLIT · R² 0.6', 'MAE 1원']);
   });
   it('범례 셋째(아직 안 씀)는 TSS에서만 글자가 있다', () => {
     const dim = (L: ReturnType<typeof splitLayout>) => L.labels.find((l) => l.type === 'text' && l.cls === 'keyDim');

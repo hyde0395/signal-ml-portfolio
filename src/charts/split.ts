@@ -2,6 +2,7 @@
 // 뿌리고, 자막 칸마다 평가 방식이 데이터를 나누는 모습을 색으로 보인다 — K-Fold(가운데 시간 구간이 평가, 앞뒤가 학습),
 // GroupKFold(노선·출발일째 평가), TimeSeriesSplit(과거만 학습, 다음 구간 평가, sub마다 경계가 밀려 간다).
 // 점 자리는 단계와 무관하고 색·알파만 바뀐다 — 3D에서는 같은 지형 점이 제자리에서 색만 바뀐다.
+// 판 위 수치는 방식마다 한 줄씩 쌓이는 점수판(정보 전달 2 §5) — 지난 줄은 흐리게, 마지막 TSS 줄만 호박색·크게.
 import type { ChartsData } from './data';
 import { DAY, mulberry32, Pts, utc, type PlotSize } from './layouts';
 import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './types';
@@ -56,15 +57,25 @@ export function splitLayout(d: ChartsData, size: PlotSize, stage: number, sub: n
     p.add(x, y, dot, role === 1 ? 0.95 : role === 0 ? SPLIT.trainA : SPLIT.unusedA, role === 1 ? TONE.amber : TONE.dot, sp.date[i]);
   }
 
-  // 이름표: 수치 5개를 맨 앞에(방식 이름·R²·MAE·설명·폴드) — 그림 판이 순서로 그려 같은 자리의 플립이 단계 사이에 이어진다
+  // 점수판(정보 전달 2 §5): 줄 3개 × (이름·R², MAE) + 꼬리표 + 폴드 = 앞 8개. 아직 안 나온 줄도 빈 글자로 자리를 둔다 —
+  // 그림 판이 이름표를 번호로 그려, 같은 번호의 플립이 단계 사이에 이어지고 지난 줄은 글자가 그대로라 다시 플립하지 않는다.
+  // 넓은 판은 줄마다 두 줄(이름·R² / MAE), 좁은 판은 한 줄(지금 줄만 MAE를 오른쪽에)
   const labels: ChartLabel[] = [];
-  const m = s.methods[st];
-  const sx = wide ? W * 0.78 : gx0, sy = wide ? H * 0.1 : H * 0.04, lh = wide ? 30 : 18;
-  labels.push({ type: 'text', x: sx / W, y: sy / H, text: m.name, align: 'start', cls: 'statSm' });
-  labels.push({ type: 'text', x: sx / W, y: (sy + lh) / H, text: m.r2, align: 'start', cls: 'stat' });
-  labels.push({ type: 'text', x: (wide ? sx : sx + W * 0.42) / W, y: (wide ? sy + lh * 2 : sy + lh) / H, text: m.mae, align: 'start', cls: 'statSm' });
-  labels.push({ type: 'text', x: sx / W, y: (wide ? sy + lh * 3 : sy + lh * 2) / H, text: m.tag, align: 'start', cls: 'note' });
-  labels.push({ type: 'text', x: (wide ? sx : sx + W * 0.42) / W, y: (wide ? sy + lh * 4 : sy + lh * 2) / H, text: st === 2 ? `FOLD ${sb + 1} / ${SPLIT.subs[2]}` : '', align: 'start', cls: 'statSm' });
+  const sx = wide ? W * 0.78 : gx0, sy = wide ? H * 0.1 : H * 0.04;
+  const rowH = wide ? 50 : 18, maeDy = wide ? 20 : 0, maeX = wide ? sx : sx + W * 0.5;
+  const hiDy = wide ? 8 : 0; // 강조 줄은 글자가 커서 MAE를 조금 더 내린다
+  s.methods.forEach((m, i) => {
+    const shown = i <= st, now = i === st, hi = now && st === 2;
+    const cls = !shown || now ? (hi ? 'scoreHi' : 'score') : 'scorePast';
+    const y = sy + i * rowH;
+    labels.push({ type: 'text', x: sx / W, y: y / H, text: shown ? `${hi ? '▶ ' : ''}${m.name} · ${m.r2}` : '', align: 'start', cls });
+    // 좁은 판의 지난 줄은 MAE를 뺀다 — 세 줄이 판 위 공간(판 높이의 34%)에 들어가야 한다
+    const mae = shown && (wide || now) ? m.mae : '';
+    labels.push({ type: 'text', x: maeX / W, y: (y + maeDy + (hi ? hiDy : 0)) / H, text: mae, align: 'start', cls });
+  });
+  const tagY = sy + (st + 1) * rowH + (wide ? 4 : 0);
+  labels.push({ type: 'text', x: sx / W, y: tagY / H, text: s.methods[st].tag, align: 'start', cls: 'note' });
+  labels.push({ type: 'text', x: (wide ? sx : sx + W * 0.5) / W, y: (wide ? tagY + 22 : tagY) / H, text: st === 2 ? `FOLD ${sb + 1} / ${SPLIT.subs[2]}` : '', align: 'start', cls: 'statSm' });
   // 범례: 셋째(아직 안 씀)는 TSS에서만 글자 — 개수는 늘 같게 둔다(이름표 순서가 단계 사이에 흔들리지 않게)
   const ky = wide ? H * 0.72 : top - 30; // 좁은 판: 수치 세 줄 아래에 범례 → 축 이름 순서로 두어 설명 줄과 겹치지 않게
   const keys: ['keyDot', 'keyAmber', 'keyDim'] = ['keyDot', 'keyAmber', 'keyDim'];

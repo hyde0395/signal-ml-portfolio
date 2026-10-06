@@ -15,8 +15,9 @@ import { formatValue, prefill, type Locale } from '@/lib/i18n';
 import { eyebrow } from '@/lib/sections';
 import type { SceneKey } from '@/three/scenes';
 
-// paras = content의 charts.<id>.body1..N 개수. tag는 플립 글자판 머리표(세 언어 공통)
-type Common = { id: string; tag: string; code: CodeChapter; paras: number };
+// paras = content의 charts.<id>.body1..N 개수. tag는 플립 글자판 머리표(세 언어 공통). 없으면 머리표 없음 —
+// ⑤ 검증 설계 판은 번호 차트가 아니고 섹션 머리표(05 — VALIDATION)와 겹쳐 빼었다(정보 전달 2 §5)
+type Common = { id: string; tag?: string; code: CodeChapter; paras: number };
 type Block =
   | (Common & { kind: 'stage'; chart: ChartKey; axis?: true; stages?: number; subs?: readonly number[]; subMs?: number })
   | (Common & { kind: 'card'; scene: SceneKey; figure?: FigureKey })
@@ -30,9 +31,8 @@ const FINDINGS_BLOCKS: Block[] = [
 
 const VALIDATION_BLOCKS: Block[] = [
   { kind: 'card', id: 'bubble', tag: 'CHART 03', scene: 'bubble', code: 'bubble', paras: 3, figure: 'bubble' },
-  // 머리표는 EVALUATION — 섹션 머리표 "05 — VALIDATION"과 같은 말이 겹치지 않게(사용자 확인 2026-09-30)
-  // 세 평가 방식이 데이터를 나누는 점 그림(계획 8-1) — TSS 칸은 폴드가 저절로 넘어간다
-  { kind: 'stage', id: 'validation', tag: 'EVALUATION', chart: 'chartSplit', code: 'validation', paras: 3, axis: true,
+  // 세 평가 방식이 데이터를 나누는 점 그림(계획 8-1) — TSS 칸은 폴드가 저절로 넘어간다. 판 위 수치는 점수판(정보 전달 2 §5)
+  { kind: 'stage', id: 'validation', chart: 'chartSplit', code: 'validation', paras: 3, axis: true,
     stages: SPLIT.stages, subs: SPLIT.subs, subMs: SPLIT.subMs },
   // 세 방식을 나란히 보는 표는 판 바로 뒤 작은 카드로(사용자 결정 2026-09-30). 장면은 옛 카드의 validation(지형을 위에서) 그대로
   { kind: 'table', id: 'validationTable', scene: 'validation', code: 'validation' },
@@ -63,7 +63,8 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
   const link = (b: { code: CodeChapter }) => (
     <a className="code-link mono" href={codeUrl(b.code)} target="_blank" rel="noopener noreferrer">{t('common.codeLink')} ↗</a>
   );
-  // ⑤ 검증 설계 판 위 수치(계획 8-1): 방식 이름(공통 영어)·R²·MAE·짧은 설명. 표와 같은 facts 값
+  // ⑤ 검증 설계 판 위 수치(계획 8-1): 방식 이름(공통 영어)·R²·MAE·짧은 설명. 표와 같은 facts 값.
+  // 판 위 이름은 옆 칸 폭 때문에 TSS(표·낭독 문단은 전체 이름)
   const num = (v: number) => formatValue(v, undefined, locale);
   const unit = t('charts.validation.table.maeUnit');
   // 영어 단위(KRW)는 글자라 숫자와 띄운다. ko "원"·ja "ウォン"은 붙여 쓴다
@@ -74,7 +75,7 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
     methods: [
       method('K-FOLD', facts.model.kfold, t('charts.validation.tagKf')),
       method('GROUPKFOLD', facts.model.gkfNoLookup, t('charts.validation.tagGkf')),
-      method('TIMESERIESSPLIT', facts.model.tss, t('charts.validation.tagTss')),
+      method('TSS', facts.model.tss, t('charts.validation.tagTss')),
     ] as const,
   };
   return (
@@ -108,7 +109,7 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
             hint={t('charts.touchHint')}
           />
           <div className="chart-copy">
-            <p className="eyebrow" data-flip-on-enter>{b.tag}</p>
+            {b.tag && <p className="eyebrow" data-flip-on-enter>{b.tag}</p>}
             <h3 id={`chart-${b.id}`}>{t(`charts.${b.id}.heading`)}</h3>
             <p className="sr-only">{t(`charts.${b.id}.alt`)}</p>
             {paraCells(b)}
@@ -122,7 +123,7 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
         </article>
       ) : (
         <article key={b.id} data-scene={b.scene} className="chapter" aria-labelledby={`chart-${b.id}`}>
-          <p className="eyebrow" data-flip-on-enter>{b.tag}</p>
+          {b.tag && <p className="eyebrow" data-flip-on-enter>{b.tag}</p>}
           <h3 id={`chart-${b.id}`}>{t(`charts.${b.id}.heading`)}</h3>
           {b.figure && <ChapterFigure locale={locale} sceneKey={b.figure} />}
           {body(b)}
