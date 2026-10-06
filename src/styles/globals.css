@@ -619,6 +619,8 @@ button.chart-group { background: none; border: 0; padding: 0; color: inherit; fo
 /* ③ 와플 제목은 모델 카드 h2 아래로 한 단계 내려갔지만(h3) 예전 섹션 제목(section h2)과 같은 크기로 보이게 한다.
    머리표가 위에 없어 위 여백은 뺀다 */
 .chart-copy h3.display { font-size: clamp(1.75rem, 4vw, 2.75rem); margin: 0 0 24px; }
+/* ③ 와플 제목은 " · " 조각 안에서 줄이 바뀌지 않게(숫자만 아랫줄로 떨어지지 않도록, Features.tsx) */
+.chart-copy h3 .nowrap { white-space: nowrap; }
 /* 자막 스크립트가 돌 때만 문단 칸을 한 자리에 겹친다. JS가 없으면 문단이 그냥 차례로 흐른다 */
 html.has-captions .chart-paras { display: grid; }
 html.has-captions .chart-para { grid-area: 1 / 1; opacity: 0; transition: opacity 0.5s var(--ease); }

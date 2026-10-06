@@ -5,6 +5,7 @@
 // 판 아래 자막 띠에 고정되고 세 칸을 차례로 보여 준다(설계 2026-09-28 §2). 화면 낭독기를 위해 같은 내용을 숨긴
 // 목록(그룹 · % · 피처 이름)으로 둔다. 그룹을 누르면(키보드는 Enter·Space) 그 그룹의 SHAP 벌떼로 펼쳐진다(계획 5-3c).
 import type React from 'react';
+import { Fragment } from 'react';
 import { ChartStage } from '../charts/ChartStage';
 import type { ShapTexts } from '@/charts/build';
 import { dictionaries, getT } from '@/lib/content';
@@ -65,7 +66,13 @@ export function Features({ locale }: { locale: Locale }) {
       <article className="chart-block" data-scene="features" aria-labelledby="waffle-h" style={{ '--paras': 3 } as React.CSSProperties}>
         <ChartStage chartKey="features" dataVersion={facts.dataVersion} strings={{ locale, holidays: {}, groups, countUnit, shap }} errorText={t('charts.error')} />
         <div className="chart-copy">
-          <h3 id="waffle-h" className="display">{t('features.heading')}</h3>
+          {/* 큰 글씨 제목이라 줄이 바뀌면 "26%"만 아랫줄로 떨어졌다 — " · " 조각마다 줄바꿈을 막아 구분점에서만 바뀌게 한다 */}
+          <h3 id="waffle-h" className="display">
+            {/* 구분점과 그 앞뒤 공백은 조각 밖에 둬야 그 자리에서 줄이 바뀐다 */}
+            {t('features.heading').split(' · ').map((part, i) => (
+              <Fragment key={i}>{i > 0 && ' · '}<span className="nowrap">{part}</span></Fragment>
+            ))}
+          </h3>
           <ul className="sr-only">
             {groups.map((g) => <li key={g.id}>{g.name} · {formatValue(g.gain, 'fixed1', locale)}% · {g.features.join(', ')}</li>)}
           </ul>
