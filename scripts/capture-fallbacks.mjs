@@ -6,7 +6,7 @@ import { mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 import sharp from 'sharp';
 
-const KEYS = ['hero', 'problem', 'bubble'];
+const KEYS = ['hero', 'problem'];
 const PORT = 4174; // e2e(4173)와 겹치지 않게
 const server = spawn('npx', ['serve', 'out', '-l', String(PORT), '--no-clipboard'], { stdio: 'ignore' });
 

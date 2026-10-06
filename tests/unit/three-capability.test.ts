@@ -32,8 +32,9 @@ describe('detectEnv', () => {
 });
 
 describe('parseCapture', () => {
-  it('대체 이미지가 있는 세 장면만 받는다', () => {
-    for (const k of ['hero', 'problem', 'bubble']) expect(parseCapture(`?capture=${k}`)).toBe(k);
+  it('대체 이미지가 있는 두 장면만 받는다(차트 3은 판이 되어 대체 이미지 없음)', () => {
+    for (const k of ['hero', 'problem']) expect(parseCapture(`?capture=${k}`)).toBe(k);
+    expect(parseCapture('?capture=bubble')).toBeNull();
   });
   it('모르는 값·빈 값·없음은 null', () => {
     expect(parseCapture('?capture=bogus')).toBeNull();

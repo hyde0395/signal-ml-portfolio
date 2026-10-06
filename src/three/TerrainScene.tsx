@@ -71,7 +71,6 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
     chartState.current = { key: null, entry: null, slot: chartState.current.slot };
     if (capture) {
       portrait.current = window.innerHeight > window.innerWidth;
-      // bubble의 대체 이미지는 "떨어지기 전, 높이 떠 있는" 순간을 보여줘야 하므로 진행도 0(drop=0)에서 찍는다
       target.current = sceneFor(capture, 0, portrait.current);
       return;
     }

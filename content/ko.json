@@ -122,8 +122,7 @@
   },
   "figure": {
     "hero": "흩어진 흐린 점들 사이로 밝은 점들이 모여 가격 지형을 이루는 모습",
-    "problem": "한국과 일본 해안선을 이룬 점들과, 인천에서 나리타·하네다·간사이로 이어지는 노선 궤적",
-    "bubble": "지형 위에 높이 떠 있던 잘못 매칭된 점들이 아래로 떨어져 나가는 모습"
+    "problem": "한국과 일본 해안선을 이룬 점들과, 인천에서 나리타·하네다·간사이로 이어지는 노선 궤적"
   },
   "project": {
     "heading": "한·일 항공권, 언제 사야 할까?",
@@ -252,7 +251,15 @@
       "heading": "R²는 두 번 부풀려져 있었다",
       "body1": "처음 얻은 R² {model.bubble.firstR2}은 하네다 노선에 잘못 매칭된 고가 행이 부풀린 값이었습니다. 이 행을 걸러내자 R²는 {model.bubble.firstR2After}로 내려갔고, MAE는 거의 그대로였습니다.",
       "body2": "같은 일이 한 번 더 있었습니다. 직항으로 표시됐지만 실제로는 경유 여정인 행 {data.removedImplausible}개를 찾아 걸러냈습니다. MAE는 {model.bubble.maeBefore}원에서 {model.bubble.maeAfter}원으로 거의 그대로였고, R²만 {model.bubble.r2Before}에서 {model.bubble.r2After}로 내려갔습니다. 이 행들이 R² 분모의 {model.bubble.denomShare}%를 차지하고 있었습니다.",
-      "body3": "그래서 R²만 보지 않고 MAE와 데이터 무결성을 함께 봅니다. 필터 조건이 달라 지금 R²와 예전 R²를 직접 비교하지는 않습니다."
+      "body3": "그래서 R²만 보지 않고 MAE와 데이터 무결성을 함께 봅니다. 필터 조건이 달라 지금 R²와 예전 R²를 직접 비교하지는 않습니다.",
+      "row1": "첫 정정",
+      "row1Note": "하네다 고가 행 매칭 오류",
+      "row2": "둘째 정정",
+      "row2Note": "직항으로 표시된 경유 {data.removedImplausible}행",
+      "legendBefore": "걸러내기 전",
+      "legendAfter": "걸러낸 뒤",
+      "maeSame": "거의 그대로",
+      "alt": "R² 전후를 가로축에 놓은 아령 그림입니다. 첫 정정에서 R²는 {model.bubble.firstR2}에서 {model.bubble.firstR2After}로, 둘째 정정에서 {model.bubble.r2Before}에서 {model.bubble.r2After}로 내려갔고, MAE는 두 번 모두 거의 그대로였습니다(둘째 정정 {model.bubble.maeBefore}원 → {model.bubble.maeAfter}원)."
     },
     "validation": {
       "heading": "미래 데이터를 쓰지 않는 검증으로 성능을 잰다",

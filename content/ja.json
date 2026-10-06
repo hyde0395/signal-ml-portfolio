@@ -122,8 +122,7 @@
   },
   "figure": {
     "hero": "散らばった淡い点の中から明るい点が集まり、価格地形を形づくる様子",
-    "problem": "韓国と日本の海岸線を描く点群と、仁川から成田・羽田・関西へ延びる航路の軌跡",
-    "bubble": "地形の上に高く浮いていた誤って対応付けられた点が下へ落ちていく様子"
+    "problem": "韓国と日本の海岸線を描く点群と、仁川から成田・羽田・関西へ延びる航路の軌跡"
   },
   "project": {
     "heading": "日韓航空券、いつ買うべきか？",
@@ -252,7 +251,15 @@
       "heading": "R²は二度、水増しされていた",
       "body1": "最初に得たR² {model.bubble.firstR2}は、羽田路線で誤ってマッチングされた高額な行によって水増しされた値でした。この行を除外するとR²は{model.bubble.firstR2After}まで下がり、MAEはほとんど変わりませんでした。",
       "body2": "同じことがもう一度ありました。直行と表示されていても実際には経由便だった行を{data.removedImplausible}件見つけて除外しました。MAEは{model.bubble.maeBefore}ウォンから{model.bubble.maeAfter}ウォンとほとんど変わらず、R²だけが{model.bubble.r2Before}から{model.bubble.r2After}に下がりました。これらの行がR²の分母の{model.bubble.denomShare}%を占めていました。",
-      "body3": "そのためR²だけでなく、MAEとデータの整合性をあわせて確認します。フィルタ条件が異なるため、今のR²と以前のR²を直接比較していません。"
+      "body3": "そのためR²だけでなく、MAEとデータの整合性をあわせて確認します。フィルタ条件が異なるため、今のR²と以前のR²を直接比較していません。",
+      "row1": "初回の修正",
+      "row1Note": "羽田の高額行の誤マッチ",
+      "row2": "二度目の修正",
+      "row2Note": "直行と表示された経由便{data.removedImplausible}行",
+      "legendBefore": "除外前",
+      "legendAfter": "除外後",
+      "maeSame": "ほぼ変わらず",
+      "alt": "R²の前後を横軸に置いたダンベル図です。初回の修正でR²は{model.bubble.firstR2}から{model.bubble.firstR2After}へ、二度目は{model.bubble.r2Before}から{model.bubble.r2After}へ下がり、MAEはどちらもほぼ変わりませんでした（二度目：{model.bubble.maeBefore}ウォン → {model.bubble.maeAfter}ウォン）。"
     },
     "validation": {
       "heading": "未来のデータを使わない検証で性能を測る",

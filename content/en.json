@@ -122,8 +122,7 @@
   },
   "figure": {
     "hero": "Bright points gathering out of scattered, dim points to form a price landscape",
-    "problem": "Points outlining the Korean and Japanese coastlines, with route paths arcing from Incheon to Narita, Haneda, and Kansai",
-    "bubble": "Mismatched points that were floating high above the landscape falling away"
+    "problem": "Points outlining the Korean and Japanese coastlines, with route paths arcing from Incheon to Narita, Haneda, and Kansai"
   },
   "project": {
     "heading": "Korea–Japan airfare: when should you buy?",
@@ -252,7 +251,15 @@
       "heading": "R² was inflated — twice",
       "body1": "The first R² of {model.bubble.firstR2} I got was inflated by high-priced rows mismatched on the Haneda route. Filtering those rows out brought R² down to {model.bubble.firstR2After}, while MAE barely changed.",
       "body2": "The same thing happened again: I found and removed {data.removedImplausible} rows labeled nonstop but actually connecting flights. MAE barely changed, from ₩{model.bubble.maeBefore} to ₩{model.bubble.maeAfter}, while R² alone dropped from {model.bubble.r2Before} to {model.bubble.r2After}. Those rows made up {model.bubble.denomShare}% of the R² denominator.",
-      "body3": "So I don't look at R² alone — I check it together with MAE and data integrity. Because the filter conditions differ, I don't compare this R² directly with earlier ones."
+      "body3": "So I don't look at R² alone — I check it together with MAE and data integrity. Because the filter conditions differ, I don't compare this R² directly with earlier ones.",
+      "row1": "First fix",
+      "row1Note": "Mismatched high fares on Haneda",
+      "row2": "Second fix",
+      "row2Note": "{data.removedImplausible} connecting rows labeled nonstop",
+      "legendBefore": "before filtering",
+      "legendAfter": "after",
+      "maeSame": "barely changed",
+      "alt": "A dumbbell chart with R² on the horizontal axis. The first fix took R² from {model.bubble.firstR2} to {model.bubble.firstR2After}, the second from {model.bubble.r2Before} to {model.bubble.r2After}, while MAE barely changed both times (second fix: ₩{model.bubble.maeBefore} → ₩{model.bubble.maeAfter})."
     },
     "validation": {
       "heading": "Measured without peeking at future data",

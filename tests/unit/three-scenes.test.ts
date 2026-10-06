@@ -1,23 +1,23 @@
-// 장면 표 검사: 모든 키 존재, problem·dataBoard만 지도, bubble만 제거 레이어·떨어짐,
+// 장면 표 검사: 모든 키 존재, problem·dataBoard만 지도, 제거 레이어·떨어짐을 쓰는 장면 없음(정보 전달 2에서 차트 3이 판으로),
 // 차트 장면은 정면 고정 카메라이고 세로 화면에서도 카메라가 그대로다.
 import { describe, expect, it } from 'vitest';
 import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, handoffProgress, HERO_FOV, horizonFrac, introScene, isChartScene, pickScene, SCENES, sceneFor, type SceneKey } from '@/three/scenes';
 import { runwayPhases } from '@/three/plane';
 import { SIGNAL } from '@/three/signal';
 
-const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'chartFilter', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'bubble',
+const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'chartFilter', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartBubble',
   'chartSplit', 'validation', 'chartCloud', 'limits', 'demo', 'contact'];
-const CHARTS: SceneKey[] = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud'];
+const CHARTS: SceneKey[] = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud', 'chartBubble'];
 
 describe('SCENES', () => {
   it('모든 키가 있다', () => expect(Object.keys(SCENES).sort()).toEqual([...KEYS].sort()));
   it('problem·dataBoard만 지도 장면', () => {
     for (const k of KEYS) expect(SCENES[k].map, k).toBe(k === 'problem' || k === 'dataBoard' ? 1 : 0);
   });
-  it('제거 레이어는 bubble에서만', () => {
-    for (const k of KEYS) expect(SCENES[k].removed, k).toBe(k === 'bubble' ? 1 : 0);
+  it('제거 레이어를 켜는 장면은 없다(차트 3이 판이 되어, 정보 전달 2)', () => {
+    for (const k of KEYS) expect(SCENES[k].removed, k).toBe(0);
   });
-  it('차트 장면 일곱 개(② 걸러내기·⑤ 검증 설계 포함, 계획 8-1)만 chart = 1이고, 정면(z축)에서 CHART_DISTANCE만큼 떨어져 원점을 본다', () => {
+  it('차트 장면 여덟 개(② 걸러내기·⑤ 검증 설계 포함 계획 8-1, ⑤ 차트 3 포함)만 chart = 1이고, 정면(z축)에서 CHART_DISTANCE만큼 떨어져 원점을 본다', () => {
     for (const k of KEYS) expect(isChartScene(k), k).toBe(CHARTS.includes(k));
     for (const k of CHARTS) {
       expect(SCENES[k].camera).toEqual([0, 0, CHART_DISTANCE]);
@@ -41,11 +41,8 @@ describe('SCENES', () => {
 });
 
 describe('sceneFor', () => {
-  it('bubble은 진행도로 drop이 0→1, 다른 장면은 0', () => {
-    expect(sceneFor('bubble', 0, false).drop).toBe(0);
-    expect(sceneFor('bubble', 1, false).drop).toBe(1);
-    expect(sceneFor('bubble', 0.5, false).drop).toBeGreaterThan(0);
-    expect(sceneFor('chartCurve', 0.9, false).drop).toBe(0);
+  it('drop은 모든 장면에서 0', () => {
+    for (const k of KEYS) for (const p of [0, 0.5, 1]) expect(sceneFor(k, p, false).drop, k).toBe(0);
   });
   it('세로 화면은 카메라가 목표점에서 1.6배 멀다(차트 장면 제외)', () => {
     const land = sceneFor('limits', 0, false), port = sceneFor('limits', 0, true);
@@ -63,7 +60,7 @@ describe('sceneFor', () => {
   // 설계 2026-09-28 §2.1: 글 뒤 판 대신 장면 구도로 대비를 지킨다 — 데스크톱은 글이 왼쪽이라 점을 오른쪽으로,
   // 세로 화면은 글이 아래라 옆으로 밀지 않는다. hero는 밤의 공항 전용 구도라 빠진다(설계 2026-09-28 §4.2).
   // about(①)도 빠진다 — 잡음 밭은 화면 좌표로 화면 전체를 덮고, U자는 셰이더가 글 반대쪽에 놓는다(설계 2026-10-01 §3)
-  const TEXT_SIDE: SceneKey[] = ['model', 'bubble', 'validation', 'limits', 'demo', 'contact'];
+  const TEXT_SIDE: SceneKey[] = ['model', 'validation', 'limits', 'demo', 'contact'];
   it('글 쪽 장면은 데스크톱에서 목표점이 왼쪽(x −5 이하), 세로 화면에서는 가운데', () => {
     // 지금은 이 목록의 모든 장면이 정확히 −5다(hero는 밤의 공항 전용 구도라 빠져 있다, 위 주석·scenes.ts
     // AIRPORT_CAM 참고). "−5 이하"로 느슨하게 검사해 두는 이유는, 나중에 화소 대비 검사 실패 등으로
@@ -155,7 +152,7 @@ describe('blendScenes', () => {
       expect(m.camera[i]).toBeCloseTo((a.camera[i] + b.camera[i]) / 2, 9);
       expect(m.target[i]).toBeCloseTo((a.target[i] + b.target[i]) / 2, 9);
     }
-    expect(blendScenes(a, SCENES.bubble, 0.25).removed).toBeCloseTo(0.25, 9);
+    expect(blendScenes(a, { ...SCENES.limits, removed: 1 }, 0.25).removed).toBeCloseTo(0.25, 9);
   });
   it('차트 장면이 끼면 던진다', () => {
     expect(() => blendScenes(SCENES.features, b, 0.5)).toThrow();

@@ -4,7 +4,7 @@ import { runwayPhases } from './plane';
 import { SIGNAL } from './signal';
 
 export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'chartFilter' | 'model' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
-  | 'bubble' | 'chartSplit' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
+  | 'chartBubble' | 'chartSplit' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
 
 export type SceneState = {
   camera: [number, number, number];
@@ -12,8 +12,8 @@ export type SceneState = {
   assemble: number; // 0 = 흩어짐, 1 = 목표 모양
   map: number;      // 0 = 지형, 1 = 한·일 지도
   noise: number;    // 흐린 잡음 점의 불투명도 배율
-  removed: number;  // 제거 레이어(9,387행) 보이기
-  drop: number;     // 제거 레이어가 떨어진 정도
+  removed: number;  // 제거 레이어(9,387행) 보이기 — 쓰는 장면 없음(정보 전달 2), 셰이더·지형 데이터 정리는 성능 계획
+  drop: number;     // 제거 레이어가 떨어진 정도 — 쓰는 장면 없음(정보 전달 2), 셰이더·지형 데이터 정리는 성능 계획
   chart: number;    // 1 = 점이 그림 판 배치로 모인다(차트 장면). TerrainScene은 배치가 준비됐을 때만 1로 둔다
   slot: number;     // 차트 배치 두 벌(A=0, B=1) 중 보일 쪽. 장면 표에서는 0이고 TerrainScene이 정한다
   dim: number;      // 모든 지형·지도 점의 알파 배율
@@ -83,8 +83,8 @@ export const SCENES: Record<SceneKey, SceneState> = {
   features: { ...base, ...CHART },
   chartDepart: { ...base, ...CHART },
   chartCurve: { ...base, ...CHART },
-  // 차트 3: 제거 레이어가 높이 떠 있다가 떨어진다(drop은 sceneFor가 진행도로 채움)
-  bubble: { ...base, camera: [2, 9, 17], target: [-5, 2.5, 0], removed: 1 },
+  // ⑤ 차트 3(정보 전달 2): 점이 R² 아령 판의 눈금 점선·별로 모인다
+  chartBubble: { ...base, ...CHART },
   // ⑤ 검증 설계(계획 8-1): 점이 수집일 × 출발일로 모이고 평가 방식마다 학습·평가 색이 바뀐다
   chartSplit: { ...base, ...CHART },
   validation: { ...base, camera: [-5, 22, 0.1], target: [-5, 0, 0], noise: 0.5 },
@@ -108,12 +108,6 @@ const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구�
 // y를 내려도 점이 화면에서 옆으로 옮겨지지 않고 그냥 살짝 확대(약 9%)될 뿐이라 y 이동을 빼고 원래 값을 쓴다
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
-  // bubble: 목표점을 데스크톱에서 3만큼만 내리면(다른 장면과 같은 폭) −0.5에 그친다 — 데스크톱 목표점 y가
-  // 이미 2.5로 높기 때문(제거 레이어가 높이 뜬 모습을 보여주려고). 그 −0.5는 화면 중앙 바로 아래라, 문단이
-  // 바닥에 붙는 세로 화면에서 제거 레이어가 떨어지는 도중(uDrop 중간값, 아직 알파가 남아 있다)의 점이
-  // 문단 뒤를 지나가며 대비 화소 검사를 깼다(e2e 5회 반복 모두 p99 1.3~1.4:1로 실패, 2026-09-28).
-  // limits·demo·contact처럼 목표점을 −3까지 내려 문단 영역을 완전히 벗어나게 한다(벡터는 그대로 유지)
-  bubble: { camera: [7, 3.5, 17], target: [0, -3, 0] },
   validation: { camera: [0, 22, 0.1], target: [0, 0, 0] },
   // ③ 섹션 바탕도 글이 아래쪽이라 limits와 같은 이유로 지형을 화면 위쪽 절반에 둔다. 옛 모델 카드(머리표 바로 아래 긴
   // 문단)에서 limits 값(목표점 y −3)으로는 지형 앞줄이 첫 문단 위를 지나갔다(실제 GPU 390×844 p99 4.44:1, 2026-09-30) —
@@ -143,17 +137,16 @@ export function sceneFor(key: SceneKey, progress: number, portrait: boolean): Sc
     }
     return { ...s, camera, target, drop: 0 };
   }
-  const drop = key === 'bubble' ? smooth(clamp01((p - 0.2) / 0.6)) : 0; // 블록 20~80% 구간에서 떨어진다
   // 차트 장면은 세로 화면에서도 카메라를 옮기지 않는다 — 판 위치와 점 좌표의 대응이 카메라 거리에 묶여 있고,
   // 판 크기 자체가 세로 화면에 맞춰져 있다. 잡음 밭(field)도 같다 — 셰이더가 화면 비율로 밭을 편다
-  if (s.chart === 1 || s.field === 1) return { ...s, drop };
+  if (s.chart === 1 || s.field === 1) return s;
   const override = portrait ? PORTRAIT_OVERRIDE[key] : undefined;
   const baseCamera = override?.camera ?? s.camera;
   const target = override?.target ?? s.target;
   const camera = portrait
     ? (baseCamera.map((v, i) => target[i] + (v - target[i]) * PORTRAIT_DISTANCE) as SceneState['camera'])
     : s.camera;
-  return { ...s, camera, target, drop };
+  return { ...s, camera, target };
 }
 
 function clamp01(v: number) { return Math.min(1, Math.max(0, v)); }
