@@ -129,21 +129,22 @@
     "heading": "Korea–Japan airfare: when should you buy?",
     "body": "I collected airfares between Incheon and Tokyo/Osaka every day and built a model that forecasts prices by departure date and whether to buy now or wait.",
     "stats": {
+      "rows": {
+        "value": "{data.rawRows}",
+        "label": "prices collected"
+      },
+      "coverage": {
+        "value": "{model.interval.coverage}%",
+        "label": "interval coverage",
+        "sub": "{model.interval.driftLow}% before calibration"
+      },
+      "r2Fix": {
+        "value": "{model.bubble.firstR2} → {model.bubble.firstR2After}",
+        "label": "inflated R², corrected"
+      },
       "routes": {
         "value": "{data.routes}",
         "label": "routes"
-      },
-      "period": {
-        "value": "{data.collectMonths} months",
-        "label": "of daily collection"
-      },
-      "features": {
-        "value": "{model.featureCount}",
-        "label": "features"
-      },
-      "interval": {
-        "value": "{model.interval.level}%",
-        "label": "prediction interval"
       }
     }
   },
@@ -151,7 +152,7 @@
     "body1": "I collected airfare prices for {data.routes} routes between Incheon and Tokyo (Narita, Haneda) and Osaka (Kansai), from {data.collectStart|date} to {data.collectEnd|date}.",
     "body2": "Results come from the Google Flights search via SerpApi, run daily by GitHub Actions. Of {data.rawRows} raw rows, {data.filteredRows} remained after filtering out errors.",
     "sparse": "The closer the departure, the more often it was collected: within a week, Wednesday, Friday and Sunday departures every day; within a month, every weekday in a three-day rotation; further out, only alternate Fridays and Sundays plus holidays, once a week on Sundays. That is why the far end is sparse. The schedule changed twice early on; this is the final one.",
-    "heading": "The data",
+    "heading": "{data.rawRows} prices collected over {data.collectMonths} months",
     "steps": {
       "collect": "SerpApi · Google Flights search results",
       "schedule": "GitHub Actions · daily (far-off dates on Sundays)",
@@ -170,7 +171,7 @@
     },
     "tools": "Python · requests · tenacity · yfinance · workalendar",
     "filter": {
-      "heading": "Filtering out errors",
+      "heading": "{data.filter.removed} faulty rows filtered out",
       "body1": "Here are the {data.rawRows} collected rows, placed by flight time and price. They are all nonstop flights, so most sit in one narrow cluster.",
       "body2": "I removed {data.filter.unit} rows that took longer than {data.filter.durationMax} minutes or had a missing price unit, and {data.filter.mismatch} rows whose departure and arrival times did not match the flight time.",
       "body3": "I also removed {data.filter.direct} rows marked as nonstop that took as long as a connecting itinerary. Most were on Haneda routes. {data.filteredRows} rows remain.",
@@ -182,7 +183,7 @@
   },
   "features": {
     "structure": {
-      "heading": "Model structure",
+      "heading": "A baseline price first, then the gap from it",
       "step1": "Incheon→Narita LCC fares, collected for each departure date. Even flights leaving on the same day spread out depending on when they were bought.",
       "step2": "For each route, NeuralProphet learns how the average fare moves across departure dates (trend and weekly cycle), and scaling it by each cabin class's price level gives a base price.",
       "step3": "XGBoost then uses {model.featureCount} features to learn how far the actual fare sits from that base on a log scale; adding the two gives the prediction.",
@@ -194,7 +195,7 @@
       "alt": "Dot chart of Incheon→Narita LCC fares: departure dates across, price versus the route-and-class average up the side. First the fares collected for each departure date are scattered; then the NeuralProphet base price runs through them as a line, following the slow rise and fall over the months and the weekly cycle. Finally the line is flattened, leaving only each fare's deviation from the base, which is what XGBoost learns."
     },
     "serve": "Streamlit · Plotly · pytest ({model.testFiles} test files)",
-    "heading": "{model.featureCount} FEATURES",
+    "heading": "Past-price stats {model.groupShare.lookup}% · route & airline {model.groupShare.categorical}%",
     "lead": "What goes into predicting a single price. Percentages are each group's share of importance in the model (XGBoost gain).",
     "unit": "features",
     "groups": {
@@ -228,7 +229,7 @@
   "charts": {
     "depart": {
       "body1": "What moves prices more is when you fly, not when you buy. Each dot is one departure date; the higher it sits, the pricier it is than the route-and-class average. Averages by weekday are shown alongside. Dates around holidays (amber) and Sunday departures are the most expensive.",
-      "heading": "Price by departure date",
+      "heading": "When you fly matters more: {insight.holidayPeak.pct|signed0}% around New Year",
       "alt": "Dot chart of price by departure date: departure dates across, price versus the route-and-class average up the side, with weekday averages alongside. Dates around Christmas, New Year's Day and Seollal rise the highest; among weekdays, Sunday is the most expensive.",
       "axis": "vs. average",
       "weekdays": "By weekday",
@@ -237,7 +238,7 @@
     },
     "curve": {
       "body1": "I tracked prices day by day for {model.realizedFlights} flights that had already departed. Right before departure ({model.bookingCurve.0.label}), prices ran {model.bookingCurve.0.pct|signed}% above the same flight's average, while the {model.bookingCurve.5.label} window was cheapest at {model.bookingCurve.5.pct|signed}%. That's a U-shaped curve about {model.curveWidth}pp wide.",
-      "heading": "The U-shaped booking curve",
+      "heading": "When you buy matters less: {insight.curveMin|signed0}% about a month out",
       "alt": "Observations stacked by days-to-departure range, relative to the same flight's average. The line through the range averages forms a U.",
       "axis": "vs. same-flight average",
       "zero": "Same-flight average",
@@ -246,19 +247,19 @@
       "tip": "Buying at {v.bin}: {v.pct} vs. same-flight average · {v.n} observations"
     },
     "bubble": {
-      "heading": "Deflating the R² bubble",
+      "heading": "R² was inflated — twice",
       "body1": "The first R² of {model.bubble.firstR2} I got was inflated by high-priced rows mismatched on the Haneda route. Filtering those rows out brought R² down to {model.bubble.firstR2After}, while MAE barely changed.",
       "body2": "The same thing happened again: I found and removed {data.removedImplausible} rows labeled nonstop but actually connecting flights. MAE barely changed, from ₩{model.bubble.maeBefore} to ₩{model.bubble.maeAfter}, while R² alone dropped from {model.bubble.r2Before} to {model.bubble.r2After}. Those rows made up {model.bubble.denomShare}% of the R² denominator.",
       "body3": "So I don't look at R² alone — I check it together with MAE and data integrity. Because the filter conditions differ, I don't compare this R² directly with earlier ones."
     },
     "validation": {
-      "heading": "Validation design",
+      "heading": "Measured without peeking at future data",
       "body1": "K-Fold holds out a block of time in the middle and trains on everything before and after it. It predicts the past using prices collected in the future, so it scores highest. I treat it only as an upper reference.",
       "body2": "GroupKFold holds out whole route and departure-date groups. This exposed a train/serve mismatch: for unseen departure dates, the lookup statistics fall back to defaults. With lookups, the service setup scored R² {model.gkfWithLookup.r2} and MAE ₩{model.gkfWithLookup.mae}, worse than without them, so I retuned {model.lookupVariants} lookup setups and compared them.",
       "body3": "TimeSeriesSplit trains only on the past and tests on the next block. The boundary moves forward five times. It matches production, so it is the headline number.",
       "tagKf": "upper reference",
       "tagGkf": "unseen departure dates · no lookup",
-      "tagTss": "production baseline",
+      "tagTss": "production baseline · headline value",
       "axisX": "Collection date",
       "axisY": "Departure date",
       "legendTrain": "Train",
@@ -275,7 +276,7 @@
       }
     },
     "band": {
-      "heading": "Prediction interval calibration",
+      "heading": "The interval covered {model.interval.coverage}% of actual prices",
       "body1": "Instead of a single price, I also output a {model.interval.level}% prediction interval.",
       "body2": "A fixed interval's actual coverage dropped to {model.interval.driftLow}% on more recent data. I adjusted the interval width to account for the shifting distribution, reaching {model.interval.coverage}% coverage on the most recent window.",
       "body3": "The dots in the cloud are spread inside the {model.interval.level}% prediction interval computed on the reference date for Incheon→Narita LCC. The bright dot in the middle is the predicted price; the sparser the edge, the less likely that price. Other routes are in the demo below.",
@@ -286,7 +287,7 @@
       "panelNote": "One dot = {v.step}% chance · {v.inside} of {v.total} inside the range"
     },
     "limits": {
-      "heading": "Limitations and next steps",
+      "heading": "MAE gap to a simple baseline: ₩{model.baselineGap.mae} ({model.baselineGap.pct|fixed1}%)",
       "body1": "A simple baseline that just reuses the same flight's most recent observed price has an MAE of ₩{model.baselineMae}, barely different from the model's ₩{model.tss.mae}.",
       "body2": "{model.reco.buyNow}% of recommendations are 'buy now.' Tracking actual prices showed that within two months of departure, waiting was on average a loss — and the model pointed the same way.",
       "body3": "The next step is to beat the baseline by adding the same flight's recent observed prices as a feature."

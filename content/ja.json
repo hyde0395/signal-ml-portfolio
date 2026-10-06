@@ -129,21 +129,22 @@
     "heading": "日韓航空券、いつ買うべきか？",
     "body": "仁川と東京・大阪を結ぶ航空券の価格を毎日集め、出発日ごとの価格と「今買うか待つか」を予測しました。",
     "stats": {
+      "rows": {
+        "value": "{data.rawRows}",
+        "label": "集めた価格"
+      },
+      "coverage": {
+        "value": "{model.interval.coverage}%",
+        "label": "予測区間のカバー率",
+        "sub": "補正前 {model.interval.driftLow}%"
+      },
+      "r2Fix": {
+        "value": "{model.bubble.firstR2} → {model.bubble.firstR2After}",
+        "label": "水増しされたR²を修正"
+      },
       "routes": {
         "value": "{data.routes}",
         "label": "路線"
-      },
-      "period": {
-        "value": "{data.collectMonths}か月",
-        "label": "毎日自動収集"
-      },
-      "features": {
-        "value": "{model.featureCount}",
-        "label": "特徴量"
-      },
-      "interval": {
-        "value": "{model.interval.level}%",
-        "label": "予測区間"
       }
     }
   },
@@ -151,7 +152,7 @@
     "body1": "仁川と東京（成田・羽田）、大阪（関西）を結ぶ{data.routes}路線の航空券価格を、{data.collectStart|date}から{data.collectEnd|date}まで収集しました。",
     "body2": "SerpApi経由でGoogle Flightsの検索結果を取得し、GitHub Actionsが毎日実行します。元データ{data.rawRows}行のうち、エラーを除いて{data.filteredRows}行を使用しました。",
     "sparse": "出発が近いほど頻繁に集めました。一週間以内は水・金・日の出発便を毎日、一か月以内は全曜日を三日ごとに順番に、それより先は毎週日曜に隔週の金・日の出発便と祝日だけを集めました。そのため遠い区間は点がまばらです。収集ルールは初期に二度変わり、これが最後のルールです。",
-    "heading": "集めたデータ",
+    "heading": "{data.collectMonths}か月で価格{data.rawRows}件を集めた",
     "steps": {
       "collect": "SerpApi · Google Flights の検索結果",
       "schedule": "GitHub Actions · 毎日(遠い出発日は日曜)",
@@ -170,7 +171,7 @@
     },
     "tools": "Python · requests · tenacity · yfinance · workalendar",
     "filter": {
-      "heading": "エラーの除去",
+      "heading": "誤った{data.filter.removed}行を取り除いた",
       "body1": "集めた{data.rawRows}行を所要時間と価格で並べました。すべて直行便なので、ほとんどが一か所に狭くまとまっています。",
       "body2": "所要時間が{data.filter.durationMax}分を超える行や価格の単位が抜けた行{data.filter.unit}件と、出発・到着時刻と所要時間が合わない行{data.filter.mismatch}件を除きました。",
       "body3": "直行便と表示されていても乗り継ぎ並みに時間がかかる行{data.filter.direct}件も除きました。ほとんどが羽田路線でした。残りは{data.filteredRows}行です。",
@@ -182,7 +183,7 @@
   },
   "features": {
     "structure": {
-      "heading": "モデルの構成",
+      "heading": "まず基準価格を置き、そこからのずれを学ぶ",
       "step1": "出発日ごとに集めた仁川→成田 LCC の価格です。同じ日に出発する便でも、いつ買ったかによって散らばります。",
       "step2": "路線ごとに NeuralProphet が出発日別の平均価格の流れ（トレンドと曜日の周期）を学び、クラスごとの価格水準を掛けて基準価格を作ります。",
       "step3": "XGBoost は {model.featureCount} 個の特徴量で、実際の価格がこの基準からどれだけずれるかを対数で学び、両者を足したものが予測価格です。",
@@ -194,7 +195,7 @@
       "alt": "仁川→成田 LCC の価格の点グラフ。横が出発日、縦が路線・クラス平均との差です。まず出発日ごとに集めた価格が散らばり、次に NeuralProphet の基準価格が、数か月にわたる上下と曜日の周期に沿って線として通ります。最後に線を平らにすると、点ごとに基準からのずれだけが残り、XGBoost がこのずれを学びます。"
     },
     "serve": "Streamlit · Plotly · pytest（テストファイル{model.testFiles}件）",
-    "heading": "{model.featureCount} FEATURES",
+    "heading": "過去価格の統計 {model.groupShare.lookup}% · 路線・航空会社 {model.groupShare.categorical}%",
     "lead": "一つの価格を予測するために入れたものです。数字はモデル内で各グループが占める重要度(XGBoost gain)です。",
     "unit": "個",
     "groups": {
@@ -228,7 +229,7 @@
   "charts": {
     "depart": {
       "body1": "価格を大きく動かすのは「いつ買うか」より「いつ出発するか」でした。点一つが出発日一つで、上にあるほど路線・クラス平均より高い日です。曜日ごとの平均もあわせて示しています。祝日前後(琥珀色)と日曜日の出発がいちばん高くなっています。",
-      "heading": "出発日別の価格",
+      "heading": "いつ発つかの方が大きい：元日前後 {insight.holidayPeak.pct|signed0}%",
       "alt": "出発日別の価格の点グラフ。横が出発日、縦が路線・クラス平均との差で、曜日ごとの平均もあわせて示しています。クリスマス・元日・ソルラル前後がいちばん高く、曜日では日曜日がいちばん高くなっています。",
       "axis": "平均比",
       "weekdays": "曜日平均",
@@ -237,7 +238,7 @@
     },
     "curve": {
       "body1": "出発済みの{model.realizedFlights}便の価格を日次で追跡しました。出発直前（{model.bookingCurve.0.label}）は同じ便の平均より{model.bookingCurve.0.pct|signed}%高く、{model.bookingCurve.5.label}の区間が{model.bookingCurve.5.pct|signed}%で最も安くなりました。幅は約{model.curveWidth}ポイントのU字カーブです。",
-      "heading": "U字型の予約カーブ",
+      "heading": "いつ買うかはそれより小さい：出発ひと月前後 {insight.curveMin|signed0}%",
       "alt": "出発までの日数の区間ごとに、同じ便の平均に対する価格を点で積み上げた図。区間平均を結んだ線がU字を描きます。",
       "axis": "同じ便の平均比",
       "zero": "同じ便の平均",
@@ -246,19 +247,19 @@
       "tip": "{v.bin}に買うと同じ便の平均比 {v.pct} · 観測{v.n}件"
     },
     "bubble": {
-      "heading": "R²の水増しを取り除く",
+      "heading": "R²は二度、水増しされていた",
       "body1": "最初に得たR² {model.bubble.firstR2}は、羽田路線で誤ってマッチングされた高額な行によって水増しされた値でした。この行を除外するとR²は{model.bubble.firstR2After}まで下がり、MAEはほとんど変わりませんでした。",
       "body2": "同じことがもう一度ありました。直行と表示されていても実際には経由便だった行を{data.removedImplausible}件見つけて除外しました。MAEは{model.bubble.maeBefore}ウォンから{model.bubble.maeAfter}ウォンとほとんど変わらず、R²だけが{model.bubble.r2Before}から{model.bubble.r2After}に下がりました。これらの行がR²の分母の{model.bubble.denomShare}%を占めていました。",
       "body3": "そのためR²だけでなく、MAEとデータの整合性をあわせて確認します。フィルタ条件が異なるため、今のR²と以前のR²を直接比較していません。"
     },
     "validation": {
-      "heading": "検証設計",
+      "heading": "未来のデータを使わない検証で性能を測る",
       "body1": "K-Foldは中ほどの期間を評価に取り分け、その前後をすべて学習に使います。未来に集めた価格で過去を当てることになるため、スコアが最も高く出ます。参考の上限としてだけ見ます。",
       "body2": "GroupKFoldは路線・出発日ごとまとめて評価に取り分けます。初めて見る出発日ではlookup統計が既定値に落ちる、学習とサービスの不一致がここで見つかりました。lookupを入れたサービス構成はR² {model.gkfWithLookup.r2}、MAE {model.gkfWithLookup.mae}ウォンでlookupなしより悪く、lookup構成{model.lookupVariants}通りをそれぞれ再チューニングして比べました。",
       "body3": "TimeSeriesSplitは過去だけで学習し、すぐ次の期間を評価します。境界を五回動かしながら測ります。運用と同じ条件なので代表値として使います。",
       "tagKf": "参考の上限",
       "tagGkf": "初めて見る出発日・lookupなし",
-      "tagTss": "運用基準",
+      "tagTss": "運用基準 · 代表値",
       "axisX": "収集日",
       "axisY": "出発日",
       "legendTrain": "学習",
@@ -275,7 +276,7 @@
       }
     },
     "band": {
-      "heading": "予測区間の補正",
+      "heading": "予測区間が実際の価格の{model.interval.coverage}%を捉えた",
       "body1": "価格を一つだけ出すのではなく、{model.interval.level}%の予測区間もあわせて出力します。",
       "body2": "固定した区間は、最近のデータほど実際のカバー率が{model.interval.driftLow}%まで低下していました。分布のシフト傾向を反映して区間幅を調整し、直近の区間で{model.interval.coverage}%をカバーしました。",
       "body3": "雲の点は、基準日に計算した仁川→成田LCCの{model.interval.level}%予測区間の中に散らしたものです。中央の明るい点が予測価格で、点がまばらな端ほどその価格になる可能性は低くなります。ほかの路線は下のデモで見られます。",
@@ -286,7 +287,7 @@
       "panelNote": "点ひとつ = 確率{v.step}% · {v.total}個中{v.inside}個が区間内"
     },
     "limits": {
-      "heading": "限界と次のステップ",
+      "heading": "単純なベースラインとのMAE差は{model.baselineGap.mae}ウォン({model.baselineGap.pct|fixed1}%)",
       "body1": "同じ便の直近観測価格をそのまま使う単純な基準線のMAEは{model.baselineMae}ウォンで、モデル（{model.tss.mae}ウォン）とほとんど差がありません。",
       "body2": "推薦の{model.reco.buyNow}%が「今すぐ購入」です。実際の価格を追跡すると、出発から二か月以内では待つと平均的に損をしており、モデルも同じ方向を示していました。",
       "body3": "次のステップは、同じ便の直近観測価格を特徴量として追加し、基準線を上回ることです。"

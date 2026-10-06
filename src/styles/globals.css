@@ -401,6 +401,8 @@ html[data-3d="on"] :is(.intro-copy, .project-copy) { text-shadow: 0 0 18px #0204
 .project-stats div { display: flex; flex-direction: column-reverse; }
 .project-stats dd { font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 600; color: var(--amb); line-height: 1.1; }
 .project-stats dt { font-size: 0.85rem; color: var(--mute); }
+/* ① 2번 칸 작은 둘째 줄(정보 전달 2 §4): 이름 아래 작게 — 숫자가 무엇과 비교한 값인지 */
+.project-stats dt small { display: block; margin-top: 2px; font-size: 0.75rem; color: var(--mute); }
 @media (max-width: 640px) { .project-stats { gap: 24px; } }
 
 /* ② DATA(설계 2026-09-25 §3.2, 2026-09-27 개정 — 두 화면): 화면 1의 글·수집 4단계 + 화면 2의 공항 출발 안내판 */
