@@ -37,7 +37,7 @@ from export_facts import (  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_GZIP_BYTES = 150 * 1024   # 설계 §4 charts.json 예산
-SAMPLE_SIZE = 4000            # 차트 2 관측 점 개수(고정)
+SAMPLE_SIZE = 16000           # 차트 2 관측 점 개수(고정) — 배경 표본 밀도(설계 2026-10-07): 점을 작게 해 칸 모양이 남는다
 SAMPLE_CLIP = 40.0            # 표본 %는 ±40에서 자른다(화면은 ±22만 그린다 — 값이 큰 몇 개가 파일만 키우지 않게)
 TOP_LABELS = 4                # 점 그래프에서 봉우리 바로 위에 이름을 붙이므로 한글날까지(설계 2026-09-29 §2)
 SEED = 7
@@ -46,10 +46,10 @@ SHAP_SAMPLE = 150             # ③ SHAP 벌떼 표본 수(계획 5-3c) — 피�
 CATEGORICAL = ["origin", "destination", "route", "airline", "airline_class"]
 MODEL_ROUTE = "ICN_NRT"       # ③ 모델 구조 점(계획 7-2) — ⑤ 불확실성 구름과 같은 조합
 MODEL_CABIN = "LCC"
-MODEL_PER_DATE = 12           # 출발일마다 관측 점 개수(차트 1의 출발일 뭉치와 같은 12개)
+MODEL_PER_DATE = 48           # 출발일마다 관측 점 개수 — 배경 표본 밀도(설계 2026-10-07, 이전 12에서 4배)
 MODEL_RESID_HOT = 50.0        # 큰 잔차(|%|) — 사이트 src/charts/model.ts MODEL.residHot과 같은 값(출력 확인용)
-FILTER_SAMPLE = 4000          # ② 걸러내기 점 개수(계획 8-1) — 실제 비율 그대로라 규칙 ②는 10여 개뿐이다(부풀리지 않는다)
-SPLIT_SAMPLE = 4000           # ⑤ 검증 설계 점 개수
+FILTER_SAMPLE = 8000          # ② 걸러내기 점 개수(계획 8-1, 설계 2026-10-07에서 두 배) — 실제 비율 그대로라 규칙 ②는 20여 개뿐이다(부풀리지 않는다)
+SPLIT_SAMPLE = 8000           # ⑤ 검증 설계 점 개수(설계 2026-10-07에서 두 배)
 N_FOLDS = 5                   # 항공권 저장소 tscv_eval_v2.py와 같은 5겹
 
 

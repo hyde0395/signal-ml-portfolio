@@ -173,7 +173,7 @@ def test_model_block_has_percent_only():
     assert set(b) == {"route", "cabin", "base", "obs"} and set(b["obs"]) == {"date", "pct"}
     assert (b["route"], b["cabin"]) == ("ICN_NRT", "LCC")
     assert b["base"] == [-50, None, 200]
-    assert len(b["obs"]["date"]) == len(b["obs"]["pct"]) == 17
+    assert len(b["obs"]["date"]) == len(b["obs"]["pct"]) == min(20, ec.MODEL_PER_DATE) + 5  # 첫날 20행·셋째 날 5행, 출발일당 상한 안
     # 원 단위 값이 섞이지 않았는지: 모든 정수가 현실적인 %×10 범위(±500%) 안이고, 입력 가격(반올림)과 같은 값이 없다
     vals = b["obs"]["pct"] + [x for x in b["base"] if x is not None]
     assert all(isinstance(v, int) and abs(v) <= 5000 for v in vals)

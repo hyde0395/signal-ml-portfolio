@@ -238,7 +238,7 @@ export function departLayout(
 // sampleA: 표본 알파 — 차트 2는 늘 한 구간이 짚혀 있어(처음 = 가장 싼 구간) 나머지는 × CHART_FOCUS_DIM(0.45) ≈ 0.2가 되고,
 // 짚은 구간만 0.45로 밝다(설계 §2 "짚은 항목만 약 0.45")
 // narrowColPx: 구간 칸이 이보다 좁으면(휴대폰) 이름표에서 "D-"를 뺀다 — 9px 글자로 "D-61~90"이 칸 폭을 다 채워 옆 이름표와 겹친다
-// dot·gap: 배경 표본 밀도(설계 2026-10-07) — 표본 16,000을 칸이 네모로 꽉 차지 않게 작은 점으로(지금 2.4·0.5에서)
+// dot·gap: 배경 표본 밀도(설계 2026-10-07) — 표본 16,000을 칸이 네모로 꽉 차지 않게 작은 점으로(이전 2.4·0.5)
 export const SWARM = { dot: 1.5, gap: 0.3, sampleA: 0.45, star: 6.8, starKey: 9.2, clip: 22, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.12, marginBottom: 0.12 } as const;
 
 export function swarmLayout(
