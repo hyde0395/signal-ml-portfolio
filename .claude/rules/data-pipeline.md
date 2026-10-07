@@ -12,8 +12,8 @@ paths:
   - `export_terrain.py`: 원본 CSV + 항공권 저장소 필터 함수(`src/processing/features.py` import 재사용) → `terrain.json`
   - `export_demo.py`: `v2_predictor.pkl` + `recommend_action()` → `demo.json`
   - `export_facts.py`: 사이트의 모든 수치 → `facts.json`(항공권 저장소 CLAUDE.md 기준)
-  - `export_charts.py`: 출발일별 %·공휴일 이름표·예약 곡선 8구간·관측 표본 4,000 + SHAP 33 × 150(`pred_contribs`, 피처 값은 0~100 순위) + 모델 구조 `model`(인천→나리타 LCC 관측 출발일마다 12개 + NeuralProphet 기준 가격, 노선·등급 평균 대비 %×10) → `charts.json`. 불확실성 구름은 `demo.json`을 그대로 씀
-- `npm run facts`가 `data/facts.json`의 `site` 줄을 여러 줄로 바꿔 쓴다 — 돌린 뒤 diff에서 `site`만 바뀌었으면 되돌린다
+  - `export_charts.py`: 출발일별 %·공휴일 이름표·예약 곡선 8구간·관측 표본 16,000 + SHAP 33 × 150(`pred_contribs`, 피처 값은 0~100 순위) + 모델 구조 `model`(인천→나리타 LCC 관측 출발일마다 최대 48개 + NeuralProphet 기준 가격, 노선·등급 평균 대비 %×10) → `charts.json`. ② 걸러내기·⑤ 검증 설계 표본 각 8,000(설계 2026-10-07). 불확실성 구름은 `demo.json`을 그대로 씀
+- `npm run facts`·`npm run charts`(`refresh_derived`)가 `data/facts.json`의 한 줄 객체(`site.airport`·`contact.ticket`)를 여러 줄로 바꿔 쓴다 — 돌린 뒤 diff에서 그 서식만 바뀌었으면 되돌린다
 
 ## 데모 데이터
 - 기준일 2026-09-22, 6개 노선 × 등급(LCC/FSC) × 출발일 D+3~90(모델 `MAX_DTD = 90`)

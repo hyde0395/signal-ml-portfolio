@@ -7,7 +7,7 @@ description: 항공권 모델을 재학습했거나 원본 데이터가 바뀌�
 
 1. 항공권 저장소(`~/Documents/airfare-forecasting-ml`) CLAUDE.md의 **iCloud 워밍 절차**를 먼저 따른다
 2. 순서대로 실행(출력이 길면 `test-runner` 에이전트에 맡긴다):
-   1. `npm run facts` — 돌린 뒤 `data/facts.json` diff에서 `site` 줄만 여러 줄로 바뀌었으면 되돌린다
+   1. `npm run facts` — 돌린 뒤 `data/facts.json` diff에서 한 줄 객체(`site.airport`·`contact.ticket`)만 여러 줄로 바뀌었으면 되돌린다(`npm run charts`도 같은 일을 한다 — 4번 뒤에도 확인)
    2. `npm run terrain`
    3. `npm run demo`
    4. `npm run charts`(SHAP·모델 구조·걸러내기·검증 설계 포함, 모델 로드 약 20초)
