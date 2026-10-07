@@ -739,3 +739,18 @@ test.describe('③ 모델 구조 저절로 넘김(정보 전달 2 §7)', () => {
     await expect(stage).toHaveAttribute('data-sub', '1', { timeout: 5_000 });
   });
 });
+
+test.describe('⑤ 검증 설계 TSS 반복(설계 2026-10-07 §5)', () => {
+  test.use({ reducedMotion: 'no-preference' });
+  test('폴드 5에 닿은 뒤 다시 폴드 1로 돌아온다', async ({ page }) => {
+    await page.goto('/');
+    const block = page.locator('.chart-block[data-scene="chartSplit"]');
+    await block.evaluate((el) => { const r = el.getBoundingClientRect(); window.scrollTo(0, window.scrollY + r.top + (r.height - window.innerHeight) * 0.8); });
+    const stage = block.locator('.chart-stage');
+    await expect(stage).toHaveAttribute('data-stage', '2', { timeout: 10_000 });
+    // 1.2초 × 4 = 4.8초에 폴드 5, 2.4초 머문 뒤 폴드 1
+    await expect(stage).toHaveAttribute('data-sub', '4', { timeout: 8_000 });
+    await expect(stage).toHaveAttribute('data-sub', '0', { timeout: 5_000 });
+    await expect(stage).toHaveAttribute('data-sub', '1', { timeout: 3_000 });
+  });
+});
