@@ -47,6 +47,15 @@ describe('startSubs', () => {
     vi.advanceTimersByTime(2000);
     expect(seen).toEqual([0, 1, 2, 0, 1, 2]);
   });
+  it('머무는 중에 restart하면 0부터 한 줄로 다시(타이머가 겹치지 않는다)', () => {
+    const { t, seen } = make(3, false, 2500);
+    vi.advanceTimersByTime(3000); // 2에서 머무는 중
+    t.restart();
+    vi.advanceTimersByTime(2000);
+    expect(seen).toEqual([0, 1, 2, 0, 1, 2]);
+    vi.advanceTimersByTime(2499);
+    expect(seen).toEqual([0, 1, 2, 0, 1, 2]);
+  });
   it('반복 중 stop하면 멈춘다', () => {
     const { t, seen } = make(3, false, 2500);
     vi.advanceTimersByTime(3000);

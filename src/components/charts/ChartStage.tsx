@@ -211,13 +211,21 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     let timer: ReturnType<typeof startSubs> | null = null;
     const set = (n: number) => { if (subRef.current === n) return; subRef.current = n; setSub(n); relayout.current(); };
     // 판이 절반 이상 보일 때 시작한다 — 조금만 걸쳐도 시작하면 독자가 판에 닿기 전에 sub가 끝나 있다(②·③·⑤ 판이 sub 타이머를 쓴다, 정보 전달 2 §7)
-    const io = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting || e.intersectionRatio < 0.5) { timer?.stop(); return; }
+    let inView = false;
+    const start = () => {
       if (timer) timer.restart();
       else timer = startSubs({ count, ms: subMs, reduced: false, loopHoldMs: subLoopMs, set, setTimeout: window.setTimeout.bind(window) as typeof setTimeout, clearTimeout: window.clearTimeout.bind(window) });
+    };
+    const io = new IntersectionObserver(([e]) => {
+      inView = e.isIntersecting && e.intersectionRatio >= 0.5;
+      if (!inView) { timer?.stop(); return; }
+      start();
     }, { threshold: 0.5 });
     io.observe(el);
-    return () => { io.disconnect(); timer?.stop(); };
+    // 탭이 가려지면 멈춘다 — IntersectionObserver는 탭 전환을 알리지 않아 ⑤ TSS 반복이 보이지 않는 탭에서 계속 돌았다
+    const onVis = () => { if (document.hidden) timer?.stop(); else if (inView) start(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { io.disconnect(); document.removeEventListener('visibilitychange', onVis); timer?.stop(); };
     // subs는 서버에서 온 배열이라 렌더마다 새 배열일 수 있어 글자로 비교한다(subsKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, subsKey, subMs, subLoopMs]);
