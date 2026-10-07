@@ -63,4 +63,11 @@
 
 ## 구현 결과
 
-(구현 뒤 채움)
+브랜치 `feat/dot-density`. 설계대로 구현했고 아래가 더해지거나 달라졌다.
+
+- **데이터**: `charts.2026-09-22.json` gzip 87,549B(전 약 40KB, 예산 150KB). U자 16,000·모델 관측 8,260·걸러내기·검증 8,000. `facts.json` 값은 그대로 — 다만 `npm run charts`가 `refresh_derived`로 `facts.json`을 다시 쓰며 손으로 한 줄에 둔 객체(`site.airport`·`contact.ticket`)를 여러 줄로 펴서, 그 서식 변경은 되돌렸다(재추출 때마다 생긴다 — `refresh-data` 때 확인)
+- **3D 점 수**: 세로 화면 점 구름 15,926(가로 28,176). 배치 점 수 — U자 13,242(1100px)·11,469(358px), 모델 8,669/8,551, 걸러내기 8,154/8,076, 검증 설계 8,000, 구름 5,456. 단위 테스트가 지킨다
+- **TSS 반복**: `startSubs`의 `loopHoldMs`, `ChartStage` `subLoopMs`(⑤ 검증 설계만). 검토에서 더한 것 — 탭이 가려지면 멈추고(`visibilitychange`, IntersectionObserver는 탭 전환을 알리지 않음) 다시 보이면 처음부터. 그 결과 ②·③ 판도 탭을 다시 열면 처음부터 재생된다(화면 밖에서 돌아올 때와 같은 동작)
+- **테스트**: `tests/unit/charts-density.test.ts`(상수·배경 점 크기 전수·표본 수·3D 점 수 한도), subTimer 반복·머무는 중 restart, e2e TSS 반복. 기존 구름 테스트는 `Math.fround`만(2.1·1.7이 float32에서 정확하지 않음), 파이썬 `test_model_block_has_percent_only`는 관측 수 기대값을 `MODEL_PER_DATE`에서. e2e desktop 182·mobile 179 통과
+- **타입 검사**: 시안 코드(`docs/.../density-entry.ts`)가 `tsc`에 걸려 `tsconfig.json` exclude에 `docs` 추가
+- **눈 확인(1440 2D·3D, 1024, 390)**: 칸·띠 모양은 남고 촘촘해졌다. 3D 밝기가 지나친 곳은 없다 — 오히려 점이 작아져 ④ U자(알파 0.2)·③ 모델 2단계(관측 0.2)는 데스크톱에서 전보다 옅어 보인다. 알파는 바꾸지 않았고 사용자 확인으로 넘김
