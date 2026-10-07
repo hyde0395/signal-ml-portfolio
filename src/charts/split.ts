@@ -13,7 +13,8 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 // 페이지 가로 스크롤이 생겼다(8-1 최종 검토). 820 이상에서 긴 꼬리표는 CSS가 판 오른쪽 끝에서 줄바꿈한다.
 // trainA: 학습 점은 배경 층 — 규칙이 무엇을 걸렀는지 먼저 보이게(설계 2026-10-04 §4)
 // loopHoldMs: TSS 마지막 폴드에서 머무는 시간 — 그 뒤 폴드 1로 돌아가 반복(설계 2026-10-07 §5)
-export const SPLIT = { stages: 3, subs: [1, 1, 5], subMs: 1200, loopHoldMs: 2400, wideMinPx: 820, jitterPx: 1.6, seed: 5, unusedA: 0.2, trainA: 0.4 } as const;
+// dotWide/dotNarrow: 관측 점 지름(넓은 판/좁은 판) — 표본 8,000으로 늘리며 작게(설계 2026-10-07)
+export const SPLIT = { dotWide: 1.9, dotNarrow: 1.4, stages: 3, subs: [1, 1, 5], subMs: 1200, loopHoldMs: 2400, wideMinPx: 820, jitterPx: 1.6, seed: 5, unusedA: 0.2, trainA: 0.4 } as const;
 
 export type SplitMethod = { name: string; r2: string; mae: string; tag: string };
 export type SplitTexts = {
@@ -48,7 +49,7 @@ export function splitLayout(d: ChartsData, size: PlotSize, stage: number, sub: n
   const t0 = utc(d.dates[0]), t1 = utc(d.dates[d.dates.length - 1]);
   const YT = (t: number) => bottom - (bottom - top) * ((t - t0) / Math.max(1, t1 - t0));
   const p = new Pts();
-  const dot = wide ? 2.2 : 1.6;
+  const dot = wide ? SPLIT.dotWide : SPLIT.dotNarrow;
   const rand = mulberry32(SPLIT.seed);
   for (let i = 0; i < sp.fetch.length; i++) {
     const jx = (rand() - 0.5) * 2 * SPLIT.jitterPx, jy = (rand() - 0.5) * 2 * SPLIT.jitterPx;

@@ -373,9 +373,9 @@ describe('cloudLayout', () => {
   const PER = CLOUD.perDate + 2; // 날짜 하나의 점 수: 구름 + 별(번짐·심)
   it('예측 없는 날은 건너뛰고, 출발일마다 구름 perDate개 + 예측가 별(번짐 + 심) 2개', () => expect(L.n).toBe(2 * (CLOUD.perDate + 2)));
   it('가운데 50% 층은 바깥 층보다 크고 진하다', () => {
-    const cloud = Array.from({ length: L.n }, (_, i) => i).filter((i) => L.size[i] === CLOUD.coreSize || L.size[i] === CLOUD.outerSize);
+    const cloud = Array.from({ length: L.n }, (_, i) => i).filter((i) => L.size[i] === Math.fround(CLOUD.coreSize) || L.size[i] === Math.fround(CLOUD.outerSize));
     expect(cloud).toHaveLength(2 * CLOUD.perDate);
-    const core = cloud.filter((i) => L.size[i] === CLOUD.coreSize), outer = cloud.filter((i) => L.size[i] === CLOUD.outerSize);
+    const core = cloud.filter((i) => L.size[i] === Math.fround(CLOUD.coreSize)), outer = cloud.filter((i) => L.size[i] === Math.fround(CLOUD.outerSize));
     expect(core.length).toBeGreaterThan(0); expect(outer.length).toBeGreaterThan(0);
     for (const i of core) expect(L.alpha[i]).toBe(Math.fround(CLOUD.coreA));
     for (const i of outer) expect(L.alpha[i]).toBe(Math.fround(CLOUD.outerA));

@@ -238,7 +238,8 @@ export function departLayout(
 // sampleA: 표본 알파 — 차트 2는 늘 한 구간이 짚혀 있어(처음 = 가장 싼 구간) 나머지는 × CHART_FOCUS_DIM(0.45) ≈ 0.2가 되고,
 // 짚은 구간만 0.45로 밝다(설계 §2 "짚은 항목만 약 0.45")
 // narrowColPx: 구간 칸이 이보다 좁으면(휴대폰) 이름표에서 "D-"를 뺀다 — 9px 글자로 "D-61~90"이 칸 폭을 다 채워 옆 이름표와 겹친다
-export const SWARM = { dot: 2.4, gap: 0.5, sampleA: 0.45, star: 6.8, starKey: 9.2, clip: 22, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.12, marginBottom: 0.12 } as const;
+// dot·gap: 배경 표본 밀도(설계 2026-10-07) — 표본 16,000을 칸이 네모로 꽉 차지 않게 작은 점으로(지금 2.4·0.5에서)
+export const SWARM = { dot: 1.5, gap: 0.3, sampleA: 0.45, star: 6.8, starKey: 9.2, clip: 22, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.12, marginBottom: 0.12 } as const;
 
 export function swarmLayout(
   c: ChartsData['curve'], size: PlotSize,
@@ -333,8 +334,9 @@ export function invNorm(p: number): number {
 // 가운데 50%(분위 0.25~0.75)는 크고 진하게, 바깥은 작고 옅게 — 팬 차트의 두 층. 예측가는 별 + 별자리 선.
 // 넓은 판(panelMinPx 이상)은 오른쪽 칸(판 폭의 panelFrac, panelMin~panelMax px)에 짚은 날의 분위수 점 그림(QDOT)
 // focusDim 0.8: 짚은 날 외 점을 조금만 흐린다 — 0.45면 처음부터 짚힌 상태라 구름 전체가 늘 어두웠다(시안 대비)
+// perDate·coreSize·outerSize: 배경 표본 밀도(설계 2026-10-07) — 점 두 배, 조금 작게
 export const CLOUD = {
-  perDate: 30, z90: 1.2815515655446004, coreLo: 0.25, coreHi: 0.75, coreSize: 2.5, coreA: 0.6, outerSize: 2, outerA: 0.24,
+  perDate: 60, z90: 1.2815515655446004, coreLo: 0.25, coreHi: 0.75, coreSize: 2.1, coreA: 0.6, outerSize: 1.7, outerA: 0.24,
   star: 4.4, focusDim: 0.8, panelMinPx: 640, panelFrac: 0.24, panelMin: 200, panelMax: 280, panelGap: 28,
   marginLeft: 0.1, marginTop: 0.16, marginBottom: 0.12,
 } as const;

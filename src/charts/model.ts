@@ -11,7 +11,8 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 // 3단계에서 점이 "기준만큼 내려앉는" 것이 그대로 보인다. residHot: 큰 잔차(|%|) 호박색 — 지금 데이터로 관측의 약 13%.
 // dashOn/dashPeriod: 3단계 0 줄은 선 점 5개 중 3개만 보여 끊긴 점선. jitterPx: 같은 출발일 관측을 좌우로 조금 흔든다(세로 줄 한 개로 겹치지 않게)
 // zeroA: 3단계 0 끊긴 점선 알파 — 결론 층(설계 2026-10-04 §4)
-export const MODEL = { stages: 3, wideMinPx: 560, lo: -60, hi: 110, linePts: 240, dashOn: 3, dashPeriod: 5, residHot: 50, jitterPx: 1.6, seed: 7, zeroA: 0.95 } as const;
+// dotWide/dotNarrow: 관측·잔차 점 지름(넓은 판/좁은 판) — 출발일마다 48개로 늘리며 작게(설계 2026-10-07)
+export const MODEL = { dotWide: 1.55, dotNarrow: 1.2, stages: 3, wideMinPx: 560, lo: -60, hi: 110, linePts: 240, dashOn: 3, dashPeriod: 5, residHot: 50, jitterPx: 1.6, seed: 7, zeroA: 0.95 } as const;
 
 // ③ 블록(정보 전달 2 §7): 자막 2칸. 1칸 = 모은 가격 → subMs 뒤 저절로 기준 가격(⑤ TSS 폴드와 같은 sub 타이머), 2칸 = 잔차.
 // 그림 단계(MODEL.stages 3)는 그대로 두고 (칸, sub)를 그림 단계로 바꾼다 — 배치 코드와 3D 슬롯 규칙(variant stage:n)이 그대로다
@@ -44,7 +45,7 @@ export function modelLayout(d: ChartsData, size: PlotSize, stage: number, s: Mod
   const Y = (v: number) => top + (bottom - top) * (1 - (Math.min(MODEL.hi, Math.max(MODEL.lo, v)) - MODEL.lo) / (MODEL.hi - MODEL.lo));
   const inRange = (v: number) => v >= MODEL.lo && v <= MODEL.hi;
   const p = new Pts();
-  const dot = wide ? 2.2 : 1.7;
+  const dot = wide ? MODEL.dotWide : MODEL.dotNarrow;
 
   // 0% 흐린 기준선(차트 1과 같은 모양). 3단계에서는 밝은 끊긴 점선이 그 자리를 대신해 알파 0 — 개수는 단계와 무관하게 같다
   for (let x = gx0; x <= gx1; x += 6) p.add(x / W, Y(0) / H, 1.6, st === 2 ? 0 : 0.28, TONE.text);

@@ -11,7 +11,9 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 // 150분 + 여유 65분(항공권 저장소 constants.py). subs: 단계마다 작은 단계 수(켜짐 → 떨어짐), subMs: 그 간격
 // wideMinPx 820: 옆 칸(0.76W)의 "258,829 ROWS"·규칙 이름이 판 안에 들어가는 최소 폭(768px에서 7px 넘쳤다, 8-1 최종 검토)
 // keptA: 남는 점은 배경 층, litA: 걸린 점은 결론 층 — 규칙이 무엇을 걸렀는지 먼저 보이게(설계 2026-10-04 §4)
+// dotWide/dotNarrow: 관측 점 지름(넓은 판/좁은 판) — 표본 8,000으로 늘리며 작게(설계 2026-10-07)
 export const FILTER = {
+  dotWide: 1.9, dotNarrow: 1.45,
   stages: 3, subs: [1, 2, 2], subMs: 700, wideMinPx: 820,
   x0: 60, x1: 960, over: 0.05, lo: -90, hi: 300, ruleMin: 400, boxFrom: 215, seed: 11,
   keptA: 0.4, litA: 0.95,
@@ -46,7 +48,7 @@ export function filterLayout(d: ChartsData, size: PlotSize, stage: number, sub: 
   const X = (m: number) => gx0 + (gxMain - gx0 - 6) * ((m - FILTER.x0) / (FILTER.x1 - FILTER.x0));
   const Y = (v: number) => top + (bottom - top) * (1 - (v - FILTER.lo) / (FILTER.hi - FILTER.lo));
   const p = new Pts();
-  const dot = wide ? 2.2 : 1.7;
+  const dot = wide ? FILTER.dotWide : FILTER.dotNarrow;
   const lineA = 0.55;
 
   // 규칙 ① 세로 점선(400분)과 규칙 ③ 점선 상자 — 점 개수는 단계와 무관하게 같고 보일 때만 알파를 준다
