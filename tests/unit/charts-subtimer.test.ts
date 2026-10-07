@@ -5,9 +5,9 @@ import { startSubs } from '@/components/charts/subTimer';
 describe('startSubs', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
-  const make = (count: number, reduced = false) => {
+  const make = (count: number, reduced = false, loopHoldMs?: number) => {
     const seen: number[] = [];
-    const t = startSubs({ count, ms: 1000, reduced, set: (n) => seen.push(n), setTimeout, clearTimeout });
+    const t = startSubs({ count, ms: 1000, reduced, set: (n) => seen.push(n), setTimeout, clearTimeout, loopHoldMs });
     return { t, seen };
   };
   it('0에서 시작해 1초마다 +1, 마지막(4)에서 멈춘다', () => {
@@ -35,5 +35,28 @@ describe('startSubs', () => {
     t.restart();
     vi.advanceTimersByTime(1000);
     expect(seen).toEqual([0, 1, 2, 0, 1]);
+  });
+  it('loopHoldMs를 주면 마지막에서 그만큼 머문 뒤 0으로 돌아가 다시 올라간다', () => {
+    const { seen } = make(3, false, 2500);
+    vi.advanceTimersByTime(2000);
+    expect(seen).toEqual([0, 1, 2]);
+    vi.advanceTimersByTime(2499);
+    expect(seen).toEqual([0, 1, 2]);
+    vi.advanceTimersByTime(1);
+    expect(seen).toEqual([0, 1, 2, 0]);
+    vi.advanceTimersByTime(2000);
+    expect(seen).toEqual([0, 1, 2, 0, 1, 2]);
+  });
+  it('반복 중 stop하면 멈춘다', () => {
+    const { t, seen } = make(3, false, 2500);
+    vi.advanceTimersByTime(3000);
+    t.stop();
+    vi.advanceTimersByTime(20_000);
+    expect(seen).toEqual([0, 1, 2]);
+  });
+  it('움직임 줄이기면 loopHoldMs가 있어도 마지막에 머문다', () => {
+    const { seen } = make(5, true, 2500);
+    vi.advanceTimersByTime(20_000);
+    expect(seen).toEqual([4]);
   });
 });
