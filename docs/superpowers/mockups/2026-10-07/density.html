@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>점 밀도 시안</title>
+<style>
+body{background:#02040A;color:#EEF3FF;font:14px Pretendard,system-ui,sans-serif;margin:32px}
+h1{font-size:22px;margin:0 0 6px} h2{font-size:17px;margin:36px 0 6px;color:#FFB547} h3{font-size:14px;margin:24px 0 8px;font-weight:600}
+p{color:rgba(238,243,255,.7);margin:0 0 16px;max-width:900px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,900px);gap:20px}
+.pair{display:grid;grid-template-columns:repeat(2,900px);gap:20px}
+figure{margin:0;background:linear-gradient(#070b16,#02040A);border-radius:6px}
+figcaption{display:flex;gap:12px;align-items:baseline;padding:8px 12px 0;font-family:'IBM Plex Mono',monospace;font-size:12px}
+figcaption b{color:#FFB547} figcaption span{color:rgba(238,243,255,.6)} canvas{display:block}
+</style>
+<h1>점 밀도 시안 v2</h1>
+<p>사이트 배치 코드 + 실제 데이터(표본만 다시 뽑음). 3D가 꺼졌을 때와 같은 2D 그림이고, 이름표·눈금 글자는 뺐습니다. 결론 층(별·선)과 투명도·색은 그대로.</p>
+<h2>1. ④ U자 예약 곡선 — 얼마나 촘촘하게</h2>
+<p>점을 작게 할수록 구간 칸 한 줄에 더 많이 들어가서, 표본을 늘려도 칸이 네모로 꽉 차지 않고 분포 모양이 남습니다.</p>
+<div class="grid" id="u"></div>
+<h2>2. 나머지 차트 — 지금 vs 제안</h2>
+<p>③ 모델 관측 점은 4배(가장 성김), 나머지는 2배. 단계가 있는 판은 단계마다 보여 줍니다.</p>
+<div id="all"></div>
+<h2>3. ⑤ 검증 설계 TSS — 반복</h2>
+<p>지금은 폴드 5에서 멈춥니다. 제안: 폴드가 1.2초마다 넘어가고, 마지막 폴드에서 2.4초 머문 뒤 처음부터 다시(판이 절반 이상 보이는 동안만, 움직임 줄이기에서는 마지막 모습 그대로). 왼쪽은 한 번만 돌고 멈춥니다 — 새로고침하면 다시 봅니다.</p>
+<div id="loop"></div>
+<script src="bundle.js"></script>
