@@ -9,7 +9,7 @@
 // 어느 쪽이든 강조 번호 하나를 저장소로 3D에 알리고 2D도 다시 그린다.
 // 펼침(open): ③ 와플 그룹 버튼을 누르면 그 그룹의 SHAP 벌떼 배치로 다시 배치한다(계획 5-3c). 펼친 동안은 펼친 그룹이 강조다.
 // 단계(step): stages를 주면(③ 모델 구조, 계획 7-2) 자막 스크립트가 블록에 적는 지금 문단(data-para)을 따라 단계를 바꿔 다시 배치한다.
-// 작은 단계(sub): subs를 주면(② 걸러내기·⑤ 검증 설계·③ 모델 구조) 한 단계 안에서 sub가 subMs마다 저절로 올라가 마지막에서 멈춘다.
+// 작은 단계(sub): subs를 주면(② 걸러내기·⑤ 검증 설계·③ 모델 구조) 한 단계 안에서 sub가 subMs마다 저절로 올라가 마지막에서 멈춘다(subLoopMs를 주면 반복 — ⑤ TSS).
 // 판이 화면 밖이면 멈추고 다시 들어오면 처음부터, 움직임 줄이기면 바로 마지막. 수치 이름표(stat·statSm)는 글자가 바뀌면 플립
 import type React from 'react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -23,8 +23,9 @@ import { startSubs } from './subTimer';
 
 // label: 조작 층의 aria-label(차트 제목 + " · " + charts.touch), hint: 짚은 항목이 없을 때의 valuetext(charts.touchHint).
 // 항목이 있는 차트(1·2·4)만 쓴다. stages: 단계 수(문단 번호가 이보다 크면 마지막 단계에 머문다). 없으면 단계 없음
+// subLoopMs: 주면 마지막 sub에서 그만큼 머문 뒤 처음으로 돌아가 반복(⑤ 검증 설계 TSS)
 type Props = { chartKey: ChartKey; dataVersion: string; strings: ChartStrings; errorText: string; label?: string; hint?: string; stages?: number;
-  subs?: readonly number[]; subMs?: number;
+  subs?: readonly number[]; subMs?: number; subLoopMs?: number;
 };
 
 // 판이 화면 아래 800px 안으로 들어오면 미리 불러온다(스크롤해 도착했을 때 이미 그려져 있도록)
@@ -36,7 +37,7 @@ const TIP_GAP = 12;
 // 단계 바뀜을 이만큼 가라앉은 뒤에 적용한다 — 자막을 빨리 훑을 때마다 setStep하면 3D 슬롯이 전환 도중 덮어써져 점이 튄다
 const STAGE_DEBOUNCE_MS = 150;
 
-export function ChartStage({ chartKey, dataVersion, strings, errorText, label, hint, stages, subs, subMs }: Props) {
+export function ChartStage({ chartKey, dataVersion, strings, errorText, label, hint, stages, subs, subMs, subLoopMs }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const plot = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -213,13 +214,13 @@ export function ChartStage({ chartKey, dataVersion, strings, errorText, label, h
     const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting || e.intersectionRatio < 0.5) { timer?.stop(); return; }
       if (timer) timer.restart();
-      else timer = startSubs({ count, ms: subMs, reduced: false, set, setTimeout: window.setTimeout.bind(window) as typeof setTimeout, clearTimeout: window.clearTimeout.bind(window) });
+      else timer = startSubs({ count, ms: subMs, reduced: false, loopHoldMs: subLoopMs, set, setTimeout: window.setTimeout.bind(window) as typeof setTimeout, clearTimeout: window.clearTimeout.bind(window) });
     }, { threshold: 0.5 });
     io.observe(el);
     return () => { io.disconnect(); timer?.stop(); };
     // subs는 서버에서 온 배열이라 렌더마다 새 배열일 수 있어 글자로 비교한다(subsKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, subsKey, subMs]);
+  }, [step, subsKey, subMs, subLoopMs]);
 
   // 선은 판이 화면 절반 이상 들어온 뒤, 3D면 점이 날아와 자리 잡을 시간(linesDelay) 뒤에 페이드인. 판을 벗어나거나 배치 종류
   // (단계)가 바뀌면 바로 숨긴다 — 점이 옮겨 가는 동안 옛 선이 엉뚱한 자리에 떠 있지 않게

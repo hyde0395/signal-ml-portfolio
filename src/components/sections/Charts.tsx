@@ -18,7 +18,7 @@ import type { SceneKey } from '@/three/scenes';
 // ⑤ 검증 설계 판은 번호 차트가 아니고 섹션 머리표(05 — VALIDATION)와 겹쳐 빼었다(정보 전달 2 §5)
 type Common = { id: string; tag?: string; code: CodeChapter; paras: number };
 type Block =
-  | (Common & { kind: 'stage'; chart: ChartKey; axis?: true; stages?: number; subs?: readonly number[]; subMs?: number })
+  | (Common & { kind: 'stage'; chart: ChartKey; axis?: true; stages?: number; subs?: readonly number[]; subMs?: number; subLoopMs?: number })
   | (Common & { kind: 'card'; scene: SceneKey })
   // 표만 있는 카드(계획 8-1): ⑤ 검증 설계 판 뒤 평가 방식 비교표. 제목 없이 표 caption이 이름이다
   | { kind: 'table'; id: string; scene: SceneKey; code: CodeChapter };
@@ -31,9 +31,10 @@ const FINDINGS_BLOCKS: Block[] = [
 const VALIDATION_BLOCKS: Block[] = [
   // 차트 3(정보 전달 2 §6): 3D 장면 카드(제거 레이어가 떨어짐)에서 R² 전·후 아령 판으로 — 축·이름표가 있어 숫자가 읽힌다
   { kind: 'stage', id: 'bubble', tag: 'CHART 03', chart: 'chartBubble', code: 'bubble', paras: 3, stages: 3 },
-  // 세 평가 방식이 데이터를 나누는 점 그림(계획 8-1) — TSS 칸은 폴드가 저절로 넘어간다. 판 위 수치는 점수판(정보 전달 2 §5)
+  // 세 평가 방식이 데이터를 나누는 점 그림(계획 8-1) — TSS 칸은 폴드가 저절로 넘어가고 마지막에서 머문 뒤 반복한다(설계 2026-10-07 §5).
+  // 판 위 수치는 점수판(정보 전달 2 §5)
   { kind: 'stage', id: 'validation', chart: 'chartSplit', code: 'validation', paras: 3, axis: true,
-    stages: SPLIT.stages, subs: SPLIT.subs, subMs: SPLIT.subMs },
+    stages: SPLIT.stages, subs: SPLIT.subs, subMs: SPLIT.subMs, subLoopMs: SPLIT.loopHoldMs },
   // 세 방식을 나란히 보는 표는 판 바로 뒤 작은 카드로(사용자 결정 2026-09-30). 장면은 옛 카드의 validation(지형을 위에서) 그대로
   { kind: 'table', id: 'validationTable', scene: 'validation', code: 'validation' },
   { kind: 'stage', id: 'band', tag: 'CHART 04', chart: 'chartCloud', code: 'interval', paras: 3, axis: true },
@@ -107,6 +108,7 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
             stages={b.stages}
             subs={b.subs}
             subMs={b.subMs}
+            subLoopMs={b.subLoopMs}
             strings={{
               locale, holidays, axis: b.axis ? t(`charts.${b.id}.axis${b.chart === 'chartSplit' ? 'Y' : ''}`) : undefined,
               weekdayTitle: b.id === 'depart' ? t('charts.depart.weekdays') : undefined,

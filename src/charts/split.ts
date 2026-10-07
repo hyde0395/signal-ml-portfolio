@@ -12,7 +12,8 @@ import { CHART_FOCUS_DIM, TONE, type ChartLabel, type ChartLayout } from './type
 // wideMinPx 820: 옆 칸(0.78W)이 영어 문구까지 담으려면 판이 820px는 돼야 한다. 그보다 좁으면 옆 칸이 판 밖으로 나가
 // 페이지 가로 스크롤이 생겼다(8-1 최종 검토). 820 이상에서 긴 꼬리표는 CSS가 판 오른쪽 끝에서 줄바꿈한다.
 // trainA: 학습 점은 배경 층 — 규칙이 무엇을 걸렀는지 먼저 보이게(설계 2026-10-04 §4)
-export const SPLIT = { stages: 3, subs: [1, 1, 5], subMs: 1200, wideMinPx: 820, jitterPx: 1.6, seed: 5, unusedA: 0.2, trainA: 0.4 } as const;
+// loopHoldMs: TSS 마지막 폴드에서 머무는 시간 — 그 뒤 폴드 1로 돌아가 반복(설계 2026-10-07 §5)
+export const SPLIT = { stages: 3, subs: [1, 1, 5], subMs: 1200, loopHoldMs: 2400, wideMinPx: 820, jitterPx: 1.6, seed: 5, unusedA: 0.2, trainA: 0.4 } as const;
 
 export type SplitMethod = { name: string; r2: string; mae: string; tag: string };
 export type SplitTexts = {
