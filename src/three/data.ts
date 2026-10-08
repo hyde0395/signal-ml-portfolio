@@ -1,28 +1,28 @@
-// 3D 장면 데이터: terrain/map JSON을 zod로 검사하고, 점 하나당 목표 좌표(지형·지도·흩어짐)와 출발일 번호를
+// 3D 장면 데이터: terrain/map JSON을 zod/mini로 검사하고(지연 청크를 작게), 점 하나당 목표 좌표(지형·지도·흩어짐)와 출발일 번호를
 // 담은 Float32Array로 바꾼다. React·three에 의존하지 않는 순수 모듈이라 단위 테스트가 쉽다.
 // (계획 5-2: 예약 곡선·예측 구간 띠 레이어는 ④ 차트의 점 배치로 바뀌어 지웠다)
-import { z } from 'zod';
+import * as z from 'zod/mini';
 
-const ints = z.array(z.number().int());
+const ints = z.array(z.int());
 const layer = z.object({ dtd: ints, date: ints, pct: ints });
 
 // terrain.json의 curve 필드(남은 일수별 평균 %×10과 행 수)는 머리말 U자 8구간(bookingBins)에 쓴다(계획 9-3).
 // 없어도 받아들인다 — 그때는 U자가 평평하게(0) 놓인다
 export const terrainSchema = z.object({
   asOf: z.string(),
-  maxDtd: z.number().int().positive(),
+  maxDtd: z.int().check(z.positive()),
   clip: z.object({ min: z.number(), max: z.number() }),
-  dates: z.array(z.string()).min(2),
+  dates: z.array(z.string()).check(z.minLength(2)),
   holiday: ints,
-  curve: z.object({ dtd: ints, pct: ints, n: ints }).optional(),
+  curve: z.optional(z.object({ dtd: ints, pct: ints, n: ints })),
   signal: layer,
   noise: layer,
   removed: layer,
 });
 export const mapSchema = z.object({
-  bbox: z.array(z.number()).length(4),
-  coast: ints.min(4), // 선분 하나라도 있어야 해안선을 다시 뽑을 수 있다(최소 2 점 = 4개 원소)
-  routes: z.array(z.object({ from: z.string(), to: z.string(), pts: ints.min(4) })),
+  bbox: z.array(z.number()).check(z.length(4)),
+  coast: ints.check(z.minLength(4)), // 선분 하나라도 있어야 해안선을 다시 뽑을 수 있다(최소 2 점 = 4개 원소)
+  routes: z.array(z.object({ from: z.string(), to: z.string(), pts: ints.check(z.minLength(4)) })),
   airports: z.array(z.object({ code: z.string(), lon: z.number(), lat: z.number() })),
 });
 export type Terrain = z.infer<typeof terrainSchema>;

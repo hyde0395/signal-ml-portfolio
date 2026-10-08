@@ -1,26 +1,26 @@
 // 미리 계산한 demo.<기준일>.json을 읽는 ForecastSource(스펙 §6.3). 모델 서버가 생기면 같은 인터페이스의
-// ApiForecastSource를 만들고 DemoApp에서 생성하는 한 줄만 바꾼다. zod가 들어 있어 DemoApp이 dynamic
-// import로만 부른다(초기 JS에 넣지 않기 위해).
-import { z } from 'zod';
+// ApiForecastSource를 만들고 DemoApp에서 생성하는 한 줄만 바꾼다. 검사(zod/mini — 지연 청크를 작게)가 들어 있어
+// DemoApp이 dynamic import로만 부른다(초기 JS에 넣지 않기 위해).
+import * as z from 'zod/mini';
 import {
   ACTIONS, CABINS, ROUTES, WHYS,
   type Cabin, type Forecast, type ForecastSource, type Meta, type Route, type StripDay,
 } from './types';
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const won = z.number().int().nonnegative().nullable();
+const isoDate = z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/));
+const won = z.nullable(z.int().check(z.nonnegative()));
 const reco = z.object({
   action: z.enum(ACTIONS),
   why: z.enum(WHYS),
-  bestDay: z.number().int(),
-  bestPrice: z.number().int(),
-  waitDays: z.number().int(),
-  saving: z.number().int(),
+  bestDay: z.int(),
+  bestPrice: z.int(),
+  waitDays: z.int(),
+  saving: z.int(),
   savingPct: z.number(),
-  globalBestDay: z.number().int(),
-  confidence: z.enum(['high', 'medium']).nullable(),
+  globalBestDay: z.int(),
+  confidence: z.nullable(z.enum(['high', 'medium'])),
 });
-const series = z.object({ price: z.array(won), lo: z.array(won), hi: z.array(won), reco: z.array(reco.nullable()) });
+const series = z.object({ price: z.array(won), lo: z.array(won), hi: z.array(won), reco: z.array(z.nullable(reco)) });
 // series 키는 반드시 "노선/등급" 조합이어야 한다(오타 키는 getStrip/getForecast에서 조용히 무시돼 버그를 숨긴다)
 const SERIES_KEY = new RegExp(`^(${ROUTES.join('|')})/(${CABINS.join('|')})$`);
 
@@ -30,16 +30,16 @@ export const demoSchema = z
     precomputed: z.boolean(),
     routes: z.array(z.enum(ROUTES)),
     cabins: z.array(z.enum(CABINS)),
-    dates: z.array(isoDate).min(1),
-    holidays: z.record(isoDate, z.string().regex(/^(kr|jp)_[a-z0-9_]+$/)),
-    series: z.record(z.string().regex(SERIES_KEY), series.nullable()),
+    dates: z.array(isoDate).check(z.minLength(1)),
+    holidays: z.record(isoDate, z.string().check(z.regex(/^(kr|jp)_[a-z0-9_]+$/))),
+    series: z.record(z.string().check(z.regex(SERIES_KEY)), z.nullable(series)),
   })
-  .superRefine((d, ctx) => {
+  .check(z.superRefine((d, ctx) => {
     for (const [key, s] of Object.entries(d.series)) {
       if (!s) continue;
       if ([s.price, s.lo, s.hi, s.reco].some((a) => a.length !== d.dates.length)) {
         // 영어 머리말은 e2e가 "이 모듈이 초기 청크에 없는지" 찾을 때 쓰는 표식이다(tests/e2e/demo.spec.ts)
-        ctx.addIssue({ code: 'custom', message: `demo-series-length-mismatch: ${key} 배열 길이가 dates와 다르다` });
+        ctx.addIssue({ code: 'custom', message: `demo-series-length-mismatch: ${key} 배열 길이가 dates와 다르다`, input: s });
         continue; // 길이가 다르면 인덱스가 안 맞으니 아래 null 정합성 검사는 건너뛴다
       }
       // getStrip은 price만 보고 고를 수 있는 날로 그리므로, 네 값(price/lo/hi/reco) 중 일부만 비면
@@ -47,11 +47,11 @@ export const demoSchema = z
       d.dates.forEach((date, i) => {
         const nulls = [s.price[i], s.lo[i], s.hi[i], s.reco[i]].filter((v) => v === null).length;
         if (nulls !== 0 && nulls !== 4) {
-          ctx.addIssue({ code: 'custom', message: `demo-series-null-mismatch: ${key} ${date} price/lo/hi/reco 중 일부만 비어 있다` });
+          ctx.addIssue({ code: 'custom', message: `demo-series-null-mismatch: ${key} ${date} price/lo/hi/reco 중 일부만 비어 있다`, input: s });
         }
       });
     }
-  });
+  }));
 export type DemoData = z.infer<typeof demoSchema>;
 
 export class StaticForecastSource implements ForecastSource {

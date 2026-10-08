@@ -1,57 +1,57 @@
 // ④ 차트 데이터 읽기: charts.<기준일>.json(출발일 점 그래프·구간별 벌떼)과 demo.<기준일>.json의 인천→나리타 LCC
-// 예측(불확실성 구름)을 zod로 검사한다. zod가 들어 있어 그림 판이 화면 가까이 올 때만 import()로 불러온다.
-import { z } from 'zod';
+// 예측(불확실성 구름)을 zod/mini로 검사한다(지연 청크를 작게). 검사 코드가 들어 있어 그림 판이 화면 가까이 올 때만 import()로 불러온다.
+import * as z from 'zod/mini';
 
-const iso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const ints = z.array(z.number().int());
+const iso = z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/));
+const ints = z.array(z.int());
 
 export const chartsSchema = z.object({
   asOf: iso,
-  dates: z.array(iso).min(2),
-  depart: z.object({ pct: ints, holiday: z.array(z.string().nullable()) }),
+  dates: z.array(iso).check(z.minLength(2)),
+  depart: z.object({ pct: ints, holiday: z.array(z.nullable(z.string())) }),
   labels: z.array(z.object({ date: iso, code: z.string() })),
   curve: z.object({
-    bins: z.array(z.tuple([z.number().int(), z.number().int()])).length(8),
-    mean: ints.length(8),
-    n: ints.length(8),
+    bins: z.array(z.tuple([z.int(), z.int()])).check(z.length(8)),
+    mean: ints.check(z.length(8)),
+    n: ints.check(z.length(8)),
     sample: z.object({ bin: ints, pct: ints }),
   }),
   // ③ SHAP 벌떼(계획 5-3c). 없어도 받아들인다 — 와플은 닫힌 상태에 데이터가 필요 없고, 펼치기만 안 된다
-  shap: z.object({
-    n: z.number().int().positive(),
-    features: z.array(z.string()).min(1),
+  shap: z.optional(z.object({
+    n: z.int().check(z.positive()),
+    features: z.array(z.string()).check(z.minLength(1)),
     categorical: z.array(z.string()),
     v: z.array(ints),
     f: z.array(ints),
-  }).optional(),
+  })),
   // ③ 모델 구조 점(계획 7-2): 한 노선·등급의 NeuralProphet 기준(출발일별 %×10, 없는 날 null)과 관측 표본(출발일 번호, %×10).
   // 없어도 받아들인다 — 다른 차트는 이 블록이 필요 없다(모델 구조 판만 오류 안내를 띄운다)
-  model: z.object({
+  model: z.optional(z.object({
     route: z.string(),
     cabin: z.string(),
-    base: z.array(z.number().int().nullable()),
+    base: z.array(z.nullable(z.int())),
     obs: z.object({ date: ints, pct: ints }),
-  }).optional(),
+  })),
   // ② 걸러내기(계획 8-1): 원본 행 표본의 소요 분, 정상 행 노선·등급 평균 대비 %×10, 걸린 규칙(0 통과·1 단위·소요·2 시각 불일치·3 직항 확인)
-  filter: z.object({ dur: ints, pct: ints, rule: ints }).optional(),
+  filter: z.optional(z.object({ dur: ints, pct: ints, rule: ints })),
   // ⑤ 검증 설계(계획 8-1): 수집일 번호, 출발일 번호(dates), 평가로 쓰인 폴드(K-Fold·GroupKFold 0..4, TSS −1..4), 판에 보여 줄 폴드
-  split: z.object({
+  split: z.optional(z.object({
     fetch: ints, date: ints, kf: ints, gkf: ints, tss: ints,
-    fetchDays: z.number().int().positive(),
-    show: z.object({ kf: z.number().int().min(0).max(4), gkf: z.number().int().min(0).max(4) }),
-  }).optional(),
-})
-  .refine((c) => c.depart.pct.length === c.dates.length && c.depart.holiday.length === c.dates.length, '출발일 배열 길이가 서로 다르다')
-  .refine((c) => c.curve.sample.bin.length === c.curve.sample.pct.length, '표본 배열 길이가 서로 다르다')
-  .refine((c) => !c.shap || (c.shap.v.length === c.shap.features.length && c.shap.f.length === c.shap.features.length
-    && [...c.shap.v, ...c.shap.f].every((r) => r.length === c.shap!.n)), 'SHAP 배열 모양이 다르다')
-  .refine((c) => !c.model || (c.model.base.length === c.dates.length && c.model.obs.date.length === c.model.obs.pct.length
-    && c.model.obs.date.every((i) => i >= 0 && i < c.dates.length)), '모델 구조 배열 모양이 다르다')
+    fetchDays: z.int().check(z.positive()),
+    show: z.object({ kf: z.int().check(z.minimum(0), z.maximum(4)), gkf: z.int().check(z.minimum(0), z.maximum(4)) }),
+  })),
+}).check(
+  z.refine((c) => c.depart.pct.length === c.dates.length && c.depart.holiday.length === c.dates.length, '출발일 배열 길이가 서로 다르다'),
+  z.refine((c) => c.curve.sample.bin.length === c.curve.sample.pct.length, '표본 배열 길이가 서로 다르다'),
+  z.refine((c) => !c.shap || (c.shap.v.length === c.shap.features.length && c.shap.f.length === c.shap.features.length
+    && [...c.shap.v, ...c.shap.f].every((r) => r.length === c.shap!.n)), 'SHAP 배열 모양이 다르다'),
+  z.refine((c) => !c.model || (c.model.base.length === c.dates.length && c.model.obs.date.length === c.model.obs.pct.length
+    && c.model.obs.date.every((i) => i >= 0 && i < c.dates.length)), '모델 구조 배열 모양이 다르다'),
   // 기준이 전부 null이면 기준 가격 선을 그릴 수 없다(model.ts가 known[0]을 읽는다) — 그릴 때 죽지 않고 불러올 때 막는다
-  .refine((c) => !c.model || c.model.base.some((b) => b !== null), '모델 구조 기준 가격이 하나도 없다')
-  .refine((c) => !c.filter || (c.filter.dur.length === c.filter.pct.length && c.filter.rule.length === c.filter.dur.length
-    && c.filter.rule.every((r) => r >= 0 && r <= 3)), '걸러내기 배열 모양이 다르다')
-  .refine((c) => {
+  z.refine((c) => !c.model || c.model.base.some((b) => b !== null), '모델 구조 기준 가격이 하나도 없다'),
+  z.refine((c) => !c.filter || (c.filter.dur.length === c.filter.pct.length && c.filter.rule.length === c.filter.dur.length
+    && c.filter.rule.every((r) => r >= 0 && r <= 3)), '걸러내기 배열 모양이 다르다'),
+  z.refine((c) => {
     const s = c.split;
     if (!s) return true;
     const n = s.fetch.length;
@@ -59,17 +59,18 @@ export const chartsSchema = z.object({
       && s.date.every((i) => i >= 0 && i < c.dates.length)
       && s.fetch.every((f) => f >= 0 && f < s.fetchDays)
       && [...s.kf, ...s.gkf].every((f) => f >= 0 && f <= 4) && s.tss.every((f) => f >= -1 && f <= 4);
-  }, '검증 설계 배열 모양이 다르다');
+  }, '검증 설계 배열 모양이 다르다'),
+);
 export type ChartsData = z.infer<typeof chartsSchema>;
 
 // 불확실성 구름은 데모 데이터에서 한 조합만 쓴다(설계 §3.4 차트 4 — 기준일 인천→나리타 LCC)
 export const CLOUD_SERIES = 'ICN_NRT/LCC';
-const won = z.number().nullable();
+const won = z.nullable(z.number());
 const cloudSchema = z.object({
   asOf: iso,
-  dates: z.array(iso).min(1),
+  dates: z.array(iso).check(z.minLength(1)),
   holidays: z.record(z.string(), z.string()),
-  series: z.record(z.string(), z.object({ price: z.array(won), lo: z.array(won), hi: z.array(won) }).nullable()),
+  series: z.record(z.string(), z.nullable(z.object({ price: z.array(won), lo: z.array(won), hi: z.array(won) }))),
 });
 export type CloudData = {
   asOf: string;
