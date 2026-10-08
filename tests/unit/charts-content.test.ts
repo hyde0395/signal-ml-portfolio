@@ -25,8 +25,8 @@ describe('차트 문구', () => {
     it(`${locale}: SHAP 벌떼 문구(features.shap) 키가 ShapTexts와 같다`, () => {
       expect(Object.keys(dictionaries[locale].features.shap)).toEqual([...SHAP_TEXT_KEYS]);
     });
-    it(`${locale}: 그림 판 블록(depart·curve·bubble·band)마다 요약 문단이 있다`, () => {
-      for (const id of ['depart', 'curve', 'bubble', 'band']) expect(c[id].alt, id).toBeTruthy();
+    it(`${locale}: 그림 판 블록(depart·curve·band — 차트 3은 큰 숫자 글이라 없음)마다 요약 문단이 있다`, () => {
+      for (const id of ['depart', 'curve', 'band']) expect(c[id].alt, id).toBeTruthy();
     });
     it(`${locale}: 걸러내기·검증 설계 판 문구(계획 8-1)가 모두 있다`, () => {
       const f = (dictionaries[locale].data as unknown as Record<string, Record<string, string>>).filter;

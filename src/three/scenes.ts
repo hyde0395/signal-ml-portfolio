@@ -4,7 +4,7 @@ import { runwayPhases } from './plane';
 import { SIGNAL } from './signal';
 
 export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'chartFilter' | 'model' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
-  | 'chartBubble' | 'chartSplit' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
+  | 'chartSplit' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
 
 export type SceneState = {
   camera: [number, number, number];
@@ -83,8 +83,6 @@ export const SCENES: Record<SceneKey, SceneState> = {
   features: { ...base, ...CHART },
   chartDepart: { ...base, ...CHART },
   chartCurve: { ...base, ...CHART },
-  // ⑤ 차트 3(정보 전달 2): 점이 R² 아령 판의 눈금 점선·별로 모인다
-  chartBubble: { ...base, ...CHART },
   // ⑤ 검증 설계(계획 8-1): 점이 수집일 × 출발일로 모이고 평가 방식마다 학습·평가 색이 바뀐다
   chartSplit: { ...base, ...CHART },
   validation: { ...base, camera: [-5, 22, 0.1], target: [-5, 0, 0], noise: 0.5 },

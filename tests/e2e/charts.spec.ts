@@ -13,7 +13,7 @@ const facts = JSON.parse(readFileSync(fileURLToPath(new URL('../../data/facts.js
   data: { filteredRows: number; filter: { direct: number } };
 };
 
-const STAGES = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud', 'chartBubble'] as const;
+const STAGES = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud'] as const;
 
 async function painted(page: Page, key: string) {
   return page.locator(`.chart-block[data-scene="${key}"] .chart-canvas`).evaluate((c: HTMLCanvasElement) => {
@@ -50,24 +50,21 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       expect(await svg.locator('path').first().getAttribute('d')).toMatch(/^M[\d.]+ [\d.]+L/);
     });
   }
-  test('chartBubble: 단계마다 선 1 → 2, 속 빈 점(전)과 결론 이름표(후)', async ({ page }) => {
+  // 설계 2026-10-08 §1: 차트 3은 점 판이 아니라 큰 숫자 두 장 — R² 전→후가 글자로, MAE 줄이 같은 카드 안에
+  test('차트 3 R² 거품: 큰 숫자 두 장(전 → 후)과 MAE 줄', async ({ page }) => {
     await page.goto('/');
-    const block = page.locator('.chart-block[data-scene="chartBubble"]');
-    const into = (f: number) => block.evaluate((el, f) => {
-      const r = el.getBoundingClientRect();
-      window.scrollTo(0, window.scrollY + r.top + (r.height - window.innerHeight) * f);
-    }, f);
-    for (const [f, n] of [[0.1, 1], [0.5, 2], [0.9, 2]] as const) {
-      await into(f);
-      const svg = block.locator('.chart-lines');
-      await expect(svg).toHaveAttribute('data-on', '', { timeout: 10_000 });
-      await expect(svg.locator('path')).toHaveCount(n);
-      // 넓은 판(≥560px)은 둘째 단계부터 MAE 칸 전 점이 하나 더 — e2e는 desktop·mobile 두 프로젝트로 돈다
-      const wide = (await block.locator('[data-plot]').boundingBox())!.width >= 560;
-      await expect(svg.locator('circle[fill="none"]')).toHaveCount(n === 1 ? 1 : wide ? 3 : 2);
-      await expect(block.locator('.chart-callout')).toHaveCount(n);
-    }
-    await expect(block.locator('[role="slider"]')).toHaveCount(0);
+    const cards = page.locator('#validation .figs-r2 .fig-card');
+    await expect(cards).toHaveCount(2);
+    await expect(cards.first().locator('.fig-big')).toHaveText('R² 0.93 → 0.71');
+    await expect(cards.nth(1).locator('.fig-big')).toHaveText('R² 0.84 → 0.64');
+    await expect(cards.nth(1).locator('.fig-sub')).toContainText('48,442 → 48,235');
+    await expect(page.locator('.chart-block[data-scene="chartBubble"]')).toHaveCount(0);
+  });
+  // 설계 2026-10-08 §2: 운영 기준 대표값 세 개가 크게, 나머지 두 방식은 참고 표 두 줄
+  test('⑤ 성능: 대표값 세 개 크게 + 참고 표 두 줄', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#validation .perf-big dd')).toHaveText(['0.637', '48,235원', '21.4%']);
+    await expect(page.locator('#validation .figs-perf tbody tr')).toHaveCount(2);
   });
   test('④ U자: 결론 이름표 둘(최저·출발 직전)', async ({ page }) => {
     await page.goto('/');
@@ -186,7 +183,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
       test(`${path} ${w}×${h}: 마지막 단계에서 이름표가 판 안, 가로 스크롤 없음`, async ({ page }) => {
         await page.setViewportSize({ width: w, height: h });
         await page.goto(path);
-        for (const key of ['chartFilter', 'chartSplit', 'chartBubble']) {
+        for (const key of ['chartFilter', 'chartSplit']) {
           await scrollInto(page, key, 0.85);
           const block = page.locator(`.chart-block[data-scene="${key}"]`);
           await expect(block.locator('.chart-stage')).toHaveAttribute('data-stage', '2', { timeout: 10_000 });

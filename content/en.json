@@ -258,10 +258,7 @@
       "row1Note": "Mismatched high fares on Haneda",
       "row2": "Second fix",
       "row2Note": "{data.removedImplausible} connecting rows labeled nonstop",
-      "legendBefore": "before filtering",
-      "legendAfter": "after",
-      "maeSame": "barely changed",
-      "alt": "A dumbbell chart with R² on the horizontal axis. The first fix took R² from {model.bubble.firstR2} to {model.bubble.firstR2After}, the second from {model.bubble.r2Before} to {model.bubble.r2After}, while MAE barely changed both times (second fix: ₩{model.bubble.maeBefore} → ₩{model.bubble.maeAfter})."
+      "maeSame": "barely changed"
     },
     "validation": {
       "heading": "Trained on the past, tested on the period after: average error ₩{model.tss.mae}",
@@ -279,11 +276,14 @@
       "alt": "A dot chart of collected rows by collection date and departure date. K-Fold holds out a middle block of time and trains on both sides (R² {model.kfold.r2}); GroupKFold scatters test rows by route and departure date (R² {model.gkfNoLookup.r2}, no lookup); TimeSeriesSplit trains only on the past and moves the test boundary forward five times (R² {model.tss.r2}).",
       "table": {
         "caption": "Performance by evaluation method",
-        "method": "Evaluation method",
-        "tss": "TimeSeriesSplit (production)",
         "gkf": "GroupKFold (unseen departure dates, no lookup)",
         "kfold": "K-Fold (reference upper bound)",
-        "maeUnit": "KRW"
+        "maeUnit": "KRW",
+        "lead": "Production setup · TimeSeriesSplit — trained on the past, tested on the period after",
+        "r2Note": "How much of the price variation the model explains (higher is better)",
+        "maeNote": "Average error in won",
+        "mapeNote": "Average error as a percentage",
+        "cmp": "For comparison"
       }
     },
     "band": {

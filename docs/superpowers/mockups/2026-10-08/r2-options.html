@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>R² 거품 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#02040A;--bg2:#0B1426;--dot:#8FB8FF;--text:#EEF3FF;--dim:rgba(238,243,255,.55);--faint:rgba(238,243,255,.18);--amber:#FFB547}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);font-family:Pretendard,system-ui,sans-serif;padding:32px 40px 80px}
+h1{font:700 15px 'IBM Plex Mono';letter-spacing:.08em;color:var(--dim);margin:0 0 6px}
+.q{font-size:20px;margin:0 0 28px}
+.opt{border:1px solid var(--faint);border-radius:14px;padding:28px 36px 34px;margin-bottom:28px;cursor:pointer;transition:border-color .2s}
+.opt:hover{border-color:var(--dim)}.opt.selected{border-color:var(--amber)}
+.tag{font:600 13px 'IBM Plex Mono';color:var(--amber);letter-spacing:.06em}
+.why{color:var(--dim);font-size:14px;margin:6px 0 24px;line-height:1.6}
+.head{font:700 28px 'Space Grotesk',Pretendard;letter-spacing:-.02em;margin:0 0 26px}
+.mono{font-family:'IBM Plex Mono',monospace}
+/* A 한 줄 읽기 */
+.rowA{display:grid;grid-template-columns:220px 1fr 220px;align-items:center;gap:28px;padding:18px 0;border-top:1px solid var(--faint)}
+.rowA:last-child{border-bottom:1px solid var(--faint)}
+.lab b{display:block;font-size:17px}.lab span{color:var(--dim);font-size:13px}
+.track{position:relative;height:60px}
+.track .line{position:absolute;top:30px;height:2px;background:linear-gradient(90deg,var(--faint),var(--amber))}
+.track .o{position:absolute;top:22px;width:18px;height:18px;border:2px solid var(--dim);border-radius:50%;margin-left:-9px}
+.track .s{position:absolute;top:21px;width:20px;height:20px;background:var(--amber);border-radius:50%;margin-left:-10px;box-shadow:0 0 18px var(--amber)}
+.track .v{position:absolute;top:-4px;transform:translateX(-50%);font:600 15px 'IBM Plex Mono';color:var(--dim)}
+.track .v.hot{color:var(--amber);font-size:24px;top:-10px}
+.track .d{position:absolute;top:42px;transform:translateX(-50%);font:600 13px 'IBM Plex Mono';color:var(--amber)}
+.mae{font-size:15px}.mae em{font-style:normal;color:var(--dim);font-size:13px;display:block}
+.colh{display:grid;grid-template-columns:220px 1fr 220px;gap:28px;font:600 12px 'IBM Plex Mono';color:var(--dim);letter-spacing:.08em;padding-bottom:8px}
+/* B 기울기 */
+.slopes{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+.slopes h3{font:600 14px 'IBM Plex Mono';letter-spacing:.08em;margin:0 0 4px}.slopes p{color:var(--dim);font-size:13px;margin:0 0 10px}
+svg text{font-family:'IBM Plex Mono',monospace}
+/* C 숫자 */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.card{border-top:1px solid var(--faint);padding-top:16px}
+.card .lab{margin-bottom:14px}
+.big{font:600 44px 'IBM Plex Mono';letter-spacing:-.02em}.big .from{color:var(--dim);font-size:30px}.big .to{color:var(--amber)}
+.small{margin-top:10px;font-size:15px}.small span{color:var(--dim)}
+</style></head><body>
+<h1>⑤ R² 거품 · 시안 3가지</h1>
+<p class="q">눈을 한 번만 움직여도 "R²는 떨어졌는데 MAE는 그대로"가 읽히는 것은?</p>
+
+<div class="opt" data-choice="A" onclick="toggleSelect(this)">
+  <div class="tag">A · 한 줄로 읽기 (아령 유지)</div>
+  <div class="why">한 줄에 왼쪽부터 <b>무슨 정정 → R² 전→후 → MAE</b>. 전(높은 값)을 왼쪽에 두어 왼쪽에서 오른쪽으로 읽으면 떨어진다. 범례·눈금·R² 축 이름 없앰, 값과 이름이 점 바로 옆에.</div>
+  <div class="head">잘못된 데이터 때문에 정확도(R²)가 두 번 부풀려져 있었다</div>
+  <div class="colh"><span>무엇을 걸러냈나</span><span>R²  걸러내기 전 → 뒤</span><span>MAE(평균 오차)</span></div>
+  <div class="rowA"><div class="lab"><b>첫 정정</b><span>하네다 노선 고가 행 매칭 오류</span></div>
+    <div class="track"><div class="line" style="left:10%;width:62%"></div><div class="o" style="left:10%"></div><div class="v" style="left:10%">0.93</div><div class="s" style="left:72%"></div><div class="v hot" style="left:72%">0.71</div><div class="d" style="left:41%">−0.22</div></div>
+    <div class="mae">약 3만 원 <em>거의 그대로</em></div></div>
+  <div class="rowA"><div class="lab"><b>둘째 정정</b><span>직항으로 표시된 경유 9,387행</span></div>
+    <div class="track"><div class="line" style="left:10%;width:57%"></div><div class="o" style="left:10%"></div><div class="v" style="left:10%">0.84</div><div class="s" style="left:67%"></div><div class="v hot" style="left:67%">0.64</div><div class="d" style="left:38%">−0.20</div></div>
+    <div class="mae mono">48,442 → 48,235원 <em>거의 그대로</em></div></div>
+</div>
+
+<div class="opt" data-choice="B" onclick="toggleSelect(this)">
+  <div class="tag">B · 기울기 두 칸 (R² vs MAE)</div>
+  <div class="why">왼쪽 칸 R²는 선이 <b>뚝 떨어지고</b>, 오른쪽 칸 MAE는 선이 <b>평평하다</b>. 숫자를 읽지 않아도 모양으로 대비가 보인다.</div>
+  <div class="head">잘못된 데이터 때문에 정확도(R²)가 두 번 부풀려져 있었다</div>
+  <div class="slopes">
+    <div><h3>R² <span style="color:var(--amber)">↓ 크게 떨어짐</span></h3><p>높을수록 잘 맞힌다고 보이는 값</p>
+      <svg viewBox="0 0 420 240" width="100%">
+        <text x="70" y="228" fill="rgba(238,243,255,.55)" font-size="13" text-anchor="middle">걸러내기 전</text><text x="350" y="228" fill="rgba(238,243,255,.55)" font-size="13" text-anchor="middle">걸러낸 뒤</text>
+        <line x1="70" y1="30" x2="350" y2="150" stroke="#FFB547" stroke-width="2"/><circle cx="70" cy="30" r="8" fill="none" stroke="rgba(238,243,255,.55)" stroke-width="2"/><circle cx="350" cy="150" r="9" fill="#FFB547"/>
+        <text x="58" y="34" fill="rgba(238,243,255,.7)" font-size="15" text-anchor="end">0.93</text><text x="364" y="155" fill="#FFB547" font-size="18" font-weight="600">0.71</text><text x="210" y="80" fill="rgba(238,243,255,.55)" font-size="12" text-anchor="middle">첫 정정</text>
+        <line x1="70" y1="75" x2="350" y2="185" stroke="#FFB547" stroke-width="2" opacity=".75"/><circle cx="70" cy="75" r="8" fill="none" stroke="rgba(238,243,255,.55)" stroke-width="2"/><circle cx="350" cy="185" r="9" fill="#FFB547" opacity=".85"/>
+        <text x="58" y="79" fill="rgba(238,243,255,.7)" font-size="15" text-anchor="end">0.84</text><text x="364" y="190" fill="#FFB547" font-size="18" font-weight="600">0.64</text><text x="210" y="148" fill="rgba(238,243,255,.55)" font-size="12" text-anchor="middle">둘째 정정</text>
+      </svg></div>
+    <div><h3>MAE <span style="color:var(--dot)">→ 거의 그대로</span></h3><p>실제로 틀린 금액의 평균</p>
+      <svg viewBox="0 0 420 240" width="100%">
+        <text x="70" y="228" fill="rgba(238,243,255,.55)" font-size="13" text-anchor="middle">걸러내기 전</text><text x="350" y="228" fill="rgba(238,243,255,.55)" font-size="13" text-anchor="middle">걸러낸 뒤</text>
+        <line x1="70" y1="100" x2="350" y2="101" stroke="#8FB8FF" stroke-width="2"/><circle cx="70" cy="100" r="8" fill="none" stroke="rgba(238,243,255,.55)" stroke-width="2"/><circle cx="350" cy="101" r="9" fill="#8FB8FF"/>
+        <text x="210" y="88" fill="#EEF3FF" font-size="15" text-anchor="middle">48,442 → 48,235원</text><text x="210" y="122" fill="rgba(238,243,255,.55)" font-size="12" text-anchor="middle">둘째 정정 (첫 정정도 약 3만 원 그대로)</text>
+      </svg></div>
+  </div>
+</div>
+
+<div class="opt" data-choice="C" onclick="toggleSelect(this)">
+  <div class="tag">C · 큰 숫자 두 장 (그림 없음)</div>
+  <div class="why">그림을 빼고 정정마다 <b>R² 전→후</b>를 크게, MAE는 그 아래 한 줄. 가장 빨리 읽히지만 점으로 그린다는 사이트 콘셉트에서는 벗어난다.</div>
+  <div class="head">잘못된 데이터 때문에 정확도(R²)가 두 번 부풀려져 있었다</div>
+  <div class="cards">
+    <div class="card"><div class="lab"><b>첫 정정</b><span>하네다 노선 고가 행 매칭 오류</span></div>
+      <div class="big"><span class="from">R² 0.93</span> → <span class="to">0.71</span></div><div class="small">MAE <span>약 3만 원, 거의 그대로</span></div></div>
+    <div class="card"><div class="lab"><b>둘째 정정</b><span>직항으로 표시된 경유 9,387행</span></div>
+      <div class="big"><span class="from">R² 0.84</span> → <span class="to">0.64</span></div><div class="small">MAE <span class="mono">48,442 → 48,235원, 거의 그대로</span></div></div>
+  </div>
+</div>
+</body></html>

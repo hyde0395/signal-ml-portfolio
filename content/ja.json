@@ -258,10 +258,7 @@
       "row1Note": "羽田の高額行の誤マッチ",
       "row2": "二度目の修正",
       "row2Note": "直行と表示された経由便{data.removedImplausible}行",
-      "legendBefore": "除外前",
-      "legendAfter": "除外後",
-      "maeSame": "ほぼ変わらず",
-      "alt": "R²の前後を横軸に置いたダンベル図です。初回の修正でR²は{model.bubble.firstR2}から{model.bubble.firstR2After}へ、二度目は{model.bubble.r2Before}から{model.bubble.r2After}へ下がり、MAEはどちらもほぼ変わりませんでした（二度目：{model.bubble.maeBefore}ウォン → {model.bubble.maeAfter}ウォン）。"
+      "maeSame": "ほぼ変わらず"
     },
     "validation": {
       "heading": "過去だけで学び、その次の期間で試した：平均誤差{model.tss.mae}ウォン",
@@ -279,11 +276,14 @@
       "alt": "収集した行を収集日と出発日で並べた点グラフです。K-Foldは中ほどの期間を評価に取り分けて前後がすべて学習(R² {model.kfold.r2})、GroupKFoldは路線・出発日単位で評価行が散らばり(R² {model.gkfNoLookup.r2}、lookupなし)、TimeSeriesSplitは過去だけを学習してすぐ次の期間を評価する境界を五回動かします(R² {model.tss.r2})。",
       "table": {
         "caption": "評価方法別の性能",
-        "method": "評価方法",
-        "tss": "TimeSeriesSplit（運用基準）",
         "gkf": "GroupKFold（未知の出発日、lookupなし）",
         "kfold": "K-Fold（参考上限）",
-        "maeUnit": "ウォン"
+        "maeUnit": "ウォン",
+        "lead": "運用基準 · TimeSeriesSplit — 過去だけで学び、その次の期間で試す",
+        "r2Note": "予測が価格の差をどれだけ説明できるか（高いほど良い）",
+        "maeNote": "平均的に外れた金額",
+        "mapeNote": "平均的に外れた割合",
+        "cmp": "参考比較"
       }
     },
     "band": {

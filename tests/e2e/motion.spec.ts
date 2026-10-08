@@ -89,7 +89,7 @@ test('3D가 켜져 페이지가 길어진 뒤에도 GATE 플립은 제목이 화
 test('머리표는 플립 뒤 완성값이고, 스크린리더용 완성값이 따로 있다', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
-  const gate = page.locator('.chart-block[data-scene="chartBubble"] .eyebrow');
+  const gate = page.locator('article:has(#chart-bubble) .eyebrow');
   await gate.scrollIntoViewIfNeeded();
   await expect(gate.locator('.sr-only')).toHaveText('CHART 03', { timeout: 5_000 });
   await expect(gate.locator('[aria-hidden="true"]')).toHaveText('CHART 03', { timeout: 2_000 });

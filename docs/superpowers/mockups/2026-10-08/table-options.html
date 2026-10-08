@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>성능 표 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#02040A;--bg2:#0B1426;--dot:#8FB8FF;--text:#EEF3FF;--dim:rgba(238,243,255,.55);--faint:rgba(238,243,255,.18);--amber:#FFB547}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);font-family:Pretendard,system-ui,sans-serif;padding:32px 40px 80px}
+h1{font:700 15px 'IBM Plex Mono';letter-spacing:.08em;color:var(--dim);margin:0 0 6px}
+.q{font-size:20px;margin:0 0 28px}
+.opt{border:1px solid var(--faint);border-radius:14px;padding:28px 36px 34px;margin-bottom:28px;cursor:pointer}
+.opt:hover{border-color:var(--dim)}.opt.selected{border-color:var(--amber)}
+.tag{font:600 13px 'IBM Plex Mono';color:var(--amber);letter-spacing:.06em}
+.why{color:var(--dim);font-size:14px;margin:6px 0 24px;line-height:1.6}
+.mono{font-family:'IBM Plex Mono',monospace}
+.kicker{font:600 13px 'IBM Plex Mono';letter-spacing:.08em;color:var(--amber)}
+/* A */
+.hero{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin:14px 0 30px}
+.hero .n{font:600 64px 'IBM Plex Mono';letter-spacing:-.03em;color:var(--amber);line-height:1}
+.hero .n small{font-size:28px}
+.hero .l{font-size:16px;margin-top:10px}.hero .l span{display:block;color:var(--dim);font-size:13px;margin-top:2px}
+.cmp{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono';font-size:15px;color:var(--dim)}
+.cmp td,.cmp th{padding:10px 8px;border-top:1px solid var(--faint);text-align:right}.cmp th{font-weight:400;font-size:12px;letter-spacing:.06em}
+.cmp td:first-child,.cmp th:first-child{text-align:left}
+/* B */
+.big{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono'}
+.big th{font-size:15px;color:var(--dim);font-weight:400;text-align:right;padding:0 16px 14px}.big th:first-child{text-align:left}
+.big td{font-size:30px;padding:22px 16px;border-top:1px solid var(--faint);text-align:right}.big td:first-child{text-align:left;font-size:20px}
+.big tr.main td{background:rgba(255,181,71,.08);color:var(--amber);font-size:42px;font-weight:600}.big tr.main td:first-child{font-size:22px}
+.big tr.sub td{color:var(--dim)}
+.big td:first-child span{display:block;font-size:13px;color:var(--dim);font-weight:400;margin-top:4px}
+/* C */
+.cards{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:20px;align-items:end}
+.card{border-top:1px solid var(--faint);padding-top:16px}
+.card.main{border-top:2px solid var(--amber)}
+.card .m{font-size:15px;margin-bottom:12px}.card .m span{display:block;font-size:12px;color:var(--dim);margin-top:2px}
+.card .r{font:600 26px 'IBM Plex Mono';color:var(--dim)}.card.main .r{font-size:56px;color:var(--amber)}
+.card .s{font:15px 'IBM Plex Mono';color:var(--dim);margin-top:8px}.card.main .s{font-size:20px;color:var(--text)}
+</style></head><body>
+<h1>⑤ 성능 표 · 시안 3가지</h1>
+<p class="q">가장 중요한 성능 숫자를 더 크게 — 어떤 방식이 좋을까?</p>
+
+<div class="opt" data-choice="A" onclick="toggleSelect(this)">
+  <div class="tag">A · 대표값 세 개를 크게 + 아래 작은 비교표 (추천)</div>
+  <div class="why">운영 기준(TSS) 숫자 세 개를 R² 시안 C처럼 <b>큰 숫자</b>로, 숫자마다 뜻을 한 줄로. 다른 두 방식은 아래에 작게 "참고 비교"로.</div>
+  <div class="kicker">운영 기준 · TimeSeriesSplit (과거로만 배우고 그다음 기간으로 시험)</div>
+  <div class="hero">
+    <div><div class="n">0.637</div><div class="l">R²<span>가격 변동의 약 64%를 설명</span></div></div>
+    <div><div class="n">48,235<small>원</small></div><div class="l">MAE<span>평균적으로 틀린 금액</span></div></div>
+    <div><div class="n">21.4<small>%</small></div><div class="l">MAPE<span>평균적으로 틀린 비율</span></div></div>
+  </div>
+  <table class="cmp"><tr><th>참고 비교</th><th>R²</th><th>MAE</th><th>MAPE</th></tr>
+    <tr><td>GroupKFold (처음 보는 출발일, lookup 없이)</td><td>0.649</td><td>49,067원</td><td>20.4%</td></tr>
+    <tr><td>K-Fold (참고 상한 · 미래 데이터가 섞임)</td><td>0.668</td><td>44,196원</td><td>18.9%</td></tr></table>
+</div>
+
+<div class="opt" data-choice="B" onclick="toggleSelect(this)">
+  <div class="tag">B · 표 그대로, 크기만 키움</div>
+  <div class="why">지금 표 구조를 유지하고 글자를 2배 가까이, TSS 줄은 호박색 띠로 더 크게. 세 방식을 같은 자리에서 비교하기 쉽다.</div>
+  <table class="big"><tr><th>평가 방식</th><th>R²</th><th>MAE (원)</th><th>MAPE</th></tr>
+    <tr class="main"><td>TimeSeriesSplit<span>운영 기준 · 대표값</span></td><td>0.637</td><td>48,235</td><td>21.4%</td></tr>
+    <tr class="sub"><td>GroupKFold<span>처음 보는 출발일, lookup 없이</span></td><td>0.649</td><td>49,067</td><td>20.4%</td></tr>
+    <tr class="sub"><td>K-Fold<span>참고 상한</span></td><td>0.668</td><td>44,196</td><td>18.9%</td></tr></table>
+</div>
+
+<div class="opt" data-choice="C" onclick="toggleSelect(this)">
+  <div class="tag">C · 방식별 카드 세 장 (TSS만 크게)</div>
+  <div class="why">세 방식을 나란히 카드로, 운영 기준 카드만 넓고 크게. R²가 크게, MAE·MAPE는 그 아래.</div>
+  <div class="cards">
+    <div class="card main"><div class="m">TimeSeriesSplit<span>운영 기준 · 대표값</span></div><div class="r">R² 0.637</div><div class="s">MAE 48,235원 · MAPE 21.4%</div></div>
+    <div class="card"><div class="m">GroupKFold<span>처음 보는 출발일, lookup 없이</span></div><div class="r">R² 0.649</div><div class="s">MAE 49,067원 · 20.4%</div></div>
+    <div class="card"><div class="m">K-Fold<span>참고 상한</span></div><div class="r">R² 0.668</div><div class="s">MAE 44,196원 · 18.9%</div></div>
+  </div>
+</div>
+</body></html>

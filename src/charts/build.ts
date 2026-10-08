@@ -2,7 +2,6 @@
 // (초기 JS 150KB). 날짜·금액 글자는 방문자 언어(Intl)로 만든다 — 문구 파일이 아니라 형식이라 숫자 규칙과 무관.
 import { loadCharts, loadCloud, type ChartsData, type CloudData } from './data';
 import { cloudLayout, departLayout, swarmLayout, waffleLayout, type FeatureGroupInput, type PlotSize } from './layouts';
-import { bubbleLayout, type BubbleInput } from './bubble';
 import { filterLayout } from './filter';
 import { modelLayout, modelStage } from './model';
 import { shapOpenLayout } from './shap';
@@ -42,7 +41,6 @@ export type ChartStrings = {
   rowsRaw?: string; rowsKept?: string; // 걸러내기 행 수 글자("258,829 ROWS") — 서버가 facts로 만든다(문구에 숫자 금지)
   legend?: [string, string, string]; // 검증 설계 범례: 학습·평가·아직 안 씀
   methods?: readonly [SplitMethod, SplitMethod, SplitMethod]; // 검증 설계 판 위 수치(K-Fold·GroupKFold·TSS)
-  bubble?: BubbleInput; // ⑤ 차트 3 아령(정보 전달 2) — 숫자·글자만, 형식 함수는 여기서 만든다
 };
 export type Loaded = { charts?: ChartsData; cloud?: CloudData };
 
@@ -54,8 +52,6 @@ function once<T>(key: string, f: () => Promise<T>): Promise<T> {
 }
 
 export async function loadFor(key: ChartKey, dataVersion: string): Promise<Loaded> {
-  // ⑤ 차트 3 아령은 facts 값만 쓴다(서버가 strings로 넘김) — 받을 데이터가 없다
-  if (key === 'chartBubble') return {};
   // 와플은 닫힌 상태에 데이터가 필요 없다 — charts.json을 못 받아도 와플은 그리고 펼치기만 막는다(ChartStage)
   if (key === 'features') {
     const charts = await once(`charts:${dataVersion}`, () => loadCharts(dataVersion)).catch((e: unknown) => {
@@ -153,16 +149,6 @@ export function buildLayout(key: ChartKey, loaded: Loaded, size: PlotSize, s: Ch
       return splitLayout(loaded.charts!, size, step, sub, {
         month: (iso) => mo.format(new Date(`${iso}T00:00:00Z`)),
         axisX: s.axisX ?? '', axisY: s.axis ?? '', legend: s.legend ?? ['', '', ''], methods: s.methods ?? [empty, empty, empty],
-      });
-    }
-    case 'chartBubble': {
-      // R²는 소수 둘째 자리 고정(0.20이 0.2로 줄지 않게), 눈금은 첫째 자리. 차이 앞 부호는 다른 차트와 같은 −(U+2212)
-      const f2 = new Intl.NumberFormat(s.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const f1 = new Intl.NumberFormat(s.locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-      const empty = { name: '', note: '', before: 0.5, after: 0.5 };
-      return bubbleLayout(size, step, {
-        rows: [empty, empty], legendBefore: '', legendAfter: '', maeSame: '', maeChange: '', ...s.bubble,
-        r2: (v) => f2.format(v), tick: (v) => f1.format(v), diff: (v) => `−${f2.format(Math.round(v * 100) / 100)}`,
       });
     }
   }

@@ -36,7 +36,8 @@ paths:
 ## 문구 검토 대기 (사용자)
 - 한국어 확인 후 영·일 초안을 사용자·검수자에게: 5-3c `features.shap.*`, 7-2 `features.structure.*`, 8-1 `data.filter.*`·`charts.validation.*`(body1~3·tagKf/tagGkf/tagTss·legend*·axis*·alt)
 - 정보 전달 2 — 결론형 제목 10개·① 숫자 이름표·`data.filter.rule1/2`·`charts.bubble.row*/legend*/maeSame/alt`·`features.structure.tools`·`tagTss`(영·일 Claude 초안)
-- 헤드라인 명확화(2026-10-08) — 제목 9개 + `features.structure.flow`(영·일 Claude 초안)
+- 헤드라인 명확화(2026-10-08) — 제목 9개 + `features.structure.flow` + `data.headingSub`(영·일 Claude 초안)
+- ⑤ 큰 숫자(2026-10-08) — `charts.validation.table.{lead,r2Note,maeNote,mapeNote,cmp}`(영·일 Claude 초안)
 - 8-1 검토에서 나온 영·일 용어 맞추기 후보: en `data.filter.axisY` "vs. route/cabin mean" → "vs. route-and-class average", en `tagKf` "upper reference" → "reference upper bound", en `data.filter.body1` "placed by" → "plotted by", en `charts.validation.body2` "service setup" → "service configuration", ja `tagGkf` "初めて見る出発日" → "未知の出発日", ja `legendUnused` "未使用" → "まだ未使用", ja `data.filter.heading` → "エラー行の除去", ja `charts.validation.body2` "学習とサービスの不一致" → "学習と提供の不一致"
 
 ## 개인 정보·콘텐츠

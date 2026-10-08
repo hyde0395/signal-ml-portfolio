@@ -202,19 +202,4 @@ describe('buildLayout', () => {
       expect(clo[1].text).toContain(new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(210_000));
     });
   }
-
-  // 정보 전달 2 §6: 차트 3 아령 판은 데이터 파일 없이 facts 값만으로 그린다
-  it('chartBubble: 데이터 없이 단계 배치, 형식은 언어별(소수 둘째 자리, 차이 앞 −)', async () => {
-    expect(await loadFor('chartBubble', facts.dataVersion)).toEqual({});
-    const bubble = {
-      rows: [{ name: 'A', note: 'a', before: 0.93, after: 0.71 }, { name: 'B', note: 'b', before: 0.84, after: 0.64 }] as const,
-      legendBefore: 'before', legendAfter: 'after', maeSame: 'same', maeChange: '48,442 → 48,235',
-    };
-    const L = buildLayout('chartBubble', {}, { w: 1080, h: 414 }, { locale: 'en', holidays: {}, bubble }, -1, 1);
-    expect(L.variant).toBe('stage:1');
-    const callouts = L.labels.filter((l) => l.type === 'callout') as { value: string }[];
-    expect(callouts.map((c) => c.value)).toEqual(['0.71', '0.64']);
-    const diffs = L.labels.filter((l) => l.type === 'text' && l.cls === 'holiday') as { text: string }[];
-    expect(diffs.map((d) => d.text)).toEqual(['−0.22', '−0.20']);
-  });
 });

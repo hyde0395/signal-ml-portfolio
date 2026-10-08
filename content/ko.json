@@ -258,10 +258,7 @@
       "row1Note": "하네다 고가 행 매칭 오류",
       "row2": "둘째 정정",
       "row2Note": "직항으로 표시된 경유 {data.removedImplausible}행",
-      "legendBefore": "걸러내기 전",
-      "legendAfter": "걸러낸 뒤",
-      "maeSame": "거의 그대로",
-      "alt": "R² 전후를 가로축에 놓은 아령 그림입니다. 첫 정정에서 R²는 {model.bubble.firstR2}에서 {model.bubble.firstR2After}로, 둘째 정정에서 {model.bubble.r2Before}에서 {model.bubble.r2After}로 내려갔고, MAE는 두 번 모두 거의 그대로였습니다(둘째 정정 {model.bubble.maeBefore}원 → {model.bubble.maeAfter}원)."
+      "maeSame": "거의 그대로"
     },
     "validation": {
       "heading": "과거로만 배우고 그다음 기간으로 시험했다: 평균 오차 {model.tss.mae}원",
@@ -279,11 +276,14 @@
       "alt": "수집한 행을 수집일과 출발일로 놓은 점 그림입니다. K-Fold는 가운데 시간 구간을 평가로 떼어 앞뒤가 모두 학습이고(R² {model.kfold.r2}), GroupKFold는 노선·출발일 단위로 평가 행이 흩어지며(R² {model.gkfNoLookup.r2}, lookup 없이), TimeSeriesSplit은 과거만 학습하고 바로 다음 구간을 평가하는 경계를 다섯 번 옮깁니다(R² {model.tss.r2}).",
       "table": {
         "caption": "평가 방식별 성능",
-        "method": "평가 방식",
-        "tss": "TimeSeriesSplit (운영 기준)",
         "gkf": "GroupKFold (처음 보는 출발일, lookup 없이)",
         "kfold": "K-Fold (참고 상한)",
-        "maeUnit": "원"
+        "maeUnit": "원",
+        "lead": "운영 기준 · TimeSeriesSplit — 과거로만 배우고 그다음 기간으로 시험",
+        "r2Note": "예측이 가격 차이를 얼마나 설명하는지 (높을수록 좋음)",
+        "maeNote": "평균적으로 틀린 금액",
+        "mapeNote": "평균적으로 틀린 비율",
+        "cmp": "참고 비교"
       }
     },
     "band": {

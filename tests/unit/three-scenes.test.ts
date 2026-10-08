@@ -5,9 +5,9 @@ import { AIRPORT_CAM, blendScenes, CHART_DISTANCE, CHART_FOV, followActive, hand
 import { runwayPhases } from '@/three/plane';
 import { SIGNAL } from '@/three/signal';
 
-const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'chartFilter', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartBubble',
+const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'chartFilter', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve',
   'chartSplit', 'validation', 'chartCloud', 'limits', 'demo', 'contact'];
-const CHARTS: SceneKey[] = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud', 'chartBubble'];
+const CHARTS: SceneKey[] = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud'];
 
 describe('SCENES', () => {
   it('모든 키가 있다', () => expect(Object.keys(SCENES).sort()).toEqual([...KEYS].sort()));
