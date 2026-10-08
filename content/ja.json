@@ -170,7 +170,7 @@
     },
     "tools": "Python · requests · tenacity · yfinance · workalendar",
     "filter": {
-      "heading": "誤った{data.filter.removed}行を取り除いた",
+      "heading": "誤って記録された価格{data.filter.removed}件を取り除いた",
       "body1": "集めた{data.rawRows}行を所要時間と価格で並べました。すべて直行便なので、ほとんどが一か所に狭くまとまっています。",
       "body2": "所要時間が{data.filter.durationMax}分を超える行や価格の単位が抜けた行{data.filter.unit}件と、出発・到着時刻と所要時間が合わない行{data.filter.mismatch}件を除きました。",
       "body3": "直行便と表示されていても乗り継ぎ並みに時間がかかる行{data.filter.direct}件も除きました。ほとんどが羽田路線でした。残りは{data.filteredRows}行です。",
@@ -184,20 +184,20 @@
   },
   "features": {
     "structure": {
-      "heading": "まず基準価格を置き、そこからのずれを学ぶ",
+      "heading": "まず平均価格の流れを予測し、実際の価格との差を別に学ぶ",
       "step1": "出発日ごとに集めた仁川→成田 LCC の価格です。同じ日に出発する便でも、いつ買ったかによって散らばります。",
       "step2": "路線ごとに NeuralProphet が出発日別の平均価格の流れ（トレンドと曜日の周期）を学び、クラスごとの価格水準を掛けて基準価格を作ります。",
       "step3": "XGBoost は {model.featureCount} 個の特徴量で、実際の価格がこの基準からどれだけずれるかを対数で学び、両者を足したものが予測価格です。",
       "body2": "XGBoost の設定は Optuna で {model.optunaTrials} 回試し、時系列順の検証で最も良いものを選びました。同じ残差に下側・上側の分位点モデルを別に学習して予測区間を出し、特徴量ごとの寄与は SHAP で分けて見ます。",
       "tools": "Optuna で設定を選び、分位点モデルで区間を、SHAP で特徴量ごとの寄与を見ます。",
-      "flow": "基準価格（路線別 NeuralProphet × クラス水準）+ ずれ（XGBoost・対数）= 予測価格",
+      "flow": "基準価格（路線別 NeuralProphet × クラス水準）+ 基準との差（XGBoost・対数）= 予測価格",
       "axis": "路線・クラス平均比",
       "axisResid": "基準価格比",
       "line": "基準価格",
       "alt": "仁川→成田 LCC の価格の点グラフ。横が出発日、縦が路線・クラス平均との差です。まず出発日ごとに集めた価格が散らばり、次に NeuralProphet の基準価格が、数か月にわたる上下と曜日の周期に沿って線として通ります。最後に線を平らにすると、点ごとに基準からのずれだけが残り、XGBoost がこのずれを学びます。"
     },
     "serve": "Streamlit · Plotly · pytest（テストファイル{model.testFiles}件）",
-    "heading": "過去価格の統計 {model.groupShare.lookup}% · 路線・航空会社 {model.groupShare.categorical}%",
+    "heading": "予測に最も使われた情報：過去価格の統計 {model.groupShare.lookup}% · 路線・航空会社 {model.groupShare.categorical}%",
     "lead": "一つの価格を予測するために入れたものです。数字はモデル内で各グループが占める重要度(XGBoost gain)です。",
     "unit": "個",
     "groups": {
@@ -231,7 +231,7 @@
   "charts": {
     "depart": {
       "body1": "価格を大きく動かすのは「いつ買うか」より「いつ出発するか」でした。点一つが出発日一つで、上にあるほど路線・クラス平均より高い日です。曜日ごとの平均もあわせて示しています。祝日前後(琥珀色)と日曜日の出発がいちばん高くなっています。",
-      "heading": "いつ発つかの方が大きい：元日前後 {insight.holidayPeak.pct|signed0}%",
+      "heading": "価格を大きく動かすのは出発日：元日前後の出発は平均より{insight.holidayPeak.pct|signed0}%",
       "alt": "出発日別の価格の点グラフ。横が出発日、縦が路線・クラス平均との差で、曜日ごとの平均もあわせて示しています。クリスマス・元日・ソルラル前後がいちばん高く、曜日では日曜日がいちばん高くなっています。",
       "axis": "平均比",
       "weekdays": "曜日平均",
@@ -240,7 +240,7 @@
     },
     "curve": {
       "body1": "出発済みの{model.realizedFlights}便の価格を日次で追跡しました。出発直前（{model.bookingCurve.0.label}）は同じ便の平均より{model.bookingCurve.0.pct|signed}%高く、{model.bookingCurve.5.label}の区間が{model.bookingCurve.5.pct|signed}%で最も安くなりました。幅は約{model.curveWidth}ポイントのU字カーブです。",
-      "heading": "いつ買うかはそれより小さい：出発ひと月前後 {insight.curveMin|signed0}%",
+      "heading": "購入時期の影響は小さい：出発ひと月前ごろに買うと平均より{insight.curveMin|signed0}%",
       "alt": "出発までの日数の区間ごとに、同じ便の平均に対する価格を点で積み上げた図。区間平均を結んだ線がU字を描きます。",
       "axis": "同じ便の平均比",
       "zero": "同じ便の平均",
@@ -249,7 +249,7 @@
       "tip": "{v.bin}に買うと同じ便の平均比 {v.pct} · 観測{v.n}件"
     },
     "bubble": {
-      "heading": "R²は二度、水増しされていた",
+      "heading": "誤ったデータのせいで精度(R²)が二度水増しされていた",
       "body1": "最初に得たR² {model.bubble.firstR2}は、羽田路線で誤ってマッチングされた高額な行によって水増しされた値でした。この行を除外するとR²は{model.bubble.firstR2After}まで下がり、MAEはほとんど変わりませんでした。",
       "body2": "同じことがもう一度ありました。直行と表示されていても実際には経由便だった行を{data.removedImplausible}件見つけて除外しました。MAEは{model.bubble.maeBefore}ウォンから{model.bubble.maeAfter}ウォンとほとんど変わらず、R²だけが{model.bubble.r2Before}から{model.bubble.r2After}に下がりました。これらの行がR²の分母の{model.bubble.denomShare}%を占めていました。",
       "body3": "そのためR²だけでなく、MAEとデータの整合性をあわせて確認します。フィルタ条件が異なるため、今のR²と以前のR²を直接比較していません。",
@@ -263,7 +263,7 @@
       "alt": "R²の前後を横軸に置いたダンベル図です。初回の修正でR²は{model.bubble.firstR2}から{model.bubble.firstR2After}へ、二度目は{model.bubble.r2Before}から{model.bubble.r2After}へ下がり、MAEはどちらもほぼ変わりませんでした（二度目：{model.bubble.maeBefore}ウォン → {model.bubble.maeAfter}ウォン）。"
     },
     "validation": {
-      "heading": "未来のデータを使わない検証で性能を測る",
+      "heading": "過去だけで学び、その次の期間で試した：平均誤差{model.tss.mae}ウォン",
       "body1": "K-Foldは中ほどの期間を評価に取り分け、その前後をすべて学習に使います。未来に集めた価格で過去を当てることになるため、スコアが最も高く出ます。参考の上限としてだけ見ます。",
       "body2": "GroupKFoldは路線・出発日ごとまとめて評価に取り分けます。初めて見る出発日ではlookup統計が既定値に落ちる、学習とサービスの不一致がここで見つかりました。lookupを入れたサービス構成はR² {model.gkfWithLookup.r2}、MAE {model.gkfWithLookup.mae}ウォンでlookupなしより悪く、lookup構成{model.lookupVariants}通りをそれぞれ再チューニングして比べました。",
       "body3": "TimeSeriesSplitは過去だけで学習し、すぐ次の期間を評価します。境界を五回動かしながら測ります。運用と同じ条件なので代表値として使います。",
@@ -286,7 +286,7 @@
       }
     },
     "band": {
-      "heading": "予測区間が実際の価格の{model.interval.coverage}%を捉えた",
+      "heading": "実際の価格の{model.interval.coverage}%が予測範囲に入った",
       "body1": "価格を一つだけ出すのではなく、{model.interval.level}%の予測区間もあわせて出力します。",
       "body2": "固定した区間は、最近のデータほど実際のカバー率が{model.interval.driftLow}%まで低下していました。分布のシフト傾向を反映して区間幅を調整し、直近の区間で{model.interval.coverage}%をカバーしました。",
       "body3": "雲の点は、基準日に計算した仁川→成田LCCの{model.interval.level}%予測区間の中に散らしたものです。中央の明るい点が予測価格で、点がまばらな端ほどその価格になる可能性は低くなります。ほかの路線は下のデモで見られます。",
@@ -297,7 +297,7 @@
       "panelNote": "点ひとつ = 確率{v.step}% · {v.total}個中{v.inside}個が区間内"
     },
     "limits": {
-      "heading": "単純なベースラインとのMAE差は{model.baselineGap.mae}ウォン({model.baselineGap.pct|fixed1}%)",
+      "heading": "直前の価格をそのまま使う方法より誤差が{model.baselineGap.mae}ウォン({model.baselineGap.pct|fixed1}%)小さいだけ",
       "body1": "同じ便の直近観測価格をそのまま使う単純な基準線のMAEは{model.baselineMae}ウォンで、モデル（{model.tss.mae}ウォン）とほとんど差がありません。",
       "body2": "推薦の{model.reco.buyNow}%が「今すぐ購入」です。実際の価格を追跡すると、出発から二か月以内では待つと平均的に損をしており、モデルも同じ方向を示していました。",
       "body3": "次のステップは、同じ便の直近観測価格を特徴量として追加し、基準線を上回ることです。"

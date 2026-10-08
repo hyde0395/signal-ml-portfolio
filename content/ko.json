@@ -170,7 +170,7 @@
     },
     "tools": "Python · requests · tenacity · yfinance · workalendar",
     "filter": {
-      "heading": "잘못 들어온 {data.filter.removed}행을 걸러 냈다",
+      "heading": "잘못 기록된 가격 {data.filter.removed}개를 걸러 냈다",
       "body1": "모은 {data.rawRows}행을 소요 시간과 가격으로 놓았습니다. 모두 직항이라 대부분 한곳에 좁게 모여 있습니다.",
       "body2": "소요 시간이 {data.filter.durationMax}분을 넘거나 가격 단위가 빠진 행 {data.filter.unit}개, 출발·도착 시각과 소요 시간이 맞지 않는 행 {data.filter.mismatch}개를 뺐습니다.",
       "body3": "직항으로 표시됐지만 경유 여정만큼 오래 걸리는 행 {data.filter.direct}개도 뺐습니다. 대부분 하네다 노선이었습니다. 남은 행은 {data.filteredRows}개입니다.",
@@ -184,20 +184,20 @@
   },
   "features": {
     "structure": {
-      "heading": "기준 가격을 먼저 잡고, 벗어난 몫을 배운다",
+      "heading": "평균 가격 흐름을 먼저 예측하고, 실제 가격과의 차이를 따로 배운다",
       "step1": "출발일마다 모은 인천→나리타 LCC 가격입니다. 같은 날 떠나는 편도 언제 샀느냐에 따라 흩어집니다.",
       "step2": "노선마다 NeuralProphet이 출발일별 평균 가격의 흐름(추세와 요일 주기)을 배우고, 등급별 가격 수준을 곱해 기준 가격을 만듭니다.",
       "step3": "XGBoost는 피처 {model.featureCount}개로 실제 가격이 이 기준에서 얼마나 벗어나는지를 로그 단위로 배우고, 둘을 더한 값이 예측가입니다.",
       "body2": "XGBoost 설정은 Optuna로 {model.optunaTrials}번 시도해 시간순 검증에서 가장 좋은 것을 골랐습니다. 같은 잔차에 아래쪽·위쪽 분위수 모델을 따로 학습해 예측 구간을 내고, 피처별 기여는 SHAP으로 나눠 봅니다.",
       "tools": "Optuna로 설정을 고르고, 분위수 모델로 구간을, SHAP으로 피처별 기여를 봅니다.",
-      "flow": "기준 가격 (노선별 NeuralProphet × 등급 수준) + 벗어난 몫 (XGBoost, 로그 단위) = 예측가",
+      "flow": "기준 가격 (노선별 NeuralProphet × 등급 수준) + 기준과의 차이 (XGBoost, 로그 단위) = 예측가",
       "axis": "노선·등급 평균 대비",
       "axisResid": "기준 가격 대비",
       "line": "기준 가격",
       "alt": "인천→나리타 LCC 가격 점 그래프. 가로는 출발일, 세로는 노선·등급 평균 대비 가격입니다. 먼저 출발일마다 모은 가격이 흩어져 있고, 다음에 NeuralProphet 기준 가격이 몇 달에 걸친 오르내림과 요일 주기를 따라 선으로 지나갑니다. 마지막에 선을 평평하게 펴면 점마다 기준에서 벗어난 몫만 남고, XGBoost가 이 몫을 배웁니다."
     },
     "serve": "Streamlit · Plotly · pytest(테스트 파일 {model.testFiles}개)",
-    "heading": "과거 가격 통계 {model.groupShare.lookup}% · 노선·항공사 {model.groupShare.categorical}%",
+    "heading": "예측에 가장 많이 쓰인 정보: 과거 가격 통계 {model.groupShare.lookup}% · 노선·항공사 {model.groupShare.categorical}%",
     "lead": "가격 하나를 예측하기 위해 넣은 것들입니다. 숫자는 모델 안에서 각 그룹이 차지한 중요도(XGBoost gain)입니다.",
     "unit": "개",
     "groups": {
@@ -231,7 +231,7 @@
   "charts": {
     "depart": {
       "body1": "가격을 더 크게 흔드는 것은 언제 사느냐보다 언제 떠나느냐였습니다. 점 하나가 출발일 하나이고, 위로 갈수록 노선·등급 평균보다 비쌉니다. 요일별 평균도 함께 보여 줍니다. 공휴일 무렵(호박색)과 일요일 출발이 가장 비쌉니다.",
-      "heading": "언제 떠나느냐가 더 크다: 신정 무렵 {insight.holidayPeak.pct|signed0}%",
+      "heading": "가격은 출발일이 더 크게 흔든다: 신정 무렵 출발은 평균보다 {insight.holidayPeak.pct|signed0}%",
       "alt": "출발일별 가격 점 그래프. 가로는 출발일, 세로는 노선·등급 평균 대비 가격이고, 요일별 평균을 함께 보여 줍니다. 성탄절·신정·설날 무렵이 가장 높이 솟고, 요일 중에는 일요일이 가장 비쌉니다.",
       "axis": "평균 대비",
       "weekdays": "요일 평균",
@@ -240,7 +240,7 @@
     },
     "curve": {
       "body1": "출발이 지난 {model.realizedFlights}편의 가격을 날마다 추적했습니다. 출발 직전({model.bookingCurve.0.label})에는 같은 편 평균보다 {model.bookingCurve.0.pct|signed}% 비쌌고, {model.bookingCurve.5.label} 구간이 {model.bookingCurve.5.pct|signed}%로 가장 쌌습니다. 폭 약 {model.curveWidth}%p의 U자 곡선입니다.",
-      "heading": "언제 사느냐는 그보다 작다: 출발 한 달 전후 {insight.curveMin|signed0}%",
+      "heading": "구매 시점의 영향은 작다: 출발 한 달 전쯤 사면 평균보다 {insight.curveMin|signed0}%",
       "alt": "출발까지 남은 일수 구간별로 같은 편 평균 대비 가격을 점으로 쌓은 그림. 구간 평균을 이은 선이 U자를 그립니다.",
       "axis": "같은 편 평균 대비",
       "zero": "같은 편 평균",
@@ -249,7 +249,7 @@
       "tip": "{v.bin}에 사면 같은 편 평균보다 {v.pct} · 관측 {v.n}건"
     },
     "bubble": {
-      "heading": "R²는 두 번 부풀려져 있었다",
+      "heading": "잘못된 데이터 때문에 정확도(R²)가 두 번 부풀려져 있었다",
       "body1": "처음 얻은 R² {model.bubble.firstR2}은 하네다 노선에 잘못 매칭된 고가 행이 부풀린 값이었습니다. 이 행을 걸러내자 R²는 {model.bubble.firstR2After}로 내려갔고, MAE는 거의 그대로였습니다.",
       "body2": "같은 일이 한 번 더 있었습니다. 직항으로 표시됐지만 실제로는 경유 여정인 행 {data.removedImplausible}개를 찾아 걸러냈습니다. MAE는 {model.bubble.maeBefore}원에서 {model.bubble.maeAfter}원으로 거의 그대로였고, R²만 {model.bubble.r2Before}에서 {model.bubble.r2After}로 내려갔습니다. 이 행들이 R² 분모의 {model.bubble.denomShare}%를 차지하고 있었습니다.",
       "body3": "그래서 R²만 보지 않고 MAE와 데이터 무결성을 함께 봅니다. 필터 조건이 달라 지금 R²와 예전 R²를 직접 비교하지는 않습니다.",
@@ -263,7 +263,7 @@
       "alt": "R² 전후를 가로축에 놓은 아령 그림입니다. 첫 정정에서 R²는 {model.bubble.firstR2}에서 {model.bubble.firstR2After}로, 둘째 정정에서 {model.bubble.r2Before}에서 {model.bubble.r2After}로 내려갔고, MAE는 두 번 모두 거의 그대로였습니다(둘째 정정 {model.bubble.maeBefore}원 → {model.bubble.maeAfter}원)."
     },
     "validation": {
-      "heading": "미래 데이터를 쓰지 않는 검증으로 성능을 잰다",
+      "heading": "과거로만 배우고 그다음 기간으로 시험했다: 평균 오차 {model.tss.mae}원",
       "body1": "K-Fold는 가운데 시간 구간을 평가로 떼고 앞뒤를 모두 학습에 씁니다. 미래에 모은 가격으로 과거를 맞히는 셈이라 점수가 가장 높게 나옵니다. 참고용 상한으로만 봅니다.",
       "body2": "GroupKFold는 노선·출발일을 통째로 평가로 뗍니다. 처음 보는 출발일에서는 lookup 통계가 기본값으로 떨어지는 학습·서비스 불일치가 여기서 드러났습니다. lookup을 넣은 서비스 구성은 R² {model.gkfWithLookup.r2}, MAE {model.gkfWithLookup.mae}원으로 lookup이 없을 때보다 나빴고, lookup 구성 {model.lookupVariants}가지를 각각 다시 튜닝해 비교했습니다.",
       "body3": "TimeSeriesSplit은 과거로만 배우고 바로 다음 구간을 평가합니다. 경계를 다섯 번 옮겨 가며 잽니다. 운영과 같은 조건이라 대표값으로 씁니다.",
@@ -286,7 +286,7 @@
       }
     },
     "band": {
-      "heading": "예측 구간이 실제 가격의 {model.interval.coverage}%를 감쌌다",
+      "heading": "실제 가격의 {model.interval.coverage}%가 예측 범위 안에 들었다",
       "body1": "가격 하나만 내놓지 않고 {model.interval.level}% 예측 구간을 함께 냅니다.",
       "body2": "고정된 구간은 최근 데이터일수록 실제 포함률이 {model.interval.driftLow}%까지 떨어졌습니다. 분포가 이동하는 추세를 반영해 구간 폭을 고르도록 바꿨고, 가장 최근 구간에서 {model.interval.coverage}%를 포함했습니다.",
       "body3": "구름의 점들은 기준일에 계산한 인천→나리타 LCC의 {model.interval.level}% 예측 구간 안에 뿌린 것입니다. 가운데 밝은 점이 예측가이고, 점이 성긴 가장자리일수록 그 값이 나올 가능성이 낮습니다. 다른 노선은 아래 데모에서 볼 수 있습니다.",
@@ -297,7 +297,7 @@
       "panelNote": "점 하나 = 가능성 {v.step}% · {v.total}개 중 {v.inside}개가 구간 안"
     },
     "limits": {
-      "heading": "단순 기준선과 MAE 차이는 {model.baselineGap.mae}원({model.baselineGap.pct|fixed1}%)",
+      "heading": "직전 가격을 그대로 쓰는 방법보다 오차가 {model.baselineGap.mae}원({model.baselineGap.pct|fixed1}%) 작을 뿐이다",
       "body1": "같은 편의 직전 관측가를 그대로 쓰는 단순 기준선의 MAE는 {model.baselineMae}원으로, 모델({model.tss.mae}원)과 거의 차이가 없습니다.",
       "body2": "추천은 {model.reco.buyNow}%가 '지금 구매'입니다. 실제 가격을 추적해 보니 출발 두 달 안쪽에서는 기다리면 평균적으로 손해였고, 모델도 같은 방향이었습니다.",
       "body3": "다음 단계는 같은 편의 최근 관측가를 피처로 넣어 기준선을 넘는 것입니다."

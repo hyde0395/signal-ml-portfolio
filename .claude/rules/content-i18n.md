@@ -30,11 +30,13 @@ paths:
 ## 문구 톤 (사용자 피드백)
 - 슬로건·광고 같은 문장은 "오글거린다"고 싫어한다. 꾸밈 없이 사실만, 담백하게
 - **문구는 디자인을 모두 정한 뒤에 한꺼번에 바꾼다**(2026-10-01). 그 전까지 디자인 작업의 문구·꾸밈 값(예: 탑승권 편명·게이트·도시)은 임시값으로 두고 데이터(`facts.json`·`content/*.json`)에 넣는다
+- **제목은 그것만 읽어도 뜻이 통해야 한다**(교수님 2026-10-08): 숫자에는 "무엇의"를 붙이고(예: "예측에 가장 많이 쓰인 정보: … 47%"), 몫·잔차·MAE·기준선 같은 용어는 풀어 쓴다. 앞 제목에 기대는 말("그보다")도 쓰지 않는다. 기록 `docs/superpowers/notes/2026-10-08-professor-headline-feedback.md`
 - 문구 정리 때: 블록마다 첫 줄을 결과로 바꾸고 겹치는 문장만 덜어 낸다(접기 UI는 쓰지 않음). `intro.note` "점 하나는 실제로 수집한 가격 하나입니다."는 사실이 아니므로 지운다
 
 ## 문구 검토 대기 (사용자)
 - 한국어 확인 후 영·일 초안을 사용자·검수자에게: 5-3c `features.shap.*`, 7-2 `features.structure.*`, 8-1 `data.filter.*`·`charts.validation.*`(body1~3·tagKf/tagGkf/tagTss·legend*·axis*·alt)
 - 정보 전달 2 — 결론형 제목 10개·① 숫자 이름표·`data.filter.rule1/2`·`charts.bubble.row*/legend*/maeSame/alt`·`features.structure.tools`·`tagTss`(영·일 Claude 초안)
+- 헤드라인 명확화(2026-10-08) — 제목 9개 + `features.structure.flow`(영·일 Claude 초안)
 - 8-1 검토에서 나온 영·일 용어 맞추기 후보: en `data.filter.axisY` "vs. route/cabin mean" → "vs. route-and-class average", en `tagKf` "upper reference" → "reference upper bound", en `data.filter.body1` "placed by" → "plotted by", en `charts.validation.body2` "service setup" → "service configuration", ja `tagGkf` "初めて見る出発日" → "未知の出発日", ja `legendUnused` "未使用" → "まだ未使用", ja `data.filter.heading` → "エラー行の除去", ja `charts.validation.body2` "学習とサービスの不一致" → "学習と提供の不一致"
 
 ## 개인 정보·콘텐츠
