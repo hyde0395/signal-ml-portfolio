@@ -5,9 +5,9 @@
   --mute: rgba(238, 243, 255, 0.72); /* #02040A 위에서 대비 ≥ 4.5:1 */
   --line: rgba(143, 184, 255, 0.18);
   --ease: cubic-bezier(.16, 1, .3, 1);
-  --font-text: 'Pretendard Variable', system-ui, sans-serif;
+  --font-text: var(--font-pretendard), system-ui, sans-serif;
 }
-:root:lang(ja) { --font-text: var(--font-jp), 'Pretendard Variable', system-ui, sans-serif; }
+:root:lang(ja) { --font-text: var(--font-jp), var(--font-pretendard), system-ui, sans-serif; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 /* 상단 바는 겹쳐 뜨지만 옆 목차로 위쪽 섹션에 갈 때는 다시 나타난다(peek) — 제목이 그 밑에 가리지 않을 만큼 여백을 둔다.

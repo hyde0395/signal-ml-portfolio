@@ -1,6 +1,8 @@
-// ja 로케일 전용 글꼴 파일. ko/en 레이아웃은 이 파일을 import하지 않으므로, ko/en 페이지 번들에는
-// 일본어 글꼴 CSS가 실리지 않는다.
-import { Noto_Sans_JP } from 'next/font/google';
+// ja 로케일 전용 글꼴. Noto Sans JP를 ja 페이지에 나오는 글자만 남겨(scripts/build-fonts.mjs, 굵기 400~600) 한 파일로
+// 쓴다 — Google 글꼴 조각(약 120개 중 페이지당 40개·830KB)을 받던 것을 줄였다(계획 2026-10-08 성능). 라틴도 담아
+// ja 페이지 라틴 모양은 그대로. 미리 받기를 끄는 이유는 fonts.ts 머리 주석
+import localFont from 'next/font/local';
 
-// 일본어 페이지 layout에서만 import한다. 가나·한자 서브셋이 크므로 preload하지 않는다.
-export const jp = Noto_Sans_JP({ weight: ['400', '600'], variable: '--font-jp', display: 'swap', preload: false });
+export const jp = localFont({ src: './font-files/noto-sans-jp.woff2', weight: '400 600', variable: '--font-jp', display: 'swap', preload: false });
+// Noto 서브셋에 없는 글자(한국어 언어 안내 등)를 그릴 예비 Pretendard. 그런 글자가 화면에 있을 때만 받는다
+export const textFallback = localFont({ src: './font-files/pretendard-latin.woff2', weight: '400 700', variable: '--font-pretendard', display: 'swap', preload: false });

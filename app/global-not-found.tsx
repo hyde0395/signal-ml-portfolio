@@ -3,14 +3,15 @@
 import '@/styles/globals.css';
 import { dictionaries } from '@/lib/content';
 import { LOCALE_PATH, LOCALES } from '@/lib/i18n';
-import { baseFontVars } from '@/styles/fonts';
 import { jp } from '@/styles/font-jp';
+import { textKo } from '@/styles/font-ko';
+import { baseFontVars } from '@/styles/fonts';
 
 export const metadata = { title: '404 — SIGNAL' };
 
 export default function GlobalNotFound() {
   return (
-    <html lang="ko" className={`${baseFontVars} ${jp.variable}`}>
+    <html lang="ko" className={`${baseFontVars} ${textKo.variable} ${jp.variable}`}>
       <body>
         <main id="main" className="wrap not-found">
           <p className="eyebrow">GATE 404 — NOT FOUND</p>
