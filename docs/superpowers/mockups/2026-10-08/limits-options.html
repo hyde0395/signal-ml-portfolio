@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>한계 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#02040A;--bg2:#0B1426;--dot:#8FB8FF;--text:#EEF3FF;--mute:rgba(238,243,255,.72);--faint:rgba(238,243,255,.16);--amber:#FFB547}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);font-family:Pretendard,system-ui,sans-serif;padding:32px 40px 80px}
+h1{font:700 15px 'IBM Plex Mono';letter-spacing:.08em;color:var(--mute);margin:0 0 6px}
+.q{font-size:20px;margin:0 0 28px}
+.opt{border:1px solid var(--faint);border-radius:14px;padding:22px 36px 56px;margin-bottom:28px;cursor:pointer}
+.opt:hover{border-color:var(--mute)}.opt.selected{border-color:var(--amber)}
+.tag{font:600 13px 'IBM Plex Mono';color:var(--amber);letter-spacing:.06em}
+.why{color:var(--mute);font-size:14px;margin:6px 0 40px;line-height:1.6}
+.mono{font-family:'IBM Plex Mono',monospace}
+.stage{text-align:center}
+.eye{font:600 12px 'IBM Plex Mono';letter-spacing:.18em;color:var(--amber);margin:0 0 18px}
+.h3{font-size:26px;font-weight:700;margin:0 auto 36px;max-width:860px;word-break:keep-all}
+.lines{max-width:680px;margin:36px auto 0;word-break:keep-all;text-wrap:balance}
+.lines p{margin:0 0 12px;font-size:16px;line-height:1.7}
+.lines p.dim{color:var(--mute)}
+.link{display:inline-block;margin-top:20px;color:var(--dot);font-size:14px}
+/* A 두 숫자 비교 */
+.cmpA{display:flex;justify-content:center;align-items:flex-end;gap:clamp(28px,5vw,72px)}
+.cmpA .col .lab{font-size:15px;color:var(--mute);margin-bottom:10px}
+.cmpA .col .lab small{display:block;font-size:12px;margin-top:2px}
+.cmpA .n{font:600 clamp(44px,6vw,88px)/1 'IBM Plex Mono';letter-spacing:-.03em}
+.cmpA .n small{font-size:.4em}
+.cmpA .base .n{color:var(--text)}.cmpA .model .n{color:var(--amber)}
+.cmpA .arrow{font:600 40px 'IBM Plex Mono';color:var(--mute);padding-bottom:18px}
+.gap{margin-top:22px;font:600 18px 'IBM Plex Mono'}.gap span{color:var(--amber)}
+/* B 차이 하나만 크게 */
+.bigB .n{font:600 clamp(72px,10vw,140px)/1 'IBM Plex Mono';color:var(--amber);letter-spacing:-.04em}
+.bigB .n small{font-size:.35em}
+.bigB .lab{margin-top:14px;font-size:17px}
+.bigB .sub{margin-top:8px;color:var(--mute);font:15px 'IBM Plex Mono'}
+/* C 막대 두 개 */
+.bars{max-width:760px;margin:0 auto;text-align:left}
+.bar{display:grid;grid-template-columns:150px 1fr 150px;align-items:center;gap:18px;margin:14px 0}
+.bar .lab{font-size:15px;color:var(--mute);text-align:right}
+.bar .track{height:30px;border-radius:4px;background:rgba(143,184,255,.08);position:relative;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;border-radius:4px}
+.bar .v{font:600 26px 'IBM Plex Mono'}
+.bar.base .fill{background:rgba(238,243,255,.55)}.bar.model .fill{background:var(--amber)}.bar.model .v{color:var(--amber)}
+.bars .gap{text-align:center}
+</style></head><body>
+<h1>⑤ 한계 · 시안 3가지</h1>
+<p class="q">휑한 한계 섹션 — ⑤의 큰 숫자 형식으로 채운다면 어떤 모양이 좋을까?</p>
+
+<div class="opt" data-choice="A" onclick="toggleSelect(this)">
+  <div class="tag">A · 두 숫자 나란히 (추천)</div>
+  <div class="why">단순 기준선과 모델의 평균 오차를 같은 크기로 나란히. 숫자가 거의 똑같다는 게 바로 보인다. R² 카드("0.93 → 0.71")와 같은 전→후 모양.</div>
+  <div class="stage">
+    <p class="eye">LIMITS</p>
+    <p class="h3">직전 가격을 그대로 쓰는 방법보다 오차가 453원(0.9%) 작을 뿐이다</p>
+    <div class="cmpA">
+      <div class="col base"><div class="lab">단순 기준선<small>같은 항공편의 직전 가격 그대로</small></div><div class="n">48,688<small>원</small></div></div>
+      <div class="arrow">→</div>
+      <div class="col model"><div class="lab">모델<small>TimeSeriesSplit 평균 오차</small></div><div class="n">48,235<small>원</small></div></div>
+    </div>
+    <div class="gap">차이 <span>−453원 (0.9%)</span></div>
+    <div class="lines">
+      <p>추천의 92.1%가 '지금 구매'였고, 실제 가격을 추적해 보니 출발 두 달 안쪽에서는 기다리면 평균적으로 손해였다.</p>
+      <p class="dim">다음 단계: 같은 항공편의 최근 가격을 피처로 넣어 기준선을 넘는다.</p>
+    </div>
+    <a class="link">코드 보기 ↗</a>
+  </div>
+</div>
+
+<div class="opt" data-choice="B" onclick="toggleSelect(this)">
+  <div class="tag">B · 차이 하나만 크게</div>
+  <div class="why">"0.9%"만 아주 크게. 가장 단순하고 강렬하지만, 숫자 자체가 작은 값이라 "작다"는 뜻이 한 번 더 생각해야 읽힌다. 제목과 같은 숫자를 반복한다.</div>
+  <div class="stage">
+    <p class="eye">LIMITS</p>
+    <p class="h3">직전 가격을 그대로 쓰는 방법보다 오차가 453원(0.9%) 작을 뿐이다</p>
+    <div class="bigB"><div class="n">0.9<small>%</small></div><div class="lab">단순 기준선보다 줄어든 오차</div><div class="sub">48,688원 → 48,235원</div></div>
+    <div class="lines">
+      <p>추천의 92.1%가 '지금 구매'였고, 실제 가격을 추적해 보니 출발 두 달 안쪽에서는 기다리면 평균적으로 손해였다.</p>
+      <p class="dim">다음 단계: 같은 항공편의 최근 가격을 피처로 넣어 기준선을 넘는다.</p>
+    </div>
+  </div>
+</div>
+
+<div class="opt" data-choice="C" onclick="toggleSelect(this)">
+  <div class="tag">C · 막대 두 개</div>
+  <div class="why">평균 오차를 막대 길이로. 두 막대가 거의 같은 길이라 "거의 차이 없음"이 그림으로 보인다. 다른 큰 숫자 카드와는 모양이 조금 다르다.</div>
+  <div class="stage">
+    <p class="eye">LIMITS</p>
+    <p class="h3">직전 가격을 그대로 쓰는 방법보다 오차가 453원(0.9%) 작을 뿐이다</p>
+    <div class="bars">
+      <div class="bar base"><div class="lab">단순 기준선</div><div class="track"><div class="fill" style="width:100%"></div></div><div class="v">48,688원</div></div>
+      <div class="bar model"><div class="lab">모델</div><div class="track"><div class="fill" style="width:99.1%"></div></div><div class="v">48,235원</div></div>
+      <div class="gap">차이 <span style="color:var(--amber)">−453원 (0.9%)</span></div>
+    </div>
+    <div class="lines">
+      <p>추천의 92.1%가 '지금 구매'였고, 실제 가격을 추적해 보니 출발 두 달 안쪽에서는 기다리면 평균적으로 손해였다.</p>
+      <p class="dim">다음 단계: 같은 항공편의 최근 가격을 피처로 넣어 기준선을 넘는다.</p>
+    </div>
+  </div>
+</div>
+</body></html>

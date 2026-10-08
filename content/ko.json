@@ -300,7 +300,12 @@
     "limits": {
       "heading": "직전 가격을 그대로 쓰는 방법보다 오차가 {model.baselineGap.mae}원({model.baselineGap.pct|fixed1}%) 작을 뿐이다",
       "body1": "추천은 {model.reco.buyNow}%가 '지금 구매'입니다. 실제 가격을 추적해 보니 출발 두 달 안쪽에서는 기다리면 평균적으로 손해였고, 모델도 같은 방향이었습니다.",
-      "body2": "다음 단계는 같은 편의 최근 관측가를 피처로 넣어 기준선을 넘는 것입니다."
+      "body2": "다음 단계는 같은 편의 최근 관측가를 피처로 넣어 기준선을 넘는 것입니다.",
+      "baseLabel": "단순 기준선",
+      "baseNote": "같은 항공편의 직전 가격 그대로",
+      "modelLabel": "모델",
+      "modelNote": "TimeSeriesSplit 평균 오차",
+      "gap": "차이 −{model.baselineGap.mae}원 ({model.baselineGap.pct|fixed1}%)"
     },
     "heading": "데이터가 보여 준 것",
     "validationHeading": "모델 검증",

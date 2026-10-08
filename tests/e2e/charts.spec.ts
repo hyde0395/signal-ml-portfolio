@@ -60,6 +60,12 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     await expect(cards.nth(1).locator('.fig-sub')).toContainText('48,442 → 48,235');
     await expect(page.locator('.chart-block[data-scene="chartBubble"]')).toHaveCount(0);
   });
+  // 설계 2026-10-08 개정 4: 한계 = 단순 기준선 → 모델 평균 오차 큰 숫자, 아래 차이 한 줄
+  test('⑤ 한계: 기준선 대 모델 큰 숫자와 차이', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#validation .figs-limits .limits-n')).toHaveText(['48,688원', '48,235원']);
+    await expect(page.locator('#validation .limits-gap')).toHaveText('차이 −453원 (0.9%)');
+  });
   // 설계 2026-10-08 §2: 운영 기준 대표값 세 개가 크게, 나머지 두 방식은 참고 표 두 줄
   test('⑤ 성능: 대표값 세 개 크게 + 참고 표 두 줄', async ({ page }) => {
     await page.goto('/');

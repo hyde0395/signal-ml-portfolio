@@ -5,6 +5,7 @@
 // 대응은 같다(three/activeScene.ts).
 import type React from 'react';
 import { ChartStage } from '../charts/ChartStage';
+import { LimitsFigures } from './LimitsFigures';
 import { R2Figures } from './R2Figures';
 import { ValidationTable } from './ValidationTable';
 import { SPLIT } from '@/charts/split';
@@ -21,8 +22,8 @@ type Common = { id: string; tag?: string; code: CodeChapter; paras: number };
 type Block =
   | (Common & { kind: 'stage'; chart: ChartKey; axis?: true; stages?: number; subs?: readonly number[]; subMs?: number; subLoopMs?: number })
   | (Common & { kind: 'card'; scene: SceneKey })
-  // 큰 숫자 카드(설계 2026-10-08): 글 카드에 제목 아래 R² 전→후 두 장이 붙는다
-  | (Common & { kind: 'figures'; scene: SceneKey })
+  // 큰 숫자 카드(설계 2026-10-08): 가운데 정렬 글 카드에 제목 아래 큰 숫자 묶음이 붙는다 — r2 = R² 전→후 두 장, limits = 기준선 대 모델
+  | (Common & { kind: 'figures'; scene: SceneKey; figs: 'r2' | 'limits' })
   // 표만 있는 카드(계획 8-1): ⑤ 검증 설계 판 뒤 평가 방식 비교표. 제목 없이 표 caption이 이름이다
   | { kind: 'table'; id: string; scene: SceneKey; code: CodeChapter };
 
@@ -33,7 +34,7 @@ const FINDINGS_BLOCKS: Block[] = [
 
 const VALIDATION_BLOCKS: Block[] = [
   // 차트 3: 아령 판은 "눈이 여러 번 간다"(교수님 2026-10-08)고 해서 큰 숫자 두 장으로(설계 2026-10-08 §1). 뒤에 점 없음(blank)
-  { kind: 'figures', id: 'bubble', tag: 'CHART 03', scene: 'blank', code: 'bubble', paras: 3 },
+  { kind: 'figures', figs: 'r2', id: 'bubble', tag: 'CHART 03', scene: 'blank', code: 'bubble', paras: 3 },
   // 세 평가 방식이 데이터를 나누는 점 그림(계획 8-1) — TSS 칸은 폴드가 저절로 넘어가고 마지막에서 머문 뒤 반복한다(설계 2026-10-07 §5).
   // 판 위 수치는 점수판(정보 전달 2 §5)
   { kind: 'stage', id: 'validation', chart: 'chartSplit', code: 'validation', paras: 3, axis: true,
@@ -41,8 +42,8 @@ const VALIDATION_BLOCKS: Block[] = [
   // 판 바로 뒤 카드: 운영 기준 대표값을 크게, 다른 두 방식은 작은 참고 표로(설계 2026-10-08 §2). 뒤에 점 없음(blank)
   { kind: 'table', id: 'validationTable', scene: 'blank', code: 'validation' },
   { kind: 'stage', id: 'band', tag: 'CHART 04', chart: 'chartCloud', code: 'interval', paras: 3, axis: true },
-  // 한계: 뒤에 점 없음(blank) — 지형 점이 문장 끝과 겹쳤다. 첫 문단(기준선 MAE)은 제목과 겹쳐 뺐다(사용자 2026-10-08)
-  { kind: 'card', id: 'limits', tag: 'LIMITS', scene: 'blank', code: 'limits', paras: 2 },
+  // 한계: 뒤에 점 없음(blank) — 지형 점이 문장 끝과 겹쳤다. 글만으로는 휑해 기준선 대 모델 평균 오차를 큰 숫자로(사용자 2026-10-08, 시안 A)
+  { kind: 'figures', figs: 'limits', id: 'limits', tag: 'LIMITS', scene: 'blank', code: 'limits', paras: 2 },
 ];
 
 type ChartSectionProps = {
@@ -135,7 +136,7 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
         <article key={b.id} data-scene={b.scene} className={b.kind === 'figures' ? 'chapter figs-chapter' : 'chapter'} aria-labelledby={`chart-${b.id}`}>
           {b.tag && <p className="eyebrow" data-flip-on-enter>{b.tag}</p>}
           <h3 id={`chart-${b.id}`}>{t(`charts.${b.id}.heading`)}</h3>
-          {b.kind === 'figures' && <R2Figures locale={locale} />}
+          {b.kind === 'figures' && (b.figs === 'r2' ? <R2Figures locale={locale} /> : <LimitsFigures locale={locale} />)}
           {body(b)}
           {link(b)}
         </article>
