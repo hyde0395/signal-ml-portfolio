@@ -37,8 +37,8 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 
 운영 https://signal-ml.vercel.app (아직 `noindex`) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개, main = 운영, PR = Vercel 미리보기) · CI: 타입 검사 → 단위 테스트 → 빌드 → 용량 검사 → e2e(desktop·mobile, axe).
 
-- **병합·배포된 것**: 계획 1~8-1, 9-2·9-3, 정보 전달 2, 점 위계·배경 밀도, 교수님 피드백 2(PR #1~#33). 계획서 `docs/superpowers/plans/`, 설계 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점), PR별 내용은 `git log`·GitHub
-- **진행 중**: PR #34(`feat/contact-trim`, 사용자 미리보기 확인 대기) — 아래 다음 할 일 2·3(연락처 소개 본문 삭제 + 겹치는 문장만 덜어내기)
+- **병합·배포된 것**: 계획 1~8-1, 9-2·9-3, 정보 전달 2, 점 위계·배경 밀도, 교수님 피드백 2, 연락처 소개·겹치는 문장 덜어내기(PR #1~#34). 계획서 `docs/superpowers/plans/`, 설계 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점), PR별 내용은 `git log`·GitHub
+- **열린 PR 없음**. 다음은 성능 최적화 — 사용자가 시작하라고 할 때(effort high 이상)
 - **맥북에서 아직 안 한 것**: impeccable 엔진·훅·Playwright MCP·Figma 로그인(`new-device-setup` 6번, 맥미니는 끝)
 - **9-3 남은 확인(사용자, 운영에서)**: 머리말 230svh 스크롤 길이, ① 배경 밝기 60%·글 뒤 번짐 세기 — 맨 위부터 천천히 스크롤해 확인
 
@@ -54,15 +54,12 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 ## 다음 할 일 (다음 세션부터)
 
 0. **세션 시작**(`session-handoff`). 맥북이면 처음 한 번 `new-device-setup` 6번 뒤 Claude Code 재시작
-1. **운영 확인(사용자)**: ⑤ 큰 숫자 카드 세 곳, ② 수집·③ 와플 제목의 작은 줄, 영어·일본어 제목 줄바꿈
-2. **연락처 소개 덜어내기(작은 PR, 2026-10-07 결정)**: `contact.about.body1~3`(①·⑤와 겹침)을 빼거나 한 줄로, 신원 한 줄(이름·`ML ENGINEER`·학교·졸업 예정) + 핵심 역량 3~4줄만, 이력서 PDF는 탑승권 곁에. 페이지는 데모 → 연락처로 끝나고 소개 섹션은 따로 없다
-3. **문구 덜어내기 — 겹치는 부분만**(사용자 2026-10-08): 제목·큰 숫자·다른 블록과 같은 말을 되풀이하는 문장만 뺀다(⑤ 한계 첫 문단처럼). 새로 고쳐 쓰지는 않는다. 영·일 초안 검토 대기 목록은 `content-i18n` 규칙
-4. ~~평가지표 보강(MASE·구간 폭·pinball loss)~~ **보류**(사용자 2026-10-08 — 지금도 분량이 많다)
-5. **점 연출**: 남은 것은 연락처 점 글자(`CHOI HALIM`)·데모 강조 — 사용자가 두 섹션을 다시 만든 뒤에
-6. **공개 전 준비(사용자 작업 위주, 스펙 §14)**: 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`), 문구 검토 전체(ja 검수자 — 학과 일본어명·데모 문구 포함), LinkedIn(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(만들면 `codeLinks.baseUrl`만), Vercel Web Analytics, 옛 주소 `signal-ml-portfolio.vercel.app`(404) 리디렉트 여부
-7. **공개 전환**: `src/lib/site.ts` `LAUNCHED = true`(noindex·robots Disallow 해제). 사용자가 정한다
-8. **성능 최적화(맨 마지막, 별도 계획서)** — 목표·후보는 `performance` 규칙
-9. 재학습으로 수치가 바뀌면 `refresh-data` 스킬
+1. **성능 최적화(별도 계획서, effort high 이상)** — 목표·후보는 `performance` 규칙. 운영 Lighthouse 모바일 3회 중앙값 측정 → 분석 → 계획서 → 확인 → 구현. 사용자가 시작하라고 할 때
+2. ~~평가지표 보강(MASE·구간 폭·pinball loss)~~ **보류**(사용자 2026-10-08 — 지금도 분량이 많다)
+3. **점 연출**: 남은 것은 연락처 점 글자(`CHOI HALIM`)·데모 강조 — 사용자가 두 섹션을 다시 만든 뒤에
+4. **공개 전 준비(사용자 작업 위주, 스펙 §14)**: 이력서 PDF 3개(`public/resume/{ko,en,ja}.pdf`), 문구 검토 전체(ja 검수자 — 학과 일본어명·데모 문구 포함), LinkedIn(`facts.json` `contact.linkedin`), 공개용 항공권 저장소(만들면 `codeLinks.baseUrl`만), Vercel Web Analytics, 옛 주소 `signal-ml-portfolio.vercel.app`(404) 리디렉트 여부
+5. **공개 전환**: `src/lib/site.ts` `LAUNCHED = true`(noindex·robots Disallow 해제). 사용자가 정한다
+6. 재학습으로 수치가 바뀌면 `refresh-data` 스킬
 
 ## 확정된 결정 (핵심 — 주제별 자세한 내용은 `.claude/rules/`)
 
