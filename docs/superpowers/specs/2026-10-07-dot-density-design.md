@@ -70,4 +70,4 @@
 - **TSS 반복**: `startSubs`의 `loopHoldMs`, `ChartStage` `subLoopMs`(⑤ 검증 설계만). 검토에서 더한 것 — 탭이 가려지면 멈추고(`visibilitychange`, IntersectionObserver는 탭 전환을 알리지 않음) 다시 보이면 처음부터 — 반복하는 판만 듣는다(②·③은 한 번 끝난 연출이 탭을 다시 열 때마다 재생되지 않게)
 - **테스트**: `tests/unit/charts-density.test.ts`(상수·배경 점 크기 전수·표본 수·3D 점 수 한도), subTimer 반복·머무는 중 restart, e2e TSS 반복. 기존 구름 테스트는 `Math.fround`만(2.1·1.7이 float32에서 정확하지 않음), 파이썬 `test_model_block_has_percent_only`는 관측 수 기대값을 `MODEL_PER_DATE`에서. e2e desktop 182·mobile 179 통과
 - **타입 검사**: 시안 코드(`docs/.../density-entry.ts`)가 `tsc`에 걸려 `tsconfig.json` exclude에 `docs` 추가
-- **눈 확인(1440 2D·3D, 1024, 390)**: 칸·띠 모양은 남고 촘촘해졌다. 3D 밝기가 지나친 곳은 없다 — 오히려 점이 작아져 ④ U자(알파 0.2)·③ 모델 2단계(관측 0.2)는 데스크톱에서 전보다 옅어 보인다. 알파는 바꾸지 않았고 사용자 확인으로 넘김
+- **눈 확인(1440 2D·3D, 1024, 390)**: 칸·띠 모양은 남고 촘촘해졌다. 3D 밝기가 지나친 곳은 없다 — 오히려 점이 작아져 ④ U자(알파 0.2)·③ 모델 2단계(관측 0.2)는 데스크톱에서 전보다 옅어 보인다. 사용자 확인 뒤(2026-10-08) 둘 다 0.3으로 올림(U자 `sampleA` 0.45 → 0.67, × 0.45 ≈ 0.3)

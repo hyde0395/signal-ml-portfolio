@@ -59,7 +59,7 @@ export function modelLayout(d: ChartsData, size: PlotSize, stage: number, s: Mod
     if (st < 2) {
       // 호박색 = 공휴일 무렵(±3일) 출발일의 높은 관측 — ④ 차트 1(departLayout)과 같은 규칙·같은 임계값(DEPART.hotPct). 사용자 결정 2026-09-30
       const hot = d.depart.holiday[di] !== null && o >= DEPART.hotPct;
-      p.add(x, Y(o) / H, dot, !inRange(o) ? 0 : st === 0 ? 0.6 : 0.2, hot ? TONE.amber : TONE.dot, di);
+      p.add(x, Y(o) / H, dot, !inRange(o) ? 0 : st === 0 ? 0.6 : 0.3, hot ? TONE.amber : TONE.dot, di);
     } else if (b === null) {
       p.add(x, Y(o) / H, dot, 0, TONE.dot, di); // 기준이 없는 날은 잔차를 그릴 수 없다(지금 데이터엔 없다)
     } else {

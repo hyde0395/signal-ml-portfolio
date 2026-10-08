@@ -235,11 +235,11 @@ export function departLayout(
 // 작고 옅게, 모두 파랑). 구간 8개를 왼쪽(D-61~90)에서 오른쪽(D-1~3)으로 놓고, 같은 높이의 점은 좌우로 번갈아 비켜 쌓는다.
 // 구간 평균 8개는 별(빛 번짐 + 심)과 가는 별자리 선(결론 층). 가장 싼 구간의 별만 호박색·조금 크게, 그 아래 최저 이름표,
 // 가장 가까운 구간(D-1~3) 위에 출발 직전 이름표. ±22% 밖은 그리지 않는다(몇 개가 축을 늘려 모양을 뭉개지 않게).
-// sampleA: 표본 알파 — 차트 2는 늘 한 구간이 짚혀 있어(처음 = 가장 싼 구간) 나머지는 × CHART_FOCUS_DIM(0.45) ≈ 0.2가 되고,
-// 짚은 구간만 0.45로 밝다(설계 §2 "짚은 항목만 약 0.45")
+// sampleA: 표본 알파 — 차트 2는 늘 한 구간이 짚혀 있어(처음 = 가장 싼 구간) 나머지는 × CHART_FOCUS_DIM(0.45) ≈ 0.3이 되고,
+// 짚은 구간만 0.67로 밝다. 표본 16,000으로 점이 작아져 옅어 보여 0.2 → 0.3으로 올림(사용자 결정 2026-10-08)
 // narrowColPx: 구간 칸이 이보다 좁으면(휴대폰) 이름표에서 "D-"를 뺀다 — 9px 글자로 "D-61~90"이 칸 폭을 다 채워 옆 이름표와 겹친다
 // dot·gap: 배경 표본 밀도(설계 2026-10-07) — 표본 16,000을 칸이 네모로 꽉 차지 않게 작은 점으로(이전 2.4·0.5)
-export const SWARM = { dot: 1.5, gap: 0.3, sampleA: 0.45, star: 6.8, starKey: 9.2, clip: 22, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.12, marginBottom: 0.12 } as const;
+export const SWARM = { dot: 1.5, gap: 0.3, sampleA: 0.67, star: 6.8, starKey: 9.2, clip: 22, narrowColPx: 56, marginLeft: 0.08, marginTop: 0.12, marginBottom: 0.12 } as const;
 
 export function swarmLayout(
   c: ChartsData['curve'], size: PlotSize,
