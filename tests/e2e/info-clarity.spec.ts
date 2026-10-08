@@ -51,7 +51,10 @@ for (const path of ['/', '/en/', '/ja/']) {
         els.map((e) => {
           const cs = getComputedStyle(e);
           const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
-          return { id: e.id, text: e.textContent, lines: Math.round(e.getBoundingClientRect().height / lh) };
+          // ③ 와플 제목 위 작은 머리말 줄(.h-pre)은 큰 글씨 줄 수에 넣지 않는다
+          const pre = e.querySelector('.h-pre');
+          const ph = pre ? pre.getBoundingClientRect().height + parseFloat(getComputedStyle(pre).marginBottom) : 0;
+          return { id: e.id, text: e.textContent, lines: Math.round((e.getBoundingClientRect().height - ph) / lh) };
         }));
       // 큰 글씨(display) 제목(②·③ h2, ③ 와플 h3)은 휴대폰에서 세 줄까지 허용
       for (const l of lines) expect(l.lines, `${l.id} "${l.text}"`).toBeLessThanOrEqual(w <= 390 && /^(data|features|waffle)-h$/.test(l.id) ? 3 : 2);

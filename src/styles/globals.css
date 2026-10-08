@@ -621,6 +621,8 @@ button.chart-group { background: none; border: 0; padding: 0; color: inherit; fo
 .chart-copy h3.display { font-size: clamp(1.75rem, 4vw, 2.75rem); margin: 0 0 24px; }
 /* ③ 와플 제목은 " · " 조각 안에서 줄이 바뀌지 않게(숫자만 아랫줄로 떨어지지 않도록, Features.tsx) */
 .chart-copy h3 .nowrap { white-space: nowrap; }
+/* ③ 와플 제목 머리말("예측에 가장 많이 쓰인 정보") — 큰 숫자 위 작은 줄. 제목 두 줄 검사는 이 줄 높이를 빼고 잰다(info-clarity.spec.ts) */
+.chart-copy h3 .h-pre { display: block; font: 600 clamp(0.9rem, 1.4vw, 1.05rem)/1.4 var(--font-text); letter-spacing: 0.02em; text-transform: none; color: var(--mute); margin-bottom: 6px; }
 /* 자막 스크립트가 돌 때만 문단 칸을 한 자리에 겹친다. JS가 없으면 문단이 그냥 차례로 흐른다 */
 html.has-captions .chart-paras { display: grid; }
 html.has-captions .chart-para { grid-area: 1 / 1; opacity: 0; transition: opacity 0.5s var(--ease); }

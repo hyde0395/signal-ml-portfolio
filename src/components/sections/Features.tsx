@@ -66,12 +66,17 @@ export function Features({ locale }: { locale: Locale }) {
       <article className="chart-block" data-scene="features" aria-labelledby="waffle-h" style={{ '--paras': 3 } as React.CSSProperties}>
         <ChartStage chartKey="features" dataVersion={facts.dataVersion} strings={{ locale, holidays: {}, groups, countUnit, shap }} errorText={t('charts.error')} />
         <div className="chart-copy">
-          {/* 큰 글씨 제목이라 줄이 바뀌면 "26%"만 아랫줄로 떨어졌다 — " · " 조각마다 줄바꿈을 막아 구분점에서만 바뀌게 한다 */}
+          {/* 큰 글씨 제목이라 줄이 바뀌면 "26%"만 아랫줄로 떨어졌다 — " · " 조각마다 줄바꿈을 막아 구분점에서만 바뀌게 한다.
+              첫 조각 앞의 머리말("예측에 가장 많이 쓰인 정보:", 교수님 2026-10-08 — 숫자가 무엇의 몫인지)은 큰 글씨로 붙이면
+              세 줄이 되므로 위에 작은 줄로 따로 둔다(.h-pre). 콜론은 화면에서만 숨기고 낭독에는 남긴다 */}
           <h3 id="waffle-h" className="display">
             {/* 구분점과 그 앞뒤 공백은 조각 밖에 둬야 그 자리에서 줄이 바뀐다 */}
-            {t('features.heading').split(' · ').map((part, i) => (
-              <Fragment key={i}>{i > 0 && ' · '}<span className="nowrap">{part}</span></Fragment>
-            ))}
+            {t('features.heading').split(' · ').map((part, i) => {
+              const m = i === 0 ? /^(.*[:：]\s*)(.+)$/.exec(part) : null;
+              return (
+                <Fragment key={i}>{i > 0 && ' · '}{m && <span className="h-pre">{m[1].replace(/[:：]\s*$/, '')}<span className="sr-only">:</span></span>}<span className="nowrap">{m ? m[2] : part}</span></Fragment>
+              );
+            })}
           </h3>
           <ul className="sr-only">
             {groups.map((g) => <li key={g.id}>{g.name} · {formatValue(g.gain, 'fixed1', locale)}% · {g.features.join(', ')}</li>)}
