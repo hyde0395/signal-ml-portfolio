@@ -26,6 +26,7 @@ paths:
 - 새 수치는 `scripts/export_facts.py`가 데이터에서 계산해 넣는다(손으로 적지 않음)
 - `charts.validation.body3`의 "다섯 번 / five times / 五回"는 폴드 수(`scripts/export_charts.py` `N_FOLDS`)와 손으로 맞춘 글자다(숫자 금지 규칙 때문에 글자로 씀)
 - 수치 원본·주의점은 `.claude/rules/airfare-facts.md`
+- **문구에 새 글자가 생기면 `npm run fonts`로 글꼴 서브셋을 다시 만들어 함께 커밋한다**(2026-10-08) — 본문·일본어 글꼴은 사이트에 나오는 글자만 담는다. 빠지면 `tests/unit/font-subset.test.ts`가 알려 준다(`.claude/rules/performance.md`)
 
 ## 문구 톤 (사용자 피드백)
 - 슬로건·광고 같은 문장은 "오글거린다"고 싫어한다. 꾸밈 없이 사실만, 담백하게
