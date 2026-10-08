@@ -104,9 +104,6 @@
     "about": {
       "heading": "소개",
       "education": "수원대학교 컴퓨터소프트웨어학과 · {profile.graduation|month} 졸업 예정",
-      "body1": "한·일 항공권 가격을 매일 자동으로 모으고, 그 데이터로 가격 예측 모델을 만들었습니다.",
-      "body2": "점수보다 평가 방식이 맞는지를 먼저 확인했고, 그 과정에서 부풀려진 R²를 두 번 바로잡았습니다.",
-      "body3": "예측값과 함께 어느 범위까지 믿을 수 있는지도 보여 주도록 만들었습니다.",
       "skillsHeading": "핵심 역량",
       "skills": {
         "collection": "수집 자동화 — GitHub Actions가 매일 가격을 수집하고 CSV를 자동 커밋",

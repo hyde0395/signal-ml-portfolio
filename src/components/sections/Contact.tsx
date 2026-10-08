@@ -89,9 +89,7 @@ export function Contact({ locale }: { locale: Locale }) {
         <h3>{t('contact.about.heading')}</h3>
         <p className="mono about-role">{t('contact.role')}</p>
         <p className="muted">{t('contact.about.education')}</p>
-        <p>{t('contact.about.body1')}</p>
-        <p>{t('contact.about.body2')}</p>
-        <p>{t('contact.about.body3')}</p>
+        {/* 소개 본문 세 문장은 ①·⑤와 아래 핵심 역량이 이미 하는 말이라 뺐다 — 신원 한 줄 + 역량만(2026-10-07 결정) */}
         <h4>{t('contact.about.skillsHeading')}</h4>
         <ul className="skills">{SKILLS.map((s) => <li key={s}>{t(`contact.about.skills.${s}`)}</li>)}</ul>
       </div>

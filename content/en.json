@@ -104,9 +104,6 @@
     "about": {
       "heading": "About",
       "education": "B.S. in Computer Software, The University of Suwon · Expected {profile.graduation|month}",
-      "body1": "I automated daily collection of Korea–Japan airfare prices and built a price forecasting model from that data.",
-      "body2": "I checked whether the evaluation method was right before trusting the score, and in the process corrected an inflated R² twice.",
-      "body3": "Alongside each prediction, it also shows the range that can be trusted.",
       "skillsHeading": "Core skills",
       "skills": {
         "collection": "Collection automation — GitHub Actions collects prices daily and auto-commits the CSV",
