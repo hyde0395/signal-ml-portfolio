@@ -42,8 +42,9 @@ const VALIDATION_BLOCKS: Block[] = [
   // 판 바로 뒤 카드: 운영 기준 대표값을 크게, 다른 두 방식은 작은 참고 표로(설계 2026-10-08 §2). 뒤에 점 없음(blank)
   { kind: 'table', id: 'validationTable', scene: 'blank', code: 'validation' },
   { kind: 'stage', id: 'band', tag: 'CHART 04', chart: 'chartCloud', code: 'interval', paras: 3, axis: true },
-  // 한계: 뒤에 점 없음(blank) — 지형 점이 문장 끝과 겹쳤다. 글만으로는 휑해 기준선 대 모델 평균 오차를 큰 숫자로(사용자 2026-10-08, 시안 A)
-  { kind: 'figures', figs: 'limits', id: 'limits', tag: 'LIMITS', scene: 'blank', code: 'limits', paras: 2 },
+  // 한계: 뒤에 점 없음(blank) — 지형 점이 문장 끝과 겹쳤다. 글만으로는 휑해 기준선 대 모델 평균 오차를 큰 숫자로(사용자 2026-10-08, 시안 A).
+  // "다음 단계" 문단은 맥락 없이 짧아 뜻이 안 읽혀 뺐다(사용자 2026-10-08)
+  { kind: 'figures', figs: 'limits', id: 'limits', tag: 'LIMITS', scene: 'blank', code: 'limits', paras: 1 },
 ];
 
 type ChartSectionProps = {

@@ -300,7 +300,6 @@
     "limits": {
       "heading": "直前の価格をそのまま使う方法より誤差が{model.baselineGap.mae}ウォン({model.baselineGap.pct|fixed1}%)小さいだけ",
       "body1": "推薦の{model.reco.buyNow}%が「今すぐ購入」です。実際の価格を追跡すると、出発から二か月以内では待つと平均的に損をしており、モデルも同じ方向を示していました。",
-      "body2": "次のステップは、同じ便の直近観測価格を特徴量として追加し、基準線を上回ることです。",
       "baseLabel": "単純なベースライン",
       "baseNote": "同じ便の直前の価格をそのまま",
       "modelLabel": "モデル",
