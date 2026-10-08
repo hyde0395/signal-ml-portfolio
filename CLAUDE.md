@@ -38,7 +38,7 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 운영 https://signal-ml.vercel.app (아직 `noindex`) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개, main = 운영, PR = Vercel 미리보기) · CI: 타입 검사 → 단위 테스트 → 빌드 → 용량 검사 → e2e(desktop·mobile, axe).
 
 - **병합·배포된 것**: 계획 1~8-1, 9-2·9-3, 정보 전달 2, 점 위계·배경 밀도, 교수님 피드백 2(PR #1~#33). 계획서 `docs/superpowers/plans/`, 설계 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점), PR별 내용은 `git log`·GitHub
-- **진행 중**: 브랜치 `feat/contact-trim`(PR #34 예정) — 아래 다음 할 일 2·3(연락처 소개 본문 삭제 + 겹치는 문장만 덜어내기)
+- **진행 중**: PR #34(`feat/contact-trim`, 사용자 미리보기 확인 대기) — 아래 다음 할 일 2·3(연락처 소개 본문 삭제 + 겹치는 문장만 덜어내기)
 - **맥북에서 아직 안 한 것**: impeccable 엔진·훅·Playwright MCP·Figma 로그인(`new-device-setup` 6번, 맥미니는 끝)
 - **9-3 남은 확인(사용자, 운영에서)**: 머리말 230svh 스크롤 길이, ① 배경 밝기 60%·글 뒤 번짐 세기 — 맨 위부터 천천히 스크롤해 확인
 
