@@ -151,7 +151,8 @@
     "body1": "仁川と東京（成田・羽田）、大阪（関西）を結ぶ{data.routes}路線の航空券価格を、{data.collectStart|date}から{data.collectEnd|date}まで収集しました。",
     "body2": "SerpApi経由でGoogle Flightsの検索結果を取得し、GitHub Actionsが毎日実行します。元データ{data.rawRows}行のうち、エラーを除いて{data.filteredRows}行を使用しました。",
     "sparse": "出発が近いほど頻繁に集めました。一週間以内は水・金・日の出発便を毎日、一か月以内は全曜日を三日ごとに順番に、それより先は毎週日曜に隔週の金・日の出発便と祝日だけを集めました。そのため遠い区間は点がまばらです。収集ルールは初期に二度変わり、これが最後のルールです。",
-    "heading": "{data.collectMonths}か月で価格{data.rawRows}件を集めた",
+    "heading": "日韓航空券の価格{data.rawRows}件を集めた",
+    "headingSub": "仁川–東京・大阪 · 同じ便を出発最大{data.maxDtd}日前から直前まで繰り返し検索 · {data.collectMonths}か月間",
     "steps": {
       "collect": "SerpApi · Google Flights の検索結果",
       "schedule": "GitHub Actions · 毎日(遠い出発日は日曜)",
@@ -170,7 +171,7 @@
     },
     "tools": "Python · requests · tenacity · yfinance · workalendar",
     "filter": {
-      "heading": "誤って記録された価格{data.filter.removed}件を取り除いた",
+      "heading": "所要時間・時刻が合わない価格{data.filter.removed}件を取り除いた",
       "body1": "集めた{data.rawRows}行を所要時間と価格で並べました。すべて直行便なので、ほとんどが一か所に狭くまとまっています。",
       "body2": "所要時間が{data.filter.durationMax}分を超える行や価格の単位が抜けた行{data.filter.unit}件と、出発・到着時刻と所要時間が合わない行{data.filter.mismatch}件を除きました。",
       "body3": "直行便と表示されていても乗り継ぎ並みに時間がかかる行{data.filter.direct}件も除きました。ほとんどが羽田路線でした。残りは{data.filteredRows}行です。",
@@ -240,7 +241,7 @@
     },
     "curve": {
       "body1": "出発済みの{model.realizedFlights}便の価格を日次で追跡しました。出発直前（{model.bookingCurve.0.label}）は同じ便の平均より{model.bookingCurve.0.pct|signed}%高く、{model.bookingCurve.5.label}の区間が{model.bookingCurve.5.pct|signed}%で最も安くなりました。幅は約{model.curveWidth}ポイントのU字カーブです。",
-      "heading": "購入時期の影響は小さい：出発ひと月前ごろに買うと平均より{insight.curveMin|signed0}%",
+      "heading": "購入時期の影響は小さい：出発ひと月前ごろに買うと同じ便の平均より{insight.curveMin|signed0}%",
       "alt": "出発までの日数の区間ごとに、同じ便の平均に対する価格を点で積み上げた図。区間平均を結んだ線がU字を描きます。",
       "axis": "同じ便の平均比",
       "zero": "同じ便の平均",

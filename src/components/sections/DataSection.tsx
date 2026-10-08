@@ -25,6 +25,8 @@ export function DataSection({ locale }: { locale: Locale }) {
       <div className="chapter data-intro" data-scene="problem">
         <p className="eyebrow" data-flip-on-enter>{eyebrow('data')}</p>
         <h2 id="data-h" className="display" data-reveal>{t('data.heading')}</h2>
+        {/* 무슨 가격을 언제 모았는지(교수님 2026-10-08) — 제목은 "무엇을", 이 작은 줄은 "출발 며칠 전 시점에" */}
+        <p className="h-sub">{t('data.headingSub')}</p>
         <p>{t('data.body1')}</p>
         <p>{t('data.body2')}</p>
         <ol className="collect-steps">

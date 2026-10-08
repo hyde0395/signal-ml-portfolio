@@ -151,7 +151,8 @@
     "body1": "인천과 도쿄(나리타·하네다), 오사카(간사이)를 오가는 {data.routes}개 노선의 항공권 가격을 {data.collectStart|date}부터 {data.collectEnd|date}까지 모았습니다.",
     "body2": "SerpApi로 Google Flights 검색 결과를 가져오고, GitHub Actions가 매일 실행합니다. 원본 {data.rawRows}행 중 오류를 걸러 {data.filteredRows}행을 썼습니다.",
     "sparse": "출발이 가까울수록 자주 모았습니다. 일주일 안쪽은 수·금·일 출발편을 매일, 한 달 안쪽은 모든 요일을 사흘에 한 번씩 돌아가며, 그보다 먼 출발일은 일요일마다 격주 금·일 출발편과 공휴일만 모았습니다. 그래서 먼 구간은 점이 듬성합니다. 수집 규칙은 초기에 두 번 바뀌었고, 이것이 마지막 규칙입니다.",
-    "heading": "{data.collectMonths}개월 동안 가격 {data.rawRows}개를 모았다",
+    "heading": "인천–도쿄·오사카 항공권 가격 {data.rawRows}개",
+    "headingSub": "같은 항공편을 출발 최대 {data.maxDtd}일 전부터 출발 직전까지 되풀이해 검색 · {data.collectMonths}개월간",
     "steps": {
       "collect": "SerpApi · Google Flights 검색 결과",
       "schedule": "GitHub Actions · 매일(먼 출발일은 일요일)",
@@ -170,7 +171,7 @@
     },
     "tools": "Python · requests · tenacity · yfinance · workalendar",
     "filter": {
-      "heading": "잘못 기록된 가격 {data.filter.removed}개를 걸러 냈다",
+      "heading": "소요 시간·시각이 맞지 않는 가격 {data.filter.removed}개를 걸러 냈다",
       "body1": "모은 {data.rawRows}행을 소요 시간과 가격으로 놓았습니다. 모두 직항이라 대부분 한곳에 좁게 모여 있습니다.",
       "body2": "소요 시간이 {data.filter.durationMax}분을 넘거나 가격 단위가 빠진 행 {data.filter.unit}개, 출발·도착 시각과 소요 시간이 맞지 않는 행 {data.filter.mismatch}개를 뺐습니다.",
       "body3": "직항으로 표시됐지만 경유 여정만큼 오래 걸리는 행 {data.filter.direct}개도 뺐습니다. 대부분 하네다 노선이었습니다. 남은 행은 {data.filteredRows}개입니다.",
@@ -240,7 +241,7 @@
     },
     "curve": {
       "body1": "출발이 지난 {model.realizedFlights}편의 가격을 날마다 추적했습니다. 출발 직전({model.bookingCurve.0.label})에는 같은 편 평균보다 {model.bookingCurve.0.pct|signed}% 비쌌고, {model.bookingCurve.5.label} 구간이 {model.bookingCurve.5.pct|signed}%로 가장 쌌습니다. 폭 약 {model.curveWidth}%p의 U자 곡선입니다.",
-      "heading": "구매 시점의 영향은 작다: 출발 한 달 전쯤 사면 평균보다 {insight.curveMin|signed0}%",
+      "heading": "구매 시점의 영향은 작다: 출발 한 달 전쯤 사면 같은 항공편 평균보다 {insight.curveMin|signed0}%",
       "alt": "출발까지 남은 일수 구간별로 같은 편 평균 대비 가격을 점으로 쌓은 그림. 구간 평균을 이은 선이 U자를 그립니다.",
       "axis": "같은 편 평균 대비",
       "zero": "같은 편 평균",

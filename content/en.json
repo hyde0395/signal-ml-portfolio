@@ -151,7 +151,8 @@
     "body1": "I collected airfare prices for {data.routes} routes between Incheon and Tokyo (Narita, Haneda) and Osaka (Kansai), from {data.collectStart|date} to {data.collectEnd|date}.",
     "body2": "Results come from the Google Flights search via SerpApi, run daily by GitHub Actions. Of {data.rawRows} raw rows, {data.filteredRows} remained after filtering out errors.",
     "sparse": "The closer the departure, the more often it was collected: within a week, Wednesday, Friday and Sunday departures every day; within a month, every weekday in a three-day rotation; further out, only alternate Fridays and Sundays plus holidays, once a week on Sundays. That is why the far end is sparse. The schedule changed twice early on; this is the final one.",
-    "heading": "{data.rawRows} prices in {data.collectMonths} months",
+    "heading": "{data.rawRows} airfares collected",
+    "headingSub": "Incheon to Tokyo and Osaka · the same flights searched again and again, from up to {data.maxDtd} days out until just before departure · over {data.collectMonths} months",
     "steps": {
       "collect": "SerpApi · Google Flights search results",
       "schedule": "GitHub Actions · daily (far-off dates on Sundays)",
@@ -170,7 +171,7 @@
     },
     "tools": "Python · requests · tenacity · yfinance · workalendar",
     "filter": {
-      "heading": "{data.filter.removed} misrecorded prices filtered out",
+      "heading": "{data.filter.removed} prices with impossible durations or times filtered out",
       "body1": "Here are the {data.rawRows} collected rows, placed by flight time and price. They are all nonstop flights, so most sit in one narrow cluster.",
       "body2": "I removed {data.filter.unit} rows that took longer than {data.filter.durationMax} minutes or had a missing price unit, and {data.filter.mismatch} rows whose departure and arrival times did not match the flight time.",
       "body3": "I also removed {data.filter.direct} rows marked as nonstop that took as long as a connecting itinerary. Most were on Haneda routes. {data.filteredRows} rows remain.",
@@ -240,7 +241,7 @@
     },
     "curve": {
       "body1": "I tracked prices day by day for {model.realizedFlights} flights that had already departed. Right before departure ({model.bookingCurve.0.label}), prices ran {model.bookingCurve.0.pct|signed}% above the same flight's average, while the {model.bookingCurve.5.label} window was cheapest at {model.bookingCurve.5.pct|signed}%. That's a U-shaped curve about {model.curveWidth}pp wide.",
-      "heading": "Booking time matters less: buying about a month out is {insight.curveMin|signed0}% vs. average",
+      "heading": "Booking time matters less: {insight.curveMin|signed0}% a month out vs. same-flight average",
       "alt": "Observations stacked by days-to-departure range, relative to the same flight's average. The line through the range averages forms a U.",
       "axis": "vs. same-flight average",
       "zero": "Same-flight average",
