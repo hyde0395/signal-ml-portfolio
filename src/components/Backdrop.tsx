@@ -84,6 +84,8 @@ function setMode(mode: 'on' | 'off') {
   // 그 방문 내내 이륙·전환이 안 나왔다 — TerrainScene은 이 클래스가 있을 때만 그것들을 계산한다. 그래서 그때는
   // 스크롤을 지켜보다가 맨 위로 돌아오는 순간 붙인다. 맨 위에서는 여백이 히어로 아래(화면 밖)에 끼어들 뿐이라
   // 보이는 것이 움직이지 않는다. 3D가 꺼지면(off) 감시를 바로 거둔다(위)
+  // 보통은 부트 스크립트(src/lib/boot.ts)가 3D가 켜질 기기면 첫 그리기 전에 이미 붙여 둔다 — 여기서 붙이는 것은
+  // 부트가 못 붙인 경우(캡처 모드처럼 부트 판정과 다른 길로 3D가 켜질 때)뿐이다
   if (mode !== 'on' || d.classList.contains('hero-runway')) return;
   if (window.scrollY < 10) { d.classList.add('hero-runway'); return; }
   if (runwayWatch) return;

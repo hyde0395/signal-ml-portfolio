@@ -2,6 +2,10 @@
 // 1) 로딩 화면 생략(같은 세션 재방문·움직임 줄이기·캡처 모드) → <html class="no-loader">
 // 2) 3D 판정 대기(<html data-3d="pending">) → 대체 이미지를 숨겨, 곧 3D로 바뀔 첫 화면 이미지가
 //    LCP가 되거나 받아지지 않게 한다. 움직임 줄이기면 3D를 안 쓰므로 대기 없이 이미지를 곧바로 보인다.
+// 3) 3D가 켜질 기기(WebGL 있음·메모리 2GB 초과 — three/capability.ts canRender3D와 같은 기준)면 첫 그리기 전에
+//    html.hero-runway(첫 화면 아래 60vh 여백, 머리말 230svh)를 붙인다. 3D가 켜진 뒤 붙이면 첫 화면이 88vh라
+//    휴대폰에서 이미 보이던 머리말 윗부분이 60vh 밀려 CLS가 생겼다(2026-10-08 측정 0.067). 판정이 빗나가 3D가
+//    끝내 꺼져도 클래스는 지우지 않는다 — 지우면 그때 콘텐츠가 튄다(Backdrop.tsx setMode와 같은 원칙)
 // 문자열로 넣으므로 옛 문법만 쓴다(var, function). tests/unit/boot.test.ts가 이 문자열을 그대로 실행해 본다.
 // 이 타이머는 "JS가 아예 뜨지 않음/Backdrop이 실행되지 않음"만 막는다. Backdrop은 판정하자마자 이 타이머를 지우고
 // (느린 회선에서 3D를 받는 중인데 6초 만에 off로 넘어가 이미지가 떴다가 다시 숨는 일을 막으려고) 자기 제한 시간을 따로 건다.
@@ -19,6 +23,8 @@ export const BOOT_SCRIPT = `(function (w) {
   } catch (e) { d.classList.add('no-loader'); }
   if (!reduced) {
     d.setAttribute('data-3d', 'pending');
+    var mem = w.navigator && w.navigator.deviceMemory;
+    if (w.WebGLRenderingContext && !(mem && mem <= 2)) d.classList.add('hero-runway');
     w.${PENDING_TIMER_KEY} = w.setTimeout(function () { if (d.getAttribute('data-3d') === 'pending') d.setAttribute('data-3d', 'off'); }, ${PENDING_TIMEOUT_MS});
   }
 })(window);`;

@@ -20,7 +20,7 @@ test.describe('3D 켜짐', () => {
 
   // 첫 화면 → ① 전환(계획 6-5 Task 4): 머리말(#intro)이 화면 가운데일 때 장면이 전환 도중이고,
   // 위로 되돌리면 거꾸로 0(공항)으로 돌아간다. 진행도는 TerrainScene이 html data-handoff로 적는다
-  // (hero-runway는 첫 프레임 뒤에 붙어 첫 스크롤 전에는 값이 없을 수 있다 — 그때도 장면은 공항 그대로)
+  // (hero-runway는 부트 스크립트가 첫 그리기 전에 붙인다 — src/lib/boot.ts)
   test('머리말을 지나는 동안 공항 → 지형 전환 도중이고, 되돌리면 거꾸로 간다', async ({ page }) => {
     test.setTimeout(60_000);
     // 장면은 스크롤을 최대 속도(plane.ts PLANE.maxRate, 초당 0.28)로 따라가 끝까지 몇 초 걸린다. 소프트웨어 렌더러
@@ -84,36 +84,31 @@ test.describe('3D 켜짐', () => {
   });
 });
 
-// 느린 회선 등으로 3D가 늦게 켜질 때 이미 #project까지 스크롤해 내려온 상태라면(맨 위가 아니면)
-// html.hero-runway를 붙이지 않는다 — 이미 지나온 화면 중간에 여백이 새로 끼어들어 내용이 튀는 것을 막는다
-test('#project로 바로 들어오면(이미 스크롤된 채 3D 켜짐) 여백 클래스가 안 붙는다', async ({ page }) => {
+// 여백 클래스는 부트 스크립트가 첫 그리기 전에 붙이므로(src/lib/boot.ts), #project로 바로 들어와도 3D가 켜지는 순간
+// 화면 중간에 여백이 끼어들지 않는다 — #project 위치가 3D 판정 전후로 그대로여야 한다
+test('#project로 바로 들어와도 3D가 켜질 때 #project 위치가 그대로다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/#project');
+  const before = await page.locator('#project').evaluate((n) => n.getBoundingClientRect().top + window.scrollY);
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
-  test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 꺼진 환경');
-  await expect(page.locator('html')).not.toHaveClass(/hero-runway/);
+  const after = await page.locator('#project').evaluate((n) => n.getBoundingClientRect().top + window.scrollY);
+  expect(Math.abs(after - before)).toBeLessThanOrEqual(1);
 });
 
-// 3D가 켜질 때 맨 위가 아니었더라도(로딩 중 스크롤·새로고침이 스크롤 위치를 되살림) 나중에 맨 위로 돌아오면
-// 그때 여백 클래스가 붙어 이륙·전환이 다시 재생된다(Backdrop.tsx setMode). 맨 위에서는 히어로 아래에 여백이
-// 끼어들어도 보이는 것이 움직이지 않는다 — 첫 화면 제목 위치가 그대로인지도 본다
-test('맨 위가 아닐 때 3D가 켜져도, 맨 위로 돌아오면 여백 클래스가 붙는다', async ({ page }) => {
+// 맨 위가 아닐 때(로딩 중 스크롤·새로고침이 위치를 되살림) 3D가 켜져도 여백 클래스는 처음부터 있다 — 맨 위로
+// 돌아오면 첫 화면 제목이 화면 안이고, 스크롤로 전환이 계산된다(data-handoff)
+test('#project에서 3D가 켜져도 맨 위로 돌아오면 전환이 계산된다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/#project');
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
   test.skip((await page.locator('html').getAttribute('data-3d')) !== 'on', '3D가 꺼진 환경');
-  await expect(page.locator('html')).not.toHaveClass(/hero-runway/);
-  await page.evaluate(() => window.scrollTo(0, 0));
-  // 병렬 실행의 소프트웨어 렌더러에서는 프레임 감시가 그사이 3D를 꺼 버릴 수 있다 — 꺼지면 여백을 새로 붙이지 않는 게 맞으므로 건너뛴다
   const html = page.locator('html');
-  await expect.poll(async () => (await html.getAttribute('data-3d')) !== 'on' || /hero-runway/.test((await html.getAttribute('class')) ?? '')).toBe(true);
-  test.skip((await html.getAttribute('data-3d')) !== 'on', '도중에 3D가 꺼짐(프레임 저하)');
   await expect(html).toHaveClass(/hero-runway/);
+  await page.evaluate(() => window.scrollTo(0, 0));
   const title = await page.locator('.hero-title').boundingBox();
   expect(title!.y).toBeGreaterThanOrEqual(0);
-  // 여백이 붙었으니 스크롤로 전환이 계산된다(data-handoff)
   await page.locator('#intro').evaluate((n) => n.scrollIntoView({ block: 'center' }));
-  await expect.poll(() => page.locator('html').getAttribute('data-handoff')).not.toBeNull();
+  await expect.poll(async () => (await html.getAttribute('data-3d')) !== 'on' || (await html.getAttribute('data-handoff')) !== null).toBe(true);
 });
 
 test('3D가 켜져도 첫 화면 제목 위치가 그대로다(여백은 화면 밖)', async ({ page }) => {
@@ -123,6 +118,22 @@ test('3D가 켜져도 첫 화면 제목 위치가 그대로다(여백은 화면 
   await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
   const after = await page.locator('.hero-title').boundingBox();
   expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1);
+});
+
+// 2026-10-08 측정: 휴대폰(첫 화면 88vh)에서 3D가 켜진 뒤 여백이 붙어 머리말이 밀려 CLS 0.067이었다
+test('휴대폰 화면에서 3D가 켜져도 레이아웃 이동이 없다(CLS 0)', async ({ page }) => {
+  await page.setViewportSize({ width: 412, height: 823 });
+  await page.addInitScript(() => {
+    const w = window as Window & { __cls?: number };
+    w.__cls = 0;
+    new PerformanceObserver((l) => {
+      for (const e of l.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) if (!e.hadRecentInput) w.__cls! += e.value;
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-3d', /^(on|off)$/, { timeout: 20_000 });
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => (window as Window & { __cls?: number }).__cls)).toBeLessThan(0.001);
 });
 
 test.describe('움직임 줄이기(3D 꺼짐)', () => {

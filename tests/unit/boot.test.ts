@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { BOOT_SCRIPT, PENDING_TIMEOUT_MS, PENDING_TIMER_KEY } from '@/lib/boot';
 
-function fakeWindow({ reduced = false, search = '', visited = false, storageThrows = false } = {}) {
+function fakeWindow({ reduced = false, search = '', visited = false, storageThrows = false, webgl = true, deviceMemory = undefined as number | undefined } = {}) {
   const attrs = new Map<string, string>();
   const classes = new Set<string>();
   const store = new Map<string, string>(visited ? [['signal.loaded', '1']] : []);
@@ -20,6 +20,8 @@ function fakeWindow({ reduced = false, search = '', visited = false, storageThro
       setItem: (k: string, v: string) => { store.set(k, v); },
     },
     setTimeout: (fn: () => void, ms: number) => { expect(ms).toBe(PENDING_TIMEOUT_MS); timers.push(fn); return timers.length; },
+    navigator: { deviceMemory },
+    ...(webgl ? { WebGLRenderingContext: function WebGLRenderingContext() {} } : {}),
   };
   new Function('window', BOOT_SCRIPT)(win);
   return { win, attrs, classes, store, runTimers: () => timers.forEach((f) => f()) };
@@ -62,5 +64,18 @@ describe('BOOT_SCRIPT', () => {
     const w = fakeWindow({ storageThrows: true });
     expect(w.classes.has('no-loader')).toBe(true);
     expect(w.attrs.get('data-3d')).toBe('pending');
+  });
+  it('3D가 켜질 기기면 첫 그리기 전에 hero-runway(첫 화면 아래 여백)를 붙인다 — 3D가 켜진 뒤 붙이면 휴대폰에서 보이던 머리말이 밀린다(CLS)', () => {
+    expect(fakeWindow().classes.has('hero-runway')).toBe(true);
+  });
+  it('WebGL이 없으면 여백을 붙이지 않는다(3D가 안 켜진다)', () => {
+    expect(fakeWindow({ webgl: false }).classes.has('hero-runway')).toBe(false);
+  });
+  it('메모리 2GB 이하면 여백을 붙이지 않는다(canRender3D와 같은 기준)', () => {
+    expect(fakeWindow({ deviceMemory: 2 }).classes.has('hero-runway')).toBe(false);
+    expect(fakeWindow({ deviceMemory: 4 }).classes.has('hero-runway')).toBe(true);
+  });
+  it('움직임 줄이기면 여백을 붙이지 않는다', () => {
+    expect(fakeWindow({ reduced: true }).classes.has('hero-runway')).toBe(false);
   });
 });
