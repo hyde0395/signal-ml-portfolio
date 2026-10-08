@@ -34,7 +34,7 @@ const FINDINGS_BLOCKS: Block[] = [
 
 const VALIDATION_BLOCKS: Block[] = [
   // 차트 3: 아령 판은 "눈이 여러 번 간다"(교수님 2026-10-08)고 해서 큰 숫자 두 장으로(설계 2026-10-08 §1). 뒤에 점 없음(blank)
-  { kind: 'figures', figs: 'r2', id: 'bubble', tag: 'CHART 03', scene: 'blank', code: 'bubble', paras: 3 },
+  { kind: 'figures', figs: 'r2', id: 'bubble', tag: 'CHART 03', scene: 'blank', code: 'bubble', paras: 2 },
   // 세 평가 방식이 데이터를 나누는 점 그림(계획 8-1) — TSS 칸은 폴드가 저절로 넘어가고 마지막에서 머문 뒤 반복한다(설계 2026-10-07 §5).
   // 판 위 수치는 점수판(정보 전달 2 §5)
   { kind: 'stage', id: 'validation', chart: 'chartSplit', code: 'validation', paras: 3, axis: true,

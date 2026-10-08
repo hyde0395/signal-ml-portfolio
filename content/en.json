@@ -146,7 +146,7 @@
   },
   "data": {
     "body1": "I collected airfare prices for {data.routes} routes between Incheon and Tokyo (Narita, Haneda) and Osaka (Kansai), from {data.collectStart|date} to {data.collectEnd|date}.",
-    "body2": "Results come from the Google Flights search via SerpApi, run daily by GitHub Actions. Of {data.rawRows} raw rows, {data.filteredRows} remained after filtering out errors.",
+    "body2": "Results come from the Google Flights search via SerpApi, run daily by GitHub Actions.",
     "sparse": "The closer the departure, the more often it was collected: within a week, Wednesday, Friday and Sunday departures every day; within a month, every weekday in a three-day rotation; further out, only alternate Fridays and Sundays plus holidays, once a week on Sundays. That is why the far end is sparse. The schedule changed twice early on; this is the final one.",
     "heading": "{data.rawRows} airfares collected",
     "headingSub": "Incheon to Tokyo and Osaka · the same flights searched again and again, from up to {data.maxDtd} days out until just before departure · over {data.collectMonths} months",
@@ -186,7 +186,6 @@
       "step1": "Incheon→Narita LCC fares, collected for each departure date. Even flights leaving on the same day spread out depending on when they were bought.",
       "step2": "For each route, NeuralProphet learns how the average fare moves across departure dates (trend and weekly cycle), and scaling it by each cabin class's price level gives a base price.",
       "step3": "XGBoost then uses {model.featureCount} features to learn how far the actual fare sits from that base on a log scale; adding the two gives the prediction.",
-      "body2": "The XGBoost settings are the best of {model.optunaTrials} Optuna trials on time-ordered validation. Separate lower and upper quantile models trained on the same residual give the prediction interval, and SHAP splits each prediction into per-feature contributions.",
       "tools": "Optuna picks the settings, quantile models give the interval, and SHAP splits out each feature's contribution.",
       "flow": "Base price (NeuralProphet per route × cabin level) + gap from base (XGBoost, log scale) = prediction",
       "axis": "vs. route-and-class average",
@@ -228,7 +227,7 @@
   },
   "charts": {
     "depart": {
-      "body1": "What moves prices more is when you fly, not when you buy. Each dot is one departure date; the higher it sits, the pricier it is than the route-and-class average. Averages by weekday are shown alongside. Dates around holidays (amber) and Sunday departures are the most expensive.",
+      "body1": "Each dot is one departure date; the higher it sits, the pricier it is than the route-and-class average. Averages by weekday are shown alongside. Dates around holidays (amber) and Sunday departures are the most expensive.",
       "heading": "Departure date matters more: New Year flights {insight.holidayPeak.pct|signed0}% above average",
       "alt": "Dot chart of price by departure date: departure dates across, price versus the route-and-class average up the side, with weekday averages alongside. Dates around Christmas, New Year's Day and Seollal rise the highest; among weekdays, Sunday is the most expensive.",
       "axis": "vs. average",
@@ -248,9 +247,8 @@
     },
     "bubble": {
       "heading": "Bad data inflated accuracy (R²) — twice",
-      "body1": "The first R² of {model.bubble.firstR2} I got was inflated by high-priced rows mismatched on the Haneda route. Filtering those rows out brought R² down to {model.bubble.firstR2After}, while MAE barely changed.",
-      "body2": "The same thing happened again: I found and removed {data.removedImplausible} rows labeled nonstop but actually connecting flights. MAE barely changed, from ₩{model.bubble.maeBefore} to ₩{model.bubble.maeAfter}, while R² alone dropped from {model.bubble.r2Before} to {model.bubble.r2After}. Those rows made up {model.bubble.denomShare}% of the R² denominator.",
-      "body3": "So I don't look at R² alone — I check it together with MAE and data integrity. Because the filter conditions differ, I don't compare this R² directly with earlier ones.",
+      "body1": "The rows removed in the second fix made up {model.bubble.denomShare}% of the R² denominator.",
+      "body2": "So I don't look at R² alone — I check it together with MAE and data integrity. Because the filter conditions differ, I don't compare this R² directly with earlier ones.",
       "row1": "First fix",
       "row1Note": "Mismatched high fares on Haneda",
       "row2": "Second fix",
@@ -286,7 +284,7 @@
     "band": {
       "heading": "{model.interval.coverage}% of actual prices fell inside the predicted range",
       "body1": "Instead of a single price, I also output a {model.interval.level}% prediction interval.",
-      "body2": "A fixed interval's actual coverage dropped to {model.interval.driftLow}% on more recent data. I adjusted the interval width to account for the shifting distribution, reaching {model.interval.coverage}% coverage on the most recent window.",
+      "body2": "A fixed interval's actual coverage dropped to {model.interval.driftLow}% on more recent data. I adjusted the interval width to account for the shifting distribution.",
       "body3": "The dots in the cloud are spread inside the {model.interval.level}% prediction interval computed on the reference date for Incheon→Narita LCC. The bright dot in the middle is the predicted price; the sparser the edge, the less likely that price. Other routes are in the demo below.",
       "alt": "Predicted price and prediction interval per departure date drawn as a dot cloud. The bright dot in the middle is the predicted price; the wider the interval on a date, the more widely its dots spread.",
       "axis": "Predicted price (KRW)",
