@@ -4,7 +4,7 @@ import { runwayPhases } from './plane';
 import { SIGNAL } from './signal';
 
 export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'chartFilter' | 'model' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
-  | 'chartSplit' | 'blank' | 'chartCloud' | 'limits' | 'demo' | 'contact';
+  | 'chartSplit' | 'blank' | 'chartCloud' | 'demo' | 'contact';
 
 export type SceneState = {
   camera: [number, number, number];
@@ -75,7 +75,7 @@ export const SCENES: Record<SceneKey, SceneState> = {
   // ③·⑤ 머리(설계 2026-09-29 이야기 흐름 §3.4, 계획 7-2에서 자리 옮김, 2026-09-30 섹션 전체 → 머리만): 제목 자리의 장면 —
   // 장면이 없는 틈이면 3D가 마지막 차트 배치에 멈춰 글 위에 남았다. 섹션 전체에 두면 와플 아래 여백에서도 켜져 ③ → ④ 사이에
   // 점이 지형을 한 번 거쳐 갔다.
-  // 가격 지형을 조용히 보여 준다. limits 구도에서 잡음만 0.3으로 낮췄다: 0.5에서는 앞줄 흩어진 점이 글 끝에 걸쳐
+  // 가격 지형을 조용히 보여 준다. 옛 limits 구도에서 잡음만 0.3으로 낮췄다: 0.5에서는 앞줄 흩어진 점이 글 끝에 걸쳐
   // 지저분했다(실제 GPU 눈 확인, 2026-09-30)
   model: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.3 },
   // ③ 모델 구조(계획 7-2): 점이 관측 → NeuralProphet 기준 선 → 잔차로 모인다
@@ -86,10 +86,9 @@ export const SCENES: Record<SceneKey, SceneState> = {
   // ⑤ 검증 설계(계획 8-1): 점이 수집일 × 출발일로 모이고 평가 방식마다 학습·평가 색이 바뀐다
   chartSplit: { ...base, ...CHART },
   // ⑤ 큰 숫자 카드(설계 2026-10-08): 가운데 정렬한 큰 숫자 뒤에는 아무것도 두지 않는다 — 호박색 점이 호박색 숫자와 섞여 보였다
-  // (사용자 2026-10-08 "배경 3D 필요 없다"). 데모와 같은 방식(장면은 두고 알파만 0), 카메라는 limits와 같다
+  // (사용자 2026-10-08 "배경 3D 필요 없다"). 데모와 같은 방식(장면은 두고 알파만 0), 카메라는 옛 limits(한계 카드 지형) 구도. 한계 카드도 같은 이유로 blank(2026-10-08)
   blank: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0, dim: 0 },
   chartCloud: { ...base, ...CHART },
-  limits: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.7 },
   // 데모(설계 2026-10-01): 가운데 정렬한 조작 화면 뒤에는 아무것도 두지 않는다 — 점을 모두 투명하게(dim 0) 한다.
   // 장면을 빼면(틈) pickScene이 앞 장면을 붙잡아 지형이 남으므로, 장면은 두고 알파만 0으로 둔다. 카메라는 연락처와
   // 같게 둬서 데모 → 연락처는 제자리에서 점이 서서히 떠오르기만 하고, ⑤ → 데모는 uDim이 감쇠로 천천히 꺼진다
@@ -107,11 +106,10 @@ const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구�
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
   blank: { camera: [0, 9, 26], target: [0, -3, 0] },
-  // ③ 섹션 바탕도 글이 아래쪽이라 limits와 같은 이유로 지형을 화면 위쪽 절반에 둔다. 옛 모델 카드(머리표 바로 아래 긴
-  // 문단)에서 limits 값(목표점 y −3)으로는 지형 앞줄이 첫 문단 위를 지나갔다(실제 GPU 390×844 p99 4.44:1, 2026-09-30) —
+  // ③ 섹션 바탕도 글이 아래쪽이라 blank와 같은 이유로 지형을 화면 위쪽 절반에 둔다. 옛 모델 카드(머리표 바로 아래 긴
+  // 문단)에서 옛 limits 값(목표점 y −3)으로는 지형 앞줄이 첫 문단 위를 지나갔다(실제 GPU 390×844 p99 4.44:1, 2026-09-30) —
   // y를 2 더 내린 값을 그대로 둔다(벡터는 그대로)
   model: { camera: [0, 7, 26], target: [0, -5, 0] },
-  limits: { camera: [0, 9, 26], target: [0, -3, 0] },
   demo: { camera: [0, 13, 30], target: [0, -3, 0] },
   contact: { camera: [0, 13, 30], target: [0, -3, 0] },
 };

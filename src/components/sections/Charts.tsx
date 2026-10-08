@@ -41,7 +41,8 @@ const VALIDATION_BLOCKS: Block[] = [
   // 판 바로 뒤 카드: 운영 기준 대표값을 크게, 다른 두 방식은 작은 참고 표로(설계 2026-10-08 §2). 뒤에 점 없음(blank)
   { kind: 'table', id: 'validationTable', scene: 'blank', code: 'validation' },
   { kind: 'stage', id: 'band', tag: 'CHART 04', chart: 'chartCloud', code: 'interval', paras: 3, axis: true },
-  { kind: 'card', id: 'limits', tag: 'LIMITS', scene: 'limits', code: 'limits', paras: 3 },
+  // 한계: 뒤에 점 없음(blank) — 지형 점이 문장 끝과 겹쳤다. 첫 문단(기준선 MAE)은 제목과 겹쳐 뺐다(사용자 2026-10-08)
+  { kind: 'card', id: 'limits', tag: 'LIMITS', scene: 'blank', code: 'limits', paras: 2 },
 ];
 
 type ChartSectionProps = {

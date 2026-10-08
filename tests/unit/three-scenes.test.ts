@@ -6,7 +6,7 @@ import { runwayPhases } from '@/three/plane';
 import { SIGNAL } from '@/three/signal';
 
 const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'chartFilter', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve',
-  'chartSplit', 'blank', 'chartCloud', 'limits', 'demo', 'contact'];
+  'chartSplit', 'blank', 'chartCloud', 'demo', 'contact'];
 const CHARTS: SceneKey[] = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud'];
 
 describe('SCENES', () => {
@@ -45,7 +45,7 @@ describe('sceneFor', () => {
     for (const k of KEYS) for (const p of [0, 0.5, 1]) expect(sceneFor(k, p, false).drop, k).toBe(0);
   });
   it('세로 화면은 카메라가 목표점에서 1.6배 멀다(차트 장면 제외)', () => {
-    const land = sceneFor('limits', 0, false), port = sceneFor('limits', 0, true);
+    const land = sceneFor('blank', 0, false), port = sceneFor('blank', 0, true);
     const dist = (s: typeof land) => Math.hypot(...s.camera.map((v, i) => v - s.target[i]));
     expect(dist(port) / dist(land)).toBeCloseTo(1.6, 5);
   });
@@ -60,7 +60,7 @@ describe('sceneFor', () => {
   // 설계 2026-09-28 §2.1: 글 뒤 판 대신 장면 구도로 대비를 지킨다 — 데스크톱은 글이 왼쪽이라 점을 오른쪽으로,
   // 세로 화면은 글이 아래라 옆으로 밀지 않는다. hero는 밤의 공항 전용 구도라 빠진다(설계 2026-09-28 §4.2).
   // about(①)도 빠진다 — 잡음 밭은 화면 좌표로 화면 전체를 덮고, U자는 셰이더가 글 반대쪽에 놓는다(설계 2026-10-01 §3)
-  const TEXT_SIDE: SceneKey[] = ['model', 'blank', 'limits', 'demo', 'contact'];
+  const TEXT_SIDE: SceneKey[] = ['model', 'blank', 'demo', 'contact'];
   it('글 쪽 장면은 데스크톱에서 목표점이 왼쪽(x −5 이하), 세로 화면에서는 가운데', () => {
     // 지금은 이 목록의 모든 장면이 정확히 −5다(hero는 밤의 공항 전용 구도라 빠져 있다, 위 주석·scenes.ts
     // AIRPORT_CAM 참고). "−5 이하"로 느슨하게 검사해 두는 이유는, 나중에 화소 대비 검사 실패 등으로
@@ -157,7 +157,7 @@ describe('blendScenes', () => {
       expect(m.camera[i]).toBeCloseTo((a.camera[i] + b.camera[i]) / 2, 9);
       expect(m.target[i]).toBeCloseTo((a.target[i] + b.target[i]) / 2, 9);
     }
-    expect(blendScenes(a, { ...SCENES.limits, removed: 1 }, 0.25).removed).toBeCloseTo(0.25, 9);
+    expect(blendScenes(a, { ...SCENES.blank, removed: 1 }, 0.25).removed).toBeCloseTo(0.25, 9);
   });
   it('차트 장면이 끼면 던진다', () => {
     expect(() => blendScenes(SCENES.features, b, 0.5)).toThrow();

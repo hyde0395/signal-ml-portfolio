@@ -169,8 +169,6 @@ test('3D가 켜진 상태에서 글 뒤 배경이 4.5:1 대비를 지킨다(화�
     // ③ 머리(계획 7-2): 모델 구조 판이 들어오기 전, 와플 판이 빠져나간 뒤의 자리 위에 뜬다. 모델 구조 글은 자막 띠라
     // 점이 오지 않는다(차트 2 문단과 같은 이유로 따로 재지 않는다)
     ['#features-h', 1],
-    // LIMITS(limits): 글 뒤 판이 없는 카드형 챕터의 첫 본문 문단(차트 3은 정보 전달 2에서 판이 되어 자막 띠 — 차트 2처럼 재지 않는다)
-    ['[data-scene="limits"] > p:not(.eyebrow)', 1],
   ];
   for (const [sel, alpha] of cases) {
     const { mean, p99 } = await backgroundContrast(page, sel, alpha);

@@ -299,9 +299,8 @@
     },
     "limits": {
       "heading": "Only ₩{model.baselineGap.mae} ({model.baselineGap.pct|fixed1}%) less error than reusing the last observed price",
-      "body1": "A simple baseline that just reuses the same flight's most recent observed price has an MAE of ₩{model.baselineMae}, barely different from the model's ₩{model.tss.mae}.",
-      "body2": "{model.reco.buyNow}% of recommendations are 'buy now.' Tracking actual prices showed that within two months of departure, waiting was on average a loss — and the model pointed the same way.",
-      "body3": "The next step is to beat the baseline by adding the same flight's recent observed prices as a feature."
+      "body1": "{model.reco.buyNow}% of recommendations are 'buy now.' Tracking actual prices showed that within two months of departure, waiting was on average a loss — and the model pointed the same way.",
+      "body2": "The next step is to beat the baseline by adding the same flight's recent observed prices as a feature."
     },
     "heading": "What the data showed",
     "validationHeading": "Checking the model",
