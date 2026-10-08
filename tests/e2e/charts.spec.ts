@@ -712,7 +712,8 @@ test.describe('3D 켜짐', () => {
 
   // 섹션 머리(제목) 자리는 다음 블록의 장면 — 장면이 없으면 앞 차트 배치가 제목 위에 멈추거나(① 아래 틈 처리 전에는)
   // ① 물결 줄로 되돌아갔다. ③ 와플 → ④ 제목은 지형을 거치지 않고 곧장 출발일 차트로 간다(2026-09-30)
-  test('③·④·⑤ 머리에서는 지형 → 출발일 차트 → 지형', async ({ page }) => {
+  // ⑤ 머리는 큰 숫자 카드와 같은 점 없는 장면(blank, 설계 2026-10-08)
+  test('③·④·⑤ 머리에서는 지형 → 출발일 차트 → 점 없음', async ({ page }) => {
     await center(page, '#features-h');
     await expect3D(page, 'data-active-scene', 'model', 10_000);
     await center(page, '.chart-block[data-scene="features"]');
@@ -720,7 +721,7 @@ test.describe('3D 켜짐', () => {
     await center(page, '#findings-h');
     await expect3D(page, 'data-chart', 'chartDepart', 15_000);
     await center(page, '#validation-h');
-    await expect3D(page, 'data-active-scene', 'model', 10_000);
+    await expect3D(page, 'data-active-scene', 'blank', 10_000);
     await expect(page.locator('html')).not.toHaveAttribute('data-chart', /./);
   });
 });

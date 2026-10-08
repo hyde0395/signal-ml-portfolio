@@ -123,6 +123,10 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
         </article>
       ) : b.kind === 'table' ? (
         <article key={b.id} data-scene={b.scene} className="chapter figs-chapter" aria-label={t('charts.validation.table.caption')}>
+          {/* 장면은 화면 가운데선에 걸린 블록으로 정해져, 카드가 아래에서 올라오는 동안 앞 판(검증 설계)의 점이 카드 뒤에 남았다 —
+              카드 위로 15vh 뻗은 보이지 않는 띠가 더 짧은 후보라서 그동안 blank가 이긴다(activeScene.ts). 30vh는 판 이름표가
+              아직 보이는데 점만 먼저 사라졌고, 15vh면 큰 숫자가 화면 아래로 들어올 즈음 바뀐다 */}
+          <span className="scene-reach" data-scene="blank" aria-hidden="true" />
           <ValidationTable locale={locale} />
           {link(b)}
         </article>
@@ -145,6 +149,7 @@ export const Findings = ({ locale }: { locale: Locale }) => (
 );
 
 export const Validation = ({ locale }: { locale: Locale }) => (
-  // ⑤ 머리는 조용한 지형, 첫 블록은 차트 3 큰 숫자 카드
-  <ChartSection locale={locale} id="validation" headingKey="charts.validationHeading" blocks={VALIDATION_BLOCKS} headScene="model" />
+  // ⑤ 머리도 점 없음(blank): 첫 블록이 큰 숫자 카드라, 머리가 지형이면 카드가 화면 아래에서 올라오는 동안(가운데선을 넘기 전)
+  // 카드 윗부분 뒤에 지형이 남았다(사용자 2026-10-08)
+  <ChartSection locale={locale} id="validation" headingKey="charts.validationHeading" blocks={VALIDATION_BLOCKS} headScene="blank" />
 );
