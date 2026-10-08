@@ -32,16 +32,20 @@ export function Backdrop({ dataVersion }: { dataVersion: string }) {
     // 여기까지 왔으면 JS는 살아 있다. 부트 스크립트의 판정 대기 타이머는 "JS가 안 뜬 경우"만 막으므로 지우고,
     // 3D를 받는 동안의 제한 시간은 아래에서 따로 넉넉하게 건다(src/lib/boot.ts)
     window.clearTimeout((window as unknown as Record<string, number | undefined>)[PENDING_TIMER_KEY]);
-    const env = detectEnv(window);
-    if (!canRender3D(env)) { setMode('off'); return; }
-    setCapture(parseCapture(window.location.search)); // 모르는 장면 이름은 무시(null)
     slowGuard.current = window.setTimeout(() => {
       if (document.documentElement.getAttribute('data-3d') === 'pending') onFail('timeout');
     }, SLOW_START_MS);
-    // 첫 화면 텍스트가 먼저 그려지도록 브라우저가 한가할 때 불러온다
+    // 첫 화면 텍스트가 먼저 그려지도록 브라우저가 한가할 때 판정하고 불러온다. 판정(detectEnv)은 시험용 WebGL 맥락을
+    // 하나 만들어 꽤 비싸서(CPU 4배 기준 약 26ms) 하이드레이션 작업에 붙어 있으면 긴 작업을 늘렸다(계획 2026-10-08 성능)
     const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300));
-    idle(() => setLoad(true));
-    return clearSlowGuard;
+    let alive = true;
+    idle(() => {
+      if (!alive) return;
+      if (!canRender3D(detectEnv(window))) { clearSlowGuard(); setMode('off'); return; }
+      setCapture(parseCapture(window.location.search)); // 모르는 장면 이름은 무시(null)
+      setLoad(true);
+    });
+    return () => { alive = false; clearSlowGuard(); };
   }, [onFail, clearSlowGuard]);
 
   return load ? (

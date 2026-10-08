@@ -18,35 +18,52 @@ export function lookup(obj: unknown, path: string): unknown {
   );
 }
 
+// Intl 객체는 만들 때 비싸다 — 하이드레이션 중 formatValue를 부를 때마다 새로 만들어 CPU 4배 기준 약 70ms가
+// 걸렸다(계획 2026-10-08 성능). 같은 로케일·설정이면 한 번 만든 것을 다시 쓴다
+const numberFormats = new Map<string, Intl.NumberFormat>();
+const dateFormats = new Map<string, Intl.DateTimeFormat>();
+function numberFormat(intl: string, options: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const key = `${intl}|${JSON.stringify(options)}`;
+  let f = numberFormats.get(key);
+  if (!f) { f = new Intl.NumberFormat(intl, options); numberFormats.set(key, f); }
+  return f;
+}
+function dateFormat(intl: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${intl}|${JSON.stringify(options)}`;
+  let f = dateFormats.get(key);
+  if (!f) { f = new Intl.DateTimeFormat(intl, options); dateFormats.set(key, f); }
+  return f;
+}
+
 export function formatValue(value: unknown, format: string | undefined, locale: Locale): string {
   const intl = INTL_LOCALE[locale];
   if (format === undefined) {
-    if (typeof value === 'number') return new Intl.NumberFormat(intl, { maximumFractionDigits: 3 }).format(value);
+    if (typeof value === 'number') return numberFormat(intl, { maximumFractionDigits: 3 }).format(value);
     if (typeof value === 'string') return value;
   }
   if (format === 'signed' && typeof value === 'number') {
-    return new Intl.NumberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'exceptZero' }).format(value);
+    return numberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'exceptZero' }).format(value);
   }
   // 제목 속 부호 있는 정수 %(정보 전달 2: "+71%", "−5%"). signed는 소수 한 자리라 따로 둔다
   if (format === 'signed0' && typeof value === 'number') {
-    return new Intl.NumberFormat(intl, { maximumFractionDigits: 0, signDisplay: 'exceptZero' }).format(value);
+    return numberFormat(intl, { maximumFractionDigits: 0, signDisplay: 'exceptZero' }).format(value);
   }
   if (format === 'plain' && typeof value === 'number') return String(value);
   if (format === 'fixed1' && typeof value === 'number') {
-    return new Intl.NumberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+    return numberFormat(intl, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
   }
   // 데모의 출발일: 연도 없이 월·일·요일(예: 11월 14일 (토)). 출발일 범위가 해를 넘기면
   // 호출 측(dayFormat)이 'date'로 바꾼다
   if (format === 'md' && typeof value === 'string') {
-    return new Intl.DateTimeFormat(intl, { month: 'long', day: 'numeric', weekday: 'short', timeZone: 'UTC' })
+    return dateFormat(intl, { month: 'long', day: 'numeric', weekday: 'short', timeZone: 'UTC' })
       .format(new Date(`${value}T00:00:00Z`));
   }
   if (format === 'date' && typeof value === 'string') {
-    return new Intl.DateTimeFormat(intl, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
+    return dateFormat(intl, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
       .format(new Date(`${value}T00:00:00Z`));
   }
   if (format === 'month' && typeof value === 'string') {
-    return new Intl.DateTimeFormat(intl, { year: 'numeric', month: locale === 'en' ? 'short' : 'long', timeZone: 'UTC' })
+    return dateFormat(intl, { year: 'numeric', month: locale === 'en' ? 'short' : 'long', timeZone: 'UTC' })
       .format(new Date(`${value}-01T00:00:00Z`));
   }
   throw new Error(`Cannot format ${JSON.stringify(value)} as "${format ?? 'default'}"`);
