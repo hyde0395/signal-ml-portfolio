@@ -318,8 +318,11 @@ function Precompile({ onDone }: { onDone: () => void }) {
   const camera = useThree((s) => s.camera);
   useEffect(() => {
     let alive = true;
-    gl.compileAsync(scene, camera).catch(() => undefined).finally(() => { if (alive) onDone(); });
-    return () => { alive = false; };
+    // 객체를 만드는 마운트 작업과 컴파일이 한 작업에 붙으면 그 작업이 길어진다 — 다음 작업으로 미뤄 둘로 나눈다
+    const t = window.setTimeout(() => {
+      gl.compileAsync(scene, camera).catch(() => undefined).finally(() => { if (alive) onDone(); });
+    }, 0);
+    return () => { alive = false; window.clearTimeout(t); };
   }, [gl, scene, camera, onDone]);
   return null;
 }
