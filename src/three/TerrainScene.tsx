@@ -1,8 +1,8 @@
 'use client';
 // 화면 뒤에 고정된 3D 캔버스. 데이터를 받아 점 구름을 만들고, 스크롤로 활성 장면을 정하고,
 // 프레임이 떨어지면 단계적으로 낮추다가 대체 화면으로 넘긴다(스펙 §8.3). 캡처 모드도 여기서 처리한다.
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getChart, getFocus, onChartsChange } from '@/charts/registry';
 import type { ChartEntry, ChartKey } from '@/charts/types';
 import { pickActive, readCandidates } from './activeScene';
@@ -27,6 +27,10 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   const [data, setData] = useState<{ terrain: Terrain; map: MapData } | null>(null);
   const [level, setLevel] = useState(0);        // 0 정상, 1 낮춤(DPR 1·잡음 숨김)
   const [running, setRunning] = useState(true); // 탭 숨김·연락처 섹션에서는 멈춘다
+  // 셰이더를 첫 프레임 전에 따로 컴파일한다(계획 2026-10-08 성능) — 첫 프레임이 컴파일 + 버퍼 올리기를 한 작업에서 해
+  // 메인 스레드를 오래 막았다. 끝날 때까지 프레임 루프를 멈춰 두고(frameloop 'never'), 끝나면 돌린다
+  const [compiled, setCompiled] = useState(false);
+  const onCompiled = useCallback(() => setCompiled(true), []);
   const portrait = useRef(false);
   const backdrop = useRef<HTMLDivElement>(null); // 하늘 불투명도(--sky)를 적을 자리(writeHandoff)
   const target = useRef<SceneState>(sceneFor(capture ?? 'hero', 0, false));
@@ -274,7 +278,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       <Canvas
         // 데스크톱 2 · 세로 화면 1.5 · 낮춤 단계 1(frameRate.ts maxDpr). 세로 판정은 점 구름과 같은 값(isPortrait)
         dpr={[1, maxDpr(level, isPortrait)]}
-        frameloop={running || capture ? 'always' : 'never'}
+        frameloop={(running || capture) && compiled ? 'always' : 'never'}
         // 처음 화각은 첫 장면 값(첫 화면 45°), 그 뒤는 CameraRig가 장면 값으로 옮긴다. 차트 장면은 CHART_FOV(40°)라
         // 차트 좌표 대응(three/scenes.ts CHART_DISTANCE·CHART_FOV)이 그대로 맞는다
         camera={{ fov: target.current.fov, near: 0.1, far: 200, position: target.current.camera }}
@@ -287,6 +291,7 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
         <AirportExtras target={target} instant={!!capture} portrait={isPortrait} takeoff={!!airport && airport.plane > 0} />
         <TerrainPoints cloud={cloud} target={target} slots={slots} instant={!!capture} showNoise={level === 0} airport={airport} planeStart={planeStart} portrait={isPortrait} bins={bins} />
         <CameraRig target={target} instant={!!capture} parallax={parallax} />
+        <Precompile onDone={onCompiled} />
         <FrameWatch
           enabled={!capture}
           onFirstFrame={() => {
@@ -302,6 +307,21 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
       <div className="backdrop-veil" />
     </div>
   );
+}
+
+// 장면의 모든 재질을 compileAsync로 미리 컴파일한다. KHR_parallel_shader_compile이 있으면 컴파일을 기다리는 동안
+// 메인 스레드가 놀고, 없어도(소프트웨어 렌더러) 컴파일이 첫 프레임과 다른 작업으로 떨어진다.
+// 형제(점·공항 곁가지)가 먼저 마운트돼 객체가 장면에 붙은 뒤 이 효과가 돈다(마지막 자식). 실패해도 그냥 프레임을 연다
+function Precompile({ onDone }: { onDone: () => void }) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    let alive = true;
+    gl.compileAsync(scene, camera).catch(() => undefined).finally(() => { if (alive) onDone(); });
+    return () => { alive = false; };
+  }, [gl, scene, camera, onDone]);
+  return null;
 }
 
 // 프레임 감시: 첫 프레임 알림 + 평균 fps(프레임 시간 EMA)가 30 미만인 채로 2초 이어지면 onSlow
