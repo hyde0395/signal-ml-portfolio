@@ -6,7 +6,7 @@ import { runwayPhases } from '@/three/plane';
 import { SIGNAL } from '@/three/signal';
 
 const KEYS: SceneKey[] = ['hero', 'about', 'problem', 'dataBoard', 'chartFilter', 'model', 'chartModel', 'features', 'chartDepart', 'chartCurve',
-  'chartSplit', 'validation', 'chartCloud', 'limits', 'demo', 'contact'];
+  'chartSplit', 'blank', 'chartCloud', 'limits', 'demo', 'contact'];
 const CHARTS: SceneKey[] = ['chartFilter', 'chartModel', 'features', 'chartDepart', 'chartCurve', 'chartSplit', 'chartCloud'];
 
 describe('SCENES', () => {
@@ -26,8 +26,8 @@ describe('SCENES', () => {
   });
   // 설계 2026-09-28 §2.1: 데모·연락처는 글 뒤 판이 없어 조작 화면이 읽히도록 지형을 흐리게 둔다(dataBoard와 같은 이유).
   // ①(about)은 완성된 U자와 잡음이 흐린 배경으로 남는다(설계 2026-10-01 §1)
-  const DIMMED: SceneKey[] = ['dataBoard', 'about', 'demo', 'contact'];
-  it('dataBoard·①·데모·연락처만 점을 흐리게(dim < 1) — 판 없는 화면이 읽히도록', () => {
+  const DIMMED: SceneKey[] = ['blank', 'dataBoard', 'about', 'demo', 'contact'];
+  it('dataBoard·①·⑤ 큰 숫자(blank)·데모·연락처만 점을 흐리게(dim < 1) — 판 없는 화면이 읽히도록', () => {
     for (const k of KEYS) expect(SCENES[k].dim < 1, k).toBe(DIMMED.includes(k));
   });
   it('model(③ 섹션 바탕)은 지형 장면이다(지도·제거 레이어·차트·흐림 없음) — 설계 2026-09-29 이야기 흐름 §3.4, 계획 7-2', () => {
@@ -60,7 +60,7 @@ describe('sceneFor', () => {
   // 설계 2026-09-28 §2.1: 글 뒤 판 대신 장면 구도로 대비를 지킨다 — 데스크톱은 글이 왼쪽이라 점을 오른쪽으로,
   // 세로 화면은 글이 아래라 옆으로 밀지 않는다. hero는 밤의 공항 전용 구도라 빠진다(설계 2026-09-28 §4.2).
   // about(①)도 빠진다 — 잡음 밭은 화면 좌표로 화면 전체를 덮고, U자는 셰이더가 글 반대쪽에 놓는다(설계 2026-10-01 §3)
-  const TEXT_SIDE: SceneKey[] = ['model', 'validation', 'limits', 'demo', 'contact'];
+  const TEXT_SIDE: SceneKey[] = ['model', 'blank', 'limits', 'demo', 'contact'];
   it('글 쪽 장면은 데스크톱에서 목표점이 왼쪽(x −5 이하), 세로 화면에서는 가운데', () => {
     // 지금은 이 목록의 모든 장면이 정확히 −5다(hero는 밤의 공항 전용 구도라 빠져 있다, 위 주석·scenes.ts
     // AIRPORT_CAM 참고). "−5 이하"로 느슨하게 검사해 두는 이유는, 나중에 화소 대비 검사 실패 등으로
@@ -69,6 +69,11 @@ describe('sceneFor', () => {
       expect(sceneFor(k, 0, false).target[0], k).toBeLessThanOrEqual(-5);
       expect(sceneFor(k, 0, true).target[0], k).toBe(0);
     }
+  });
+  // 설계 2026-10-08: ⑤ 큰 숫자 카드 뒤에는 점이 보이지 않는다
+  it('blank는 점이 모두 투명(dim 0·잡음 0)', () => {
+    expect(SCENES.blank.dim).toBe(0);
+    expect(SCENES.blank.noise).toBe(0);
   });
   it('데모·연락처는 조작 화면이 주인공이라 점을 흐리게(dim ≤ 0.5)', () => {
     expect(SCENES.demo.dim).toBeLessThanOrEqual(0.5);

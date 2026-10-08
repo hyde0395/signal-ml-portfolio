@@ -32,14 +32,14 @@ const FINDINGS_BLOCKS: Block[] = [
 ];
 
 const VALIDATION_BLOCKS: Block[] = [
-  // 차트 3: 아령 판은 "눈이 여러 번 간다"(교수님 2026-10-08)고 해서 큰 숫자 두 장으로(설계 2026-10-08 §1). 장면은 ⑤ 머리와 같은 조용한 지형
-  { kind: 'figures', id: 'bubble', tag: 'CHART 03', scene: 'model', code: 'bubble', paras: 3 },
+  // 차트 3: 아령 판은 "눈이 여러 번 간다"(교수님 2026-10-08)고 해서 큰 숫자 두 장으로(설계 2026-10-08 §1). 뒤에 점 없음(blank)
+  { kind: 'figures', id: 'bubble', tag: 'CHART 03', scene: 'blank', code: 'bubble', paras: 3 },
   // 세 평가 방식이 데이터를 나누는 점 그림(계획 8-1) — TSS 칸은 폴드가 저절로 넘어가고 마지막에서 머문 뒤 반복한다(설계 2026-10-07 §5).
   // 판 위 수치는 점수판(정보 전달 2 §5)
   { kind: 'stage', id: 'validation', chart: 'chartSplit', code: 'validation', paras: 3, axis: true,
     stages: SPLIT.stages, subs: SPLIT.subs, subMs: SPLIT.subMs, subLoopMs: SPLIT.loopHoldMs },
-  // 판 바로 뒤 카드: 운영 기준 대표값을 크게, 다른 두 방식은 작은 참고 표로(설계 2026-10-08 §2). 장면은 옛 카드의 validation(지형을 위에서) 그대로
-  { kind: 'table', id: 'validationTable', scene: 'validation', code: 'validation' },
+  // 판 바로 뒤 카드: 운영 기준 대표값을 크게, 다른 두 방식은 작은 참고 표로(설계 2026-10-08 §2). 뒤에 점 없음(blank)
+  { kind: 'table', id: 'validationTable', scene: 'blank', code: 'validation' },
   { kind: 'stage', id: 'band', tag: 'CHART 04', chart: 'chartCloud', code: 'interval', paras: 3, axis: true },
   { kind: 'card', id: 'limits', tag: 'LIMITS', scene: 'limits', code: 'limits', paras: 3 },
 ];
@@ -122,12 +122,12 @@ function ChartSection({ locale, id, headingKey, blocks, headScene }: ChartSectio
           </div>
         </article>
       ) : b.kind === 'table' ? (
-        <article key={b.id} data-scene={b.scene} className="chapter" aria-label={t('charts.validation.table.caption')}>
+        <article key={b.id} data-scene={b.scene} className="chapter figs-chapter" aria-label={t('charts.validation.table.caption')}>
           <ValidationTable locale={locale} />
           {link(b)}
         </article>
       ) : (
-        <article key={b.id} data-scene={b.scene} className="chapter" aria-labelledby={`chart-${b.id}`}>
+        <article key={b.id} data-scene={b.scene} className={b.kind === 'figures' ? 'chapter figs-chapter' : 'chapter'} aria-labelledby={`chart-${b.id}`}>
           {b.tag && <p className="eyebrow" data-flip-on-enter>{b.tag}</p>}
           <h3 id={`chart-${b.id}`}>{t(`charts.${b.id}.heading`)}</h3>
           {b.kind === 'figures' && <R2Figures locale={locale} />}

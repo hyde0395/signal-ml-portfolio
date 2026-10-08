@@ -4,7 +4,7 @@ import { runwayPhases } from './plane';
 import { SIGNAL } from './signal';
 
 export type SceneKey = 'hero' | 'about' | 'problem' | 'dataBoard' | 'chartFilter' | 'model' | 'chartModel' | 'features' | 'chartDepart' | 'chartCurve'
-  | 'chartSplit' | 'validation' | 'chartCloud' | 'limits' | 'demo' | 'contact';
+  | 'chartSplit' | 'blank' | 'chartCloud' | 'limits' | 'demo' | 'contact';
 
 export type SceneState = {
   camera: [number, number, number];
@@ -85,7 +85,9 @@ export const SCENES: Record<SceneKey, SceneState> = {
   chartCurve: { ...base, ...CHART },
   // ⑤ 검증 설계(계획 8-1): 점이 수집일 × 출발일로 모이고 평가 방식마다 학습·평가 색이 바뀐다
   chartSplit: { ...base, ...CHART },
-  validation: { ...base, camera: [-5, 22, 0.1], target: [-5, 0, 0], noise: 0.5 },
+  // ⑤ 큰 숫자 카드(설계 2026-10-08): 가운데 정렬한 큰 숫자 뒤에는 아무것도 두지 않는다 — 호박색 점이 호박색 숫자와 섞여 보였다
+  // (사용자 2026-10-08 "배경 3D 필요 없다"). 데모와 같은 방식(장면은 두고 알파만 0), 카메라는 limits와 같다
+  blank: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0, dim: 0 },
   chartCloud: { ...base, ...CHART },
   limits: { ...base, camera: [-5, 12, 26], target: [-5, 0, 0], noise: 0.7 },
   // 데모(설계 2026-10-01): 가운데 정렬한 조작 화면 뒤에는 아무것도 두지 않는다 — 점을 모두 투명하게(dim 0) 한다.
@@ -102,11 +104,9 @@ const PORTRAIT_DISTANCE = 1.6; // 세로 화면은 시야가 좁아 같은 구�
 // 세로 화면은 글이 아래쪽에 있어 옆으로 밀 필요가 없고 그대로 밀면 지형·지도 절반이 잘린다.
 // 대신(휴대폰은 글이 화면 아래쪽) 글 쪽 장면은 카메라·목표점의 y를 함께 내려 지형이 화면 위쪽
 // 절반에서 보이게 한다 — 카메라−목표점 벡터(거리·각도)는 그대로라 세로 화면 1.6배 검사에 안 걸린다.
-// validation만 예외: 카메라가 거의 수직으로 내려다보므로(camera [0,22,0.1] → 거의 z=0.1, target z=0)
-// y를 내려도 점이 화면에서 옆으로 옮겨지지 않고 그냥 살짝 확대(약 9%)될 뿐이라 y 이동을 빼고 원래 값을 쓴다
 const PORTRAIT_OVERRIDE: Partial<Record<SceneKey, { camera: SceneState['camera']; target: SceneState['target'] }>> = {
   problem: { camera: [0, 16, 7], target: [0, 0, 0] },
-  validation: { camera: [0, 22, 0.1], target: [0, 0, 0] },
+  blank: { camera: [0, 9, 26], target: [0, -3, 0] },
   // ③ 섹션 바탕도 글이 아래쪽이라 limits와 같은 이유로 지형을 화면 위쪽 절반에 둔다. 옛 모델 카드(머리표 바로 아래 긴
   // 문단)에서 limits 값(목표점 y −3)으로는 지형 앞줄이 첫 문단 위를 지나갔다(실제 GPU 390×844 p99 4.44:1, 2026-09-30) —
   // y를 2 더 내린 값을 그대로 둔다(벡터는 그대로)

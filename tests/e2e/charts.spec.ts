@@ -367,7 +367,7 @@ test.describe('3D 꺼짐(움직임 줄이기)', () => {
     const start = Number(await slider.getAttribute('aria-valuenow'));
     expect(start).toBeGreaterThanOrEqual(0);
     // 앞 블록(검증 표)의 코드 링크에서 Tab 한 번 — 문서 순서상 바로 다음이 차트 4 조작 층이다
-    await page.locator('[data-scene="validation"] a.code-link').focus();
+    await page.locator('.figs-chapter:has(.figs-perf) a.code-link').focus();
     await page.keyboard.press('Tab');
     await expect(slider).toBeFocused();
     const max = Number(await slider.getAttribute('aria-valuemax'));

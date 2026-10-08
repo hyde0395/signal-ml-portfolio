@@ -344,7 +344,7 @@ html[data-3d="on"] .chapter { min-height: 100vh; display: flex; flex-direction: 
 /* .data-intro는 여기서 빼야 한다 — :is() 안에 #project가 있어 이 규칙의 명시도가 (1,2,2)로,
    화면 1 전용 420px 규칙(.data-intro > …, 1,2,1)보다 세다. 빼지 않으면 이 560px가 항상 이긴다 */
 /* #demo는 가운데 축이라 이 왼쪽 정렬용 560px 대신 데모 규칙의 줄 너비(설계 2026-10-01)를 3D 켜짐·꺼짐 모두에 쓴다 */
-html[data-3d="on"] :is(.chapter:not(.data-intro), #project, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .project-copy, .figs) { max-width: 560px; }
+html[data-3d="on"] :is(.chapter:not(.data-intro, .figs-chapter), #project, #contact) > :is(p, h2, h3, ul, ol, table, a, div, dl):not(.pass, .project-copy, .figs) { max-width: 560px; }
 /* 글 상자는 글 크기만큼만 커진다(옛 .text-scrim의 width: fit-content를 그대로 물려받는다). 판(배경)을
    없앴어도 이 폭 제한은 남아야 한다 — 없으면 상자가 부모(챕터) 폭 전체로 늘어나고, 그 안의 자손 중 자기
    max-width가 없는 글자(예: .hero-keywords)가 그 넓은 상자를 그대로 채워, 화소 대비 검사(terrain.spec.ts)가
@@ -645,28 +645,33 @@ html.has-captions .chart-para:not(.is-on) { pointer-events: none; }
   .chart-group-pct { font-size: 1rem; }
 }
 
-/* ⑤ 큰 숫자(설계 2026-10-08): 차트 3 R² 거품 두 장(.figs-r2)과 운영 기준 대표값(.figs-perf). 3D 지형 점 위에 놓여
-   ② 수집 단계와 같은 옅은 바탕으로 대비를 지키고, 큰 숫자가 560px 줄 너비 안에서 부서지지 않게 그 제한(:not 목록)에서 빼 820px까지 */
-.figs { background: rgba(2, 4, 10, 0.72); border: 1px solid var(--line); border-radius: 12px; padding: 24px 28px; margin-block: 24px; max-width: 820px; }
-
-.figs-r2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-.fig-name { display: grid; gap: 2px; margin: 0 0 12px; }
-.fig-name span { color: var(--mute); font-size: 0.85rem; }
-.fig-big { margin: 0; font-size: clamp(2rem, 3.6vw, 2.75rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
-.fig-from { color: var(--mute); font-size: 0.7em; }
+/* ⑤ 큰 숫자(설계 2026-10-08): 차트 3 R² 거품 두 장(.figs-r2)과 운영 기준 대표값(.figs-perf). 사용자 결정(2026-10-08)으로
+   뒤에 3D 점이 없고(장면 blank) 가운데 정렬로 크게 — 바탕·테두리 없이 숫자만. 가운데 축이라 560px 왼쪽 줄 너비 규칙에서 뺀다(:not 목록) */
+.figs-chapter { text-align: center; }
+.figs-chapter > :is(p, h3, a, div) { margin-inline: auto; }
+.figs-chapter > p:not(.eyebrow) { max-width: 680px; word-break: keep-all; text-wrap: balance; }
+:lang(ja) .figs-chapter > p { word-break: normal; word-break: auto-phrase; }
+.figs-chapter > h3 { font-size: clamp(1.25rem, 2.2vw, 1.75rem); max-width: 860px; word-break: keep-all; text-wrap: balance; }
+:lang(ja) .figs-chapter > h3 { word-break: normal; word-break: auto-phrase; }
+.figs { max-width: 1040px; margin-block: 32px 40px; }
+.figs-r2 { display: grid; grid-template-columns: 1fr 1fr; gap: 48px clamp(48px, 7vw, 112px); }
+.fig-name { display: grid; gap: 2px; margin: 0 0 14px; }
+.fig-name strong { font-size: 1.1rem; }
+.fig-name span { color: var(--mute); font-size: 0.9rem; }
+.fig-big { margin: 0; font-size: clamp(2.4rem, 4.2vw, 3.75rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; white-space: nowrap; }
+.fig-from { color: var(--mute); font-size: 0.6em; }
 .fig-to { color: var(--amb); }
-.fig-sub { margin: 10px 0 0; font-size: 0.95rem; }
+.fig-sub { margin: 12px 0 0; font-size: 1rem; }
 .fig-sub .mono { color: var(--mute); margin-right: 4px; }
-.fig-lead { margin: 0 0 16px; color: var(--amb); font-size: 0.8rem; letter-spacing: 0.06em; }
+.fig-lead { margin: 0 0 24px; color: var(--amb); font-size: 0.85rem; letter-spacing: 0.06em; }
 /* 칸 폭은 숫자 길이대로(48,235원이 가장 길다) — 같은 폭(1fr)이면 "원"이 옆 칸 숫자에 붙어 보였다 */
-.perf-big { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 24px clamp(32px, 5vw, 64px); margin: 0 0 20px; }
-.perf-big > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; }
-.perf-big dd { margin: 0; font-size: clamp(2.4rem, 4.4vw, 3.75rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1; white-space: nowrap; }
-.perf-big dd small { font-size: 0.45em; margin-left: 2px; }
-.perf-big dt { margin-top: 10px; font-size: 1rem; }
-.perf-big dt small { display: block; max-width: 24ch; margin-top: 2px; color: var(--mute); font-size: 0.8rem; }
-.figs-perf .vtable { margin-top: 0; color: var(--mute); font-size: 0.85rem; }
+.perf-big { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; gap: 28px clamp(40px, 6vw, 96px); margin: 0 0 40px; }
+.perf-big > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; align-items: center; }
+.perf-big dd { margin: 0; font-size: clamp(3rem, 6.4vw, 6rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1; white-space: nowrap; }
+.perf-big dd small { font-size: 0.4em; margin-left: 2px; }
+.perf-big dt { margin-top: 12px; font-size: 1.05rem; }
+.perf-big dt small { display: block; max-width: 24ch; word-break: keep-all; text-wrap: balance; margin: 4px auto 0; color: var(--mute); font-size: 0.85rem; }
+.figs-perf .vtable { max-width: 760px; margin: 0 auto; color: var(--mute); font-size: 0.85rem; text-align: left; }
 @media (max-width: 767px) {
-  .figs { padding: 18px 16px; }
-  .figs-r2, .perf-big { grid-template-columns: 1fr; gap: 20px; }
+  .figs-r2, .perf-big { grid-template-columns: 1fr; gap: 28px; }
 }
