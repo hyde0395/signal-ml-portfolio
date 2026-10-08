@@ -29,8 +29,10 @@ paths:
 - 원칙: 연출·화질·점 개수·접근성 100·CLS 0은 그대로 두고 수치만. 측정은 `npm run lighthouse -- --runs=3`(로컬 `out/`) / `-- --runs=3 --base=https://signal-ml.vercel.app`(운영), 3회 중앙값
 - 목표: 성능 ko·en·ja ≥90, TBT ≤200ms, LCP ≤2.0s
 - 한 것: CLS(부트 여백), 글꼴 서브셋, `formatValue` Intl 재사용, 3D 판정을 한가한 때로, `compileAsync`(다음 작업), 점 구름·공항 불빛 별도 작업, `zod/mini`
-- 남은 후보: 일본어 글꼴(서브셋 210KB가 ja LCP를 늘림 — 시스템 글꼴로 바꿀지는 사용자 결정), 3D 데이터 처리 Web Worker·`scheduler.yield()`(남은 긴 작업: three 청크 실행 약 160ms·하이드레이션 약 100ms·3D 마운트 약 85ms, CPU 4배), `terrain.json` 이진화, 제거 레이어(`removed` 1,606점)·`uRemoved`·`uDrop` 정리, 대체 이미지 AVIF, DPR·저프레임 문턱(줄이기 전에 사용자와). 되돌린 것: `experimental.inlineCss`
+- 남은 후보(운영 목표 ≥90은 넘어 급하지 않다): 3D 데이터 처리 Web Worker·`scheduler.yield()`(남은 긴 작업: three 청크 실행 약 160ms·하이드레이션 약 100ms·3D 마운트 약 85ms, CPU 4배), `terrain.json` 이진화, 제거 레이어(`removed` 1,606점)·`uRemoved`·`uDrop` 정리, 대체 이미지 AVIF, DPR·저프레임 문턱(줄이기 전에 사용자와). 되돌린 것: `experimental.inlineCss`
 
-## 운영 측정 기록 (4-2 뒤, Lighthouse 모바일)
-- 성능 ko 87 · en 92 · ja 84~89, LCP 1.5 / 1.3 / 2.2~2.4s, CLS 0, TBT 350~500ms, 접근성 100
-- 배포 직후 첫 측정은 CDN이 차가워 낮게 나온다 — 한 번 더 잰다
+## 운영 측정 기록 (Lighthouse 13 모바일, `npm run lighthouse -- --runs=3 --base=https://signal-ml.vercel.app`)
+- **2026-10-08 최적화 뒤(PR #35)**: 성능 ko 93 · en 97 · ja 95, LCP 2.41 / 1.96 / 2.05s, TBT 242 / 164 / 202ms, CLS 0, 접근성 100
+- 2026-10-08 최적화 전: 성능 ko 86 · en 86 · ja 76, LCP 2.96 / 3.01 / 3.47s, TBT 376 / 296 / 398ms, CLS 0.067
+- (4-2 뒤: 성능 ko 87 · en 92 · ja 84~89, LCP 1.5 / 1.3 / 2.2~2.4s, CLS 0, TBT 350~500ms)
+- 배포 직후 첫 측정은 CDN이 차가워 낮게 나온다(각 언어 1회째) — 3회 중앙값으로 본다
