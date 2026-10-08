@@ -2,7 +2,7 @@
 // 화면 뒤에 고정된 3D 캔버스. 데이터를 받아 점 구름을 만들고, 스크롤로 활성 장면을 정하고,
 // 프레임이 떨어지면 단계적으로 낮추다가 대체 화면으로 넘긴다(스펙 §8.3). 캡처 모드도 여기서 처리한다.
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getChart, getFocus, onChartsChange } from '@/charts/registry';
 import type { ChartEntry, ChartKey } from '@/charts/types';
 import { pickActive, readCandidates } from './activeScene';
@@ -11,7 +11,7 @@ import { AirportExtras } from './AirportExtras';
 import { assignAirport } from './airportAssign';
 import { CameraRig } from './CameraRig';
 import { assignPoints, chartShiftY, pickSlot, slotBuffers } from './chartTargets';
-import { bookingBins, buildPointCloud, loadSceneData, type MapData, type Terrain } from './data';
+import { bookingBins, buildPointCloud, loadSceneData } from './data';
 import { initialFrameRate, maxDpr, stepFrameRate } from './frameRate';
 import { lookToward, PLANE, planeFollow, planePose, planeShape, runwayPhases, runwayProgress, stepPlaneClock } from './plane';
 import { SIGNAL, signalStage } from './signal';
@@ -19,12 +19,14 @@ import { CHART_DISTANCE, CHART_FOV, pickScene, sceneFor, type SceneKey, type Sce
 import { TerrainPoints, type ChartSlots } from './TerrainPoints';
 
 type Props = { dataVersion: string; onReady: () => void; onFail: (reason: string) => void; capture: SceneKey | null };
+type Built = { portrait: boolean; cloud: ReturnType<typeof buildPointCloud>; airport: ReturnType<typeof assignAirport>; bins: number[] };
+const FLAT_BINS: number[] = new Array<number>(8).fill(0);
 
 const SLOW_FPS = 30;
 const SLOW_SECONDS = 2;
 
 export default function TerrainScene({ dataVersion, onReady, onFail, capture }: Props) {
-  const [data, setData] = useState<{ terrain: Terrain; map: MapData } | null>(null);
+  const [built, setBuilt] = useState<Built | null>(null);
   const [level, setLevel] = useState(0);        // 0 정상, 1 낮춤(DPR 1·잡음 숨김)
   const [running, setRunning] = useState(true); // 탭 숨김·연락처 섹션에서는 멈춘다
   // 셰이더를 첫 프레임 전에 따로 컴파일한다(계획 2026-10-08 성능) — 첫 프레임이 컴파일 + 버퍼 올리기를 한 작업에서 해
@@ -42,32 +44,36 @@ export default function TerrainScene({ dataVersion, onReady, onFail, capture }: 
   // 마지막으로 슬롯에 써 넣은 차트 — chartState.key와 달리 지형으로 나가도 지우지 않는다(chartTargets.ts pickSlot)
   const lastWritten = useRef<{ key: ChartKey | null; variant: string; slot: 0 | 1 }>({ key: null, variant: '', slot: 0 });
 
+  // 데이터 → 점 구름 → 공항 불빛을 차례로 만든다. 한 작업(React 렌더의 useMemo)에 몰려 있으면 3D가 켜지는 순간의
+  // 긴 작업이 더 길어져서, 단계 사이마다 다음 작업으로 넘긴다(계획 2026-10-08 성능)
   useEffect(() => {
-    loadSceneData(dataVersion).then(setData).catch((e) => onFail(`data: ${e.message}`));
+    let alive = true;
+    const nextTask = () => new Promise<void>((resolve) => { window.setTimeout(resolve, 0); });
+    (async () => {
+      const data = await loadSceneData(dataVersion);
+      await nextTask();
+      // 세로 화면(대개 휴대폰) 판정 — 점 구름·공항 불빛·곁가지(AirportExtras)가 모두 같은 값을 써야
+      // stride(성긴 정도)가 어긋나지 않는다. 데이터를 받을 때 한 번만 잰다
+      const portrait = window.innerHeight > window.innerWidth;
+      // 세로 화면은 잡음 점을 절반만 그린다
+      const cloud = buildPointCloud(data.terrain, data.map, { noiseStride: portrait ? 2 : 1, seed: 7 });
+      await nextTask();
+      // 공항 불빛 배정: 세로 화면은 불빛 절반(설계 §4.5). 이륙 비행기 점(설계 2026-09-29 §7)도 함께 — 휴대폰도 같은
+      // 232개(비행기 모양이 성기면 실루엣이 안 읽힌다)
+      const airport = assignAirport(buildAirport({ stride: portrait ? 2 : 1 }).lights, cloud.kind, planeShape());
+      // 머리말 U자 8구간(%). terrain.json에 곡선이 없으면 평평하게
+      const bins = data.terrain.curve ? bookingBins(data.terrain.curve) : FLAT_BINS;
+      if (alive) setBuilt({ portrait, cloud, airport, bins });
+    })().catch((e: Error) => { if (alive) onFail(`data: ${e.message}`); });
+    return () => { alive = false; };
   }, [dataVersion, onFail]);
 
-  // 세로 화면(대개 휴대폰) 판정 — 점 구름·공항 불빛·곁가지(AirportExtras)가 모두 같은 값을 써야
-  // stride(성긴 정도)가 어긋나지 않는다. data가 바뀔 때만 다시 재는 값이라 cloud와 같은 의존성으로 둔다
-  const isPortrait = useMemo(() => typeof window !== 'undefined' && window.innerHeight > window.innerWidth, [data]);
-
-  const cloud = useMemo(() => {
-    if (!data) return null;
-    // 세로 화면은 잡음 점을 절반만 그린다
-    return buildPointCloud(data.terrain, data.map, { noiseStride: isPortrait ? 2 : 1, seed: 7 });
-  }, [data, isPortrait]);
-
-  // 공항 불빛 배정: 세로 화면(대개 휴대폰)은 불빛 절반(설계 §4.5)
+  const isPortrait = built?.portrait ?? false;
+  const cloud = built?.cloud ?? null;
+  const airport = built?.airport ?? null;
+  const bins = built?.bins ?? FLAT_BINS;
   // 비행기 출발 자리: 세로 화면은 활주로 시작점이 화면 왼쪽 밖이라 앞으로 당겨 세운다(plane.ts PLANE.portraitStart)
   const planeStart = isPortrait ? PLANE.portraitStart : 0;
-
-  const airport = useMemo(() => {
-    if (!cloud) return null;
-    // 이륙 비행기 점(설계 2026-09-29 §7)도 함께 — 휴대폰도 같은 232개(비행기 모양이 성기면 실루엣이 안 읽힌다)
-    return assignAirport(buildAirport({ stride: isPortrait ? 2 : 1 }).lights, cloud.kind, planeShape());
-  }, [cloud, isPortrait]);
-
-  // 머리말 U자 8구간(%). terrain.json에 곡선이 없으면 평평하게
-  const bins = useMemo(() => (data?.terrain.curve ? bookingBins(data.terrain.curve) : new Array<number>(8).fill(0)), [data]);
 
   // 스크롤·크기 변화 → 활성 장면 → 목표 상태(차트 장면이면 그림 판 배치도). 캡처 모드에서는 고정.
   useEffect(() => {
