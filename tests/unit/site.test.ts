@@ -24,6 +24,10 @@ describe('site metadata', () => {
     expect(typeof m.title).toBe('string');
   });
 
+  it('탭 제목은 세 언어 모두 SIGNAL(2026-10-09)', () => {
+    for (const locale of ['ko', 'en', 'ja'] as const) expect(buildMetadata(locale).title).toBe('SIGNAL');
+  });
+
   it('공개 전에는 검색 노출을 막고, 공개 후에는 연다', () => {
     expect(buildMetadata('ko', false).robots).toEqual({ index: false, follow: false });
     expect(buildMetadata('ko', true).robots).toBeUndefined();
