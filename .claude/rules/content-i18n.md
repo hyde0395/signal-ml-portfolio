@@ -42,7 +42,7 @@ paths:
 - 8-1 검토에서 나온 영·일 용어 맞추기 후보: en `data.filter.axisY` "vs. route/cabin mean" → "vs. route-and-class average", en `tagKf` "upper reference" → "reference upper bound", en `data.filter.body1` "placed by" → "plotted by", en `charts.validation.body2` "service setup" → "service configuration", ja `tagGkf` "初めて見る出発日" → "未知の出発日", ja `legendUnused` "未使用" → "まだ未使用", ja `data.filter.heading` → "エラー行の除去", ja `charts.validation.body2` "学習とサービスの不一致" → "学習と提供の不一致"
 
 ## 개인 정보·콘텐츠
-- **이름**: 최하림 / CHOI HALIM / 崔夏林(チェ・ハリム). 첫 화면 큰 제목은 `SIGNAL`만(2026-09-29, 2026-10-04 재확인). 이름 `CHOI HALIM`·언어별 표기(ko 최하림, en 없음, ja 崔夏林 + 후리가나)·`ML ENGINEER`는 연락처 섹션에만 — 탑승권 탑승객 칸, 소개 제목 아래 `ML ENGINEER`(키 `contact.nameSub`·`contact.role`). 탭 제목(`meta.title`)과 OG 이미지에는 이름이 남는다
+- **이름**: 최하림 / CHOI HALIM / 崔夏林(チェ・ハリム). 첫 화면 큰 제목은 `SIGNAL`만(2026-09-29, 2026-10-04 재확인). 이름 `CHOI HALIM`·언어별 표기(ko 최하림, en 없음, ja 崔夏林 + 후리가나)·`ML ENGINEER`는 연락처 섹션에만 — 탑승권 탑승객 칸, 소개 제목 아래 `ML ENGINEER`(키 `contact.nameSub`·`contact.role`). 탭 제목(`meta.title`, 링크 미리보기 제목도 같음)은 세 언어 모두 `SIGNAL`(2026-10-09 사용자), OG 이미지에는 이름이 남는다
 - **한 줄 소개**: 키워드 나열 `ML ENGINEER · 시계열 예측 · 모델 검증 · 데이터 파이프라인`(영·일 같은 구성)
 - **학력**: 수원대학교 컴퓨터소프트웨어학과 · 2028년 2월 졸업 예정 / B.S. in Computer Software, The University of Suwon · Expected Feb 2028 / 水原大学 コンピュータソフトウェア学科 · 2028年2月卒業見込み(학과 일본어명은 검수 때 확인). 신입
 - **핵심 역량**: 항공권 프로젝트에서 증명된 것만(수집 자동화, 시계열 모델링, 검증 설계, 예측 구간 보정). 다른 경험·다른 프로젝트 목록은 넣지 않는다
