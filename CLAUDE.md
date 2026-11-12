@@ -33,13 +33,13 @@ Awwwards / FWA 수준의 인터랙티브 디자인을 가진 **취업·이직용
 - 이미 정해진 결정은 다시 묻지 않는다. 질문은 한 번에 하나, 선택지와 추천을 준다
 - **문구는 디자인을 모두 정한 뒤에 한꺼번에 바꾼다**(2026-10-01). 그 전까지 문구·꾸밈 값은 임시값으로 데이터(`facts.json`·`content/*.json`)에. 예외: 교수님이 짚은 제목은 바로 고친다(2026-10-08)
 
-## 현재 상태 (2026-10-08, 맥북)
+## 현재 상태 (2026-11-12, 맥북)
 
 운영 https://signal-ml.vercel.app (아직 `noindex`) · GitHub https://github.com/hyde0395/signal-ml-portfolio (공개, main = 운영, PR = Vercel 미리보기) · CI: 타입 검사 → 단위 테스트 → 빌드 → 용량 검사 → e2e(desktop·mobile, axe).
 
-- **병합·배포된 것**: 계획 1~8-1, 9-2·9-3, 정보 전달 2, 점 위계·배경 밀도, 교수님 피드백 2, 연락처 소개·겹치는 문장 덜어내기, 성능 최적화(PR #1~#35). 계획서 `docs/superpowers/plans/`, 설계 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점), PR별 내용은 `git log`·GitHub
+- **병합·배포된 것**: 계획 1~8-1, 9-2·9-3, 정보 전달 2, 점 위계·배경 밀도, 교수님 피드백 2, 연락처 소개·겹치는 문장 덜어내기, 성능 최적화, 탭 제목 SIGNAL(PR #1~#36). 계획서 `docs/superpowers/plans/`, 설계 `docs/superpowers/specs/`(각 설계 끝 "구현 결과"에 실제로 바뀐 점), PR별 내용은 `git log`·GitHub
 - **성능 최적화 끝(PR #35, 2026-10-08)**: 운영 Lighthouse 모바일 ko 93 · en 97 · ja 95, CLS 0(전 86 · 86 · 76, CLS 0.067). 계획·결과 `docs/superpowers/plans/2026-10-08-performance.md`, 규칙 `performance`. **문구에 새 글자가 생기면 `npm run fonts`**(글꼴 서브셋, 테스트가 알려 줌)
-- **열린 PR 없음**
+- **열린 PR 없음** (PR #36 탭 제목 병합 2026-11-12. 운영 배포가 Google Fonts 일시 오류로 실패해 `npx vercel redeploy <배포 id>`로 다시 배포함)
 - **맥북에서 아직 안 한 것**: impeccable 엔진·훅·Playwright MCP·Figma 로그인(`new-device-setup` 6번, 맥미니는 끝)
 - **9-3 남은 확인(사용자, 운영에서)**: 머리말 230svh 스크롤 길이, ① 배경 밝기 60%·글 뒤 번짐 세기 — 맨 위부터 천천히 스크롤해 확인
 
